@@ -30,14 +30,47 @@ body {
     height: 60px;
 }
 
-.navGreetings {
+.navUserProfile {
     margin-left: auto;
     font-size: 1.5rem;
     color: #333;
+    display: flex;
+    align-items: center;
 }
 
-.userIcon {
-    height: 60px;
-    border-radius: 50%;
+.bi {
+    font-size: 2rem;
     margin-left: 1rem;
+    color: black;
 }
+
+.userEmail {
+    margin: 0;
+    margin-left: 0.5rem;
+    font-size: medium;
+    color: black;
+    text-decoration: none;
+}
+
+.dropdownToggle {
+    font-size: 1rem;
+    margin-left: 0.5rem;
+    color: black;
+}
+
+.col-md-6 {
+    padding: 1rem;
+}
+
+#current_time {
+    text-align: center;
+    color: white;
+    font-size: 5rem;
+}
+
+#current_date {
+    text-align: center;
+    color: white;
+    font-size: 1.5rem;
+}
+
