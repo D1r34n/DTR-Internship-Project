@@ -78,6 +78,17 @@ h2 {
     border-color: #97be41;
 }
 
+/* ERROR MESSAGE */
+.error-msg {
+    background-color: #ffe0e0;
+    color: #cc0000;
+    font-size: 13px;
+    padding: 10px 14px;
+    border-radius: 6px;
+    margin-bottom: 15px;
+    text-align: left;
+}
+
 /* REMEMBER ME AND FORGOT SECTION */
 .remember-row {
     display: flex;
