@@ -1,5 +1,5 @@
 <?php
-$bg_image = "images/bg.png";
+$bg_image = "images/drt_bg.jpg";
 $page_title = "DTR Project Acer";
 $logo = "images/HSN.png";
 ?>
@@ -17,13 +17,22 @@ $logo = "images/HSN.png";
             box-sizing: border-box;
         }
 
-        body {
-            background-image: url('<?php echo $bg_image; ?>');
-            background-size: cover;
-            background-position: center;
-            background-repeat: no-repeat;
-            background-attachment: fixed;
+        body::before {
+        content: '';
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-image: url('<?php echo $bg_image; ?>');
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        filter: blur(8px);
+        z-index: -1;
+}
 
+        body {
             display: flex;
             justify-content: center;
             align-items: center;
@@ -153,6 +162,49 @@ $logo = "images/HSN.png";
             margin-bottom: 8px;
         }
 
+        /* RESPONSIVE SECTION */
+        @media (max-width: 480px) {
+            .container {
+                width: 90%;
+                height: auto;
+            }
+
+            .field-group label {
+                font-size: 15px;
+            }
+
+            .remember-row .remember-me {
+                font-size: 14px;
+            }
+
+            .remember-row .forgot-password {
+                font-size: 14px;
+            }
+
+            .no-account-group label {
+                font-size: 14px;
+            }
+        }
+
+        @media (max-width: 360px) {
+            .container {
+                width: 95%;
+                height: auto;
+            }
+
+            .logo {
+                width: 110px;
+            }
+
+            h2 {
+                font-size: 20px;
+            }
+
+            .field-group label {
+                font-size: 13px;
+            }
+        }
+
     </style>
 </head>
 <body>
@@ -181,9 +233,9 @@ $logo = "images/HSN.png";
         <button class="btn-signin">Sign In</button>
         
         <div class="no-account-group">
-            <label>Don't have an Hsn ID? </label>
+            <label>Don't have an HSN ID? </label>
             <a href="https://www.hsnservice.com/" target="_blank" style="color: #97be41; text-decoration: none;"><u>Contact your HR admin</u></a>
-    </div>
+        </div>
     </div>
 
 </body>
