@@ -3,24 +3,30 @@ session_start();
 require_once 'db.php';
 date_default_timezone_set('Asia/Manila');
 
-if (!isset($_SESSION['user_email'])) {
+if (!isset($_SESSION['user_id'])) {
     header("Location: index.php");
     exit();
 }
 
-$email = $_SESSION['user_email'];
-$now = date('H:i:s');
+$employeeId = $_SESSION['user_id'];
 $today = date('Y-m-d');
 
-// Late if after 8:30 AM
-$status = ($now > '08:30:00') ? 'Late' : 'Present';
+if (!isset($_SESSION['timedIn'])) {
+    $_SESSION['timedIn'] = false;
+}
 
-$stmt = $pdo->prepare("INSERT INTO attendance (employee_email, date, time_in, status) VALUES (?, ?, ?, ?)");
-$stmt->execute([$email, $today, $now, $status]);
+if ($_SESSION['timedIn'] === false) {
+    // TIME IN — insert login log
+    $stmt = $pdo->prepare("INSERT INTO logs (employee_id, log_type) VALUES (?, 'login')");
+    $stmt->execute([$employeeId]);
+    $_SESSION['timedIn'] = true;
+    echo "timed_in";
 
-$_SESSION['timedIn'] = true;
-$_SESSION['time_in'] = $now;
-$_SESSION['attendance_id'] = $pdo->lastInsertId();
-
-echo "timed_in";
+} else {
+    // TIME OUT — insert logout log
+    $stmt = $pdo->prepare("INSERT INTO logs (employee_id, log_type) VALUES (?, 'logout')");
+    $stmt->execute([$employeeId]);
+    $_SESSION['timedIn'] = false;
+    echo "timed_out";
+}
 ?>
