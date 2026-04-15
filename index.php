@@ -20,7 +20,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         $_SESSION['error'] = "Email and password are required.";
     } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $_SESSION['error'] = "Wrong Email/Password";
-    } elseif (strlen($password) < 8) {
+    } elseif (strlen($password) < 1) {
         $_SESSION['error'] = "Wrong Email/Password";
     } else {
         $_SESSION['user_email'] = $email;

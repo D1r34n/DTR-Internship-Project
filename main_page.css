@@ -12,19 +12,20 @@ body {
     padding-top: 80px;
 }
 
-.navBar {
+.sideBar {
     position: fixed;
     top: 0;
     left: 0;
-    width: 100%;
-    height: 80px;
-    padding: 0.5rem;
-    background-color: rgba(255, 255, 255);
+    width: 250px;
+    height: 100vh;
+    padding: 1rem;
+    background-color: rgba(255, 255, 255, 1);
     display: flex;
-    align-items: center;
-    flex-wrap: nowrap;
+    flex-direction: column;
+    align-items: flex-start;
     z-index: 1000;
 }
+
 
 .logo {
     height: 60px;
@@ -56,20 +57,4 @@ body {
     font-size: 1rem;
     margin-left: 0.5rem;
     color: black;
-}
-
-.col-md-6 {
-    padding: 1rem;
-}
-
-#current_time {
-    text-align: center;
-    color: white;
-    font-size: 5rem;
-}
-
-#current_date {
-    text-align: center;
-    color: white;
-    font-size: 1.5rem;
 }
