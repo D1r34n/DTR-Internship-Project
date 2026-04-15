@@ -32,6 +32,7 @@ function handleTimeIn() {
     fetch('timeinout.php')
         .then(res => res.text())
         .then(response => {
+            console.log('Response:', response);
             const label = document.getElementById('timeInLabel');
             if (response.trim() === 'timed_in') {
                 label.textContent = 'Time Out';
@@ -41,6 +42,7 @@ function handleTimeIn() {
                     location.reload();
                 }
             }
-        });
+        })
+        .catch(err => console.log('Error:', err));
 }
 </script>

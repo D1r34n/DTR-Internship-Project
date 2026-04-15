@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Apr 15, 2026 at 02:59 PM
+-- Generation Time: Apr 16, 2026 at 01:44 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -64,7 +64,7 @@ CREATE TABLE `employees` (
 --
 
 INSERT INTO `employees` (`id`, `name`, `email`, `password`) VALUES
-(1, 'Test Employee', 'user.name@gmail.com', 'pass123');
+(2, 'Test Employee', 'user.name@gmail.com', 'password123');
 
 -- --------------------------------------------------------
 
@@ -78,6 +78,24 @@ CREATE TABLE `logs` (
   `log_type` enum('login','logout') DEFAULT NULL,
   `log_time` datetime DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `logs`
+--
+
+INSERT INTO `logs` (`id`, `employee_id`, `log_type`, `log_time`) VALUES
+(1, 2, 'login', '2026-04-16 07:39:53'),
+(2, 2, 'logout', '2026-04-16 07:40:00'),
+(3, 2, 'login', '2026-04-16 07:40:04'),
+(4, 2, 'logout', '2026-04-16 07:40:07'),
+(5, 2, 'login', '2026-04-16 07:40:07'),
+(6, 2, 'logout', '2026-04-16 07:40:08'),
+(7, 2, 'login', '2026-04-16 07:40:09'),
+(8, 2, 'logout', '2026-04-16 07:41:19'),
+(9, 2, 'login', '2026-04-16 07:42:02'),
+(10, 2, 'logout', '2026-04-16 07:42:06'),
+(11, 2, 'login', '2026-04-16 07:43:46'),
+(12, 2, 'logout', '2026-04-16 07:43:48');
 
 -- --------------------------------------------------------
 
@@ -139,13 +157,13 @@ ALTER TABLE `attendance`
 -- AUTO_INCREMENT for table `employees`
 --
 ALTER TABLE `employees`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `logs`
 --
 ALTER TABLE `logs`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
 
 --
 -- AUTO_INCREMENT for table `schedules`
