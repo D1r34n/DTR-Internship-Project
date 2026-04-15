@@ -46,7 +46,34 @@ if (!isset($_SESSION['user_email'])) {
   <!-- BOTTOM ROW -->
   <div class="row">
         <div class="col-md-6 d-flex justify-content-center align-items-center">
-            <button class="btn btn-primary">Time In</button>
+            <div class="col-md-6">
+                <div class="row g-0 h-100 border rounded">
+
+                    <!-- LEFT: Time In Button -->
+                    <div class="col-6 d-flex justify-content-center align-items-center">
+                        <button type="button">
+                            <i class="bi bi-stopwatch"></i> <br>
+                            Time In
+                        </button>
+                    </div>
+
+                    <!-- RIGHT: Split into 2 rows -->
+                    <div class="col-6 d-flex flex-column">
+
+                        <!-- STATUS (top half) -->
+                        <div class="flex-fill d-flex justify-content-center align-items-center border-bottom">
+                            Status
+                        </div>
+
+                        <!-- TOTAL HOURS (bottom half) -->
+                        <div class="flex-fill d-flex justify-content-center align-items-center">
+                            Total Work Hours
+                        </div>
+
+                    </div>
+
+                </div>
+            </div>
         </div>
 
         <div class="col-md-6 d-flex justify-content-center align-items-center">
