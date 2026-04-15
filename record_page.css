@@ -1,0 +1,50 @@
+/* BACKGROUND BLUR */
+body::before {
+    content: '';
+    position: fixed;
+    top: -20px;
+    left: -20px;
+    width: calc(100% + 40px);
+    height: calc(100% + 40px);
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    filter: blur(6px);
+    z-index: -1;
+}
+
+body {
+    font-family: 'Poppins', sans-serif;
+    min-height: 100vh;
+}
+
+.recordBoxWrapper {
+    position: fixed;
+    top: 60px;
+    left: 180px;
+    width: calc(100% - 180px);
+    height: calc(100vh - 60px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10;
+}
+
+.recordBox {
+    font-family: 'Poppins', sans-serif;
+    background-color: #ffffff;
+    padding: 30px;
+    border-radius: 12px;
+    width: 1120px;
+    height: 530px;
+    overflow-y: auto;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    position: relative;
+    z-index: 10;
+}
+
+.tableTitle {
+    text-align: left;
+    font-weight: 600;
+    margin-bottom: 0;
+}
