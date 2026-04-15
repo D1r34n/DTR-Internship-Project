@@ -1,10 +1,3 @@
-/* RESET */
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
-
 /* BACKGROUND BLUR */
 body::before {
     content: '';
@@ -25,85 +18,33 @@ body {
     min-height: 100vh;
 }
 
-/* SIDEBAR */
-.sideBar {
+.recordBoxWrapper {
     position: fixed;
-    top: 0;
-    left: 0;
-    width: 200px;
-    height: 100vh;
-    padding: 1rem;
-    background-color: white;
-    display: flex;
-    flex-direction: column;
-    z-index: 1000;
-}
-
-.logo {
-    height: 70px;
-}
-
-/* TOPBAR */
-.topBar {
-    position: fixed;
-    top: 0;
-    left: 200px;
-    width: calc(100% - 200px);
-    height: 60px;
-    padding: 0 20px;
-    background-color: rgba(0, 0, 0, 0.4);
-    display: flex;
-    align-items: center;
-    color: white;
-    z-index: 999;
-}
-
-/* USER PROFILE */
-.navUserProfile {
-    margin-left: auto;
-    display: flex;
-    align-items: center;
-}
-
-.bi {
-    font-size: 1.8rem;
-    margin-left: 10px;
-    color: white;
-}
-
-.userEmail {
-    margin-left: 10px;
-    font-size: 14px;
-    color: white;
-}
-
-.logoutIcon {
-    font-size: 1.5rem;
-    margin-left: 15px;
-    color: rgb(216, 59, 59);
-    cursor: pointer;
-}
-
-/* MAIN CONTENT AREA */
-.mainContent {
-    position: absolute;
     top: 60px;
-    left: 200px;
-    width: calc(100% - 200px);
+    left: 180px;
+    width: calc(100% - 180px);
     height: calc(100vh - 60px);
-
     display: flex;
     justify-content: center;
     align-items: center;
+    z-index: 10;
 }
 
-/* CENTER BOX */
 .recordBox {
-    background-color: white;
-    padding: 40px;
+    font-family: 'Poppins', sans-serif;
+    background-color: #ffffff;
+    padding: 30px;
     border-radius: 12px;
-    width: 500px;
-    max-width: 90%;
+    width: 1120px;
+    height: 530px;
+    overflow-y: auto;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-    text-align: center;
+    position: relative;
+    z-index: 10;
+}
+
+.tableTitle {
+    text-align: left;
+    font-weight: 600;
+    margin-bottom: 0;
 }
