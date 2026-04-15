@@ -4,23 +4,23 @@
     box-sizing: border-box;
 }
 
-/* BACKGROUND */
+/* BACKGROUND BLUR */
 body::before {
     content: '';
     position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-
+    top: -20px;
+    left: -20px;
+    width: calc(100% + 40px);
+    height: calc(100% + 40px);
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
-    filter: blur(8px);
+    filter: blur(6px);
     z-index: -1;
 }
 
 body {
+    font-family: 'Poppins', sans-serif;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -29,47 +29,51 @@ body {
 
 /* SIGN IN CONTAINER */
 .container {
+    font-family: 'Poppins', sans-serif;
     text-align: center;
     background-color: white;
     padding: 40px;
     border-radius: 12px;
-    height: 600px;
-    width: 440px;
+    height: 440px;
+    width: 350px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
 }
 
 .logo {
-    width: 145px;
-    margin-bottom: 20px;
-    margin-top: -20px;
+    width: 80px;
+    margin-bottom: 8px;
+    margin-top: -25px;
 }
 
 h2 {
-    margin-bottom: 60px;
-    font-size: 24px;
+    font-family: 'Poppins', sans-serif;
+    margin-bottom: 10px;
+    font-size: 18px;
     color: #333;
 }
 
 /* EMAIL AND PASSWORD */
 .field-group {
     text-align: left;
-    margin-bottom: 30px;
+    margin-bottom: 20px;
 }
 
 .field-group label {
+    font-family: 'Poppins', sans-serif;
     display: block;
-    font-size: 18px;
+    font-size: 14px;
     font-weight: 600;
     color: #000000;
     margin-bottom: 8px;
 }
 
 .field-group input {
+    font-family: 'Poppins', sans-serif;
     width: 100%;
-    padding: 10px 14px;
+    padding: 5px 14px;
     font-size: 14px;
     border: 1px solid #ccc;
-    border-radius: 0px;
+    border-radius: 5px;
     outline: none;
     transition: border-color 0.2s;
 }
@@ -78,31 +82,45 @@ h2 {
     border-color: #97be41;
 }
 
+/* ERROR MESSAGE */
+.error-msg {
+    font-family: 'Poppins', sans-serif;
+    background-color: #ffe0e0;
+    color: #cc0000;
+    font-size: 10px;
+    padding: 10px 14px;
+    border-radius: 6px;
+    margin-bottom: 15px;
+    text-align: left;
+}
+
 /* REMEMBER ME AND FORGOT SECTION */
 .remember-row {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-top: -20px;
+    margin-top: -10px;
 }
 
 .remember-row .remember-me {
+    font-family: 'Poppins', sans-serif;
     display: flex;
     align-items: center;
     gap: 6px;
-    font-size: 18px;
+    font-size: 14px;
     color: #333;
 }
 
 .remember-row .remember-me input[type="checkbox"] {
-    width: 14px;
-    height: 14px;
+    width: 12px;
+    height: 12px;
     cursor: pointer;
     accent-color: #97be41;
 }
 
 .remember-row .forgot-password {
-    font-size: 18px;
+    font-family: 'Poppins', sans-serif;
+    font-size: 14px;
     color: #97be41;
     text-decoration: none;
 }
@@ -113,13 +131,14 @@ h2 {
 
 /* SIGN IN SECTION */
 .btn-signin {
+    font-family: 'Poppins', sans-serif;
     width: 100%;
-    padding: 12px;
-    margin-top: 25px;
+    padding: 10px;
+    margin-top: 15px;
     margin-bottom: 20px;
     background-color: #97be41;
     color: white;
-    font-size: 16px;
+    font-size: 14px;
     font-weight: 600;
     border: none;
     border-radius: 34px;
@@ -142,8 +161,9 @@ h2 {
 }
 
 .no-account-group label {
+    font-family: 'Poppins', sans-serif;
     display: block;
-    font-size: 18px;
+    font-size: 16px;
     font-weight: 600;
     color: #333;
     margin-bottom: 8px;
