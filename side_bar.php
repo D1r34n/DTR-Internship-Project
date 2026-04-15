@@ -6,21 +6,28 @@ if (session_status() === PHP_SESSION_NONE) {
 
 <div class="sideBar">
     <div class="topSideBar">
-        <a href="index.php">
+        <a href="main_page.php" class="logoWrapper">
             <img src="images/drt_sidebar_logo.png" class="sideBarLogo">
         </a>
-        <i class="bi bi-arrow-bar-left toggleSideBarIcon"></i>    
+
+        <div class="toggleWrapper">
+            <i class="bi bi-arrow-bar-left icon-open toggleSideBarIcon"></i>
+            <i class="bi bi-arrow-bar-right icon-close toggleSideBarIcon"></i>
+        </div>
     </div>
     
     <div class="horizontalDivider"></div>
 
     <div class="sideBarMenu">
-        <a href="main_page.php" class="sideBarMenuItem"> 
-            <img src="images/dashboard_icon.svg" class="dashboardIcon">Dashboard
+        <a href="main_page.php" class="sideBarMenuItem">
+            <img src="images/dashboard_icon.svg" class="dashboardIcon">
+            <span class="menuText">Dashboard</span>
         </a>
 
         <a href="records.php" class="sideBarMenuItem">
-            <img src="images/records_icon.svg" class="recordsIcon">Records
+            <img src="images/records_icon.svg" class="recordsIcon">
+            <span class="menuText">Records</span>
         </a>
     </div>
 </div>
+

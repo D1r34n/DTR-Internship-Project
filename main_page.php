@@ -31,13 +31,66 @@ if (!isset($_SESSION['user_email'])) {
     <?php include 'side_bar.php'; ?>
 
     <!-- TOPBAR -->
-    <?php include 'top_bar.php'; ?>
+    
+    <?php 
+    $current_page = 'dashboard';
+    include 'top_bar.php'; ?>
 
     <div class="dashboardContent">
-        <h1>Welcome to the Employee Dashboard</h1>
-        <p>Tuesday, July 1, 2026</p>
+
+        <p id="currentDate"></p>
+        <h1 id="currentTime"></h1>
+
+        <div class="dashboardSummary">
+            <div class="summaryCard">
+                <p>Currently</p>
+                <h5>Timed Out</h5>
+            </div>
+            
+            <div class="summaryCard">
+                <p>Total Hours This Week</p>
+                <h5>0 hours</h5>
+            </div>
+
+            <div class="summaryCard">
+                <p>Total Hours This Month</p>
+                <h5>0 hours</h5>
+            </div>
+        </div>
     </div>
 
+    
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
+
+    <script>
+        function updateDateTime() {
+            const now = new Date();
+
+            const dateOptions = { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            };
+            const formattedDate = now.toLocaleDateString(undefined, dateOptions);
+
+            const timeOptions = { 
+                hour: 'numeric', 
+                minute: '2-digit', 
+                second: '2-digit',
+                hour12: true 
+            };
+            const formattedTime = now.toLocaleTimeString(undefined, timeOptions);
+
+            document.getElementById("currentDate").textContent = formattedDate;
+            document.getElementById("currentTime").textContent = formattedTime;
+        }
+
+        updateDateTime();
+
+        // This updates every second (1000 milliseconds)
+        setInterval(updateDateTime, 1000);
+    </script>
   </body>
 </html>
