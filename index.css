@@ -34,9 +34,10 @@ body {
     background-color: white;
     padding: 40px;
     border-radius: 12px;
-    height: 440px;
     width: 350px;
+    padding: 40px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    
 }
 
 .logo {
@@ -135,7 +136,7 @@ h2 {
     width: 100%;
     padding: 10px;
     margin-top: 15px;
-    margin-bottom: 20px;
+    margin-bottom: 30px;
     background-color: #97be41;
     color: white;
     font-size: 14px;
@@ -163,7 +164,7 @@ h2 {
 .no-account-group label {
     font-family: 'Poppins', sans-serif;
     display: block;
-    font-size: 16px;
+    font-size: 13px;
     font-weight: 600;
     color: #333;
     margin-bottom: 8px;
