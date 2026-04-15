@@ -4,8 +4,8 @@
 session_start();
 
 if (!isset($_SESSION['user_email'])) {
-    // header("Location: index.php");
-    // exit();
+    header("Location: index.php");
+    exit();
 }
 ?>
 
@@ -16,6 +16,7 @@ if (!isset($_SESSION['user_email'])) {
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>DTR Project Acer</title>
     <link rel="stylesheet" href="main_page.css">
+    <link rel="stylesheet" href="side_and_top_bar.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
 
@@ -27,19 +28,14 @@ if (!isset($_SESSION['user_email'])) {
 </head>
   <body>
     <!-- SIDEBAR -->
-    <div class="sideBar">
-        <a href="index.php"><img src="images/drt_sidebar_logo.png" alt="DTR Logo" class="logo"></a>
-    </div>
+    <?php include 'side_bar.php'; ?>
 
     <!-- TOPBAR -->
-    <div class="topBar">
-        <h3><?php echo 'Employee Dashboard'; ?></h3>
+    <?php include 'top_bar.php'; ?>
 
-        <div class="navUserProfile">
-            <i class="bi bi-person-fill" alt="User Icon"></i>
-            <a class="userEmail"><?php echo $_SESSION['user_email'] ?? 'user.name@gmail.com'; ?></a>
-            <a href="index.php"><i class="bi bi-box-arrow-right logoutIcon"></i></a>
-        </div>
+    <div class="dashboardContent">
+        <h1>Welcome to the Employee Dashboard</h1>
+        <p>Tuesday, July 1, 2026</p>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>

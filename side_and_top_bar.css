@@ -1,0 +1,171 @@
+/* BACKGROUND BLUR */
+body::before {
+    content: '';
+    position: fixed;
+    top: -20px;
+    left: -20px;
+    width: calc(100% + 40px);
+    height: calc(100% + 40px);
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    filter: blur(6px);
+    z-index: -1;
+}
+
+body {
+    font-family: 'Poppins', sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+}
+
+.sideBar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 180px;
+    height: 100vh;
+    padding: 0.5rem;
+    background-color: rgba(255, 255, 255, 1);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    z-index: 1000;
+}
+
+.topSideBar {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+    width: 100%;
+}
+
+.toggleSideBarIcon {
+    font-size: 2rem;
+    color: black;
+    cursor: pointer;
+}
+.sideBarLogo {
+    height: 70px;
+}
+
+.sideBarMenu {
+    margin-top: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    align-items:baseline;
+    justify-content: center;
+    text-align: center;
+}
+
+.sideBarMenuItem {
+    color: black;
+    text-decoration: none;
+    font-size: 1.2rem;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    transition: background-color 0.3s ease;
+    display: flex;
+    align-items: center;
+}
+
+.dashboardIcon,
+.recordsIcon{
+    height: 1.5rem;
+    color: black;
+    margin-right: 0.5rem;
+}
+
+.topBar {
+    position: fixed;
+    top: 0;
+    left: 180px;
+    width: calc(100% - 180px);
+    height: 60px;
+    padding: 0 1rem;
+    background-color: rgba(0, 0, 0, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: space-between; /* KEY FIX */
+    z-index: 999;
+    color: white;
+}
+
+.topBar::before {
+    filter: blur(8px);
+    -webkit-filter: blur(8px);
+}
+
+.topBarRight {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.dashboardTitle {
+    margin: 0;
+    font-size: 1.5rem;
+    color: white;
+    font-weight: 100;
+}
+
+.timeInButton {
+    display: flex;
+    align-items: center;
+    background-color: #97be41;
+    color: white;
+    border: none;
+    padding: 0.2rem 1rem;
+    cursor: pointer;
+    font-size: large;
+}
+
+.timeInIcon {
+    font-size: 1rem;
+    color: white;
+    margin-right: 1rem;
+}
+
+.verticalDivider {
+    display: inline-block;
+    width: 1px;
+    height: 30px;
+    background-color: white;
+    opacity: 0.5;
+}
+
+.horizontalDivider {
+    display: inline-block;
+    width: 100%;
+    height: 1px;
+    background-color: #b4b4b4;
+    opacity: 0.5;
+}
+
+.navUserProfile {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.userProfileIcon {
+    font-size: 1.5rem;
+    color: white;
+}
+
+.userEmail {
+    margin: 0;
+    font-size: medium;
+    color: white;
+    text-decoration: none;
+}
+
+.logoutIcon {
+    font-size: 1.5rem;
+    color: rgb(216, 59, 59);
+}
