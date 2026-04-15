@@ -33,11 +33,14 @@ if (!isset($_SESSION['user_email'])) {
 
     <!-- TOPBAR -->
     <div class="topBar">
-        <h3><?php echo 'Employee Dashboard'; ?></h3>
+        <h4 class="dashboardTitle"><?php echo 'Employee Dashboard'; ?></h4>
 
+        <button class="btn btn-light timeInButton">Time In</button>
+        <a class="verticalDivideLineDesign">|</a>
         <div class="navUserProfile">
             <i class="bi bi-person-fill" alt="User Icon"></i>
             <a class="userEmail"><?php echo $_SESSION['user_email'] ?? 'user.name@gmail.com'; ?></a>
+            <a class="verticalDivideLineDesign">|</a>
             <a href="index.php"><i class="bi bi-box-arrow-right logoutIcon"></i></a>
         </div>
     </div>
