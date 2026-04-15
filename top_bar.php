@@ -7,7 +7,16 @@ if (session_status() === PHP_SESSION_NONE) {
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
 <div class="topBar">
-    <h4 class="dashboardTitle"> <?php echo ($current_page == 'dashboard') ? 'Employee Dashboard' : ''; ?></h4>
+    <?php
+    $titles = [
+        'dashboard' => 'Employee Dashboard',
+        'records' => 'Records',
+    ];
+
+    $title = $titles[$current_page] ?? '';
+    ?>
+
+    <h4 class="dashboardTitle"><?= $title ?></h4>
 
     <div class="topBarRight">
         <!-- Time In Button -->
