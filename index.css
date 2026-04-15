@@ -20,6 +20,7 @@ body::before {
 }
 
 body {
+    font-family: 'Poppins', sans-serif;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -28,6 +29,7 @@ body {
 
 /* SIGN IN CONTAINER */
 .container {
+    font-family: 'Poppins', sans-serif;
     text-align: center;
     background-color: white;
     padding: 40px;
@@ -44,7 +46,8 @@ body {
 }
 
 h2 {
-    margin-bottom: 15px;
+    font-family: 'Poppins', sans-serif;
+    margin-bottom: 10px;
     font-size: 18px;
     color: #333;
 }
@@ -56,6 +59,7 @@ h2 {
 }
 
 .field-group label {
+    font-family: 'Poppins', sans-serif;
     display: block;
     font-size: 14px;
     font-weight: 600;
@@ -64,6 +68,7 @@ h2 {
 }
 
 .field-group input {
+    font-family: 'Poppins', sans-serif;
     width: 100%;
     padding: 5px 14px;
     font-size: 14px;
@@ -79,6 +84,7 @@ h2 {
 
 /* ERROR MESSAGE */
 .error-msg {
+    font-family: 'Poppins', sans-serif;
     background-color: #ffe0e0;
     color: #cc0000;
     font-size: 10px;
@@ -97,6 +103,7 @@ h2 {
 }
 
 .remember-row .remember-me {
+    font-family: 'Poppins', sans-serif;
     display: flex;
     align-items: center;
     gap: 6px;
@@ -112,6 +119,7 @@ h2 {
 }
 
 .remember-row .forgot-password {
+    font-family: 'Poppins', sans-serif;
     font-size: 14px;
     color: #97be41;
     text-decoration: none;
@@ -123,10 +131,11 @@ h2 {
 
 /* SIGN IN SECTION */
 .btn-signin {
+    font-family: 'Poppins', sans-serif;
     width: 100%;
     padding: 10px;
     margin-top: 15px;
-    margin-bottom: 30px;
+    margin-bottom: 20px;
     background-color: #97be41;
     color: white;
     font-size: 14px;
@@ -152,6 +161,7 @@ h2 {
 }
 
 .no-account-group label {
+    font-family: 'Poppins', sans-serif;
     display: block;
     font-size: 16px;
     font-weight: 600;

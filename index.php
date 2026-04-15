@@ -37,6 +37,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo $page_title; ?></title>
@@ -81,7 +82,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
         <div class="no-account-group">
             <label>Don't have an HSN ID? </label>
-            <a href="https://www.hsnservice.com/" target="_blank" style="color: #97be41; text-decoration: none;"><u>Contact your HR admin</u></a>
+            <a href="mailto:Service.Hsnc@hsnservice.com" target="_blank" style="color: #97be41; text-decoration: none;"><u>Contact your HR admin</u></a>
         </div>
     </div>
 
