@@ -26,7 +26,7 @@ if (session_status() === PHP_SESSION_NONE) {
             <span class="menuText">Dashboard</span>
         </a>
 
-        <a href="records.php" class="sideBarMenuItem">
+        <a href="record_page.php" class="sideBarMenuItem">
             <img src="images/records_icon.svg" class="recordsIcon">
             <span class="menuText">Records</span>
         </a>
