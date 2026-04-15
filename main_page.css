@@ -1,22 +1,31 @@
-body {
-    background-image: url(images/drt_bg.jpg);
+/* BACKGROUND BLUR */
+body::before {
+    content: '';
+    position: fixed;
+    top: -20px;
+    left: -20px;
+    width: calc(100% + 40px);
+    height: calc(100% + 40px);
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
-    background-attachment: fixed;
+    filter: blur(6px);
+    z-index: -1;
+}
 
+body {
+    font-family: 'Poppins', sans-serif;
     display: flex;
     justify-content: center;
     align-items: center;
     min-height: 100vh;
-    padding-top: 80px;
 }
 
 .sideBar {
     position: fixed;
     top: 0;
     left: 0;
-    width: 250px;
+    width: 200px;
     height: 100vh;
     padding: 1rem;
     background-color: rgba(255, 255, 255, 1);
@@ -26,9 +35,27 @@ body {
     z-index: 1000;
 }
 
+.topBar {
+    position: fixed;
+    top: 0;
+    left: 200px;
+    width: calc(100% - 200px);
+    height: 60px;
+    padding: 1rem;
+    background-color: rgba(0, 0, 0, 0.1);
+    display: flex;
+    align-items: center;
+    z-index: 999;
+    color: white;
+}
+
+.topBar::before {
+    filter: blur(8px);
+    -webkit-filter: blur(8px);
+}
 
 .logo {
-    height: 60px;
+    height: 70px;
 }
 
 .navUserProfile {
@@ -42,19 +69,19 @@ body {
 .bi {
     font-size: 2rem;
     margin-left: 1rem;
-    color: black;
+    color: white;
 }
 
 .userEmail {
     margin: 0;
-    margin-left: 0.5rem;
+    margin-left: 1rem;
     font-size: medium;
-    color: black;
+    color: white;
     text-decoration: none;
 }
 
-.dropdownToggle {
-    font-size: 1rem;
-    margin-left: 0.5rem;
-    color: black;
+.logoutIcon {
+    font-size: 1.5rem;
+    margin-left: 1rem;
+    color: rgb(216, 59, 59);
 }
