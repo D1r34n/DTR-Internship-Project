@@ -1,15 +1,15 @@
 <?php
 session_start();
+require_once 'db.php';
+
 $bg_image = "images/drt_bg.jpg";
 $page_title = "HSN DRT System";
 $logo = "images/HSN.png";
-
 $error = "";
 
-// SHOW ERROR FROM SESSION (after redirect)
 if (isset($_SESSION['error'])) {
     $error = $_SESSION['error'];
-    unset($_SESSION['error']); // clear after showing
+    unset($_SESSION['error']);
 }
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
@@ -18,17 +18,23 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
     if (empty($email) || empty($password)) {
         $_SESSION['error'] = "Email and password are required.";
-    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-        $_SESSION['error'] = "Wrong Email/Password";
-    } elseif (strlen($password) < 1) {
-        $_SESSION['error'] = "Wrong Email/Password";
     } else {
-        $_SESSION['user_email'] = $email;
-        header("Location: main_page.php");
-        exit();
+        // Check employee in database
+        $stmt = $pdo->prepare("SELECT * FROM employees WHERE email = ?");
+        $stmt->execute([$email]);
+        $employee = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if ($employee && $password === $employee['password']) {
+            $_SESSION['user_email'] = $employee['email'];
+            $_SESSION['user_name'] = $employee['name'];
+            $_SESSION['user_id'] = $employee['id'];
+            header("Location: main_page.php");
+            exit();
+        } else {
+            $_SESSION['error'] = "Wrong Email/Password";
+        }
     }
 
-    // 🔁 Redirect back to avoid resubmission
     header("Location: index.php");
     exit();
 }
@@ -49,15 +55,12 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     </style>
 </head>
 <body>
-
     <div class="container">
         <img src="<?php echo $logo; ?>" alt="HSN Logo" class="logo">
         <h2>Sign In</h2>
         <?php if (!empty($error)): ?>
-    <div class="error-msg">
-        <?php echo $error; ?>
-    </div>
-<?php endif; ?>
+            <div class="error-msg"><?php echo $error; ?></div>
+        <?php endif; ?>
 
         <form action="index.php" method="POST">
             <div class="field-group">
@@ -85,6 +88,5 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             <a href="mailto:Service.Hsnc@hsnservice.com" target="_blank" style="color: #97be41; text-decoration: none;"><u>Contact your HR admin</u></a>
         </div>
     </div>
-
 </body>
 </html>

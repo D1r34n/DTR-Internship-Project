@@ -1,23 +1,39 @@
-<!-- Redirects the user to the login page if not logged in -->
 <?php
 session_start();
 
-if (!isset($_SESSION['user_email'])) {
+if (!isset($_SESSION['user_id'])) {
     header("Location: index.php");
     exit();
 }
 
 require_once 'db.php';
 
-$email = $_SESSION['user_email'];
-$stmt = $pdo->prepare("SELECT * FROM attendance WHERE employee_email = ? ORDER BY date DESC");
-$stmt->execute([$email]);
+$employeeId = $_SESSION['user_id'];
+
+// Get first login and last logout per day
+$stmt = $pdo->prepare("
+    SELECT 
+        DATE(log_time) as date,
+        MIN(CASE WHEN log_type = 'login' THEN log_time END) as first_time_in,
+        MAX(CASE WHEN log_type = 'logout' THEN log_time END) as last_time_out,
+        ROUND(
+            TIMESTAMPDIFF(MINUTE, 
+                MIN(CASE WHEN log_type = 'login' THEN log_time END),
+                MAX(CASE WHEN log_type = 'logout' THEN log_time END)
+            ) / 60, 2
+        ) as total_work_hours
+    FROM logs
+    WHERE employee_id = ?
+    GROUP BY DATE(log_time)
+    ORDER BY DATE(log_time) DESC
+");
+$stmt->execute([$employeeId]);
 $records = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
 
 <!doctype html>
 <html lang="en">
-  <head>
+<head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>DTR Project Acer</title>
@@ -26,18 +42,12 @@ $records = $stmt->fetchAll(PDO::FETCH_ASSOC);
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-
     <style>
-        body::before {
-            background-image: url('images/drt_bg.jpg');
-        }
+        body::before { background-image: url('images/drt_bg.jpg'); }
     </style>
-  </head>
-  <body>
-    <!-- SIDEBAR -->
+</head>
+<body>
     <?php include 'side_bar.php'; ?>
-
-    <!-- TOPBAR -->
     <?php include 'top_bar.php'; ?>
 
     <div class="recordBoxWrapper">
@@ -56,12 +66,20 @@ $records = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 <tbody>
                     <?php if (count($records) > 0): ?>
                         <?php foreach ($records as $row): ?>
+                            <?php
+                                $timeIn = $row['first_time_in'];
+                                $timeInOnly = $timeIn ? date('H:i:s', strtotime($timeIn)) : null;
+                                $status = '—';
+                                if ($timeInOnly) {
+                                    $status = ($timeInOnly > '08:30:00') ? 'Late' : 'Present';
+                                }
+                            ?>
                             <tr>
                                 <td><?= date('F d, Y', strtotime($row['date'])) ?></td>
-                                <td><?= $row['time_in'] ? date('h:i A', strtotime($row['time_in'])) : '—' ?></td>
-                                <td><?= $row['time_out'] ? date('h:i A', strtotime($row['time_out'])) : '—' ?></td>
+                                <td><?= $timeIn ? date('h:i A', strtotime($timeIn)) : '—' ?></td>
+                                <td><?= $row['last_time_out'] ? date('h:i A', strtotime($row['last_time_out'])) : '—' ?></td>
                                 <td><?= $row['total_work_hours'] ? $row['total_work_hours'] . ' hrs' : '—' ?></td>
-                                <td><?= $row['status'] ?></td>
+                                <td><?= $status ?></td>
                             </tr>
                         <?php endforeach; ?>
                     <?php else: ?>
@@ -73,5 +91,5 @@ $records = $stmt->fetchAll(PDO::FETCH_ASSOC);
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
-  </body>
+</body>
 </html>

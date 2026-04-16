@@ -2,6 +2,7 @@
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
+$timedIn = isset($_SESSION['timedIn']) && $_SESSION['timedIn'] === true;
 ?>
 
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -19,18 +20,15 @@ if (session_status() === PHP_SESSION_NONE) {
     <h4 class="dashboardTitle"><?= $title ?></h4>
 
     <div class="topBarRight">
-        <!-- Time In Button -->
-        <form method="POST">
-            <button type="submit" id="time_in_button" class="timeInButton">
-                <i class="bi bi-stopwatch-fill timeInIcon"></i> Time In
-            </button>
-        </form>
-        
+        <button class="timeInButton" id="timeInBtn" onclick="handleTimeIn()">
+            <i class="bi bi-stopwatch-fill timeInIcon"></i>
+            <span id="timeInLabel"><?= $timedIn ? 'Time Out' : 'Time In' ?></span>
+        </button>
         <div class="verticalDivider"></div>
 
         <div class="navUserProfile">
             <i class="bi bi-person-fill userProfileIcon"></i>
-            <span class="userEmail"><?php echo isset($_SESSION['user_email']) ? $_SESSION['user_email'] : 'user.name@gmail.com'; ?></span>
+            <span class="userEmail"><?= htmlspecialchars($_SESSION['user_name'] ?? $_SESSION['user_email']) ?></span>
             <a href="index.php">
                 <i class="bi bi-box-arrow-right logoutIcon"></i>
             </a>
@@ -38,50 +36,22 @@ if (session_status() === PHP_SESSION_NONE) {
     </div>
 </div>
 
-
 <script>
-    timedIn = false;
-    timeInButton = document.getElementById('time_in_button');
-    timeInButton.addEventListener('click', function() {
-        if (timedIn) {
-            timeInButton.style.backgroundColor = '#97be41'; // Change back to original color
-            timeInButton.innerHTML = '<i class="bi bi-stopwatch-fill timeInIcon"></i> Time In'; // Change text back to "Time In"
-            timedIn = false;
-        } else {
-            timeInButton.style.backgroundColor = '#c62a2a'; // Change to red color
-            timeInButton.innerHTML = '<i class="bi bi-stopwatch-fill timeInIcon"></i> Time Out'; // Change text to "Time Out"
-            timedIn = true;
-        }
-    });
+function handleTimeIn() {
+    fetch('timeinout.php')
+        .then(res => res.text())
+        .then(response => {
+            console.log('Response:', response);
+            const label = document.getElementById('timeInLabel');
+            if (response.trim() === 'timed_in') {
+                label.textContent = 'Time Out';
+            } else {
+                label.textContent = 'Time In';
+                if (window.location.href.includes('record_page')) {
+                    location.reload();
+                }
+            }
+        })
+        .catch(err => console.log('Error:', err));
+}
 </script>
-
-<?php
-
-date_default_timezone_set('Asia/Manila');
-$time = date('Y-m-d H:i:s');
-
-// If not set yet, default = false
-if (!isset($_SESSION['timedIn'])) {
-    $_SESSION['timedIn'] = false;
-}
-
-if ($_SESSION['timedIn'] === false) {
-    // TIME IN
-    $_SESSION['timedIn'] = true;
-    $_SESSION['time_in'] = $time;
-
-    echo "Time In: " . $time;
-
-} else {
-    // TIME OUT
-    $_SESSION['timedIn'] = false;
-    $timeIn = $_SESSION['time_in'];
-
-    echo "Time In: " . $timeIn . "<br>";
-    echo "Time Out: " . $time;
-
-    // Optional: save both to DB here
-
-    unset($_SESSION['time_in']);
-}
-?>

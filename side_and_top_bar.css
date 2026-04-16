@@ -246,3 +246,8 @@ body:has(.sideBar:hover) .icon-close {
     font-size: 1.5rem;
     color: rgb(216, 59, 59);
 }
+
+.timed-in-active {
+    background-color: #6c757d !important; /* grey when timed in */
+    cursor: not-allowed;
+}
