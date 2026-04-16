@@ -10,6 +10,8 @@ $employeeId = $_SESSION['user_id'];
 $titles = [
     'dashboard' => 'Employee Dashboard',
     'records' => 'Records',
+    'schedule' => 'Schedule'
+
 ];
 
 $title = $titles[$current_page] ?? '';
@@ -99,6 +101,10 @@ function handleTimeIn() {
                 loadLogs();
                 console.log('Logs table refreshed');
             }
+
+            if (document.getElementById('attendance_table_body')) {
+                loadAttendance();
+            }
         })
         .catch(err => console.log('Error:', err));
 }
@@ -110,7 +116,7 @@ toggle.addEventListener('click', () => {
     menu.classList.toggle('show');
 });
 
-// Close when clicking outside
+// Close dropdown menu when clicking outside
 document.addEventListener('click', (e) => {
     if (!toggle.contains(e.target) && !menu.contains(e.target)) {
         menu.classList.remove('show');

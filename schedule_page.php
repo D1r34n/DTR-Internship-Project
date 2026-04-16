@@ -40,8 +40,14 @@ $schedules = $stmt->fetchAll(PDO::FETCH_ASSOC);
     </style>
 </head>
 <body>
+    <!-- SIDEBAR -->
     <?php include 'side_bar.php'; ?>
-    <?php include 'top_bar.php'; ?>
+
+    <!-- TOPBAR -->
+    <?php 
+    $current_page = 'schedule';
+    include 'top_bar.php'; 
+    ?>
 
     <div class="scheduleBoxWrapper">
         <div class="scheduleBox">
