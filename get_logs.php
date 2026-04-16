@@ -1,22 +1,20 @@
 <?php
-session_start();
 require_once 'db.php';
 
-if (!isset($_SESSION['user_id'])) {
-    echo json_encode([]);
-    exit();
-}
-
+session_start();
 $employeeId = $_SESSION['user_id'];
+
+$date = isset($_GET['date']) ? $_GET['date'] : date("Y-m-d");
 
 $stmt = $pdo->prepare("
     SELECT log_time, log_type
     FROM logs
     WHERE employee_id = ?
+    AND DATE(log_time) = ?
     ORDER BY log_time DESC
 ");
 
-$stmt->execute([$employeeId]);
-$records = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$stmt->execute([$employeeId, $date]);
 
-echo json_encode($records);
+echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));
+?>

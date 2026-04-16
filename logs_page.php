@@ -1,3 +1,4 @@
+<!-- Redirects the user to the login page if not logged in -->
 <?php
 session_start();
 
@@ -10,14 +11,17 @@ if (!isset($_SESSION['user_id'])) {
 require_once 'db.php';
 
 $employeeId = $_SESSION['user_id'];
+
+$today = date("Y-m-d");
 $stmt = $pdo->prepare("
     SELECT log_time, log_type
     FROM logs
     WHERE employee_id = ?
+    AND DATE(log_time) = ?
     ORDER BY log_time DESC
 ");
 
-$stmt->execute([$employeeId]);
+$stmt->execute([$employeeId, $today]);
 $records = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 ?>
@@ -45,9 +49,14 @@ $records = $stmt->fetchAll(PDO::FETCH_ASSOC);
     include 'top_bar.php'; ?>
 
     <div class="recordBoxWrapper">
-        <div class="recordBox">
-            <h5 class="tableTitle">My Attendance Logs</h5>
+        <div class="tableHeader">
+            <h6 class="dateSelectionTitle"> Select date log </h6>
+            <div class="dateFilter">
+                <input type="date" id="dateFilterInput" class="form-control" value="<?= date('Y-m-d') ?>" onchange="filterLogsByDate()">
+            </div>
+        </div>
 
+        <div class="recordBox">
             <div class="tableScroll">
                 <table class="table table-bordered table-hover mt-3">
                     <thead>
@@ -112,7 +121,38 @@ $records = $stmt->fetchAll(PDO::FETCH_ASSOC);
                     });
                 });
         }
+        
+        function filterLogsByDate() {
+            const date = document.getElementById("dateFilterInput").value;
 
+            fetch("get_logs.php?date=" + date)
+                .then(res => res.json())
+                .then(data => {
+                    const tbody = document.getElementById('logs_table_body');
+                    tbody.innerHTML = '';
+
+                    if (data.length === 0) {
+                        tbody.innerHTML = `
+                            <tr>
+                                <td colspan="3" class="text-center">No records found.</td>
+                            </tr>`;
+                        return;
+                    }
+
+                    data.forEach(row => {
+                        const typeLabel = row.log_type === 'login' ? 'Time In' : 'Time Out';
+                        const typeClass = row.log_type === 'login' ? 'log-in' : 'log-out';
+
+                        tbody.innerHTML += `
+                            <tr>
+                                <td>${new Date(row.log_time).toLocaleDateString()}</td>
+                                <td>${new Date(row.log_time).toLocaleTimeString()}</td>
+                                <td class="${typeClass}">${typeLabel}</td>
+                            </tr>
+                        `;
+                    });
+                });
+        }
         // Load the logs table
         loadLogs();
 </script>
