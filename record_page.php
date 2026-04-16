@@ -39,13 +39,12 @@ $todayStmt = $pdo->prepare("
 $todayStmt->execute([$employeeId, $today]);
 $todayRecord = $todayStmt->fetch(PDO::FETCH_ASSOC);
 
-$firstTimeIn = $todayRecord['first_time_in']
-    ? date('H:i', strtotime($todayRecord['first_time_in']))
-    : null;
+$firstTimeInRaw = $todayRecord['first_time_in'] ?? null;
+$lastTimeOutRaw = $todayRecord['last_time_out'] ?? null;
 
-$lastTimeOut = $todayRecord['last_time_out']
-    ? date('H:i', strtotime($todayRecord['last_time_out']))
-    : null;
+// formatted (for display only)
+$firstTimeInDisplay = $firstTimeInRaw ? date('h:i A', strtotime($firstTimeInRaw)) : null;
+$lastTimeOutDisplay = $lastTimeOutRaw ? date('h:i A', strtotime($lastTimeOutRaw)) : null;
 ?>
 
 <!doctype html>
@@ -107,15 +106,18 @@ $lastTimeOut = $todayRecord['last_time_out']
                 <h5 class="tableTitle">Today's Timeline — <?= date('F d, Y') ?></h5>
                 <div class="timelineWrapper">
                     <div class="timelineBar">
-                        <?php if ($firstTimeIn): ?>
+                        <?php if ($firstTimeInRaw): ?>
                             <?php
                                 // Timeline from 8:30 to 17:30 = 540 minutes total
-                                $scheduleStart = strtotime('08:30');
-                                $scheduleEnd = strtotime('17:30');
+                                $scheduleStart = strtotime(date('Y-m-d') . ' 08:30:00');
+                                $scheduleEnd = strtotime(date('Y-m-d') . ' 17:30:00');
                                 $totalMinutes = ($scheduleEnd - $scheduleStart) / 60;
 
-                                $inMinutes = (strtotime($firstTimeIn) - $scheduleStart) / 60;
-                                $outMinutes = $lastTimeOut ? (strtotime($lastTimeOut) - $scheduleStart) / 60 : (time() - $scheduleStart) / 60;
+                                $inMinutes = (strtotime($firstTimeInRaw) - $scheduleStart) / 60;
+
+                                $outMinutes = $lastTimeOutRaw 
+                                    ? (strtotime($lastTimeOutRaw) - $scheduleStart) / 60 
+                                    : (time() - $scheduleStart) / 60;
 
                                 // Clamp values
                                 $inMinutes = max(0, min($inMinutes, $totalMinutes));
@@ -143,18 +145,7 @@ $lastTimeOut = $todayRecord['last_time_out']
                     </div>
                 </div>
 
-                <?php if ($firstTimeIn): ?>
-                    <div class="timeStats">
-                        <span><i class="bi bi-box-arrow-in-right"></i> Time In: <strong><?= date('h:i A', strtotime($firstTimeIn)) ?></strong></span>
-                        <?php if ($lastTimeOut): ?>
-                            <span><i class="bi bi-box-arrow-right"></i> Time Out: <strong><?= date('h:i A', strtotime($lastTimeOut)) ?></strong></span>
-                        <?php else: ?>
-                            <span><i class="bi bi-clock"></i> Still working...</span>
-                        <?php endif; ?>
-                    </div>
-                <?php else: ?>
-                    <p class="text-center mt-4 text-muted">No data for today yet.</p>
-                <?php endif; ?>
+                <div id="timeStats"></div>
             </div>
 
         </div>
@@ -183,25 +174,34 @@ $lastTimeOut = $todayRecord['last_time_out']
         fetch('get_attendance.php')
             .then(res => res.json())
             .then(data => {
+
                 const tbody = document.getElementById('attendance_table_body');
+                const chartBar = document.querySelector('.timelineBar');
+
                 tbody.innerHTML = '';
 
-                if (data.length === 0) {
+                if (!data || data.length === 0) {
                     tbody.innerHTML = `
                         <tr>
                             <td colspan="5" class="text-center">No records found.</td>
                         </tr>`;
+                    if (chartBar) chartBar.innerHTML = '';
                     return;
                 }
-                console.log('Attendance table refreshed');
+
+                console.log('Attendance refreshed');
+
+                // =========================
+                // TABLE RENDER
+                // =========================
                 data.forEach(row => {
 
-                    const timeIn = row.time_in
-                        ? new Date(row.time_in.replace(" ", "T")).toLocaleTimeString()
+                    const timeIn = (row.time_in && row.time_in !== "0000-00-00 00:00:00")
+                        ? new Date(`${row.date}T${row.time_in}`).toLocaleTimeString()
                         : '—';
 
-                    const timeOut = row.time_out
-                        ? new Date(row.time_out.replace(" ", "T")).toLocaleTimeString()
+                    const timeOut = (row.time_out && row.time_out !== "0000-00-00 00:00:00")
+                        ? new Date(`${row.date}T${row.time_out}`).toLocaleTimeString()
                         : '—';
 
                     tbody.innerHTML += `
@@ -214,6 +214,74 @@ $lastTimeOut = $todayRecord['last_time_out']
                         </tr>
                     `;
                 });
+
+                // =========================
+                // CHART UPDATE (TODAY ONLY)
+                // =========================
+
+                const today = new Date().toISOString().slice(0, 10);
+                const todayRecord = data.find(r => r.date === today);
+                
+                const timeStats = document.getElementById('timeStats');
+                
+                if (!timeStats) return;
+
+                if (!todayRecord || !todayRecord.time_in) {
+                    timeStats.innerHTML = `
+                        <p class="text-center mt-4 text-muted">No data for today yet.</p>
+                    `;
+                } else {
+
+                    const timeIn = new Date(`${today}T${todayRecord.time_in}`).toLocaleTimeString();
+
+                    const timeOut = todayRecord.time_out
+                        ? new Date(`${today}T${todayRecord.time_out}`).toLocaleTimeString()
+                        : null;
+
+                    timeStats.innerHTML = `
+                        <div class="timeStats">
+                            <span>
+                                <i class="bi bi-box-arrow-in-right"></i>
+                                Time In: <strong>${timeIn}</strong>
+                            </span>
+
+                            ${
+                                timeOut
+                                    ? `<span>
+                                        <i class="bi bi-box-arrow-right"></i>
+                                        Time Out: <strong>${timeOut}</strong>
+                                    </span>`
+                                    : `<span>
+                                        <i class="bi bi-clock"></i>
+                                        Still working...
+                                    </span>`
+                            }
+                        </div>
+                    `;
+                }
+
+                if (!todayRecord || !chartBar) return;
+
+                const scheduleStart = new Date(`${today}T08:30:00`);
+                const scheduleEnd = new Date(`${today}T17:30:00`);
+                const totalMinutes = (scheduleEnd - scheduleStart) / 60000;
+
+                const inTime = new Date(`${today}T${todayRecord.time_in}`);
+                const outTime = todayRecord.time_out
+                    ? new Date(`${today}T${todayRecord.time_out}`)
+                    : new Date();
+
+                const inMinutes = (inTime - scheduleStart) / 60000;
+                const outMinutes = (outTime - scheduleStart) / 60000;
+
+                const leftPercent = Math.max(0, Math.min((inMinutes / totalMinutes) * 100, 100));
+                const widthPercent = Math.max(0, Math.min(((outMinutes - inMinutes) / totalMinutes) * 100, 100));
+
+                chartBar.innerHTML = `
+                    <div class="greenBar"
+                        style="left:${leftPercent}%; width:${widthPercent}%;">
+                    </div>
+                `;
             });
     }
     </script>
