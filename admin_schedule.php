@@ -105,7 +105,10 @@ $employees = $pdo->query("SELECT id, name FROM employees WHERE role = 'employee'
     <div class="adminWrapper">
         <div class="adminBox">
 
+            <div class="adminTitleRow">
             <h5 class="adminTitle">Schedule Management</h5>
+            <input type="text" id="searchInput" class="searchInput" placeholder="Search schedule..." onkeyup="searchTable()">
+            </div>
 
             <?php if ($success): ?>
                 <div class="alert alert-success"><?= $success ?></div>
@@ -114,8 +117,9 @@ $employees = $pdo->query("SELECT id, name FROM employees WHERE role = 'employee'
                 <div class="alert alert-danger"><?= $error ?></div>
             <?php endif; ?>
 
-            <!-- SCHEDULE LIST -->
-            <table class="table table-bordered table-hover mt-3">
+           <!-- SCHEDULE LIST -->
+                <div class="tableScrollWrapper">
+                <table class="table table-bordered table-hover mt-3">
                 <thead>
                     <tr>
                         <th>Employee</th>
@@ -153,6 +157,7 @@ $employees = $pdo->query("SELECT id, name FROM employees WHERE role = 'employee'
                     <?php endif; ?>
                 </tbody>
             </table>
+            </div>
 
             <!-- ADD / EDIT FORM -->
             <div class="adminFormWrapper">
@@ -202,19 +207,26 @@ $employees = $pdo->query("SELECT id, name FROM employees WHERE role = 'employee'
     </div>
 
     <script>
-    function loadEdit(employeeId, weekStart, timeIn, timeOut) {
-        document.getElementById('employeeSelect').value = employeeId;
-        document.getElementById('weekMonday').value = weekStart;
-        document.getElementById('timeIn').value = timeIn;
-        document.getElementById('timeOut').value = timeOut;
-        document.getElementById('formTitle').textContent = 'Edit Schedule';
-        document.getElementById('submitLabel').textContent = 'Update Schedule';
-        document.getElementById('cancelBtn').style.display = 'inline-block';
+function loadEdit(employeeId, weekStart, timeIn, timeOut) {
+    document.getElementById('employeeSelect').value = employeeId;
+    document.getElementById('weekMonday').value = weekStart;
+    document.getElementById('timeIn').value = timeIn;
+    document.getElementById('timeOut').value = timeOut;
+    document.getElementById('formTitle').textContent = 'Edit Schedule';
+    document.getElementById('submitLabel').textContent = 'Update Schedule';
+    document.getElementById('cancelBtn').style.display = 'inline-block';
+    document.querySelector('.adminFormWrapper').scrollIntoView({ behavior: 'smooth' });
+}
 
-        // Scroll to form
-        document.querySelector('.adminFormWrapper').scrollIntoView({ behavior: 'smooth' });
-    }
-    </script>
+function searchTable() {
+    const input = document.getElementById('searchInput').value.toLowerCase();
+    const rows = document.querySelectorAll('.tableScrollWrapper tbody tr');
+    rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(input) ? '' : 'none';
+    });
+}
+</script>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
 </body>
