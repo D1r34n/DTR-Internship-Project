@@ -30,6 +30,11 @@ if (session_status() === PHP_SESSION_NONE) {
             <img src="images/records_icon.svg" class="recordsIcon">
             <span class="menuText">Records</span>
         </a>
+
+        <a href="schedule_page.php" class="sideBarMenuItem">
+            <img src="images/schedule_icon.svg" class="scheduleIcon">
+            <span class="menuText">Schedule</span>
+</a>
     </div>
 </div>
 

@@ -18,12 +18,26 @@ $timedIn = isset($_SESSION['timedIn']) && $_SESSION['timedIn'] === true;
         <div class="verticalDivider"></div>
 
         <div class="navUserProfile">
-            <i class="bi bi-person-fill userProfileIcon"></i>
-            <span class="userEmail"><?= htmlspecialchars($_SESSION['user_name'] ?? $_SESSION['user_email']) ?></span>
-            <a href="index.php">
-                <i class="bi bi-box-arrow-right logoutIcon"></i>
+    <i class="bi bi-person-fill userProfileIcon"></i>
+
+    <div class="userDropdownWrapper">
+        <span class="userEmail dropdown-toggle" id="userDropdownToggle">
+            <?= htmlspecialchars($_SESSION['user_name'] ?? $_SESSION['user_email']) ?>
+        </span>
+        <div class="userDropdownMenu" id="userDropdownMenu">
+            <a href="#" class="userDropdownItem" onclick="return false;">
+                <i class="bi bi-clock-history"></i> Request Overtime
+            </a>
+            <a href="#" class="userDropdownItem" onclick="return false;">
+                <i class="bi bi-calendar-x"></i> Request Leave
             </a>
         </div>
+    </div>
+
+    <a href="index.php">
+        <i class="bi bi-box-arrow-right logoutIcon"></i>
+    </a>
+</div>
     </div>
 </div>
 
@@ -45,4 +59,18 @@ function handleTimeIn() {
         })
         .catch(err => console.log('Error:', err));
 }
+
+const toggle = document.getElementById('userDropdownToggle');
+const menu = document.getElementById('userDropdownMenu');
+
+toggle.addEventListener('click', () => {
+    menu.classList.toggle('show');
+});
+
+// Close when clicking outside
+document.addEventListener('click', (e) => {
+    if (!toggle.contains(e.target) && !menu.contains(e.target)) {
+        menu.classList.remove('show');
+    }
+});
 </script>

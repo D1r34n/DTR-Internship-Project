@@ -1,0 +1,95 @@
+/* BACKGROUND BLUR */
+body::before {
+    content: '';
+    position: fixed;
+    top: -20px;
+    left: -20px;
+    width: calc(100% + 40px);
+    height: calc(100% + 40px);
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    filter: blur(6px);
+    z-index: -1;
+}
+
+body {
+    font-family: 'Poppins', sans-serif;
+    min-height: 100vh;
+}
+
+.scheduleBoxWrapper {
+    position: fixed;
+    top: 60px;
+    left: 180px;
+    width: calc(100% - 180px);
+    height: calc(100vh - 60px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10;
+}
+
+.scheduleBox {
+    font-family: 'Poppins', sans-serif;
+    background-color: #ffffff;
+    padding: 30px;
+    border-radius: 12px;
+    width: 800px;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    position: relative;
+    z-index: 10;
+}
+
+.scheduleHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.tableTitle {
+    font-weight: 600;
+    margin: 0;
+}
+
+.weekLabel {
+    font-size: 0.85rem;
+    color: #888;
+}
+
+/* ROW STYLES */
+.rest-day td {
+    background-color: #f8f9fa;
+    color: #aaa;
+}
+
+.today-row td {
+    background-color: #f0f7e6;
+    font-weight: 500;
+}
+
+/* BADGES */
+.badge {
+    font-family: 'Poppins', sans-serif;
+    font-size: 0.75rem;
+    padding: 0.35rem 0.75rem;
+    border-radius: 20px;
+}
+
+.workBadge {
+    background-color: #97be41;
+    color: white;
+}
+
+.restBadge {
+    background-color: #0080ff;
+    color: #888;
+}
+
+.todayBadge {
+    background-color: #ffc107;
+    color: white;
+}
