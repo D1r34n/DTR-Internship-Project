@@ -1,0 +1,232 @@
+body::before {
+    content: '';
+    position: fixed;
+    top: -20px;
+    left: -20px;
+    width: calc(100% + 40px);
+    height: calc(100% + 40px);
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    filter: blur(6px);
+    z-index: -1;
+}
+
+body {
+    font-family: 'Poppins', sans-serif;
+    min-height: 100vh;
+}
+
+.adminWrapper {
+    position: fixed;
+    top: 60px;
+    left: 180px;
+    width: calc(100% - 180px);
+    height: calc(100vh - 60px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10;
+}
+
+.adminBox {
+    font-family: 'Poppins', sans-serif;
+    background-color: #ffffff;
+    padding: 30px;
+    border-radius: 12px;
+    width: 1120px;
+    max-height: 580px;
+    overflow-y: hidden;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.adminTitle {
+    font-weight: 600;
+    margin-bottom: 1rem;
+}
+
+.editBtn {
+    background-color: #97be41;
+    color: white;
+    border: none;
+    font-family: 'Poppins', sans-serif;
+    font-size: 0.8rem;
+}
+
+.editBtn:hover {
+    background-color: #7ea832;
+    color: white;
+}
+
+.adminFormWrapper {
+    margin-top: 2rem;
+    border-top: 2px solid #e0e0e0;
+    padding-top: 1.5rem;
+}
+
+.formTitle {
+    font-weight: 600;
+    margin-bottom: 1rem;
+    color: #333;
+}
+
+.formGrid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.formGroup {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 180px;
+}
+
+.formGroup label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 0.4rem;
+}
+
+.formControl {
+    font-family: 'Poppins', sans-serif;
+    padding: 0.4rem 0.8rem;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.formControl:focus {
+    border-color: #97be41;
+}
+
+.formActions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 1.5rem;
+}
+
+.btnSave {
+    font-family: 'Poppins', sans-serif;
+    background-color: #97be41;
+    color: white;
+    border: none;
+    padding: 0.5rem 1.5rem;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.btnSave:hover {
+    background-color: #7ea832;
+}
+
+.btnCancel {
+    font-family: 'Poppins', sans-serif;
+    color: #888;
+    text-decoration: none;
+    font-size: 0.9rem;
+}
+
+.btnCancel:hover {
+    color: #333;
+}
+
+.actionDropdownWrapper {
+    position: relative;
+    display: inline-block;
+}
+
+.actionMenu {
+    display: none;
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    min-width: 130px;
+    z-index: 9999;
+    overflow: hidden;
+}
+
+.actionMenu.show {
+    display: block;
+}
+
+.actionItem {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 1rem;
+    font-family: 'Poppins', sans-serif;
+    font-size: 0.85rem;
+    color: #333;
+    text-decoration: none;
+    transition: background-color 0.2s ease;
+}
+
+.actionItem:hover {
+    background-color: #f5f5f5;
+    color: #97be41;
+}
+
+.deleteItem {
+    color: #dc3545 !important;
+}
+
+.deleteItem:hover {
+    background-color: #fff0f0 !important;
+    color: #dc3545 !important;
+}
+
+.tableScrollWrapper {
+    height: 220px;
+    overflow-y: auto;
+    border-radius: 6px;
+    border: 1px solid #dee2e6;
+}
+
+.tableScrollWrapper table {
+    margin-bottom: 0;
+}
+
+.tableScrollWrapper thead th {
+    position: sticky;
+    top: 0;
+    background-color: #f8f9fa;
+    z-index: 1;
+}
+
+.adminTitleRow {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.adminTitle {
+    font-weight: 600;
+    margin: 0;
+}
+
+.searchInput {
+    font-family: 'Poppins', sans-serif;
+    padding: 0.4rem 1rem;
+    border: 1px solid #ccc;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    outline: none;
+    width: 220px;
+    transition: border-color 0.2s;
+}
+
+.searchInput:focus {
+    border-color: #97be41;
+}

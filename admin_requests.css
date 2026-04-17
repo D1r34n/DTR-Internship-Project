@@ -1,0 +1,238 @@
+body::before {
+    content: '';
+    position: fixed;
+    top: -20px;
+    left: -20px;
+    width: calc(100% + 40px);
+    height: calc(100% + 40px);
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    filter: blur(6px);
+    z-index: -1;
+}
+
+body {
+    font-family: 'Poppins', sans-serif;
+    min-height: 100vh;
+}
+
+.requestsWrapper {
+    position: fixed;
+    top: 60px;
+    left: 180px;
+    width: calc(100% - 180px);
+    height: calc(100vh - 60px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10;
+}
+
+.requestsBox {
+    font-family: 'Poppins', sans-serif;
+    background-color: #ffffff;
+    padding: 30px;
+    border-radius: 12px;
+    width: 1120px;
+    height: 550px;
+    overflow-y: hidden;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.adminTitleRow {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.adminTitle {
+    font-weight: 600;
+    margin: 0;
+}
+
+.searchInput {
+    font-family: 'Poppins', sans-serif;
+    padding: 0.4rem 1rem;
+    border: 1px solid #ccc;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    outline: none;
+    width: 220px;
+    transition: border-color 0.2s;
+}
+
+.searchInput:focus {
+    border-color: #97be41;
+}
+
+/* SUMMARY CARDS */
+.summaryCards {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.reqCard {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 1.5rem;
+    border-radius: 10px;
+    flex: 1;
+    color: white;
+}
+
+.reqCard i {
+    font-size: 2rem;
+}
+
+.reqCard p {
+    margin: 0;
+    font-size: 0.8rem;
+    opacity: 0.9;
+}
+
+.reqCard h5 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.reqCard.pending  { background-color: #f0ad4e; }
+.reqCard.approved { background-color: #97be41; }
+.reqCard.rejected { background-color: #dc3545; }
+.reqCard.overtime { background-color: #6f42c1; }
+
+/* TABS */
+.reqTabButtons {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    border-bottom: 2px solid #e0e0e0;
+    padding-bottom: 0.5rem;
+}
+
+.reqTabBtn {
+    background: none;
+    border: none;
+    font-family: 'Poppins', sans-serif;
+    font-size: 0.9rem;
+    padding: 0.4rem 1.2rem;
+    border-radius: 6px 6px 0 0;
+    cursor: pointer;
+    color: #888;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.reqTabBtn.active {
+    background-color: #97be41;
+    color: white;
+}
+
+.reqTabBtn:hover:not(.active) {
+    background-color: #f0f0f0;
+    color: #333;
+}
+
+/* TABLE */
+.tableScrollWrapper {
+    max-height: 200px;
+    overflow-y: auto;
+    border-radius: 6px;
+    border: 1px solid #dee2e6;
+}
+
+.tableScrollWrapper table {
+    margin-bottom: 0;
+}
+
+.tableScrollWrapper thead th {
+    position: sticky;
+    top: 0;
+    background-color: #f8f9fa;
+    z-index: 1;
+}
+
+/* BADGES */
+.leaveBadge   { background-color: #0d6efd; }
+.overtimeBadge { background-color: #6f42c1; }
+.statusPending  { background-color: #f0ad4e; }
+.statusApproved { background-color: #97be41; }
+.statusRejected { background-color: #dc3545; }
+
+/* ACTION BUTTONS */
+.approveBtn {
+    background-color: #97be41;
+    color: white;
+    font-family: 'Poppins', sans-serif;
+    font-size: 0.8rem;
+    border: none;
+    margin-right: 4px;
+}
+
+.approveBtn:hover {
+    background-color: #7ea832;
+    color: white;
+}
+
+.rejectBtn {
+    background-color: #dc3545;
+    color: white;
+    font-family: 'Poppins', sans-serif;
+    font-size: 0.8rem;
+    border: none;
+}
+
+.rejectBtn:hover {
+    background-color: #b02a37;
+    color: white;
+}
+
+/* MODAL */
+.modalOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
+    z-index: 9999;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.modalBox {
+    background-color: white;
+    border-radius: 12px;
+    width: 500px;
+    padding: 30px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+}
+
+.modalHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.modalHeader h6 {
+    font-weight: 600;
+    margin: 0;
+}
+
+.modalHeader button {
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    cursor: pointer;
+    color: #888;
+}
+
+.modalHeader button:hover {
+    color: #333;
+}

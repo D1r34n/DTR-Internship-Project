@@ -29,5 +29,10 @@ if (session_status() === PHP_SESSION_NONE) {
             <i class="bi bi-calendar-week dashboardIcon"></i>
             <span class="menuText">Schedules</span>
         </a>
+
+        <a href="admin_requests.php" class="sideBarMenuItem">
+            <i class="bi bi-envelope-paper dashboardIcon"></i>
+            <span class="menuText">Requests</span>
+        </a>
     </div>
 </div>

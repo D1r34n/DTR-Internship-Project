@@ -95,7 +95,7 @@ $employees = $pdo->query("SELECT id, name FROM employees WHERE role = 'employee'
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Schedule Management</title>
-    <link rel="stylesheet" href="admin_employees.css">
+    <link rel="stylesheet" href="admin_schedule.css">
     <link rel="stylesheet" href="side_and_top_bar.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
@@ -154,6 +154,7 @@ $employees = $pdo->query("SELECT id, name FROM employees WHERE role = 'employee'
                                             <div class="actionMenu">
                                                 <a class="actionItem" style="cursor:pointer;" onclick="loadEdit(
                                                     '<?= $row['employee_id'] ?>',
+                                                    '<?= htmlspecialchars($row['employee_name'], ENT_QUOTES) ?>',
                                                     '<?= $row['week_start'] ?>',
                                                     '<?= $row['time_in'] ?>',
                                                     '<?= $row['time_out'] ?>'
@@ -183,16 +184,41 @@ $employees = $pdo->query("SELECT id, name FROM employees WHERE role = 'employee'
                 <form method="POST" action="admin_schedule.php">
 
                     <div class="formGrid">
-                        <div class="formGroup">
+
+                        <!-- EMPLOYEE SEARCH INPUT -->
+                        <div class="formGroup" style="position:relative;">
                             <label>Employee</label>
-                            <select name="employee_id" id="employeeSelect" class="formControl" required>
-                                <option value="">-- Select Employee --</option>
+                            <input type="text" id="employeeSearch" class="formControl"
+                                placeholder="Type to search employee..." autocomplete="off"
+                                oninput="filterEmployees()">
+                            <input type="hidden" name="employee_id" id="employeeSelect" required>
+                            <div id="employeeDropdown" style="
+                               display:none;
+                               position:absolute;
+                               bottom: 60%;
+                               top:auto;
+                               left:0;
+                               background:white;
+                               border:1px solid #ccc;
+                               border-radius:6px;
+                               max-height:180px;
+                               overflow-y:auto;
+                               z-index:9999;
+                               width:100%;
+                               box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+                               ">
                                 <?php foreach ($employees as $emp): ?>
-                                    <option value="<?= $emp['id'] ?>">
+                                    <div class="employeeOption"
+                                        style="padding:0.5rem 1rem; cursor:pointer; font-size:0.85rem; font-family:'Poppins',sans-serif;"
+                                        onmouseover="this.style.backgroundColor='#f5f5f5'"
+                                        onmouseout="this.style.backgroundColor='white'"
+                                        data-id="<?= $emp['id'] ?>"
+                                        data-name="<?= htmlspecialchars($emp['name']) ?>"
+                                        onclick="selectEmployee(this)">
                                         <?= htmlspecialchars($emp['name']) ?>
-                                    </option>
+                                    </div>
                                 <?php endforeach; ?>
-                            </select>
+                            </div>
                         </div>
 
                         <div class="formGroup">
@@ -209,6 +235,7 @@ $employees = $pdo->query("SELECT id, name FROM employees WHERE role = 'employee'
                             <label>Time Out</label>
                             <input type="time" name="time_out" id="timeOut" class="formControl" required>
                         </div>
+
                     </div>
 
                     <div class="formActions">
@@ -225,6 +252,7 @@ $employees = $pdo->query("SELECT id, name FROM employees WHERE role = 'employee'
     </div>
 
     <script>
+    // Action dropdown toggle
     function toggleActionMenu(btn) {
         const menu = btn.nextElementSibling;
         document.querySelectorAll('.actionMenu').forEach(m => {
@@ -233,13 +261,20 @@ $employees = $pdo->query("SELECT id, name FROM employees WHERE role = 'employee'
         menu.classList.toggle('show');
     }
 
+    // Close action menu when clicking outside
     document.addEventListener('click', (e) => {
         if (!e.target.closest('.actionDropdownWrapper')) {
             document.querySelectorAll('.actionMenu').forEach(m => m.classList.remove('show'));
         }
+        // Close employee dropdown when clicking outside
+        if (!e.target.closest('#employeeSearch') && !e.target.closest('#employeeDropdown')) {
+            document.getElementById('employeeDropdown').style.display = 'none';
+        }
     });
 
-    function loadEdit(employeeId, weekStart, timeIn, timeOut) {
+    // Load edit into form
+    function loadEdit(employeeId, employeeName, weekStart, timeIn, timeOut) {
+        document.getElementById('employeeSearch').value = employeeName;
         document.getElementById('employeeSelect').value = employeeId;
         document.getElementById('weekMonday').value = weekStart;
         document.getElementById('timeIn').value = timeIn;
@@ -250,6 +285,7 @@ $employees = $pdo->query("SELECT id, name FROM employees WHERE role = 'employee'
         document.querySelector('.adminFormWrapper').scrollIntoView({ behavior: 'smooth' });
     }
 
+    // Search table
     function searchTable() {
         const input = document.getElementById('searchInput').value.toLowerCase();
         const rows = document.querySelectorAll('.tableScrollWrapper tbody tr');
@@ -258,14 +294,39 @@ $employees = $pdo->query("SELECT id, name FROM employees WHERE role = 'employee'
             row.style.display = text.includes(input) ? '' : 'none';
         });
     }
-    // Auto-dismiss success/error alerts after 3 seconds
+
+    // Auto-dismiss alerts after 3 seconds
     setTimeout(() => {
         document.querySelectorAll('.alert').forEach(alert => {
-        alert.style.transition = 'opacity 0.5s ease';
-        alert.style.opacity = '0';
-        setTimeout(() => alert.remove(), 500);
-    });
-     }, 1000);
+            alert.style.transition = 'opacity 0.5s ease';
+            alert.style.opacity = '0';
+            setTimeout(() => alert.remove(), 500);
+        });
+    }, 3000);
+
+    // Employee search filter
+    function filterEmployees() {
+        const input = document.getElementById('employeeSearch').value.toLowerCase();
+        const dropdown = document.getElementById('employeeDropdown');
+        const options = document.querySelectorAll('.employeeOption');
+
+        dropdown.style.display = input === '' ? 'none' : 'block';
+
+        options.forEach(opt => {
+            const name = opt.getAttribute('data-name').toLowerCase();
+            opt.style.display = name.includes(input) ? 'block' : 'none';
+        });
+
+        // Clear hidden input when typing again
+        document.getElementById('employeeSelect').value = '';
+    }
+
+    // Select employee from dropdown
+    function selectEmployee(el) {
+        document.getElementById('employeeSearch').value = el.getAttribute('data-name');
+        document.getElementById('employeeSelect').value = el.getAttribute('data-id');
+        document.getElementById('employeeDropdown').style.display = 'none';
+    }
     </script>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
