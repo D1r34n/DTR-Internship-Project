@@ -2,7 +2,7 @@
 session_start();
 
 if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'admin') {
-    header("Location: index.php");
+    header("Location: ../index.php");
     exit();
 }
 ?>
@@ -13,18 +13,25 @@ if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'admin') {
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Admin Dashboard</title>
+    <link rel="stylesheet" href="../root.css">
     <link rel="stylesheet" href="admin_dashboard.css">
-    <link rel="stylesheet" href="side_and_top_bar.css">
+    <link rel="stylesheet" href="../side_and_top_bar.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        body::before { background-image: url('images/drt_bg.jpg'); }
+        body::before { background-image: url('../images/drt_bg.jpg'); }
     </style>
 </head>
 <body>
-    <?php include 'admin_sidebar.php'; ?>
-    <?php include 'admin_topbar.php'; ?>
+    <!-- SIDEBAR -->
+    <?php include '../sidebar.php'; ?>
+
+    <!-- TOPBAR -->
+    <?php 
+    $current_page = 'dashboard';
+    include '../topbar.php'; 
+    ?>
 
     <div class="dashboardContent">
         <p id="currentDate"></p>
@@ -34,7 +41,7 @@ if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'admin') {
             <div class="summaryCard">
                 <p>Total Employees</p>
                 <h5><?php
-                    require_once 'db.php';
+                    require_once '../db.php';
                     $count = $pdo->query("SELECT COUNT(*) FROM employees WHERE role = 'employee'")->fetchColumn();
                     echo $count;
                 ?></h5>

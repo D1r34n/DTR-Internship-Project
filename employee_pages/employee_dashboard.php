@@ -5,11 +5,11 @@ session_start();
 
 // Check if user is logged in else redirect to login page
 if (!isset($_SESSION['user_id'])) {
-    header("Location: index.php");
+    header("Location: ../index.php");
     exit();
 }
 
-require_once 'db.php';
+require_once '../db.php';
 
 $employeeId = $_SESSION['user_id'];
 
@@ -33,27 +33,27 @@ $records = $stmt->fetchAll(PDO::FETCH_ASSOC);
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>DTR Project Acer</title>
-    <link rel="stylesheet" href="root.css">
-    <link rel="stylesheet" href="main_page.css">
-    <link rel="stylesheet" href="side_and_top_bar.css">
+    <link rel="stylesheet" href="../root.css">
+    <link rel="stylesheet" href="employee_dashboard.css">
+    <link rel="stylesheet" href="../side_and_top_bar.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
     <style>
         body::before {
-            background-image: url('images/drt_bg.jpg');
+            background-image: url('../images/drt_bg.jpg');
         }
     </style>
 </head>
 <body>
     <!-- SIDEBAR -->
-    <?php include 'side_bar.php'; ?>
+    <?php include '../sidebar.php'; ?>
 
     <!-- TOPBAR -->
     <?php 
     $current_page = 'dashboard';
-    include 'top_bar.php'; 
+    include '../topbar.php'; 
     ?>
 
     <!-- Dashboard -->
@@ -146,7 +146,7 @@ $records = $stmt->fetchAll(PDO::FETCH_ASSOC);
         }
 
         function loadLogs() {
-            fetch('get_logs.php')
+            fetch('../get_logs.php')
                 .then(res => res.json())
                 .then(data => {
                     const tbody = document.getElementById('logs_table_body');

@@ -1,33 +1,59 @@
-<!-- PHP -->
 <?php
-    // Start session and get employee ID 
-    if (session_status() === PHP_SESSION_NONE) {
-        session_start();
-    }
-    $employeeId = $_SESSION['user_id'];
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
-    // Set title and dashboard status based on current page
-    $titles = [
+// ---- AUTH CHECK ----
+if (!isset($_SESSION['user_id'], $_SESSION['user_role'])) {
+    header("Location: ../index.php");
+    exit();
+}
+
+$employeeId = $_SESSION['user_id'];
+$role = $_SESSION['user_role'];
+
+// ---- ROLE VALIDATION ----
+if (!in_array($role, ['admin', 'employee'])) {
+    session_destroy();
+    header("Location: ../index.php");
+    exit();
+}
+
+// ---- PAGE TITLES ----
+$titles = [
+    'employee' => [
         'dashboard' => 'Employee Dashboard',
-        'records' => 'Records',
-        'schedule' => 'Schedule'
+        'records'    => 'Employee Records',
+        'schedule'   => 'Employee Schedule',
+        'logs'       => 'Employee Activity Logs',
+    ],
 
-    ];
-    $title = $titles[$current_page] ?? '';
+    'admin' => [
+        'dashboard'  => 'Admin Dashboard',
+        'employees'   => 'Employees',
+        'schedule'    => 'Schedules',
+        'requests'    => 'Requests',
+        'logs'        => 'Logs',
+    ]
+];
 
-    // Check if the user is currently timed in or out
-    require_once 'db.php';
-    $stmt = $pdo->prepare("
-        SELECT log_type 
-        FROM logs 
-        WHERE employee_id = ?
-        ORDER BY log_time DESC 
-        LIMIT 1
-    ");
-    $stmt->execute([$employeeId]);
-    $lastLog = $stmt->fetch(PDO::FETCH_ASSOC);
+$title = $titles[$role][$current_page] ?? 'Dashboard';
 
-    $timedIn = ($lastLog && $lastLog['log_type'] === 'login');
+// ---- DB ----
+require_once '../db.php';
+
+$stmt = $pdo->prepare("
+    SELECT log_type 
+    FROM logs 
+    WHERE employee_id = ?
+    ORDER BY log_time DESC 
+    LIMIT 1
+");
+$stmt->execute([$employeeId]);
+$lastLog = $stmt->fetch(PDO::FETCH_ASSOC);
+
+// ---- STATUS ----
+$timedIn = ($lastLog && $lastLog['log_type'] === 'login');
 ?>
 
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -68,24 +94,24 @@
                     <!-- Request -->
                     <div class="dropdownSection">
                         <a href="#" class="userDropdownItem">
-                            <i class="bi bi-clock-history"></i> Overtime
+                            <i class="bi bi-clock-history"></i> Request OT
                         </a>
 
                         <a href="#" class="userDropdownItem">
-                            <i class="bi bi-calendar-x"></i> Leave
+                            <i class="bi bi-calendar-x"></i> Request Leave
                         </a>
 
                         <a href="#" class="userDropdownItem">
-                            <i class="bi bi-briefcase"></i> Official Business
+                            <i class="bi bi-briefcase"></i> Request OB
                         </a>
 
                         <a href="#" class="userDropdownItem">
-                            <i class="bi bi-pencil-square"></i> Log Edit
+                            <i class="bi bi-pencil-square"></i> Request Log Edit
                         </a>
 
                         <div class="horizontalDivider"></div>
 
-                        <a href="index.php" class="logoutText">
+                        <a href="../index.php" class="logoutText">
                             <i class="bi bi-box-arrow-right logoutIcon"></i> Logout
                         </a>
                     </div>
@@ -101,7 +127,7 @@
 <script defer>
     // Get total worked hours for the week and month
     function getTotalWorkedHours() {
-        fetch('get_dashboard_data.php')
+        fetch('../get_dashboard_data.php')
             .then(res => res.json())
             .then(data => {
                 dashBoardWeekHours = document.getElementById('dashboard_week_hours');
@@ -116,7 +142,7 @@
 
     // Handle time in/out button click
     function handleTimeIn() {
-        fetch('timeinout.php')
+        fetch('../timeinout.php')
             .then(res => res.json())
             .then(response => {
 
