@@ -258,6 +258,14 @@ $employees = $pdo->query("SELECT id, name FROM employees WHERE role = 'employee'
             row.style.display = text.includes(input) ? '' : 'none';
         });
     }
+    // Auto-dismiss success/error alerts after 3 seconds
+    setTimeout(() => {
+        document.querySelectorAll('.alert').forEach(alert => {
+        alert.style.transition = 'opacity 0.5s ease';
+        alert.style.opacity = '0';
+        setTimeout(() => alert.remove(), 500);
+    });
+     }, 1000);
     </script>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>

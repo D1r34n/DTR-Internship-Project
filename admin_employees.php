@@ -213,6 +213,14 @@ function searchTable() {
         row.style.display = text.includes(input) ? '' : 'none';
     });
 }
+// Auto-dismiss success/error alerts after 3 seconds
+setTimeout(() => {
+    document.querySelectorAll('.alert').forEach(alert => {
+        alert.style.transition = 'opacity 0.5s ease';
+        alert.style.opacity = '0';
+        setTimeout(() => alert.remove(), 500);
+    });
+}, 1000);
 </script>
 
 </body>
