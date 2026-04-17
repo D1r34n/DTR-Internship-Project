@@ -1,3 +1,4 @@
+<!-- PHP -->
 <!-- Redirects the user to the login page if not logged in -->
 <?php
 session_start();
@@ -32,6 +33,7 @@ $records = $stmt->fetchAll(PDO::FETCH_ASSOC);
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>DTR Project Acer</title>
+    <link rel="stylesheet" href="root.css">
     <link rel="stylesheet" href="main_page.css">
     <link rel="stylesheet" href="side_and_top_bar.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
@@ -62,12 +64,12 @@ $records = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
             <div class="dashboardSummary">
                 <div class="summaryCard">
-                    <p>Currently</p>
+                    <p>Number of Leaves</p>
                     <h5 id="dashboard_status"><?php echo $timedIn ? 'Timed In' : 'Timed Out'; ?></h5>
                 </div>
                 
                 <div class="summaryCard">
-                    <p>Total Hours This Week</p>
+                    <p>Total Time Worked</p>
                     <h5 id="dashboard_week_hours">0 hours</h5>
                 </div>
 
@@ -81,7 +83,7 @@ $records = $stmt->fetchAll(PDO::FETCH_ASSOC);
         <!-- Attendace Log for today only -->
         <div class="logsForTheDay">
             <div class="recordBox">
-                <h5 class="tableTitle">Today's Attendance Log</h5>
+                <h5 class="tableTitle">Time Log</h5>
 
                 <div class="tableScroll">
                     <table class="table table-bordered table-hover mt-3">
@@ -116,6 +118,7 @@ $records = $stmt->fetchAll(PDO::FETCH_ASSOC);
         </div>
     </div>
 
+    <!-- Java Script -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
 
     <script>

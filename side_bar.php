@@ -19,7 +19,7 @@ if (session_status() === PHP_SESSION_NONE) {
     </div>
     
     <div class="horizontalDivider"></div>
-
+    
     <div class="sideBarMenu">
         <!-- Dashboard -->
         <a href="main_page.php" class="sideBarMenuItem">

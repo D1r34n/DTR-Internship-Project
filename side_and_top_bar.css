@@ -51,6 +51,11 @@ body:has(.sideBar:hover) .icon-close {
     display: block;
 }
 
+/* Prevent outline from links */
+a:focus, img:focus {
+    outline: none;
+}
+
 /* COLLAPSED */
 .sideBar {
     position: fixed;
@@ -59,7 +64,7 @@ body:has(.sideBar:hover) .icon-close {
     width: var(--sidebar-width);
     height: 100vh;
     padding: 0.5rem;
-    background-color: rgba(255, 255, 255, 1);
+    background-color: var(--bg-light);
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -78,6 +83,14 @@ body:has(.sideBar:hover) .icon-close {
     margin: 0;
     overflow: hidden;
 }
+
+.sideBarLogo:hover {
+    opacity: 1;
+    transform: scale(1);
+    width: auto;
+    margin-left: 1rem;
+}
+
 
 .topSideBar {
     width: 100%;
@@ -103,7 +116,7 @@ body:has(.sideBar:hover) .icon-close {
 
 .toggleSideBarIcon {
     font-size: 2rem;
-    color: black;
+    color: var(--text-dark);
     cursor: pointer;
 }
 
@@ -111,6 +124,10 @@ body:has(.sideBar:hover) .icon-close {
     height: 70px;
     transition: opacity 0.2s ease, transform 0.2s ease;
     margin-left: 1rem;
+
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-user-drag: none;
 }
 
 .sideBarMenu {
@@ -127,15 +144,32 @@ body:has(.sideBar:hover) .icon-close {
     display: flex;
     align-items: center;
     justify-content: flex-start;
-    gap: 10px;
+    gap: 1rem;
 
     width: 100%;
     padding: 0.5rem 0.8rem;
 
-    color: black;
+    color: var(--text-dark);
     text-decoration: none;
-    font-size: 1.2rem;
-    transition: background-color 0.3s ease;
+    font-size: 0.95rem;
+    border-radius: 12px;
+
+    transition: 
+        color 0.2s ease,
+        background-color 0.3s ease,
+        box-shadow 0.2s ease,
+        transform 0.2s ease;
+
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-user-drag: none;
+}
+
+.sideBarMenuItem:hover {
+    color: var(--text-darkest);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+
+    transform: translateX(4px);
 }
 
 .menuText {
@@ -151,60 +185,86 @@ body:has(.sideBar:hover) .icon-close {
 .scheduleIcon,
 .logsIcon {
     height: 1.5rem;
-    color: black;
+    color: var(--text-dark);
     margin-right: 0.5rem;
 }
 
+/* Top bar */
 .topBar {
     position: fixed;
     top: 0;
     left: var(--sidebar-width);
     width: calc(100% - var(--sidebar-width));
-    height: 60px;
+    height: 3.75rem;
 
     padding: 0 1rem;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    background-color: rgba(0, 0, 0, 0.1);
+
+    background: rgba(45, 45, 45, 0.08);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+
+    border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+
     z-index: 999;
     color: white;
     transition: left 0.3s ease, width 0.3s ease;
 }
 
-.topBar::before {
-    filter: blur(8px);
-    -webkit-filter: blur(8px);
-}
-
 .topBarRight {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 1rem;
 }
 
+/* Title */
 .dashboardTitle {
     font-family: 'Poppins', sans-serif;
     margin: 0;
     font-size: 1.5rem;
     color: white;
-    font-weight: 100;
+    font-weight: 500;
+
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-user-drag: none;
 }
 
+/* Time Button */
 .timeInButton {
     font-family: 'Poppins', sans-serif;
-    display: flex;
+
+    display: inline-flex;
     align-items: center;
-    background-color: #97be41;
+    justify-content: center;
+    gap: 0.4rem;
+
     color: white;
     border: none;
-    border-radius: 12px;
-    padding: 0.2rem 1rem;
+    border-radius: 0.75rem;
+    padding: 0.35rem 1.5rem;
     cursor: pointer;
-    font-size: large;
-    
+
+    font-size: 0.9rem;
+    font-weight: 500;
+
+    transition: 0.2s ease;
+
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-user-drag: none;
 }
 
+/* Base hover */
+.timeInButton:hover:not(.timed-in-active) {
+    background-color: #ffffff;
+    transform: scale(1.05);
+    transition: color 0.2s ease, background-color 0.2s ease, transform 0.2s ease;
+}
+
+/* State colors */
 .btn-in {
     background-color: #97be41;
 }
@@ -213,10 +273,22 @@ body:has(.sideBar:hover) .icon-close {
     background-color: #dc3545;
 }
 
+/* Hover text colors */
+.btn-in:hover:not(.timed-in-active) {
+    color: #97be41;
+}
+
+.btn-out:hover:not(.timed-in-active) {
+    color: #dc3545;
+}
+
+/* Icon */
 .timeInIcon {
     font-size: 1rem;
-    color: white;
-    margin-right: 1rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: inherit;
 }
 
 .verticalDivider {
@@ -228,11 +300,18 @@ body:has(.sideBar:hover) .icon-close {
 }
 
 .horizontalDivider {
-    display: inline-block;
-    width: 100%;
+    display: flex;
+    align-items: center;
+    width: 90%;
     height: 1px;
     background-color: #b4b4b4;
     opacity: 0.5;
+    margin: 1rem auto;
+}
+
+.timed-in-active {
+    background-color: #6c757d !important; /* grey when timed in */
+    cursor: not-allowed;
 }
 
 .navUserProfile {
@@ -243,58 +322,80 @@ body:has(.sideBar:hover) .icon-close {
 
 .userProfileIcon {
     font-size: 1.5rem;
+    margin-right: 0.5rem;
     color: white;
 }
 
 .userEmail {
+    display: flex;
     font-family: 'Poppins', sans-serif;
     margin: 0;
-    font-size: medium;
+    font-size: 0.9rem;
     color: white;
     text-decoration: none;
+    align-items: center;
+
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-user-drag: none;
 }
 
-.logoutIcon {
-    font-size: 1.5rem;
-    color: rgb(216, 59, 59);
+.userDropdownWrapper:hover .userEmail,
+.userDropdownWrapper.show .userEmail {
+    color: #97be41;
+    transition: color 0.2s ease;
 }
 
-.timed-in-active {
-    background-color: #6c757d !important; /* grey when timed in */
-    cursor: not-allowed;
+.userDropdownWrapper:hover .userProfileIcon,
+.userDropdownWrapper.show .userProfileIcon {
+    color: #97be41;
+    transition: color 0.2s ease;
 }
-
-
 
 .userDropdownWrapper {
     position: relative;
-}
-
-.userEmail {
-    cursor: pointer;
-    user-select: none;
-}
-
-.userEmail.dropdown-toggle::after {
-    content: ' ▾';
-    font-size: 0.8rem;
+    align-items: center;
 }
 
 .userDropdownMenu {
-    display: none;
     position: absolute;
-    top: calc(100% + 10px);
+    top: 100%;
     right: 0;
-    background-color: white;
-    border-radius: 8px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-    min-width: 190px;
+
+    background-color: var(--bg-light);
+    border-radius: 12px;
+    box-shadow: 0 4px 20px var(--shadow);
+    min-width: 200px;
     z-index: 9999;
     overflow: hidden;
+
+    /* hidden state */
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+    pointer-events: none;
+    visibility: hidden;
+
+    transition: 
+        opacity 0.2s ease,
+        transform 0.2s ease,
+        visibility 0s linear 0.2s; /* delay hiding */
 }
 
 .userDropdownMenu.show {
-    display: block;
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    pointer-events: auto;
+    visibility: visible;
+
+    transition: 
+        opacity 0.2s ease,
+        transform 0.2s ease,
+        visibility 0s; /* show instantly */
+}
+
+.dropdownSection {
+    padding: 0.5rem;
 }
 
 .userDropdownItem {
@@ -302,6 +403,7 @@ body:has(.sideBar:hover) .icon-close {
     align-items: center;
     gap: 0.6rem;
     padding: 0.7rem 1.2rem;
+    border-radius: 12px;
     font-family: 'Poppins', sans-serif;
     font-size: 0.875rem;
     color: #333;
@@ -317,4 +419,27 @@ body:has(.sideBar:hover) .icon-close {
 .userDropdownItem i {
     font-size: 1rem;
     color: #97be41;
+}
+
+.logoutIcon,
+.logoutText {
+    color: rgb(216, 59, 59);
+}
+
+.logoutText {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.7rem 1.2rem;
+    border-radius: 12px;
+    font-family: 'Poppins', sans-serif;
+    font-size: 0.875rem;
+    color: #dc3545;
+    text-decoration: none;
+    transition: background-color 0.2s ease;
+}
+
+.logoutText:hover {
+    background-color: #e38790;
+    color: #fff;
 }

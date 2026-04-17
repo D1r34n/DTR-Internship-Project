@@ -3,9 +3,9 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Apr 16, 2026 at 01:44 AM
+-- Generation Time: Apr 17, 2026 at 03:13 AM
 -- Server version: 10.4.32-MariaDB
--- PHP Version: 8.2.12
+-- PHP Version: 8.0.30
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -29,22 +29,13 @@ SET time_zone = "+00:00";
 
 CREATE TABLE `attendance` (
   `id` int(11) NOT NULL,
-  `employee_email` varchar(255) NOT NULL,
+  `employee_id` int(11) NOT NULL,
   `date` date NOT NULL,
   `time_in` time DEFAULT NULL,
   `time_out` time DEFAULT NULL,
   `total_work_hours` decimal(4,2) DEFAULT NULL,
   `status` varchar(50) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `attendance`
---
-
-INSERT INTO `attendance` (`id`, `employee_email`, `date`, `time_in`, `time_out`, `total_work_hours`, `status`) VALUES
-(1, 'user.name@gmail.com', '2026-07-01', '08:00:00', '17:00:00', 9.00, 'Present'),
-(2, 'user.name@gmail.com', '2026-07-02', '08:30:00', '17:00:00', 8.50, 'Late'),
-(3, 'user.name@gmail.com', '2026-07-03', NULL, NULL, NULL, 'Absent');
 
 -- --------------------------------------------------------
 
@@ -56,15 +47,17 @@ CREATE TABLE `employees` (
   `id` int(11) NOT NULL,
   `name` varchar(100) DEFAULT NULL,
   `email` varchar(100) DEFAULT NULL,
-  `password` varchar(255) DEFAULT NULL
+  `password` varchar(255) DEFAULT NULL,
+  `role` enum('admin','employee','','') NOT NULL DEFAULT 'employee'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `employees`
 --
 
-INSERT INTO `employees` (`id`, `name`, `email`, `password`) VALUES
-(2, 'Test Employee', 'user.name@gmail.com', 'password123');
+INSERT INTO `employees` (`id`, `name`, `email`, `password`, `role`) VALUES
+(2, 'User', 'user@gmail.com', 'user123', 'employee'),
+(3, 'Admin', 'admin@gmail.com', 'admin123', 'admin');
 
 -- --------------------------------------------------------
 
@@ -78,24 +71,6 @@ CREATE TABLE `logs` (
   `log_type` enum('login','logout') DEFAULT NULL,
   `log_time` datetime DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `logs`
---
-
-INSERT INTO `logs` (`id`, `employee_id`, `log_type`, `log_time`) VALUES
-(1, 2, 'login', '2026-04-16 07:39:53'),
-(2, 2, 'logout', '2026-04-16 07:40:00'),
-(3, 2, 'login', '2026-04-16 07:40:04'),
-(4, 2, 'logout', '2026-04-16 07:40:07'),
-(5, 2, 'login', '2026-04-16 07:40:07'),
-(6, 2, 'logout', '2026-04-16 07:40:08'),
-(7, 2, 'login', '2026-04-16 07:40:09'),
-(8, 2, 'logout', '2026-04-16 07:41:19'),
-(9, 2, 'login', '2026-04-16 07:42:02'),
-(10, 2, 'logout', '2026-04-16 07:42:06'),
-(11, 2, 'login', '2026-04-16 07:43:46'),
-(12, 2, 'logout', '2026-04-16 07:43:48');
 
 -- --------------------------------------------------------
 
@@ -120,7 +95,8 @@ CREATE TABLE `schedules` (
 -- Indexes for table `attendance`
 --
 ALTER TABLE `attendance`
-  ADD PRIMARY KEY (`id`);
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `unique_employee_date` (`employee_id`,`date`);
 
 --
 -- Indexes for table `employees`
@@ -151,29 +127,35 @@ ALTER TABLE `schedules`
 -- AUTO_INCREMENT for table `attendance`
 --
 ALTER TABLE `attendance`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT for table `employees`
 --
 ALTER TABLE `employees`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT for table `logs`
 --
 ALTER TABLE `logs`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=305;
 
 --
 -- AUTO_INCREMENT for table `schedules`
 --
 ALTER TABLE `schedules`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
 -- Constraints for dumped tables
 --
+
+--
+-- Constraints for table `attendance`
+--
+ALTER TABLE `attendance`
+  ADD CONSTRAINT `attendance_ibfk_1` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`);
 
 --
 -- Constraints for table `logs`

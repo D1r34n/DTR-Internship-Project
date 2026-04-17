@@ -1,0 +1,25 @@
+:root {
+    /* PRIMARY */
+    --primary-color: #97be41;
+    --primary-hover: #7fae2f;
+
+    /* TEXT */
+    --text-darkest: #000000;
+    --text-dark: #575656;
+    --text-light: #ffffff;
+
+    /* BACKGROUNDS */
+    --bg-light: #ffffff;
+    --bg-soft: #f5f5f5;
+
+    /* DANGER (LOGOUT / DELETE) */
+    --danger: #dc3545;
+    --danger-hover: #b52b3a;
+    --danger-soft: #f8d7da;
+
+    /* BORDERS */
+    --border: rgba(0, 0, 0, 0.1);
+
+    /* SHADOW */
+    --shadow: rgba(0, 0, 0, 0.3);
+}
