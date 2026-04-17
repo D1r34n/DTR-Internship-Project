@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Apr 17, 2026 at 08:14 AM
+-- Generation Time: Apr 17, 2026 at 10:09 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.0.30
 
@@ -42,7 +42,9 @@ CREATE TABLE `attendance` (
 --
 
 INSERT INTO `attendance` (`id`, `employee_id`, `date`, `time_in`, `time_out`, `total_work_hours`, `status`) VALUES
-(6, 2, '2026-04-17', '09:28:23', '14:10:24', 4.70, 'completed');
+(6, 2, '2026-04-17', '09:28:23', '15:32:53', 6.08, 'completed'),
+(7, 3, '2026-04-17', '16:05:37', '16:05:48', 0.00, 'completed'),
+(8, 4, '2026-04-17', '16:06:11', '16:06:12', 0.00, 'completed');
 
 -- --------------------------------------------------------
 
@@ -64,7 +66,8 @@ CREATE TABLE `employees` (
 
 INSERT INTO `employees` (`id`, `name`, `email`, `password`, `role`) VALUES
 (2, 'User', 'user@gmail.com', 'user123', 'employee'),
-(3, 'Admin', 'admin@gmail.com', 'admin123', 'admin');
+(3, 'Admin', 'admin@gmail.com', 'admin123', 'admin'),
+(4, 'User1', 'user1@gmail.com', 'user123', 'employee');
 
 -- --------------------------------------------------------
 
@@ -125,7 +128,17 @@ INSERT INTO `logs` (`id`, `employee_id`, `log_type`, `log_time`) VALUES
 (326, 2, 'logout', '2026-04-17 14:03:05'),
 (327, 2, 'logout', '2026-04-17 14:07:27'),
 (328, 2, 'login', '2026-04-17 14:07:32'),
-(329, 2, 'logout', '2026-04-17 14:10:24');
+(329, 2, 'logout', '2026-04-17 14:10:24'),
+(330, 2, 'login', '2026-04-17 15:23:20'),
+(331, 2, 'logout', '2026-04-17 15:23:22'),
+(332, 2, 'login', '2026-04-17 15:29:10'),
+(333, 2, 'logout', '2026-04-17 15:29:11'),
+(334, 2, 'login', '2026-04-17 15:32:52'),
+(335, 2, 'logout', '2026-04-17 15:32:53'),
+(336, 3, 'login', '2026-04-17 16:05:37'),
+(337, 3, 'logout', '2026-04-17 16:05:48'),
+(338, 4, 'login', '2026-04-17 16:06:11'),
+(339, 4, 'logout', '2026-04-17 16:06:12');
 
 -- --------------------------------------------------------
 
@@ -227,13 +240,13 @@ ALTER TABLE `schedules`
 -- AUTO_INCREMENT for table `attendance`
 --
 ALTER TABLE `attendance`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT for table `employees`
 --
 ALTER TABLE `employees`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT for table `leave_requests`
@@ -245,7 +258,7 @@ ALTER TABLE `leave_requests`
 -- AUTO_INCREMENT for table `logs`
 --
 ALTER TABLE `logs`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=330;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=340;
 
 --
 -- AUTO_INCREMENT for table `overtime_requests`
