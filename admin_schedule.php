@@ -12,10 +12,22 @@ date_default_timezone_set('Asia/Manila');
 $success = "";
 $error = "";
 
+// HANDLE DELETE
+if (isset($_GET['delete']) && isset($_GET['week'])) {
+    $employeeId = $_GET['delete'];
+    $weekStart = $_GET['week'];
+    $weekEnd = date('Y-m-d', strtotime($weekStart . ' +6 days'));
+
+    $stmt = $pdo->prepare("DELETE FROM schedules WHERE employee_id = ? AND work_date BETWEEN ? AND ?");
+    $stmt->execute([$employeeId, $weekStart, $weekEnd]);
+
+    $success = "Schedule deleted successfully!";
+}
+
 // HANDLE ADD / OVERWRITE
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $employee_id = $_POST['employee_id'];
-    $week_monday = $_POST['week_monday']; // e.g. 2026-04-13
+    $week_monday = $_POST['week_monday'];
     $time_in = $_POST['time_in'];
     $time_out = $_POST['time_out'];
 
@@ -61,23 +73,17 @@ $schedules = $pdo->query("
     SELECT 
         e.name as employee_name,
         s.employee_id,
-
         MIN(s.work_date) as week_start,
         MAX(s.work_date) as week_end,
-
         MIN(s.time_in) as time_in,
         MAX(s.time_out) as time_out
-
     FROM schedules s
     JOIN employees e ON s.employee_id = e.id
-
     WHERE s.is_rest_day = 0
     AND s.work_date IS NOT NULL
-
     GROUP BY s.employee_id, YEARWEEK(s.work_date)
     ORDER BY week_start DESC, e.name
 ")->fetchAll(PDO::FETCH_ASSOC);
-
 
 // GET ALL EMPLOYEES
 $employees = $pdo->query("SELECT id, name FROM employees WHERE role = 'employee' ORDER BY name")->fetchAll(PDO::FETCH_ASSOC);
@@ -106,8 +112,8 @@ $employees = $pdo->query("SELECT id, name FROM employees WHERE role = 'employee'
         <div class="adminBox">
 
             <div class="adminTitleRow">
-            <h5 class="adminTitle">Schedule Management</h5>
-            <input type="text" id="searchInput" class="searchInput" placeholder="Search schedule..." onkeyup="searchTable()">
+                <h5 class="adminTitle">Schedule Management</h5>
+                <input type="text" id="searchInput" class="searchInput" placeholder="Search schedule..." onkeyup="searchTable()">
             </div>
 
             <?php if ($success): ?>
@@ -117,46 +123,58 @@ $employees = $pdo->query("SELECT id, name FROM employees WHERE role = 'employee'
                 <div class="alert alert-danger"><?= $error ?></div>
             <?php endif; ?>
 
-           <!-- SCHEDULE LIST -->
-                <div class="tableScrollWrapper">
+            <!-- SCHEDULE LIST -->
+            <div class="tableScrollWrapper">
                 <table class="table table-bordered table-hover mt-3">
-                <thead>
-                    <tr>
-                        <th>Employee</th>
-                        <th>Week</th>
-                        <th>Time In</th>
-                        <th>Time Out</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php if (count($schedules) > 0): ?>
-                        <?php foreach ($schedules as $row): ?>
-                            <tr>
-                                <td><?= htmlspecialchars($row['employee_name']) ?></td>
-                                <td>
-                                    <?= date('M d', strtotime($row['week_start'])) ?> - 
-                                    <?= date('M d, Y', strtotime($row['week_end'])) ?>
-                                </td>
-                                <td><?= $row['time_in'] ? date('h:i A', strtotime($row['time_in'])) : '—' ?></td>
-                                <td><?= $row['time_out'] ? date('h:i A', strtotime($row['time_out'])) : '—' ?></td>
-                                <td>
-                                    <button class="btn btn-sm editBtn" onclick="loadEdit(
-                                        '<?= $row['employee_id'] ?>',
-                                        '<?= $row['week_start'] ?>',
-                                        '<?= $row['time_in'] ?>',
-                                        '<?= $row['time_out'] ?>'
-                                    )">
-                                        <i class="bi bi-pencil-fill"></i> Edit
-                                    </button>
-                                </td>
-                            </tr>
-                        <?php endforeach; ?>
-                    <?php else: ?>
-                        <tr><td colspan="5" class="text-center">No schedules found.</td></tr>
-                    <?php endif; ?>
-                </tbody>
-            </table>
+                    <thead>
+                        <tr>
+                            <th>Employee</th>
+                            <th>Week</th>
+                            <th>Time In</th>
+                            <th>Time Out</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php if (count($schedules) > 0): ?>
+                            <?php foreach ($schedules as $row): ?>
+                                <tr>
+                                    <td><?= htmlspecialchars($row['employee_name']) ?></td>
+                                    <td>
+                                        <?= date('M d', strtotime($row['week_start'])) ?> - 
+                                        <?= date('M d, Y', strtotime($row['week_end'])) ?>
+                                    </td>
+                                    <td><?= $row['time_in'] ? date('h:i A', strtotime($row['time_in'])) : '—' ?></td>
+                                    <td><?= $row['time_out'] ? date('h:i A', strtotime($row['time_out'])) : '—' ?></td>
+                                    <td>
+                                        <div class="actionDropdownWrapper">
+                                            <button class="btn btn-sm editBtn actionToggle" onclick="toggleActionMenu(this)">
+                                                Actions <i class="bi bi-chevron-down"></i>
+                                            </button>
+                                            <div class="actionMenu">
+                                                <a class="actionItem" style="cursor:pointer;" onclick="loadEdit(
+                                                    '<?= $row['employee_id'] ?>',
+                                                    '<?= $row['week_start'] ?>',
+                                                    '<?= $row['time_in'] ?>',
+                                                    '<?= $row['time_out'] ?>'
+                                                )">
+                                                    <i class="bi bi-pencil-fill"></i> Edit
+                                                </a>
+                                                <a href="admin_schedule.php?delete=<?= $row['employee_id'] ?>&week=<?= $row['week_start'] ?>"
+                                                    class="actionItem deleteItem"
+                                                    onclick="return confirm('Are you sure you want to delete this schedule?')">
+                                                    <i class="bi bi-trash-fill"></i> Delete
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <tr><td colspan="5" class="text-center">No schedules found.</td></tr>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
             </div>
 
             <!-- ADD / EDIT FORM -->
@@ -207,26 +225,40 @@ $employees = $pdo->query("SELECT id, name FROM employees WHERE role = 'employee'
     </div>
 
     <script>
-function loadEdit(employeeId, weekStart, timeIn, timeOut) {
-    document.getElementById('employeeSelect').value = employeeId;
-    document.getElementById('weekMonday').value = weekStart;
-    document.getElementById('timeIn').value = timeIn;
-    document.getElementById('timeOut').value = timeOut;
-    document.getElementById('formTitle').textContent = 'Edit Schedule';
-    document.getElementById('submitLabel').textContent = 'Update Schedule';
-    document.getElementById('cancelBtn').style.display = 'inline-block';
-    document.querySelector('.adminFormWrapper').scrollIntoView({ behavior: 'smooth' });
-}
+    function toggleActionMenu(btn) {
+        const menu = btn.nextElementSibling;
+        document.querySelectorAll('.actionMenu').forEach(m => {
+            if (m !== menu) m.classList.remove('show');
+        });
+        menu.classList.toggle('show');
+    }
 
-function searchTable() {
-    const input = document.getElementById('searchInput').value.toLowerCase();
-    const rows = document.querySelectorAll('.tableScrollWrapper tbody tr');
-    rows.forEach(row => {
-        const text = row.textContent.toLowerCase();
-        row.style.display = text.includes(input) ? '' : 'none';
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.actionDropdownWrapper')) {
+            document.querySelectorAll('.actionMenu').forEach(m => m.classList.remove('show'));
+        }
     });
-}
-</script>
+
+    function loadEdit(employeeId, weekStart, timeIn, timeOut) {
+        document.getElementById('employeeSelect').value = employeeId;
+        document.getElementById('weekMonday').value = weekStart;
+        document.getElementById('timeIn').value = timeIn;
+        document.getElementById('timeOut').value = timeOut;
+        document.getElementById('formTitle').textContent = 'Edit Schedule';
+        document.getElementById('submitLabel').textContent = 'Update Schedule';
+        document.getElementById('cancelBtn').style.display = 'inline-block';
+        document.querySelector('.adminFormWrapper').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function searchTable() {
+        const input = document.getElementById('searchInput').value.toLowerCase();
+        const rows = document.querySelectorAll('.tableScrollWrapper tbody tr');
+        rows.forEach(row => {
+            const text = row.textContent.toLowerCase();
+            row.style.display = text.includes(input) ? '' : 'none';
+        });
+    }
+    </script>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
 </body>
