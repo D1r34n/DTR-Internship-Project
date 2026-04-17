@@ -59,7 +59,8 @@ if (!$isTimedIn) {
         ");
         $stmt->execute([$employeeId]);
     }
-
+    // Computation tardiness
+    // Compare schedule supposed time in
     $status = "timed_in";
 
 } else {
