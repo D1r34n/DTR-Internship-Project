@@ -1,0 +1,139 @@
+body::before {
+    content: '';
+    position: fixed;
+    top: -20px;
+    left: -20px;
+    width: calc(100% + 40px);
+    height: calc(100% + 40px);
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    filter: blur(6px);
+    z-index: -1;
+}
+
+body {
+    font-family: 'Poppins', sans-serif;
+    min-height: 100vh;
+}
+
+.adminWrapper {
+    position: fixed;
+    top: 60px;
+    left: 180px;
+    width: calc(100% - 180px);
+    height: calc(100vh - 60px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10;
+}
+
+.adminBox {
+    font-family: 'Poppins', sans-serif;
+    background-color: #ffffff;
+    padding: 30px;
+    border-radius: 12px;
+    width: 1120px;
+    height: 580px;
+    overflow-y: auto;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.adminTitle {
+    font-weight: 600;
+    margin-bottom: 1rem;
+}
+
+.editBtn {
+    background-color: #97be41;
+    color: white;
+    border: none;
+    font-family: 'Poppins', sans-serif;
+    font-size: 0.8rem;
+}
+
+.editBtn:hover {
+    background-color: #7ea832;
+    color: white;
+}
+
+.adminFormWrapper {
+    margin-top: 2rem;
+    border-top: 2px solid #e0e0e0;
+    padding-top: 1.5rem;
+}
+
+.formTitle {
+    font-weight: 600;
+    margin-bottom: 1rem;
+    color: #333;
+}
+
+.formGrid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.formGroup {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 180px;
+}
+
+.formGroup label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 0.4rem;
+}
+
+.formControl {
+    font-family: 'Poppins', sans-serif;
+    padding: 0.4rem 0.8rem;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.formControl:focus {
+    border-color: #97be41;
+}
+
+.formActions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 1.5rem;
+}
+
+.btnSave {
+    font-family: 'Poppins', sans-serif;
+    background-color: #97be41;
+    color: white;
+    border: none;
+    padding: 0.5rem 1.5rem;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.btnSave:hover {
+    background-color: #7ea832;
+}
+
+.btnCancel {
+    font-family: 'Poppins', sans-serif;
+    color: #888;
+    text-decoration: none;
+    font-size: 0.9rem;
+}
+
+.btnCancel:hover {
+    color: #333;
+}

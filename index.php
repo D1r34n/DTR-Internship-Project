@@ -28,9 +28,16 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             $_SESSION['user_email'] = $employee['email'];
             $_SESSION['user_name'] = $employee['name'];
             $_SESSION['user_id'] = $employee['id'];
-            header("Location: main_page.php");
-            exit();
-        } else {
+            $_SESSION['user_role'] = $employee['role'];
+
+    if ($employee['role'] === 'admin') {
+        header("Location: admin_dashboard.php");
+    } else {
+        header("Location: main_page.php");
+    }
+    exit();
+}
+        else {
             $_SESSION['error'] = "Wrong Email/Password";
         }
     }
