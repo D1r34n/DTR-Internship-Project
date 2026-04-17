@@ -21,11 +21,13 @@ if (session_status() === PHP_SESSION_NONE) {
     <div class="horizontalDivider"></div>
 
     <div class="sideBarMenu">
+        <!-- Dashboard -->
         <a href="main_page.php" class="sideBarMenuItem">
             <img src="images/dashboard_icon.svg" class="dashboardIcon">
             <span class="menuText">Dashboard</span>
         </a>
 
+        <!-- Records -->
         <a href="record_page.php" class="sideBarMenuItem">
             <img src="images/records_icon.svg" class="recordsIcon">
             <span class="menuText">Records</span>
@@ -35,6 +37,13 @@ if (session_status() === PHP_SESSION_NONE) {
             <img src="images/schedule_icon.svg" class="scheduleIcon">
             <span class="menuText">Schedule</span>
 </a>
+
+        <!-- Logs -->
+        <a href="logs_page.php" class="sideBarMenuItem">
+            <img src="images/logs_icon.svg" class="logsIcon">
+            <span class="menuText">Logs</span>
+        </a>
+
     </div>
 </div>
 

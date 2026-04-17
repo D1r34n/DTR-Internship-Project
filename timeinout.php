@@ -4,29 +4,38 @@ require_once 'db.php';
 date_default_timezone_set('Asia/Manila');
 
 if (!isset($_SESSION['user_id'])) {
-    header("Location: index.php");
     exit();
 }
 
 $employeeId = $_SESSION['user_id'];
-$today = date('Y-m-d');
 
-if (!isset($_SESSION['timedIn'])) {
-    $_SESSION['timedIn'] = false;
-}
+// Check current status
+$stmt = $pdo->prepare("
+    SELECT log_type 
+    FROM logs 
+    WHERE employee_id = ?
+    ORDER BY log_time DESC 
+    LIMIT 1
+");
+$stmt->execute([$employeeId]);
+$lastLog = $stmt->fetch(PDO::FETCH_ASSOC);
 
-if ($_SESSION['timedIn'] === false) {
-    // TIME IN — insert login log
+$isTimedIn = ($lastLog && $lastLog['log_type'] === 'login');
+
+// Toggle if time in or time out
+if (!$isTimedIn) {
     $stmt = $pdo->prepare("INSERT INTO logs (employee_id, log_type) VALUES (?, 'login')");
     $stmt->execute([$employeeId]);
-    $_SESSION['timedIn'] = true;
-    echo "timed_in";
-
+    $status = "timed_in";
 } else {
-    // TIME OUT — insert logout log
     $stmt = $pdo->prepare("INSERT INTO logs (employee_id, log_type) VALUES (?, 'logout')");
     $stmt->execute([$employeeId]);
-    $_SESSION['timedIn'] = false;
-    echo "timed_out";
+    $status = "timed_out";
 }
-?>
+
+// Return status of employee
+header('Content-Type: application/json');
+
+echo json_encode([
+    "status" => $status
+]);

@@ -1,6 +1,7 @@
 <?php
 session_start();
 
+// Check if user is logged in else redirect to login page
 if (!isset($_SESSION['user_id'])) {
     header("Location: index.php");
     exit();
@@ -63,7 +64,10 @@ $lastTimeOut = $todayRecord['last_time_out'] ? date('H:i', strtotime($todayRecor
 </head>
 <body>
     <?php include 'side_bar.php'; ?>
-    <?php include 'top_bar.php'; ?>
+    
+    <?php 
+    $current_page = 'records';
+    include 'top_bar.php'; ?>
 
     <div class="recordBoxWrapper">
         <div class="recordBox">

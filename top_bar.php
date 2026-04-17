@@ -2,19 +2,43 @@
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
-$timedIn = isset($_SESSION['timedIn']) && $_SESSION['timedIn'] === true;
+
+require_once 'db.php';
+$employeeId = $_SESSION['user_id'];
+
+// Set title and dashboard status based on current page
+$titles = [
+    'dashboard' => 'Employee Dashboard',
+    'records' => 'Records',
+];
+
+$title = $titles[$current_page] ?? '';
+
+$stmt = $pdo->prepare("
+    SELECT log_type 
+    FROM logs 
+    WHERE employee_id = ?
+    ORDER BY log_time DESC 
+    LIMIT 1
+");
+$stmt->execute([$employeeId]);
+$lastLog = $stmt->fetch(PDO::FETCH_ASSOC);
+
+$timedIn = ($lastLog && $lastLog['log_type'] === 'login');
 ?>
 
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
 <div class="topBar">
-    <h4 class="dashboardTitle">Employee Dashboard</h4>
+    <h4 class="dashboardTitle"><?= $title ?></h4>
 
     <div class="topBarRight">
-        <button class="timeInButton" id="timeInBtn" onclick="handleTimeIn()">
+        <!-- TIME IN BUTTON -->
+        <button class="timeInButton <?= $timedIn ? 'btn-out' : 'btn-in' ?>" id="timeInBtn" onclick="handleTimeIn()">
             <i class="bi bi-stopwatch-fill timeInIcon"></i>
             <span id="timeInLabel"><?= $timedIn ? 'Time Out' : 'Time In' ?></span>
         </button>
+        
         <div class="verticalDivider"></div>
 
         <div class="navUserProfile">
@@ -44,17 +68,36 @@ $timedIn = isset($_SESSION['timedIn']) && $_SESSION['timedIn'] === true;
 <script>
 function handleTimeIn() {
     fetch('timeinout.php')
-        .then(res => res.text())
+        .then(res => res.json())
         .then(response => {
-            console.log('Response:', response);
-            const label = document.getElementById('timeInLabel');
-            if (response.trim() === 'timed_in') {
+
+            const timeInButton = document.getElementById('timeInBtn');
+            const label = timeInButton.querySelector('#timeInLabel');
+
+            const dashboardStatus = document.getElementById('dashboard_status');
+
+            if (response.status === 'timed_in') {
+                timeInButton.style.backgroundColor = '#dc3545';
                 label.textContent = 'Time Out';
-            } else {
-                label.textContent = 'Time In';
-                if (window.location.href.includes('record_page')) {
-                    location.reload();
+
+                if (dashboardStatus) {
+                    dashboardStatus.textContent = 'Timed In';
                 }
+
+            } else {
+                timeInButton.style.backgroundColor = '#97be41';
+                label.textContent = 'Time In';
+
+                if (dashboardStatus) {
+                    dashboardStatus.textContent = 'Timed Out';
+                }
+            }
+
+            getTotalWorkedHours();
+
+            if (document.getElementById('logs_table_body')) {
+                loadLogs();
+                console.log('Logs table refreshed');
             }
         })
         .catch(err => console.log('Error:', err));
@@ -73,4 +116,18 @@ document.addEventListener('click', (e) => {
         menu.classList.remove('show');
     }
 });
+
+function getTotalWorkedHours() {
+    fetch('get_dashboard_data.php')
+        .then(res => res.json())
+        .then(data => {
+            $dashBoardWeekHours = document.getElementById('dashboard_week_hours');
+            $dashBoardMonthHours = document.getElementById('dashboard_month_hours');
+
+            if ($dashBoardWeekHours && $dashBoardMonthHours) {
+                $dashBoardWeekHours.textContent = data.weeklyHours + ' hours';
+                $dashBoardMonthHours.textContent = data.monthlyHours + ' hours';
+            }
+        });
+}
 </script>
