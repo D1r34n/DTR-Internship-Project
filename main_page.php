@@ -49,7 +49,6 @@ $records = $stmt->fetchAll(PDO::FETCH_ASSOC);
     <?php include 'side_bar.php'; ?>
 
     <!-- TOPBAR -->
-    
     <?php 
     $current_page = 'dashboard';
     include 'top_bar.php'; 
@@ -82,7 +81,7 @@ $records = $stmt->fetchAll(PDO::FETCH_ASSOC);
         <!-- Attendace Log for today only -->
         <div class="logsForTheDay">
             <div class="recordBox">
-                <h5 class="tableTitle">My Attendance Logs</h5>
+                <h5 class="tableTitle">Today's Attendance Log</h5>
 
                 <div class="tableScroll">
                     <table class="table table-bordered table-hover mt-3">

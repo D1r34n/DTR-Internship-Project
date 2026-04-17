@@ -21,13 +21,15 @@ body {
 .recordBoxWrapper {
     position: fixed;
     top: 60px;
-    left: 180px;
-    width: calc(100% - 180px);
+    left: calc(10px + var(--sidebar-width));
+    width: calc(100% - (25px + var(--sidebar-width)));
     height: calc(100vh - 60px);
     display: flex;
     justify-content: center;
     align-items: center;
     z-index: 10;
+
+    transition: left 0.3s ease, width 0.3s ease;
 }
 
 .recordBox {
@@ -36,7 +38,7 @@ body {
     padding: 30px;
     border-radius: 12px;
     width: 1120px;
-    height: 530px;
+    height: 500px;
     overflow-y: auto;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
     position: relative;

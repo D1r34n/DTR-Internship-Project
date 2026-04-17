@@ -15,19 +15,14 @@ $today = date('Y-m-d');
 // Get all attendance records
 $stmt = $pdo->prepare("
     SELECT 
-        DATE(log_time) as date,
-        MIN(CASE WHEN log_type = 'login' THEN log_time END) as first_time_in,
-        MAX(CASE WHEN log_type = 'logout' THEN log_time END) as last_time_out,
-        ROUND(
-            TIMESTAMPDIFF(MINUTE, 
-                MIN(CASE WHEN log_type = 'login' THEN log_time END),
-                MAX(CASE WHEN log_type = 'logout' THEN log_time END)
-            ) / 60, 2
-        ) as total_work_hours
-    FROM logs
+        date,
+        time_in as first_time_in,
+        time_out as last_time_out,
+        total_work_hours,
+        status
+    FROM attendance
     WHERE employee_id = ?
-    GROUP BY DATE(log_time)
-    ORDER BY DATE(log_time) DESC
+    ORDER BY date DESC
 ");
 $stmt->execute([$employeeId]);
 $records = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -35,16 +30,22 @@ $records = $stmt->fetchAll(PDO::FETCH_ASSOC);
 // Get today's time in and out for chart
 $todayStmt = $pdo->prepare("
     SELECT 
-        MIN(CASE WHEN log_type = 'login' THEN log_time END) as first_time_in,
-        MAX(CASE WHEN log_type = 'logout' THEN log_time END) as last_time_out
-    FROM logs
-    WHERE employee_id = ? AND DATE(log_time) = ?
+        time_in as first_time_in,
+        time_out as last_time_out
+    FROM attendance
+    WHERE employee_id = ?
+    AND date = ?
 ");
 $todayStmt->execute([$employeeId, $today]);
 $todayRecord = $todayStmt->fetch(PDO::FETCH_ASSOC);
 
-$firstTimeIn = $todayRecord['first_time_in'] ? date('H:i', strtotime($todayRecord['first_time_in'])) : null;
-$lastTimeOut = $todayRecord['last_time_out'] ? date('H:i', strtotime($todayRecord['last_time_out'])) : null;
+$firstTimeIn = $todayRecord['first_time_in']
+    ? date('H:i', strtotime($todayRecord['first_time_in']))
+    : null;
+
+$lastTimeOut = $todayRecord['last_time_out']
+    ? date('H:i', strtotime($todayRecord['last_time_out']))
+    : null;
 ?>
 
 <!doctype html>
@@ -97,29 +98,7 @@ $lastTimeOut = $todayRecord['last_time_out'] ? date('H:i', strtotime($todayRecor
                             <th>Status</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        <?php if (count($records) > 0): ?>
-                            <?php foreach ($records as $row): ?>
-                                <?php
-                                    $timeIn = $row['first_time_in'];
-                                    $timeInOnly = $timeIn ? date('H:i:s', strtotime($timeIn)) : null;
-                                    $status = '—';
-                                    if ($timeInOnly) {
-                                        $status = ($timeInOnly > '08:30:00') ? 'Late' : 'Present';
-                                    }
-                                ?>
-                                <tr>
-                                    <td><?= date('F d, Y', strtotime($row['date'])) ?></td>
-                                    <td><?= $timeIn ? date('h:i A', strtotime($timeIn)) : '—' ?></td>
-                                    <td><?= $row['last_time_out'] ? date('h:i A', strtotime($row['last_time_out'])) : '—' ?></td>
-                                    <td><?= $row['total_work_hours'] ? $row['total_work_hours'] . ' hrs' : '—' ?></td>
-                                    <td><?= $status ?></td>
-                                </tr>
-                            <?php endforeach; ?>
-                        <?php else: ?>
-                            <tr><td colspan="5" class="text-center">No records found.</td></tr>
-                        <?php endif; ?>
-                    </tbody>
+                    <tbody id="attendance_table_body"></tbody>
                 </table>
             </div>
 
@@ -182,19 +161,61 @@ $lastTimeOut = $todayRecord['last_time_out'] ? date('H:i', strtotime($todayRecor
     </div>
 
     <script>
-   function switchTab(tab) {
-    document.querySelectorAll('.tabContent').forEach(t => t.style.display = 'none');
-    document.getElementById(tab).style.display = 'block';
-}
-   function switchPeriod(period) {
-    if (period === 'weekly') {
-        // will be wired up soon
-        console.log('Weekly selected');
-    } else if (period === 'monthly') {
-        // not yet implemented
-        console.log('Monthly — coming soon');
+    function switchTab(tab) {
+        document.querySelectorAll('.tabContent').forEach(t => t.style.display = 'none');
+        document.getElementById(tab).style.display = 'block';
     }
-}
+    function switchPeriod(period) {
+        if (period === 'weekly') {
+            // will be wired up soon
+            console.log('Weekly selected');
+        } else if (period === 'monthly') {
+            // not yet implemented
+            console.log('Monthly — coming soon');
+        }
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+        loadAttendance();
+    });
+
+    function loadAttendance() {
+        fetch('get_attendance.php')
+            .then(res => res.json())
+            .then(data => {
+                const tbody = document.getElementById('attendance_table_body');
+                tbody.innerHTML = '';
+
+                if (data.length === 0) {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="5" class="text-center">No records found.</td>
+                        </tr>`;
+                    return;
+                }
+                console.log('Attendance table refreshed');
+                data.forEach(row => {
+
+                    const timeIn = row.time_in
+                        ? new Date(row.time_in.replace(" ", "T")).toLocaleTimeString()
+                        : '—';
+
+                    const timeOut = row.time_out
+                        ? new Date(row.time_out.replace(" ", "T")).toLocaleTimeString()
+                        : '—';
+
+                    tbody.innerHTML += `
+                        <tr>
+                            <td>${new Date(row.date).toLocaleDateString()}</td>
+                            <td>${timeIn}</td>
+                            <td>${timeOut}</td>
+                            <td>${row.total_work_hours ?? '—'} hrs</td>
+                            <td>${row.status ?? '—'}</td>
+                        </tr>
+                    `;
+                });
+            });
+    }
     </script>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
