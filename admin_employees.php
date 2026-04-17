@@ -11,6 +11,25 @@ require_once 'db.php';
 $success = "";
 $editData = null;
 
+// HANDLE DELETE
+if (isset($_GET['delete'])) {
+    $employeeId = $_GET['delete'];
+    
+    // Delete logs first
+    $stmt = $pdo->prepare("DELETE FROM logs WHERE employee_id = ?");
+    $stmt->execute([$employeeId]);
+    
+    // Delete schedules too
+    $stmt = $pdo->prepare("DELETE FROM schedules WHERE employee_id = ?");
+    $stmt->execute([$employeeId]);
+    
+    // Then delete employee
+    $stmt = $pdo->prepare("DELETE FROM employees WHERE id = ?");
+    $stmt->execute([$employeeId]);
+    
+    $success = "Employee deleted successfully!";
+}
+
 // HANDLE ADD / EDIT
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $name = trim($_POST['name']);
@@ -69,14 +88,18 @@ $employees = $pdo->query("SELECT * FROM employees ORDER BY name")->fetchAll(PDO:
     <div class="adminWrapper">
         <div class="adminBox">
 
+            <div class="adminTitleRow">
             <h5 class="adminTitle">Employee Management</h5>
+            <input type="text" id="searchInput" class="searchInput" placeholder="Search employee..." onkeyup="searchTable()">
+            </div>
 
             <?php if ($success): ?>
                 <div class="alert alert-success"><?= $success ?></div>
             <?php endif; ?>
 
-            <!-- EMPLOYEE LIST -->
-            <table class="table table-bordered table-hover mt-3">
+           <!-- EMPLOYEE LIST -->
+           <div class="tableScrollWrapper">
+           <table class="table table-bordered table-hover mt-3">
                 <thead>
                     <tr>
                         <th>Name</th>
@@ -93,10 +116,20 @@ $employees = $pdo->query("SELECT * FROM employees ORDER BY name")->fetchAll(PDO:
                                 <td><?= htmlspecialchars($row['email']) ?></td>
                                 <td><?= ucfirst($row['role']) ?></td>
                                 <td>
-                                    <a href="admin_employees.php?edit=<?= $row['id'] ?>" class="btn btn-sm editBtn">
-                                        <i class="bi bi-pencil-fill"></i> Edit
-                                    </a>
-                                </td>
+        <div class="actionDropdownWrapper">
+        <button class="btn btn-sm editBtn actionToggle" onclick="toggleActionMenu(this)"> Actions <i class="bi bi-chevron-down"></i>
+        </button>
+        <div class="actionMenu">
+            <a href="admin_employees.php?edit=<?= $row['id'] ?>" class="actionItem">
+            <i class="bi bi-pencil-fill"></i> Edit
+            </a>
+         <a href="admin_employees.php?delete=<?= $row['id'] ?>" class="actionItem deleteItem"
+                onclick="return confirm('Are you sure you want to delete <?= htmlspecialchars($row['name']) ?>?')">
+                <i class="bi bi-trash-fill"></i> Delete
+            </a>
+        </div>
+    </div>
+</td>
                             </tr>
                         <?php endforeach; ?>
                     <?php else: ?>
@@ -104,6 +137,7 @@ $employees = $pdo->query("SELECT * FROM employees ORDER BY name")->fetchAll(PDO:
                     <?php endif; ?>
                 </tbody>
             </table>
+            </div>
 
             <!-- ADD / EDIT FORM -->
             <div class="adminFormWrapper">
@@ -156,5 +190,38 @@ $employees = $pdo->query("SELECT * FROM employees ORDER BY name")->fetchAll(PDO:
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+function toggleActionMenu(btn) {
+    const menu = btn.nextElementSibling;
+    document.querySelectorAll('.actionMenu').forEach(m => {
+        if (m !== menu) m.classList.remove('show');
+    });
+    menu.classList.toggle('show');
+}
+
+document.addEventListener('click', (e) => {
+    if (!e.target.closest('.actionDropdownWrapper')) {
+        document.querySelectorAll('.actionMenu').forEach(m => m.classList.remove('show'));
+    }
+});
+
+function searchTable() {
+    const input = document.getElementById('searchInput').value.toLowerCase();
+    const rows = document.querySelectorAll('.tableScrollWrapper tbody tr');
+    rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(input) ? '' : 'none';
+    });
+}
+// Auto-dismiss success/error alerts after 3 seconds
+setTimeout(() => {
+    document.querySelectorAll('.alert').forEach(alert => {
+        alert.style.transition = 'opacity 0.5s ease';
+        alert.style.opacity = '0';
+        setTimeout(() => alert.remove(), 500);
+    });
+}, 1000);
+</script>
+
 </body>
 </html>
