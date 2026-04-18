@@ -147,7 +147,8 @@ body:has(.sideBar:hover) .icon-close {
 }
 
 .dashboardIcon,
-.recordsIcon{
+.recordsIcon,
+.logsIcon {
     height: 1.5rem;
     color: black;
     margin-right: 0.5rem;
@@ -196,9 +197,19 @@ body:has(.sideBar:hover) .icon-close {
     background-color: #97be41;
     color: white;
     border: none;
+    border-radius: 12px;
     padding: 0.2rem 1rem;
     cursor: pointer;
     font-size: large;
+    
+}
+
+.btn-in {
+    background-color: #97be41;
+}
+
+.btn-out {
+    background-color: #dc3545;
 }
 
 .timeInIcon {

@@ -34,8 +34,9 @@ body {
 .dashboardContent {
     position: absolute;
     top: 80px;     /* below topbar */
-    left: 200px;   /* beside sidebar */
+    left: calc(50px + var(--sidebar-width));
     color: white;
+    transition: left 0.3s ease;
 }
 
 #currentDate {
