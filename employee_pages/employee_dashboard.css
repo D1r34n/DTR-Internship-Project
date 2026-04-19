@@ -1,28 +1,23 @@
-/* BACKGROUND BLUR */
+/* BACKGROUND IMAGE (with blur only) */
 body::before {
     content: '';
     position: fixed;
-    top: -20px;
-    left: -20px;
-    width: calc(100% + 40px);
-    height: calc(100% + 40px);
+    inset: 0;
+
+    background-image: url('../images/drt_bg.jpg');
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
+
+    /* blur directly on image */
     filter: blur(6px);
-    z-index: -1;
+    transform: scale(1.1); /* prevents edge cut-off from blur */
+
+    z-index: -2;
 }
 
 body::after {
-    content: '';
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-
-    background: rgba(0, 0, 0, 0.2); /* adjust darkness here */
-    z-index: -1;
+    content: none;
 }
 
 body {
@@ -30,6 +25,7 @@ body {
     min-height: 100vh;
     margin: 0;
 }
+
 .dashboardWrapper {
     position: fixed;
     top: 60px;

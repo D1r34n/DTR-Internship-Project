@@ -5,23 +5,6 @@ if (!isset($_SESSION['user_id'])) {
     header("Location: ../index.php");
     exit();
 }
-
-require_once '../db.php';
-
-$employeeId = $_SESSION['user_id'];
-
-// Get current week Monday to Sunday
-$monday = date('Y-m-d', strtotime('monday this week'));
-$sunday = date('Y-m-d', strtotime('sunday this week'));
-
-$stmt = $pdo->prepare("
-    SELECT * FROM schedules 
-    WHERE employee_id = ? 
-    AND work_date BETWEEN ? AND ?
-    ORDER BY work_date ASC
-");
-$stmt->execute([$employeeId, $monday, $sunday]);
-$schedules = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
 
 <!doctype html>
@@ -29,75 +12,78 @@ $schedules = $stmt->fetchAll(PDO::FETCH_ASSOC);
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>DTR Project Acer</title>
-    <link rel="stylesheet" href="../root.css">
-    <link rel="stylesheet" href="employee_schedule.css">
-    <link rel="stylesheet" href="../side_and_top_bar.css">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+    <title>Employee Schedule</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        body::before { background-image: url('../images/drt_bg.jpg'); }
-    </style>
+    <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../root.css">
+    <link rel="stylesheet" href="../side_and_top_bar.css">
+    <link rel="stylesheet" href="employee_schedule.css">
 </head>
 <body>
-    <!-- SIDEBAR -->
-    <?php include '../sidebar.php'; ?>
 
-    <!-- TOPBAR -->
-    <?php 
+    <?php include '../sidebar.php'; ?>
+    <?php
     $current_page = 'schedule';
-    include '../topbar.php'; 
+    include '../topbar.php';
     ?>
 
     <div class="scheduleBoxWrapper">
         <div class="scheduleBox">
-            <div class="scheduleHeader">
-                <h5 class="tableTitle">My Schedule</h5>
-                <span class="weekLabel">Week of <?= date('F d', strtotime($monday)) ?> – <?= date('F d, Y', strtotime($sunday)) ?></span>
-            </div>
-
-            <table class="table table-bordered table-hover mt-3">
-                <thead>
-                    <tr>
-                        <th>Day</th>
-                        <th>Date</th>
-                        <th>Time In</th>
-                        <th>Time Out</th>
-                        <th>Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php if (count($schedules) > 0): ?>
-                        <?php foreach ($schedules as $row): ?>
-                            <?php
-                                $isRestDay = $row['is_rest_day'];
-                                $isToday = $row['work_date'] === date('Y-m-d');
-                            ?>
-                            <tr class="<?= $isRestDay ? 'rest-day' : '' ?> <?= $isToday ? 'today-row' : '' ?>">
-                                <td><strong><?= date('l', strtotime($row['work_date'])) ?></strong></td>
-                                <td><?= date('F d, Y', strtotime($row['work_date'])) ?></td>
-                                <td><?= !$isRestDay ? date('h:i A', strtotime($row['time_in'])) : '—' ?></td>
-                                <td><?= !$isRestDay ? date('h:i A', strtotime($row['time_out'])) : '—' ?></td>
-                                <td>
-                                    <?php if ($isRestDay): ?>
-                                        <span class="badge restBadge">Rest Day</span>
-                                    <?php elseif ($isToday): ?>
-                                        <span class="badge todayBadge">Today</span>
-                                    <?php else: ?>
-                                        <span class="badge workBadge">Work Day</span>
-                                    <?php endif; ?>
-                                </td>
-                            </tr>
-                        <?php endforeach; ?>
-                    <?php else: ?>
-                        <tr><td colspan="5" class="text-center">No schedule found for this week.</td></tr>
-                    <?php endif; ?>
-                </tbody>
-            </table>
+            <div id="calendar"></div>
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const calendarEl = document.getElementById('calendar');
+            const sidebar = document.querySelector('.sideBar');
+
+            const calendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'dayGridMonth',
+
+                customButtons: {
+                    refresh: {
+                        text: 'Refresh',
+                        click: function () {
+                            calendar.refetchEvents();
+                        }
+                    }
+                },
+
+                headerToolbar: {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'refresh'
+                },
+
+                events: {
+                    url: '../get_schedule.php',
+                    method: 'GET',
+                    failure: function () {
+                        console.error('Failed to fetch schedule.');
+                    }
+                },
+
+                eventDisplay: 'block',
+                dayMaxEvents: true,
+                height: '100%',
+            });
+
+            calendar.render();
+
+            const wrapper = document.querySelector('.scheduleBoxWrapper');
+            wrapper.addEventListener('transitionend', function (e) {
+                if (e.propertyName === 'width') {
+                    calendar.updateSize();
+                }
+            });
+        });
+</script>
+
 </body>
 </html>

@@ -22,41 +22,35 @@ $dashboardLink = ($role === 'admin')
     : 'employee_dashboard.php';
 ?>
 
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-
 <div class="sideBar">
     <div class="topSideBar">
-        <a href="<?= $dashboardLink ?>" class="logoWrapper">
-            <img src="../images/drt_sidebar_logo.png" class="sideBarLogo">
+        <a href="employee_dashboard.php" class="topSideBarItem">
+            <img src="../images/hsn_logo_white.png" class="sideBarLogo">
+            <span class="topSideBarText">DTR System</span>
         </a>
-
-        <div class="toggleWrapper">
-            <i class="bi bi-arrow-bar-left icon-open toggleSideBarIcon"></i>
-            <i class="bi bi-arrow-bar-right icon-close toggleSideBarIcon"></i>
-        </div>
     </div>
     
-    <div class="horizontalDivider"></div>
+    <a class="horizontalDivider"></a>
 
     <?php if ($role === 'employee'): ?>
         <div id="employeeMenu" class="sideBarMenu">
-            <a href="employee_dashboard.php" class="sideBarMenuItem">
-                <img src="../images/dashboard_icon.svg" class="dashboardIcon">
+            <a href="employee_dashboard.php" class="sideBarMenuItem active" >
+                <i class="bi bi-columns-gap sidebarIcon"></i>
                 <span class="menuText">Dashboard</span>
             </a>
 
             <a href="employee_records.php" class="sideBarMenuItem">
-                <img src="../images/records_icon.svg" class="recordsIcon">
+                <i class="bi bi-bar-chart-steps sidebarIcon"></i>
                 <span class="menuText">Records</span>
             </a>
 
             <a href="employee_schedule.php" class="sideBarMenuItem">
-                <img src="../images/schedule_icon.svg" class="scheduleIcon">
+                <i class="bi bi-calendar-week sidebarIcon"></i>
                 <span class="menuText">Schedules</span>
             </a>
 
             <a href="employee_logs.php" class="sideBarMenuItem">
-                <img src="../images/logs_icon.svg" class="logsIcon">
+                <i class="bi bi-clipboard-minus sidebarIcon"></i>
                 <span class="menuText">Logs</span>
             </a>
         </div>
@@ -87,3 +81,24 @@ $dashboardLink = ($role === 'admin')
     <?php endif; ?>
 </div>
 
+<!-- Java Script -->
+ <script>
+    document.addEventListener("DOMContentLoaded", () => {
+        const sidebar = document.querySelector(".sideBar");
+        const links = document.querySelectorAll(".sideBarMenuItem");
+
+        links.forEach(link => {
+            link.addEventListener("click", (e) => {
+                e.preventDefault(); // stop immediate navigation
+
+                // trigger collapse animation
+                sidebar.classList.add("force-collapse");
+
+                // wait for animation to finish
+                setTimeout(() => {
+                    window.location.href = link.href;
+                }, 250); // match CSS transition duration
+            });
+        });
+    });
+</script>

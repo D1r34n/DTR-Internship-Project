@@ -4,22 +4,35 @@
     --primary-hover: #7fae2f;
 
     /* TEXT */
-    --text-darkest: #000000;
-    --text-dark: #575656;
-    --text-light: #ffffff;
+    --text-darkest:  #000000;
+    --text-dark:     #575656;
+    --text-dark-muted: #666666;
+    --text-lightest: #ffffff;
+    --text-light:    rgba(255, 255, 255, 0.85);
+    --text-muted:    rgba(255, 255, 255, 0.55);
 
     /* BACKGROUNDS */
     --bg-light: #ffffff;
-    --bg-soft: #f5f5f5;
+    --bg-soft:  #f5f5f5;
+    --bg-dark:  #1e1e1e;
 
-    /* DANGER (LOGOUT / DELETE) */
-    --danger: #dc3545;
+    /* DANGER */
+    --danger:       #dc3545;
     --danger-hover: #b52b3a;
-    --danger-soft: #f8d7da;
+    --danger-soft:  #f8d7da;
 
     /* BORDERS */
     --border: rgba(0, 0, 0, 0.1);
 
     /* SHADOW */
     --shadow: rgba(0, 0, 0, 0.3);
+
+    /* Sidebar Colors */
+    --glass-bg:     rgba(255, 255, 255, 0.038);
+    --glass-border: rgba(255, 255, 255, 0.085);
+    --glass-top:    rgba(255, 255, 255, 0.16);
+    --glass-hover:  rgba(255, 255, 255, 0.06);
+    --sidebar-glow: 0 0 0 1px rgba(255,255,255,0.055),
+                    6px 0 48px rgba(0,0,0,0.55),
+                    inset -1px 0 0 rgba(255,255,255,0.04);
 }

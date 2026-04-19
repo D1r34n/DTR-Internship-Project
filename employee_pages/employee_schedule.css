@@ -1,95 +1,242 @@
-/* BACKGROUND BLUR */
+/* BACKGROUND IMAGE (with blur only) */
 body::before {
     content: '';
     position: fixed;
-    top: -20px;
-    left: -20px;
-    width: calc(100% + 40px);
-    height: calc(100% + 40px);
+    inset: 0;
+
+    background-image: url('../images/drt_bg.jpg');
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
+
+    /* blur directly on image */
     filter: blur(6px);
-    z-index: -1;
+    transform: scale(1.1); /* prevents edge cut-off from blur */
+
+    z-index: -2;
+}
+
+body::after {
+    content: none;
 }
 
 body {
     font-family: 'Poppins', sans-serif;
     min-height: 100vh;
+    margin: 0;
+    overflow-x: hidden;
 }
 
 .scheduleBoxWrapper {
     position: fixed;
-    top: 60px;
-    left: 180px;
-    width: calc(100% - 180px);
-    height: calc(100vh - 60px);
+    top: 90px;
+    left: calc(10px + var(--sidebar-width));
+    width: calc(100% - (25px + var(--sidebar-width)));
+    height: calc(100vh - 100px);
+
     display: flex;
     justify-content: center;
-    align-items: center;
+    align-items: stretch;
+
     z-index: 10;
+    transition: left 0.3s ease, width 0.3s ease;
 }
 
 .scheduleBox {
-    font-family: 'Poppins', sans-serif;
-    background-color: #ffffff;
-    padding: 30px;
-    border-radius: 12px;
-    width: 800px;
-    max-height: 80vh;
-    overflow-y: auto;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-    position: relative;
-    z-index: 10;
-}
+    background: var(--glass-bg);
+    backdrop-filter: blur(32px) saturate(160%) brightness(0.3);
+    -webkit-backdrop-filter: blur(32px) saturate(160%) brightness(0.3);
 
-.scheduleHeader {
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    padding: 1.5rem;
+
+    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.5);
+
+    overflow: hidden;
+    min-width: 0;
+
+    width: 100%;
+    height: 100%;
+
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 0.5rem;
+    flex-direction: column;
 }
 
-.tableTitle {
-    font-weight: 600;
-    margin: 0;
-}
+/* Full Calendar CSS Edit */
 
-.weekLabel {
-    font-size: 0.85rem;
-    color: #888;
-}
-
-/* ROW STYLES */
-.rest-day td {
-    background-color: #f8f9fa;
-    color: #aaa;
-}
-
-.today-row td {
-    background-color: #f0f7e6;
-    font-weight: 500;
-}
-
-/* BADGES */
-.badge {
+.fc {
+    color: var(--text-light);
     font-family: 'Poppins', sans-serif;
+    width: 100%;
+    height: 100%;
+}
+
+.fc .fc-toolbar {
+    margin-bottom: 1rem;
+}
+
+.fc .fc-toolbar-title {
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--text-light);
+}
+
+.fc .fc-button {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--glass-border);
+    color: var(--text-light);
+    font-family: 'Poppins', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 400;
+    padding: 0.3rem 0.8rem;
+    border-radius: 8px;
+    box-shadow: none;
+    transition: background 0.2s ease, color 0.2s ease;
+}
+
+.fc .rowgroup {
+    color: red;
+}
+
+.fc .fc-button:hover {
+    background: rgba(255, 255, 255, 0.14);
+    border-color: rgba(255, 255, 255, 0.2);
+    color: var(--text-lightest);
+    box-shadow: none;
+}
+
+.fc .fc-button:focus {
+    box-shadow: none;
+    outline: none;
+}
+
+.fc .fc-button-primary:not(:disabled).fc-button-active,
+.fc .fc-button-primary:not(:disabled):active {
+    background: var(--primary-color);
+    border-color: var(--primary-hover);
+    color: #fff;
+    box-shadow: none;
+}
+
+/* Current month button */
+.fc .fc-today-button {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--glass-border);
+    color: var(--text-light);
+    font-family: 'Poppins', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 400;
+    padding: 0.3rem 0.8rem;
+    border-radius: 8px;
+    box-shadow: none;
+    transition: background 0.2s ease, color 0.2s ease;
+}
+
+
+    
+.fc .fc-today-button:hover {
+    background: rgba(255, 255, 255, 0.14);
+    border-color: rgba(255, 255, 255, 0.2);
+    color: var(--text-lightest);
+    box-shadow: none;
+}
+
+.fc .fc-today-button:active {
+    background: var(--primary-hover);
+    border-color: var(--primary-hover);
+    color: #ffffff;
+    box-shadow: none;
+}
+
+.fc .fc-today-button:disabled {
+    background: var(--primary-color);
+    border-color: var(--primary-hover);
+    color: #ffffff;
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.fc .fc-col-header-cell {
+    background: rgba(255, 255, 255, 0.04);
+    border-color: var(--glass-border);
+    padding: 0.5rem 0;
+}
+
+.fc .fc-col-header-cell-cushion {
+    color: var(--text-light);
     font-size: 0.75rem;
-    padding: 0.35rem 0.75rem;
-    border-radius: 20px;
+    font-weight: 500;
+    text-decoration: none;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
 }
 
-.workBadge {
-    background-color: #97be41;
-    color: white;
+.fc .fc-daygrid-day {
+    background: transparent;
+    border-color: var(--glass-border);
 }
 
-.restBadge {
-    background-color: #0080ff;
-    color: #888;
+.fc .fc-daygrid-day:hover {
+    background: rgba(255, 255, 255, 0.03);
 }
 
-.todayBadge {
-    background-color: #ffc107;
-    color: white;
+.fc .fc-daygrid-day-number {
+    color: var(--text-light);
+    font-size: 0.8rem;
+    text-decoration: none;
+    padding: 4px 8px;
+}
+
+.fc .fc-day-today {
+    background: rgba(151, 190, 65, 0.08) !important;
+}
+
+.fc .fc-day-today .fc-daygrid-day-number {
+    color: var(--primary-color);
+    font-weight: 600;
+}
+
+.fc .fc-scrollgrid {
+    border-color: var(--glass-border);
+    border-radius: 10px;
+    overflow: hidden;
+    
+}
+
+.fc .fc-scrollgrid-section > td,
+.fc .fc-scrollgrid-section > th {
+    border-color: var(--glass-border);
+    background-color: transparent;
+}
+
+.fc .fc-event {
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-family: 'Poppins', sans-serif;
+    padding: 2px 6px;
+    font-weight: 500;
+    border: none;
+    cursor: default;
+}
+
+.fc .fc-event:hover {
+    filter: brightness(1.1);
+}
+
+/* No events text */
+.fc .fc-daygrid-body .fc-daygrid-day-events:empty::after {
+    content: '—';
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    padding: 4px 8px;
+    display: block;
+}
+
+.fc .fc-daygrid-body,
+.fc .fc-scrollgrid-sync-table,
+.fc table,
+.fc td,
+.fc th {
+    transition: width 0.38s cubic-bezier(0.4, 0, 0.2, 1);
 }
