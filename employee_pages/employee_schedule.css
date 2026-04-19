@@ -16,10 +16,6 @@ body::before {
     z-index: -2;
 }
 
-body::after {
-    content: none;
-}
-
 body {
     font-family: 'Poppins', sans-serif;
     min-height: 100vh;
@@ -29,10 +25,12 @@ body {
 
 .scheduleBoxWrapper {
     position: fixed;
-    top: 90px;
-    left: calc(10px + var(--sidebar-width));
-    width: calc(100% - (25px + var(--sidebar-width)));
-    height: calc(100vh - 100px);
+    top: 84px;
+    left: var(--sidebar-width);
+    width: calc(100% - var(--sidebar-width));
+    height: calc(100vh - 84px);
+
+    padding: 1rem 2rem;
 
     display: flex;
     justify-content: center;
@@ -95,16 +93,13 @@ body {
     transition: background 0.2s ease, color 0.2s ease;
 }
 
-.fc .rowgroup {
-    color: red;
-}
-
 .fc .fc-button:hover {
     background: rgba(255, 255, 255, 0.14);
     border-color: rgba(255, 255, 255, 0.2);
     color: var(--text-lightest);
     box-shadow: none;
 }
+
 
 .fc .fc-button:focus {
     box-shadow: none;
@@ -133,8 +128,6 @@ body {
     transition: background 0.2s ease, color 0.2s ease;
 }
 
-
-    
 .fc .fc-today-button:hover {
     background: rgba(255, 255, 255, 0.14);
     border-color: rgba(255, 255, 255, 0.2);
@@ -150,11 +143,11 @@ body {
 }
 
 .fc .fc-today-button:disabled {
-    background: var(--primary-color);
-    border-color: var(--primary-hover);
+    background-color: #97be41;
+    border-color: #97be41;
     color: #ffffff;
-    opacity: 0.45;
-    cursor: not-allowed;
+    opacity: 1;
+    cursor: default;
 }
 
 .fc .fc-col-header-cell {

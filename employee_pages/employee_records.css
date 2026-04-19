@@ -1,154 +1,245 @@
-/* BACKGROUND BLUR */
+/* BACKGROUND IMAGE (with blur only) */
 body::before {
     content: '';
     position: fixed;
-    top: -20px;
-    left: -20px;
-    width: calc(100% + 40px);
-    height: calc(100% + 40px);
+    inset: 0;
+
+    background-image: url('../images/drt_bg.jpg');
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
+
+    /* blur directly on image */
     filter: blur(6px);
-    z-index: -1;
+    transform: scale(1.1); /* prevents edge cut-off from blur */
+
+    z-index: -2;
 }
 
 body {
     font-family: 'Poppins', sans-serif;
     min-height: 100vh;
+    margin: 0;
+    overflow-x: hidden;
 }
 
 .recordBoxWrapper {
     position: fixed;
-    top: 60px;
-    left: calc(10px + var(--sidebar-width));
-    width: calc(100% - (25px + var(--sidebar-width)));
-    height: calc(100vh - 60px);
+    top: 84px;
+    left: var(--sidebar-width);
+    width: calc(100% - var(--sidebar-width));
+    height: calc(100vh - 84px);
+
+    padding: 1rem 2rem;
+
     display: flex;
     justify-content: center;
-    align-items: center;
-    z-index: 10;
+    align-items: stretch;
 
+    z-index: 10;
     transition: left 0.3s ease, width 0.3s ease;
 }
 
 .recordBox {
-    font-family: 'Poppins', sans-serif;
-    background-color: #ffffff;
-    padding: 30px;
-    border-radius: 12px;
-    width: 1120px;
-    height: 500px;
-    overflow-y: auto;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-    position: relative;
-    z-index: 10;
-}
+    background: var(--glass-bg);
+    backdrop-filter: blur(32px) saturate(160%) brightness(0.3);
+    -webkit-backdrop-filter: blur(32px) saturate(160%) brightness(0.3);
 
-.tableTitle {
-    text-align: left;
-    font-weight: 600;
-    margin-bottom: 0;
-}
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    padding: 1.5rem;
 
-/* TABS */
-.tabButtons {
+    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.5);
+
+    overflow: hidden;
+    min-width: 0;
+
+    width: 100%;
+    height: 100%;
+
     display: flex;
-    gap: 0.5rem;
-    margin-bottom: 1.5rem;
-    border-bottom: 2px solid #e0e0e0;
-    padding-bottom: 0.5rem;
+    flex-direction: column;
 }
 
-.tabBtn {
-    background: none;
-    border: none;
-    font-family: 'Poppins', sans-serif;
-    font-size: 1rem;
-    padding: 0.4rem 1.2rem;
-    border-radius: 6px 6px 0 0;
-    cursor: pointer;
-    color: #888;
-    font-weight: 500;
-    transition: all 0.2s ease;
+.recordHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
 }
 
-.tabBtn.active {
-    background-color: #97be41;
+.recordTitle {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #fff;
+}
+
+.datePickerForm {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.datePickerForm input {
+    padding: 6px 10px;
+    border-radius: 6px;
+    border: 1px solid rgba(255,255,255,0.2);
+    background: rgba(0,0,0,0.3);
     color: white;
 }
 
-.tabBtn:hover:not(.active) {
-    background-color: #f0f0f0;
-    color: #333;
+.datePickerForm button {
+    padding: 6px 12px;
+    border: none;
+    border-radius: 6px;
+    background: #4facfe;
+    color: black;
+    cursor: pointer;
 }
 
-/* TIMELINE */
-.timelineWrapper {
-    margin: 2rem 0 1rem 0;
+.gantt {
+    display: flex;
+    flex-direction: column;
+    gap: 3rem;
 }
 
-.timelineBar {
+.gantt-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.gantt-cursor {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 100%;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+    z-index: 10;
+}
+
+/* show only on hover */
+.gantt-bar-container:hover .gantt-cursor {
+    opacity: 1;
+}
+
+.gantt-cursor-line {
+    position: absolute;
+    top: 0;
+    width: 2px;
+    height: 100%;
+    background: rgba(255,255,255,0.7);
+    transform: translateX(-1px);
+}
+
+.gantt-cursor-label {
+    position: absolute;
+    top: -18px;
+    transform: translateX(-50%);
+    font-size: 0.7rem;
+    color: #fff;
+    background: rgba(0,0,0,0.5);
+    padding: 2px 6px;
+    border-radius: 4px;
+    white-space: nowrap;
+}
+
+.gantt-label {
+    width: 80px;
+    font-size: 0.85rem;
+    color: #ccc;
+}
+
+.gantt-bar-container {
     position: relative;
-    height: 40px;
-    background-color: #e9ecef;
-    border-radius: 20px;
-    overflow: hidden;
-    margin-bottom: 0.5rem;
+    flex: 1;
+    height: 30px;
+    background: rgba(255,255,255,0.05);
+
+    background-image: repeating-linear-gradient(
+        to right,
+        rgba(255, 255, 255, 0.08) 0px,
+        rgba(255, 255, 255, 0.08) 1px,
+        transparent 1px,
+        transparent calc(100% / 24)
+    );
+
+    border-radius: 8px;
+    overflow: visible;
 }
 
-.greenBar {
+.gantt-bar-container:hover .gantt-scale {
+    opacity: 1;
+}
+
+/* scale hidden */
+.gantt-scale {
+    position: absolute;
+    bottom: -18px;
+    left: 0;
+    width: 100%;
+    height: 20px;
+
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    pointer-events: none;
+}
+
+.gantt-scale-item {
+    position: absolute;
+    transform: translateX(-50%);
+    font-size: 0.7rem;
+    color: #aaa;
+    white-space: nowrap;
+}
+
+.gantt-bar {
     position: absolute;
     top: 0;
     height: 100%;
-    background-color: #97be41;
-    border-radius: 20px;
-    transition: all 0.3s ease;
+    background: linear-gradient(90deg, #4facfe, #00f2fe);
+    border-radius: 10px;
 }
 
-.timeLabels {
-    display: flex;
-    justify-content: space-between;
-    font-size: 0.7rem;
-    color: #888;
-    padding: 0 0.2rem;
+.gantt-marker {
+    position: absolute;
+    top: 0;
+    width: 2px;
+    height: 100%;
+    z-index: 3;
 }
 
-.timeStats {
-    display: flex;
-    justify-content: center;
-    gap: 2rem;
-    margin-top: 1.5rem;
-    font-size: 0.95rem;
-    color: #444;
+/* Start of shift */
+.gantt-marker.start {
+    background: #00f2fe;
 }
 
-.timeStats span {
-    display: flex;
-    align-items: center;
-    gap: 0.4rem;
+/* End of shift */
+.gantt-marker.end {
+    background: #ff7675;
 }
 
-.dropdownTabWrapper {
-    display: flex;
-    gap: 0.75rem;
-    margin-bottom: 1.5rem;
+/* optional glow effect */
+.gantt-marker.start::after,
+.gantt-marker.end::after {
+    content: '';
+    position: absolute;
+    top: -3px;
+    left: -4px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
 }
 
-.dropdownTab {
-    font-family: 'Poppins', sans-serif;
-    font-size: 1rem;
-    padding: 0.4rem 1.2rem;
-    border-radius: 6px;
-    border: 2px solid #97be41;
-    color: #333;
-    background-color: white;
-    cursor: pointer;
-    outline: none;
-    transition: all 0.2s ease;
+.gantt-marker.start::after {
+    background: #00f2fe;
+    box-shadow: 0 0 8px #00f2fe;
 }
 
-.dropdownTab:focus {
-    border-color: #7ea832;
+.gantt-marker.end::after {
+    background: #ff7675;
+    box-shadow: 0 0 8px #ff7675;
 }
-

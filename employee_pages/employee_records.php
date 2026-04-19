@@ -1,50 +1,40 @@
 <?php
 session_start();
 
-// Check if user is logged in else redirect to login page
 if (!isset($_SESSION['user_id'])) {
     header("Location: ../index.php");
     exit();
 }
 
+date_default_timezone_set('UTC');
+
 require_once '../db.php';
 
 $employeeId = $_SESSION['user_id'];
-$today = date('Y-m-d');
 
-// Get all attendance records
+$startDate = $_GET['start'] ?? null;
+$endDate   = $_GET['end'] ?? null;
+
+if (!$startDate && !$endDate) {
+    // default = current month
+    $startDate = date('Y-m-01');
+    $endDate   = date('Y-m-t');
+}
+
 $stmt = $pdo->prepare("
     SELECT 
         date,
-        time_in as first_time_in,
-        time_out as last_time_out,
+        time_in,
+        time_out,
         total_work_hours,
         status
     FROM attendance
     WHERE employee_id = ?
-    ORDER BY date DESC
+    AND date BETWEEN ? AND ?
+    ORDER BY date ASC
 ");
-$stmt->execute([$employeeId]);
+$stmt->execute([$employeeId, $startDate, $endDate]);
 $records = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-// Get today's time in and out for chart
-$todayStmt = $pdo->prepare("
-    SELECT 
-        time_in as first_time_in,
-        time_out as last_time_out
-    FROM attendance
-    WHERE employee_id = ?
-    AND date = ?
-");
-$todayStmt->execute([$employeeId, $today]);
-$todayRecord = $todayStmt->fetch(PDO::FETCH_ASSOC);
-
-$firstTimeInRaw = $todayRecord['first_time_in'] ?? null;
-$lastTimeOutRaw = $todayRecord['last_time_out'] ?? null;
-
-// formatted (for display only)
-$firstTimeInDisplay = $firstTimeInRaw ? date('h:i A', strtotime($firstTimeInRaw)) : null;
-$lastTimeOutDisplay = $lastTimeOutRaw ? date('h:i A', strtotime($lastTimeOutRaw)) : null;
 ?>
 
 <!doctype html>
@@ -59,234 +49,168 @@ $lastTimeOutDisplay = $lastTimeOutRaw ? date('h:i A', strtotime($lastTimeOutRaw)
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        body::before { background-image: url('../images/drt_bg.jpg'); }
-    </style>
 </head>
 <body>
     <?php include '../sidebar.php'; ?>
-    
-    <?php 
+
+    <?php
     $current_page = 'records';
     include '../topbar.php'; ?>
 
     <div class="recordBoxWrapper">
         <div class="recordBox">
+            <div class="recordHeader">
 
-            <!-- DROPDOWN -->
-            <div class="dropdownTabWrapper">
-            <select class="dropdownTab" onchange="switchTab(this.value)">
-            <option value="chart">Chart</option>
-            <option value="table">Table</option>
-    </select>
-            <select class="dropdownTab" onchange="switchPeriod(this.value)">
-            <option value="weekly">Weekly</option>
-            <option value="monthly">Monthly</option>
-    </select>
-</div>
-
-            <!-- TABLE TAB -->
-           <div id="table" class="tabContent" style="display:none;">
-                <h5 class="tableTitle">My Attendance Records</h5>
-                <table class="table table-bordered table-hover mt-3">
-                    <thead>
-                        <tr>
-                            <th>Date</th>
-                            <th>Time In</th>
-                            <th>Time Out</th>
-                            <th>Total Work Hours</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody id="attendance_table_body"></tbody>
-                </table>
-            </div>
-
-            <!-- CHART TAB -->
-            <div id="chart" class="tabContent">
-                <h5 class="tableTitle">Today's Timeline — <?= date('F d, Y') ?></h5>
-                <div class="timelineWrapper">
-                    <div class="timelineBar">
-                        <?php if ($firstTimeInRaw): ?>
-                            <?php
-                                // Timeline from 8:30 to 17:30 = 540 minutes total
-                                $scheduleStart = strtotime(date('Y-m-d') . ' 08:30:00');
-                                $scheduleEnd = strtotime(date('Y-m-d') . ' 17:30:00');
-                                $totalMinutes = ($scheduleEnd - $scheduleStart) / 60;
-
-                                $inMinutes = (strtotime($firstTimeInRaw) - $scheduleStart) / 60;
-
-                                $outMinutes = $lastTimeOutRaw 
-                                    ? (strtotime($lastTimeOutRaw) - $scheduleStart) / 60 
-                                    : (time() - $scheduleStart) / 60;
-
-                                // Clamp values
-                                $inMinutes = max(0, min($inMinutes, $totalMinutes));
-                                $outMinutes = max(0, min($outMinutes, $totalMinutes));
-
-                                $leftPercent = ($inMinutes / $totalMinutes) * 100;
-                                $widthPercent = (($outMinutes - $inMinutes) / $totalMinutes) * 100;
-                            ?>
-                            <div class="greenBar" style="left: <?= $leftPercent ?>%; width: <?= $widthPercent ?>%;"></div>
-                        <?php endif; ?>
-                    </div>
-
-                    <!-- TIME LABELS -->
-                    <div class="timeLabels">
-                        <span>8:30 AM</span>
-                        <span>9:30 AM</span>
-                        <span>10:30 AM</span>
-                        <span>11:30 AM</span>
-                        <span>12:30 PM</span>
-                        <span>1:30 PM</span>
-                        <span>2:30 PM</span>
-                        <span>3:30 PM</span>
-                        <span>4:30 PM</span>
-                        <span>5:30 PM</span>
-                    </div>
+                <div class="recordTitle">
+                    <?= date('F d, Y', strtotime($startDate)) ?>
+                    -
+                    <?= date('F d, Y', strtotime($endDate)) ?>
                 </div>
 
-                <div id="timeStats"></div>
+                <form method="GET" class="datePickerForm">
+                    <input 
+                        type="date" 
+                        name="start" 
+                        value="<?= $startDate ?>"
+                    >
+
+                    <span style="color:#aaa;">to</span>
+
+                    <input 
+                        type="date" 
+                        name="end" 
+                        value="<?= $endDate ?>"
+                    >
+
+                    <button type="submit">
+                        <i class="bi bi-funnel"></i> Filter
+                    </button>
+                </form>
+
             </div>
 
+            <div class="gantt">
+
+                <?php foreach ($records as $row): ?>
+                    <?php
+                        if (!$row['time_in'] || !$row['time_out']) continue;
+
+                        // 🔹 Combine date + time
+                        $start = strtotime($row['date'] . ' ' . $row['time_in']);
+                        $end   = strtotime($row['date'] . ' ' . $row['time_out']);
+
+                        // 🔹 Handle cross-midnight
+                        if ($end <= $start) {
+                            $end = strtotime('+1 day', $end);
+                        }
+
+                        // 🔹 Dynamic range (2h padding)
+                        $rangeStart = strtotime('-2 hours', $start);
+                        $rangeEnd   = strtotime('+2 hours', $end);
+                        $range = $rangeEnd - $rangeStart;
+
+                        // 🔹 Bar position
+                        $left = (($start - $rangeStart) / $range) * 100;
+                        $width = (($end - $start) / $range) * 100;
+                    ?>
+
+                    <div class="gantt-row">
+                        <div class="gantt-label">
+                            <?= date('M d', strtotime($row['date'])) ?>
+                        </div>
+
+                        <div class="gantt-bar-container"
+                        data-range-start="<?= $rangeStart ?>"
+                        data-range-end="<?= $rangeEnd ?>">
+                            <!-- Gantt cursor -->
+                            <div class="gantt-cursor">
+                                <div class="gantt-cursor-line"></div>
+                                <div class="gantt-cursor-label"></div>
+                            </div>
+
+                            <!-- 🔹 Dynamic scale (aligned perfectly) -->
+                            <div class="gantt-scale">
+                                <?php
+                                    $step = 3600; // 1 hour
+
+                                    for ($t = $rangeStart; $t <= $rangeEnd; $t += $step):
+                                        $pos = (($t - $rangeStart) / ($rangeEnd - $rangeStart)) * 100;
+                                ?>
+                                    <div class="gantt-scale-item" style="left: <?= $pos ?>%">
+                                        <?= date('g:i A', $t) ?>
+                                    </div>
+                                <?php endfor; ?>
+                            </div>
+                            
+                            <?php
+                                $startLabel = date('g:i A', $start);
+                                $endLabel = date('g:i A', $end);
+
+                                $startPos = (($start - $rangeStart) / $range) * 100;
+                                $endPos   = (($end - $rangeStart) / $range) * 100;
+                            ?>
+
+                            <div class="gantt-marker start"
+                                style="left: <?= $startPos ?>%"
+                                title="Start: <?= $startLabel ?>">
+                            </div>
+
+                            <!-- Shift end marker -->
+                            <div class="gantt-marker end"
+                                style="left: <?= $endPos ?>%"
+                                title="End: <?= $endLabel ?>">
+                            </div>
+
+                            <!-- 🔹 Bar -->
+                            <div 
+                                class="gantt-bar"
+                                style="left: <?= $left ?>%; width: <?= $width ?>%;"
+                                title="In: <?= date('M d g:i A', $start) ?> | Out: <?= date('M d g:i A', $end) ?>">
+                            </div>
+
+                        </div>
+                    </div>
+
+                <?php endforeach; ?>
+
+            </div>
         </div>
     </div>
 
-    <script>
-    function switchTab(tab) {
-        document.querySelectorAll('.tabContent').forEach(t => t.style.display = 'none');
-        document.getElementById(tab).style.display = 'block';
-    }
-    function switchPeriod(period) {
-        if (period === 'weekly') {
-            // will be wired up soon
-            console.log('Weekly selected');
-        } else if (period === 'monthly') {
-            // not yet implemented
-            console.log('Monthly — coming soon');
-        }
-    }
+<script>
+document.querySelectorAll('.gantt-bar-container').forEach(container => {
+    
+    const line = container.querySelector('.gantt-cursor-line');
+    const label = container.querySelector('.gantt-cursor-label');
+    
+    // We target the SCALE specifically because that's what the PHP loop uses
+    const scale = container.querySelector('.gantt-scale');
 
-    document.addEventListener("DOMContentLoaded", function () {
-        loadAttendance();
+    const rangeStart = parseInt(container.dataset.rangeStart);
+    const rangeEnd = parseInt(container.dataset.rangeEnd);
+    const range = rangeEnd - rangeStart;
+
+    container.addEventListener('mousemove', (e) => {
+        const rect = container.getBoundingClientRect();
+        let x = e.clientX - rect.left;
+        let percent = Math.max(0, Math.min(1, x / rect.width));
+
+        const time = rangeStart + (percent * range);
+        const date = new Date(time * 1000);
+
+        const timeString = date.toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+        });
+
+
+        const left = percent * 100;
+        line.style.left = left + '%';
+        label.style.left = left + '%';
+        label.textContent = timeString;
     });
-
-    function loadAttendance() {
-        fetch('../get_attendance.php')
-            .then(res => res.json())
-            .then(data => {
-
-                const tbody = document.getElementById('attendance_table_body');
-                const chartBar = document.querySelector('.timelineBar');
-
-                tbody.innerHTML = '';
-
-                if (!data || data.length === 0) {
-                    tbody.innerHTML = `
-                        <tr>
-                            <td colspan="5" class="text-center">No records found.</td>
-                        </tr>`;
-                    if (chartBar) chartBar.innerHTML = '';
-                    return;
-                }
-
-                console.log('Attendance refreshed');
-
-                // =========================
-                // TABLE RENDER
-                // =========================
-                data.forEach(row => {
-
-                    const timeIn = (row.time_in && row.time_in !== "0000-00-00 00:00:00")
-                        ? new Date(`${row.date}T${row.time_in}`).toLocaleTimeString()
-                        : '—';
-
-                    const timeOut = (row.time_out && row.time_out !== "0000-00-00 00:00:00")
-                        ? new Date(`${row.date}T${row.time_out}`).toLocaleTimeString()
-                        : '—';
-
-                    tbody.innerHTML += `
-                        <tr>
-                            <td>${new Date(row.date).toLocaleDateString()}</td>
-                            <td>${timeIn}</td>
-                            <td>${timeOut}</td>
-                            <td>${row.total_work_hours ?? '—'} hrs</td>
-                            <td>${row.status ?? '—'}</td>
-                        </tr>
-                    `;
-                });
-
-                // =========================
-                // CHART UPDATE (TODAY ONLY)
-                // =========================
-
-                const today = new Date().toISOString().slice(0, 10);
-                const todayRecord = data.find(r => r.date === today);
-                
-                const timeStats = document.getElementById('timeStats');
-                
-                if (!timeStats) return;
-
-                if (!todayRecord || !todayRecord.time_in) {
-                    timeStats.innerHTML = `
-                        <p class="text-center mt-4 text-muted">No data for today yet.</p>
-                    `;
-                } else {
-
-                    const timeIn = new Date(`${today}T${todayRecord.time_in}`).toLocaleTimeString();
-
-                    const timeOut = todayRecord.time_out
-                        ? new Date(`${today}T${todayRecord.time_out}`).toLocaleTimeString()
-                        : null;
-
-                    timeStats.innerHTML = `
-                        <div class="timeStats">
-                            <span>
-                                <i class="bi bi-box-arrow-in-right"></i>
-                                Time In: <strong>${timeIn}</strong>
-                            </span>
-
-                            ${
-                                timeOut
-                                    ? `<span>
-                                        <i class="bi bi-box-arrow-right"></i>
-                                        Time Out: <strong>${timeOut}</strong>
-                                    </span>`
-                                    : `<span>
-                                        <i class="bi bi-clock"></i>
-                                        Still working...
-                                    </span>`
-                            }
-                        </div>
-                    `;
-                }
-
-                if (!todayRecord || !chartBar) return;
-
-                const scheduleStart = new Date(`${today}T08:30:00`);
-                const scheduleEnd = new Date(`${today}T17:30:00`);
-                const totalMinutes = (scheduleEnd - scheduleStart) / 60000;
-
-                const inTime = new Date(`${today}T${todayRecord.time_in}`);
-                const outTime = todayRecord.time_out
-                    ? new Date(`${today}T${todayRecord.time_out}`)
-                    : new Date();
-
-                const inMinutes = (inTime - scheduleStart) / 60000;
-                const outMinutes = (outTime - scheduleStart) / 60000;
-
-                const leftPercent = Math.max(0, Math.min((inMinutes / totalMinutes) * 100, 100));
-                const widthPercent = Math.max(0, Math.min(((outMinutes - inMinutes) / totalMinutes) * 100, 100));
-
-                chartBar.innerHTML = `
-                    <div class="greenBar"
-                        style="left:${leftPercent}%; width:${widthPercent}%;">
-                    </div>
-                `;
-            });
-    }
-    </script>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
+});
+</script>
 </body>
 </html>

@@ -34,22 +34,26 @@ $dashboardLink = ($role === 'admin')
 
     <?php if ($role === 'employee'): ?>
         <div id="employeeMenu" class="sideBarMenu">
-            <a href="employee_dashboard.php" class="sideBarMenuItem active" >
+            <a href="employee_dashboard.php"
+            class="sideBarMenuItem <?= ($current_page === 'dashboard') ? 'active' : '' ?>">
                 <i class="bi bi-columns-gap sidebarIcon"></i>
                 <span class="menuText">Dashboard</span>
             </a>
 
-            <a href="employee_records.php" class="sideBarMenuItem">
+            <a href="employee_records.php"
+            class="sideBarMenuItem <?= ($current_page === 'records') ? 'active' : '' ?>">
                 <i class="bi bi-bar-chart-steps sidebarIcon"></i>
                 <span class="menuText">Records</span>
             </a>
 
-            <a href="employee_schedule.php" class="sideBarMenuItem">
+            <a href="employee_schedule.php" 
+            class="sideBarMenuItem <?= ($current_page === 'schedule') ? 'active' : '' ?>">
                 <i class="bi bi-calendar-week sidebarIcon"></i>
                 <span class="menuText">Schedules</span>
             </a>
 
-            <a href="employee_logs.php" class="sideBarMenuItem">
+            <a href="employee_logs.php"
+            class="sideBarMenuItem <?= ($current_page === 'logs') ? 'active' : '' ?>">
                 <i class="bi bi-clipboard-minus sidebarIcon"></i>
                 <span class="menuText">Logs</span>
             </a>

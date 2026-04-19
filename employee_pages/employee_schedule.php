@@ -1,3 +1,4 @@
+<!-- PHP -->
 <?php
 session_start();
 
@@ -5,8 +6,12 @@ if (!isset($_SESSION['user_id'])) {
     header("Location: ../index.php");
     exit();
 }
+
+// Set current page
+$current_page = 'schedule';
 ?>
 
+<!-- HTML -->
 <!doctype html>
 <html lang="en">
 <head>
@@ -22,15 +27,14 @@ if (!isset($_SESSION['user_id'])) {
     <link rel="stylesheet" href="employee_schedule.css">
 </head>
 <body>
-
+    <!-- Include side and top bar -->
     <?php include '../sidebar.php'; ?>
-    <?php
-    $current_page = 'schedule';
-    include '../topbar.php';
-    ?>
+    <?php include '../topbar.php'; ?>
 
+    <!-- Schedule box wrapper -->
     <div class="scheduleBoxWrapper">
         <div class="scheduleBox">
+            <!-- FullCalendar -->
             <div id="calendar"></div>
         </div>
     </div>
@@ -38,6 +42,7 @@ if (!isset($_SESSION['user_id'])) {
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
 
+    <!-- Java Script  -->
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const calendarEl = document.getElementById('calendar');
@@ -83,7 +88,6 @@ if (!isset($_SESSION['user_id'])) {
                 }
             });
         });
-</script>
-
+    </script>
 </body>
 </html>
