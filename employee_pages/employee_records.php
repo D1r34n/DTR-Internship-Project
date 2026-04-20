@@ -104,7 +104,9 @@ $schedules = getSchedulesByDateRange($pdo, $employeeId, $startDate, $endDate);
 
         <!-- Gantt chart: one row per attendance record -->
         <div class="ganttContainer">
-            <?php foreach ($records as $row): ?>
+            <?php 
+            $hasRows = false;
+            foreach ($records as $row): ?>
             <?php
             // Look up the schedule for this specific work date (may be null if unscheduled)
             $sched = $schedules[$row['work_date']] ?? null;
@@ -114,6 +116,7 @@ $schedules = getSchedulesByDateRange($pdo, $employeeId, $startDate, $endDate);
 
             // Skip rows that have no renderable data
             if ($ganttBar === null) continue;
+            $hasRows = true;
             ?>
 
             <?php if ($ganttBar['type'] === 'absent_or_future'): ?>
@@ -227,6 +230,13 @@ $schedules = getSchedulesByDateRange($pdo, $employeeId, $startDate, $endDate);
 
             <?php endif; ?>
             <?php endforeach; ?>
+
+            <?php if (!$hasRows): ?>
+                <div class="ganttEmpty">
+                    <i class="bi bi-calendar-x ganttEmptyIcon"></i>
+                    <div>No records found for this period.</div>
+                </div>
+            <?php endif; ?>
 
         </div>
     </div>

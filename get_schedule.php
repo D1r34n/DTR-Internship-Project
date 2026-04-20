@@ -78,7 +78,10 @@ foreach ($schedules as $row) {
 
     $startDate   = date('Y-m-d', strtotime($startDT));
     $endDate     = date('Y-m-d', strtotime($endDT));
-    $isOvernight = $endDate > $startDate;
+    $isOvernight = $endDate > $startDate; 
+
+    // 6pm to 5:59AM is night shift
+    // 6am is dayshift
 
     $startTimeStr = date('h:i A', strtotime($startDT));
     $endTimeStr   = date('h:i A', strtotime($endDT));

@@ -237,6 +237,22 @@ body::after {
     gap: 10px;
 }
 
+.ganttEmpty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 3rem;
+    color: #aaa;
+    font-size: 0.9rem;
+}
+
+.ganttEmptyIcon {
+    font-size: 2rem;
+    opacity: 0.4;
+}
+
 .ganttCursor {
     position: absolute;
     top: 0;

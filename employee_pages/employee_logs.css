@@ -195,10 +195,26 @@ body::after {
     transition: all 0.2s ease;
 }
 
-.table tbody tr:hover {
+.table tbody tr:not(.emptyRow):hover {
     background: rgba(255,255,255,0.04);
     backdrop-filter: blur(6px);
     box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+}
+
+.table tbody tr.emptyRow,
+.table tbody tr.emptyRow:hover {
+    background: transparent !important;
+    backdrop-filter: none !important;
+    box-shadow: none !important;
+    transform: none !important;
+    border-bottom: none;
+}
+
+/* also kill cell-level visuals */
+.table tbody tr.emptyRow td {
+    background: transparent !important;
+    border-bottom: none !important;  /* ← add this */
+    pointer-events: none;            /* ← add this to kill hover entirely */
 }
 
 /* cells */
@@ -295,6 +311,24 @@ body::after {
 .text-center {
     color: rgba(255,255,255,0.6);
 }
+
+/* Empty row */
+.logsEmpty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 3rem;
+    color: #aaa;
+    font-size: 0.9rem;
+}
+
+.logsEmptyIcon {
+    font-size: 2rem;
+    opacity: 0.4;
+}
+
 
 /* =========================
    FLATPICKR

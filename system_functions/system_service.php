@@ -131,8 +131,9 @@ function processAttendanceTap($pdo, $employee_id, $lat, $lng, $accuracy, $now = 
     }
 
     // If employee forgot to time out from a previous shift, auto-finalize those expired shifts
-    if ($nextType === 'IN' && $lastLog && $lastLog['log_type'] === 'IN') {
-        $debug[] = "Detected missed time-out from previous shift, checking for expired shifts";
+    // Also runs when there's no previous log — catches shifts that were never started
+    if ($nextType === 'IN' && (!$lastLog || $lastLog['log_type'] === 'IN')) {
+        $debug[] = "Checking for expired unfinalized shifts...";
 
         $stmt = $pdo->prepare("
             SELECT
@@ -148,7 +149,7 @@ function processAttendanceTap($pdo, $employee_id, $lat, $lng, $accuracy, $now = 
             AND s.is_rest_day = 0
             AND (
                     a.work_date IS NULL
-                OR  a.status = 'incomplete'
+                OR  a.status NOT IN ('present', 'late', 'undertime', 'overtime', 'absent')
             )
             ORDER BY s.scheduled_end_datetime DESC
         ");
@@ -156,7 +157,6 @@ function processAttendanceTap($pdo, $employee_id, $lat, $lng, $accuracy, $now = 
         $expiredShifts = $stmt->fetchAll(PDO::FETCH_ASSOC);
         $debug[] = "Expired shifts found: " . count($expiredShifts);
 
-        // Finalize each expired shift individually
         foreach ($expiredShifts as $expiredShift) {
             try {
                 finalizeEmployeeAttendance($pdo, $employee_id, $expiredShift);
@@ -298,23 +298,24 @@ function processAttendanceTapTest(PDO $pdo, int $employeeId, string $now): array
     ]);
     $debug[] = "Log inserted: {$nextType} at {$now}";
 
-    // Find schedule for the simulated date and finalize attendance
-    $simDate = date('Y-m-d', strtotime($now));
+   // Find schedule that covers the simulated time — handles midnight-crossing shifts
     $stmt = $pdo->prepare("
         SELECT schedule_date, scheduled_start_datetime, scheduled_end_datetime
         FROM schedules
         WHERE employee_id = ?
-          AND schedule_date = ?
+        AND ? BETWEEN DATE_SUB(scheduled_start_datetime, INTERVAL 2 HOUR)
+                    AND DATE_ADD(scheduled_end_datetime, INTERVAL 6 HOUR)
+        ORDER BY scheduled_end_datetime DESC
         LIMIT 1
     ");
-    $stmt->execute([$employeeId, $simDate]);
+    $stmt->execute([$employeeId, $now]);
     $schedule = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if ($schedule) {
         finalizeEmployeeAttendance($pdo, $employeeId, $schedule);
-        $debug[] = "Attendance finalized for: {$simDate}";
+        $debug[] = "Attendance finalized for: {$schedule['schedule_date']}";
     } else {
-        $debug[] = "No schedule found for: {$simDate}";
+        $debug[] = "No schedule found for simulated time: {$now}";
     }
 
     return [
@@ -355,7 +356,12 @@ function finalizeEmployeeAttendance(PDO $pdo, int $employeeId, array $schedule)
             )
             VALUES (?, ?, ?, ?, NULL, NULL, 0, 0, 0, 0, 'absent', 0)
             ON DUPLICATE KEY UPDATE
-                status = IF(status IN ('incomplete', 'absent'), 'absent', status), missed_time_out = 0
+            status = IF(
+                status NOT IN ('present', 'late', 'undertime', 'overtime'),
+                'absent',
+                status
+            ),
+            missed_time_out = 0
         ");
         $stmt->execute([$employeeId, $date, $scheduledStart, $scheduledEnd]);
         return;
@@ -376,8 +382,13 @@ function finalizeEmployeeAttendance(PDO $pdo, int $employeeId, array $schedule)
         }
     }
 
-    // If the last IN has no OUT after it, employee never properly timed out
-    $missedTimeOut = ($lastIn && (!$lastOut || $lastOut < $lastIn));
+    // Use a generous OT window of 12 hours past scheduled end
+    // before flagging as missed time-out
+    $missedTimeOutExpiry = strtotime($scheduledEnd) + (12 * 3600);
+    $shiftExpired        = time() > $missedTimeOutExpiry;
+
+    // Only flag as missed time-out if shift is fully expired
+    $missedTimeOut = $shiftExpired && ($lastIn && (!$lastOut || $lastOut < $lastIn));
 
     // Treat as no time out — nullify lastOut so calculations are correct
     if ($missedTimeOut) {

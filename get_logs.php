@@ -25,7 +25,15 @@ $stmt->execute([$employeeId, $startDate, $endDate]);
 $records = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 if (count($records) === 0) {
-    echo '<tr><td colspan="4" class="text-center">No records found.</td></tr>';
+    echo '
+    <tr class="emptyRow">
+        <td colspan="4">
+            <div class="logsEmpty">
+                <i class="bi bi-calendar-x logsEmptyIcon"></i>
+                <div>No logs found for this period.</div>
+            </div>
+        </td>
+    </tr>';
     exit();
 }
 

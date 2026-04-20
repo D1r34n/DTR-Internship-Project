@@ -88,7 +88,7 @@ function computeGanttRow(array $row, ?array $sched): ?array
     // --- Basic date metadata ---
     $dateKey  = $row['work_date'];
     $isToday  = ($dateKey === date('Y-m-d'));
-    $isFuture = ($dateKey > date('Y-m-d'));
+    $isFuture = ($dateKey > date('Y-m-d')) && !$row['actual_time_in']; //Condition
     $nextDay  = date('Y-m-d', strtotime('+1 day', strtotime($dateKey)));
 
     // --- Resolve scheduled start/end from the schedule record, falling back to the attendance row ---
@@ -192,23 +192,28 @@ function computeGanttRow(array $row, ?array $sched): ?array
         $actualOut = strtotime('+1 day', $actualOut);
     }
 
-    // Mark as "No Time Out" only if the employee never clocked out on a past day
-    $noTimeOut = !$isToday && ($actualOut === null || $row['missed_time_out']);
+    // Determine if the shift window has fully expired
+    // Use 12 hours past scheduled end to account for OT — mirrors finalizeEmployeeAttendance()
+    $shiftEnd = $schedOut ?? ($actualOut ?? time());
+    $isPast   = time() > ($shiftEnd + (12 * 3600));
+
+    // Mark as "No Time Out" only if shift is fully expired and no valid time-out exists
+    $noTimeOut = $isPast && ($actualOut === null || $row['missed_time_out']);
 
     // Determine the outermost timestamps to fit everything in the visible range
     $rangeMin = $schedIn ? min($schedIn, $actualIn) : $actualIn;
     $rangeMax = $noTimeOut
-        ? ($schedOut ?? $actualIn)                                          // No time-out: end at scheduled out
-        : ($schedOut ? max($schedOut, ($actualOut ?? time())) : ($actualOut ?? time())); // Normal: end at the later of sched-out or actual-out
+        ? ($schedOut ?? $actualIn)
+        : ($schedOut ? max($schedOut, ($actualOut ?? time())) : ($actualOut ?? time()));
 
     // Pad the range by 2 hours on each side for visual breathing room
     $rangeStart = strtotime('-2 hours', $rangeMin);
     $rangeEnd   = strtotime('+2 hours', $rangeMax);
     $range      = max(1, $rangeEnd - $rangeStart);
 
-    // If still clocked in (today) use current time; for past days with no time-out use end-of-day
+    // If still clocked in use current time; for past days with no time-out use end-of-day
     if ($actualOut === null) {
-        $actualOut = $isToday ? time() : strtotime($dateKey . ' 23:59:59');
+        $actualOut = !$isPast ? time() : strtotime($dateKey . ' 23:59:59');
     }
 
     // Helper closure: converts a timestamp to a % position within the visible range
@@ -217,8 +222,9 @@ function computeGanttRow(array $row, ?array $sched): ?array
     // --- Status flags ---
     $isTardy     = ($lateMinutes > 0);
     $isEarly     = ($actualIn < $schedIn && $schedIn !== null);
-    // Undertime only applies to completed past days
-    $isUndertime = ($undertimeMinutes > 0 && !$noTimeOut && !$isToday);
+
+    // Undertime only applies to fully completed past shifts
+    $isUndertime = ($undertimeMinutes > 0 && !$noTimeOut && $isPast);
 
     // The main bar starts at schedIn when early (to avoid overlapping the early bar)
     // and ends at scheduled-out when there's overtime, otherwise at actual-out
@@ -292,6 +298,6 @@ function computeGanttRow(array $row, ?array $sched): ?array
         'lateLabel'          => $lateMinutes     > 0 ? $lateMinutes     . ' min' : '',
         'overtimeLabel'      => $overtimeMinutes > 0 ? $overtimeMinutes . ' min' : '',
         'overtimeStatusLabel'=> $overtimeMinutes > 0 ? $overtimeStatus  : '',
-        'undertimeLabel'     => $undertimeMinutes > 0 ? $undertimeMinutes . ' min' : '',
+        'undertimeLabel'     => ($undertimeMinutes > 0 && $isPast) ? $undertimeMinutes . ' min' : '',
     ];
 }
