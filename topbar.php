@@ -145,46 +145,57 @@ $timedIn = ($lastLog && $lastLog['log_type'] === 'login');
         fetch('../timeinout.php')
             .then(async res => {
                 const text = await res.text();
-                console.log("RAW RESPONSE:", text);
                 return JSON.parse(text);
             })
             .then(response => {
-
-                // Variables 
                 const timeInButton = document.getElementById('timeInBtn');
                 const label = timeInButton.querySelector('#timeInLabel');
                 const dashboardStatus = document.getElementById('dashboard_status');
 
-                // Change button appearance and label based on new status
                 if (response.status === 'timed_in') {
                     timeInButton.classList.remove('btn-in');
                     timeInButton.classList.add('btn-out');
-
                     label.textContent = 'Time Out';
-                    if (dashboardStatus) {
-                        dashboardStatus.textContent = 'Timed In';
-                    }
-                }else {
+                    if (dashboardStatus) dashboardStatus.textContent = 'Timed In';
+                } else {
                     timeInButton.classList.remove('btn-out');
-                    timeInButton.classList.add('btn-in');    
-
+                    timeInButton.classList.add('btn-in');
                     label.textContent = 'Time In';
-                    if (dashboardStatus) {
-                        dashboardStatus.textContent = 'Timed Out';
-                    }
+                    if (dashboardStatus) dashboardStatus.textContent = 'Timed Out';
                 }
 
-                // Refresh dashboard data and logs if on the appropriate pages
                 getTotalWorkedHours();
 
-                if (document.getElementById('logs_table_body')) {
-                    loadLogs();
-                    console.log('Logs table refreshed');
+                if (document.getElementById('logs_table_body')) loadLogs();
+                if (document.getElementById('attendance_table_body')) loadAttendance();
+
+                if (document.querySelector('.recordBox')) {
+                    fetch(window.location.href)
+                        .then(r => r.text())
+                        .then(html => {
+                            const doc    = new DOMParser().parseFromString(html, 'text/html');
+                            const newBox = doc.querySelector('.recordBox');
+
+                            // Briefly suppress transitions on new content
+                            newBox.querySelectorAll('.gantt-bar').forEach(bar => {
+                                bar.style.transition = 'none';
+                            });
+
+                            document.querySelector('.recordBox').replaceWith(newBox);
+
+                            // Re-enable transitions after paint
+                            requestAnimationFrame(() => {
+                                requestAnimationFrame(() => {
+                                    newBox.querySelectorAll('.gantt-bar').forEach(bar => {
+                                        bar.style.transition = '';
+                                    });
+                                });
+                            });
+
+                            initGanttCursors();
+                        });
                 }
 
-                if (document.getElementById('attendance_table_body')) {
-                    loadAttendance();
-                }
             })
             .catch(err => console.log('Error:', err));
     }

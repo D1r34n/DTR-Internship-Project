@@ -14,9 +14,8 @@ if ($testDate) {
     $processDate = date('Y-m-d', strtotime('-1 day'));
 }
 
-$GRACE_MINUTES        = 10;
-$OT_THRESHOLD_MINUTES = 30;
-$BREAK_SECONDS        = 3600;
+// Lunchbreak (1 hour)
+$BREAK_SECONDS = 3600;
 
 function getSystemValue($pdo, $key) {
     $stmt = $pdo->prepare("SELECT value FROM system_state WHERE key_name = ?");
@@ -43,7 +42,7 @@ $employees = $pdo->query("SELECT id FROM employees")->fetchAll(PDO::FETCH_COLUMN
 
 foreach ($employees as $employeeId) {
 
-    /* ✅ Fetch schedule FIRST */
+    /* Fetch schedule first */
     $stmt = $pdo->prepare("
         SELECT time_in, time_out, is_rest_day
         FROM schedules
@@ -61,7 +60,7 @@ foreach ($employees as $employeeId) {
         continue;
     }
 
-    /* ✅ Ensure attendance row exists WITH scheduled times */
+    /* Ensure attendance row exists WITH scheduled times */
     $stmt = $pdo->prepare("
         INSERT INTO attendance (employee_id, date, scheduled_time_in, scheduled_time_out, status)
         VALUES (?, ?, ?, ?, 'absent')
@@ -94,17 +93,19 @@ foreach ($employees as $employeeId) {
         $actualIn  = strtotime($attendance['actual_time_in']);
         $actualOut = strtotime($attendance['actual_time_out']);
 
-        if ($actualIn > ($scheduledIn + ($GRACE_MINUTES * 60))) {
+        // Late Computation
+        if ($actualIn > $scheduledIn) {
             $late = (int) floor(($actualIn - $scheduledIn) / 60);
         }
 
+        // Undertime Computation
         if ($actualOut < $scheduledOut) {
             $undertime = (int) floor(($scheduledOut - $actualOut) / 60);
         }
 
-        $otThreshold = $scheduledOut + ($OT_THRESHOLD_MINUTES * 60);
-        if ($actualOut > $otThreshold) {
-            $overtime        = (int) floor(($actualOut - $otThreshold) / 60);
+        // Overtime Computation
+        if ($actualOut > $scheduledOut) {
+            $overtime = (int) floor(($actualOut - $scheduledOut) / 60);
             $overtime_status = 'pending';
         }
 

@@ -23,9 +23,7 @@ if (!$startDate && !$endDate) {
     $endDate   = date('Y-m-t');
 }
 
-/* =========================
-   ATTENDANCE
-========================= */
+// Get Attendance table
 $stmt = $pdo->prepare("
     SELECT 
         date,
@@ -367,7 +365,7 @@ document.querySelectorAll('.gantt-bar-container').forEach(container => {
         const d = new Date(time * 1000);
         label.textContent = d.toLocaleTimeString('en-US', {
             hour: 'numeric',
-            minute: '2-digit',
+            minute: '2-digit',  
             hour12: true,
             timeZone: 'Asia/Manila'
         });

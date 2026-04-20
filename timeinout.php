@@ -88,8 +88,9 @@ if (!$isTimedIn) {
         $schedTs = strtotime($today . ' ' . $schedTimeIn);
         $nowTs   = time();
 
+        // Late Computation
         if ($nowTs > $schedTs) {
-            $lateMinutes = (int) round(($nowTs - $schedTs) / 60);
+            $lateMinutes = (int) floor(($nowTs - $schedTs) / 60);
         }
     }
 
@@ -108,8 +109,8 @@ if (!$isTimedIn) {
         VALUES (?, ?, ?, ?, NOW(), ?, ?)
         ON DUPLICATE KEY UPDATE
             actual_time_in = COALESCE(actual_time_in, VALUES(actual_time_in)),
-            late_minutes   = VALUES(late_minutes),
-            status         = VALUES(status)
+            late_minutes   = IF(actual_time_in IS NULL, VALUES(late_minutes), late_minutes),
+            status         = IF(actual_time_in IS NULL, VALUES(status), status)
     ")->execute([
         $employeeId,
         $today,
@@ -151,7 +152,7 @@ if (!$attendance || empty($attendance['actual_time_in'])) {
 $timeIn  = strtotime($attendance['actual_time_in']);
 $timeOut = time();
 
-$secondsWorked = max(0, $timeOut - $timeIn);
+$secondsWorked = max(0, $timeOut - $timeIn - 3600);
 $hoursWorked   = round($secondsWorked / 3600, 2);
 
 /* =========================
@@ -165,10 +166,12 @@ $schedOut = $attendance['scheduled_time_out'];
 if ($schedOut && $schedOut !== '00:00:00') {
     $schedOutTs = strtotime($today . ' ' . $schedOut);
 
+    // Undertime computation
     if ($timeOut < $schedOutTs) {
-        $undertimeMinutes = (int) round(($schedOutTs - $timeOut) / 60);
+        $undertimeMinutes = (int) floor(($schedOutTs - $timeOut) / 60);
     } elseif ($timeOut > $schedOutTs) {
-        $overtimeMinutes = (int) round(($timeOut - $schedOutTs) / 60);
+        //Overtime computation
+        $overtimeMinutes = (int) floor(($timeOut - $schedOutTs) / 60);
     }
 }
 
