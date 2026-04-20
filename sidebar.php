@@ -61,11 +61,11 @@ $dashboardLink = ($role === 'admin')
     <?php endif; ?>
 
     <?php if ($role === 'admin'): ?>
-    <div id="adminMenu" class="sideBarMenu">
-        <a href="admin_dashboard.php" class="sideBarMenuItem">
-            <i class="bi bi-columns-gap sidebarIcon"></i> 
-            <span class="menuText">Dashboard</span>
-        </a>
+        <div id="adminMenu" class="sideBarMenu">
+            <a href="admin_dashboard.php" class="sideBarMenuItem">
+                <i class="bi bi-columns-gap sidebarIcon"></i>
+                <span class="menuText">Dashboard</span>
+            </a>
 
         <a href="admin_employees.php" class="sideBarMenuItem">
             <i class="bi bi-people-fill sidebarIcon"></i>
