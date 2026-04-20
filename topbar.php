@@ -364,4 +364,5 @@ $timedIn = ($lastLog && $lastLog['log_type'] === 'login')
             isOpen = false;
         }
     });
+    
 </script>

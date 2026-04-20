@@ -19,9 +19,7 @@ $todayStart = date('Y-m-d 00:00:00');
 $todayEnd   = date('Y-m-d 23:59:59');
 $today      = date('Y-m-d');
 
-/* ================================================
-   GET SCHEDULE
-================================================ */
+// Get schedule
 $stmt = $pdo->prepare("
     SELECT time_in, time_out, is_rest_day
     FROM schedules
@@ -31,10 +29,7 @@ $stmt = $pdo->prepare("
 $stmt->execute([$employeeId, $today]);
 $schedule = $stmt->fetch(PDO::FETCH_ASSOC);
 
-/* ================================================
-   GET LAST LOG — scoped to TODAY only
-   (prevents clock changes from bleeding in old logs)
-================================================ */
+// Get last log
 $stmt = $pdo->prepare("
     SELECT log_type
     FROM logs
@@ -73,7 +68,7 @@ $isTimedIn = ($lastLog && $lastLog['log_type'] === 'login')
 ================================================ */
 if (!$isTimedIn) {
 
-    /* ================= TIME IN ================= */
+    // Time In Function
 
     $pdo->prepare("
         INSERT INTO logs (employee_id, log_type)
@@ -82,6 +77,18 @@ if (!$isTimedIn) {
 
     $schedTimeIn  = $schedule['time_in']  ?? '00:00:00';
     $schedTimeOut = $schedule['time_out'] ?? '00:00:00';
+
+    $allowedStart = strtotime($today . ' ' . $schedTimeIn);
+    $allowedEnd   = strtotime($today . ' ' . $schedTimeOut);
+
+    // What if the user tried to time in after the scheduled hours?
+    // if (time() < $allowedStart || time() > $allowedEnd) {
+    //     echo json_encode([
+    //         'status' => 'invalid_window',
+    //         'message' => 'You can only time in during your scheduled shift.'
+    //     ]);
+    //     exit();
+    // }
 
     $lateMinutes = 0;
     if ($schedTimeIn && $schedTimeIn !== '00:00:00') {
