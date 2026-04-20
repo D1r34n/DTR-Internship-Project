@@ -61,27 +61,27 @@ $dashboardLink = ($role === 'admin')
     <?php endif; ?>
 
     <?php if ($role === 'admin'): ?>
-        <div id="adminMenu" class="sideBarMenu">
-            <a href="admin_dashboard.php" class="sideBarMenuItem">
-                <img src="../images/dashboard_icon.svg" class="dashboardIcon">
-                <span class="menuText">Dashboard</span>
-            </a>
+    <div id="adminMenu" class="sideBarMenu">
+        <a href="admin_dashboard.php" class="sideBarMenuItem">
+            <i class="bi bi-columns-gap sidebarIcon"></i> 
+            <span class="menuText">Dashboard</span>
+        </a>
 
-            <a href="admin_employees.php" class="sideBarMenuItem">
-                <i class="bi bi-people-fill dashboardIcon"></i>
-                <span class="menuText">Employees</span>
-            </a>
+        <a href="admin_employees.php" class="sideBarMenuItem">
+            <i class="bi bi-people-fill sidebarIcon"></i>
+            <span class="menuText">Employees</span>
+        </a>
 
-            <a href="admin_schedule.php" class="sideBarMenuItem">
-                <i class="bi bi-calendar-week dashboardIcon"></i>
-                <span class="menuText">Schedules</span>
-            </a>
+        <a href="admin_schedule.php" class="sideBarMenuItem">
+            <i class="bi bi-calendar-week sidebarIcon"></i>
+            <span class="menuText">Schedules</span>
+        </a>
 
-            <a href="admin_requests.php" class="sideBarMenuItem">
-                <i class="bi bi-envelope-paper dashboardIcon"></i>
-                <span class="menuText">Requests</span>
-            </a>
-        </div>
+        <a href="admin_requests.php" class="sideBarMenuItem">
+            <i class="bi bi-envelope-paper sidebarIcon"></i>
+            <span class="menuText">Requests</span>
+        </a>
+    </div>
     <?php endif; ?>
 </div>
 
