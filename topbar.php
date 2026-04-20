@@ -41,19 +41,38 @@ $title = $titles[$role][$current_page] ?? 'Dashboard';
 // ---- DB ----
 require_once '../db.php';
 
+$today = date('Y-m-d');
+$todayStart = date('Y-m-d 00:00:00');
+$todayEnd   = date('Y-m-d 23:59:59');
+
+// Scope to today only
 $stmt = $pdo->prepare("
     SELECT log_type 
     FROM logs 
     WHERE employee_id = ?
+    AND log_time BETWEEN ? AND ?
     ORDER BY log_time DESC 
     LIMIT 1
 ");
-$stmt->execute([$employeeId]);
+$stmt->execute([$employeeId, $todayStart, $todayEnd]);
 $lastLog = $stmt->fetch(PDO::FETCH_ASSOC);
 
-// ---- STATUS ----
-$timedIn = ($lastLog && $lastLog['log_type'] === 'login');
-?>
+// Cross-check attendance table
+$stmt = $pdo->prepare("
+    SELECT actual_time_in, actual_time_out
+    FROM attendance
+    WHERE employee_id = ? AND date = ?
+");
+$stmt->execute([$employeeId, $today]);
+$todayAttendance = $stmt->fetch(PDO::FETCH_ASSOC);
+
+$timedIn = ($lastLog && $lastLog['log_type'] === 'login')
+        || (
+              $todayAttendance
+              && !empty($todayAttendance['actual_time_in'])
+              && empty($todayAttendance['actual_time_out'])
+           );
+?>  
 
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
@@ -197,7 +216,106 @@ $timedIn = ($lastLog && $lastLog['log_type'] === 'login');
                     week.textContent  = data.weeklyHours  + ' hours';
                     month.textContent = data.monthlyHours + ' hours';
                 }
+         });
+    }
+
+    function initGanttCursors() {
+        document.querySelectorAll('.gantt-bar-container').forEach(container => {
+            const line  = container.querySelector('.gantt-cursor-line');
+            const label = container.querySelector('.gantt-cursor-label');
+
+            const rangeStart = parseInt(container.dataset.rangeStart);
+            const rangeEnd   = parseInt(container.dataset.rangeEnd);
+            const range      = rangeEnd - rangeStart;
+
+            container.addEventListener('mousemove', (e) => {
+                const rect = container.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const percent = Math.max(0, Math.min(1, x / rect.width));
+                const time = Math.floor(rangeStart + (percent * range));
+
+                line.style.left  = (percent * 100) + '%';
+                label.style.left = (percent * 100) + '%';
+
+                label.textContent = new Date(time * 1000).toLocaleTimeString('en-US', {
+                    hour: 'numeric',
+                    minute: '2-digit',
+                    hour12: true,
+                    timeZone: 'Asia/Manila'
+                });
             });
+        });
+    }
+
+    function initGanttCursors() {
+        const tooltip     = document.getElementById('gantt-tooltip');
+        const gtSched     = document.getElementById('gt-sched');
+        const gtActualIn  = document.getElementById('gt-actual-in');
+        const gtActualOut = document.getElementById('gt-actual-out');
+        const gtLateRow   = document.getElementById('gt-late-row');
+        const gtLate      = document.getElementById('gt-late');
+        const gtOtRow     = document.getElementById('gt-ot-row');
+        const gtOt        = document.getElementById('gt-ot');
+
+        document.querySelectorAll('.gantt-bar-container').forEach(container => {
+            const line  = container.querySelector('.gantt-cursor-line');
+            const label = container.querySelector('.gantt-cursor-label');
+
+            const rangeStart = parseInt(container.dataset.rangeStart);
+            const rangeEnd   = parseInt(container.dataset.rangeEnd);
+            const range      = rangeEnd - rangeStart;
+
+            const hasData = container.dataset.actualIn;
+
+            container.addEventListener('mousemove', (e) => {
+                const rect    = container.getBoundingClientRect();
+                const x       = e.clientX - rect.left;
+                const percent = Math.max(0, Math.min(1, x / rect.width));
+                const time    = Math.floor(rangeStart + (percent * range));
+
+                if (line)  line.style.left  = (percent * 100) + '%';
+                if (label) label.style.left = (percent * 100) + '%';
+
+                if (label) {
+                    label.textContent = new Date(time * 1000).toLocaleTimeString('en-US', {
+                        hour: 'numeric',
+                        minute: '2-digit',
+                        hour12: true,
+                        timeZone: 'Asia/Manila'
+                    });
+                }
+
+                if (hasData && tooltip) {
+                    gtSched.textContent     = container.dataset.schedIn + ' – ' + container.dataset.schedOut;
+                    gtActualIn.textContent  = container.dataset.actualIn;
+                    gtActualOut.textContent = container.dataset.actualOut;
+
+                    if (container.dataset.late) {
+                        gtLate.textContent = container.dataset.late;
+                        gtLateRow.style.display = 'flex';
+                    } else {
+                        gtLateRow.style.display = 'none';
+                    }
+
+                    if (container.dataset.overtime) {
+                        gtOt.textContent = container.dataset.overtime;
+                        const status = container.dataset.overtimeStatus;
+                        gtOtRow.className = 'gt-row gt-ot ' + (status === 'approved' ? 'approved' : status === 'rejected' ? 'rejected' : '');
+                        gtOtRow.style.display = 'flex';
+                    } else {
+                        gtOtRow.style.display = 'none';
+                    }
+
+                    tooltip.style.left = e.clientX + 'px';
+                    tooltip.style.top  = e.clientY + 'px';
+                    tooltip.classList.add('visible');
+                }
+            });
+
+            container.addEventListener('mouseleave', () => {
+                if (tooltip) tooltip.classList.remove('visible');
+            });
+        });
     }
 
     function handleTimeIn() {

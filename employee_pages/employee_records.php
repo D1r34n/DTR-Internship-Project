@@ -125,9 +125,11 @@ include '../topbar.php';
         <?php foreach ($records as $row): ?>
             <?php
             
+            // Scheduled date
             $dateKey = $row['date'];
 
             $isToday = ($dateKey=== date('Y-m-d'));
+            $isFuture = ($dateKey > date('Y-m-d'));
 
             $dayName = date('l', strtotime($row['date']));
             $dateNum = date('M d', strtotime($row['date']));
@@ -144,19 +146,74 @@ include '../topbar.php';
             /* =========================
             SCHEDULE TIMES
             ========================= */
-            $schedIn  = null;
-            $schedOut = null;
+            $timeIn  = ($sched['time_in']  ?? null) ?: ($row['scheduled_time_in']  ?? null);
+            $timeOut = ($sched['time_out'] ?? null) ?: ($row['scheduled_time_out'] ?? null);
 
-            if ($sched && $sched['time_in'] && $sched['time_in'] !== '00:00:00') {
-                $schedIn  = strtotime($row['date'] . ' ' . $sched['time_in']);
-                $schedOut = strtotime($row['date'] . ' ' . $sched['time_out']);
-            } elseif ($row['scheduled_time_in'] && $row['scheduled_time_in'] !== '00:00:00') {
-                $schedIn  = strtotime($row['date'] . ' ' . $row['scheduled_time_in']);
-                $schedOut = strtotime($row['date'] . ' ' . $row['scheduled_time_out']);
+            if ($timeIn && $timeIn !== '00:00:00') {
+                $schedIn  = strtotime($row['date'] . ' ' . $timeIn);
+                $schedOut = strtotime($row['date'] . ' ' . $timeOut);
             }
 
             if ($schedIn && $schedOut && $schedOut <= $schedIn) {
                 $schedOut = strtotime('+1 day', $schedOut);
+            }
+
+            // Future schedule or pending schedule
+            if ($isFuture) {
+                // optional: still show schedule range if exists
+                if (!$schedIn || !$schedOut) continue;
+
+                $rangeStart = strtotime('-2 hours', $schedIn);
+                $rangeEnd   = strtotime('+2 hours', $schedOut);
+                $range      = max(1, $rangeEnd - $rangeStart);
+
+                $left  = (($schedIn  - $rangeStart) / $range) * 100;
+                $width = (($schedOut - $schedIn)    / $range) * 100;
+                ?>
+
+                <div class="gantt-row">
+                    <div class="gantt-label">
+                        <div><?= $dayLabel ?></div>
+                        <div style="font-size: 0.75rem; color: #aaa;">
+                            <?= $dateNum ?>
+                        </div>
+                    </div>
+
+                    <div class="gantt-bar-container"
+                        data-range-start="<?= $rangeStart ?>"
+                        data-range-end="<?= $rangeEnd ?>">
+
+
+                        <div class="gantt-cursor">
+                            <div class="gantt-cursor-line"></div>
+                            <div class="gantt-cursor-label"></div>
+                        </div>
+
+                        <div class="gantt-scale">
+                            <?php
+                            $step = 3600;
+                            for ($t = $rangeStart; $t <= $rangeEnd; $t += $step):
+                                $pos = (($t - $rangeStart) / ($rangeEnd - $rangeStart)) * 100;
+                            ?>
+                                <div class="gantt-scale-item" style="left: <?= $pos ?>%">
+                                    <?= date('g:i A', $t) ?>
+                                </div>
+                            <?php endfor; ?>
+                        </div>
+
+                        <!-- Pending schedule bar -->
+                        <div class="gantt-bar gantt-bar--pending"
+                            style="left: <?= $left ?>%; width: <?= $width ?>%;">
+                        </div>
+
+                        <div class="gantt-pending-label"
+                            style="left: <?= $left + ($width / 2) ?>%">
+                            Pending Schedule
+                        </div>
+
+                    </div>
+                </div>
+                <?php continue;
             }
 
             /* =========================
@@ -206,8 +263,7 @@ include '../topbar.php';
 
                         <!-- Full red bar for absent/incomplete -->
                         <div class="gantt-bar gantt-bar--absent"
-                            style="left: <?= $absentLeft ?>%; width: <?= $absentWidth ?>%;"
-                            title="<?= ucfirst($status) ?>">
+                            style="left: <?= $absentLeft ?>%; width: <?= $absentWidth ?>%;">
                         </div>
 
                         <!-- Status label inside the bar -->
@@ -271,11 +327,17 @@ include '../topbar.php';
                         <?= $dateNum ?>
                     </div>
                 </div>
-                    
-
+                
                 <div class="gantt-bar-container"
                     data-range-start="<?= $rangeStart ?>"
-                    data-range-end="<?= $rangeEnd ?>">
+                    data-range-end="<?= $rangeEnd ?>"
+                    data-sched-in="<?= $schedIn ? date('g:i A', $schedIn) : '--' ?>"
+                    data-sched-out="<?= $schedOut ? date('g:i A', $schedOut) : '--' ?>"
+                    data-actual-in="<?= date('g:i A', $actualIn) ?>"
+                    data-actual-out="<?= $row['actual_time_out'] ? date('g:i A', $actualOut) : 'In Progress' ?>"
+                    data-late="<?= $lateMinutes > 0 ? $lateMinutes . ' min' : '' ?>"
+                    data-overtime="<?= $overtimeMinutes > 0 ? $overtimeMinutes . ' min' : '' ?>"
+                    data-overtime-status="<?= $overtimeMinutes > 0 ? $overtimeStatus : '' ?>">
 
                     <div class="gantt-cursor">
                         <div class="gantt-cursor-line"></div>
@@ -299,17 +361,31 @@ include '../topbar.php';
                             style="left: <?= $schedLeft ?>%; width: <?= $schedWidth ?>%;">
                         </div>
                     <?php endif; ?>
-
+                    
+                    <!-- Capping gantt bars -->
                     <?php if ($isTardy): ?>
                         <div class="gantt-bar gantt-bar--tardy"
                             style="left: <?= $tardLeft ?>%; width: <?= $tardWidth ?>%;">
+                            <span class="gantt-bar-label">Late</span>
                         </div>
+                        <?php
+                        // Cap on-time bar at schedOut if overtime exists
+                        $onTimeEnd = ($overtimeMinutes > 0 && $schedOut) ? $schedOut : $actualOut;
+                        $onTimeWidth = (($onTimeEnd - $actualIn) / $range) * 100;
+                        ?>
                         <div class="gantt-bar gantt-bar--ontime"
                             style="left: <?= $onTimeLeft ?>%; width: <?= $onTimeWidth ?>%;">
+                            <span class="gantt-bar-label">On Time</span>
                         </div>
                     <?php else: ?>
+                        <?php
+                        // Cap on-time bar at schedOut if overtime exists
+                        $onTimeEnd = ($overtimeMinutes > 0 && $schedOut) ? $schedOut : $actualOut;
+                        $actualWidth = (($onTimeEnd - $actualIn) / $range) * 100;
+                        ?>
                         <div class="gantt-bar gantt-bar--ontime"
                             style="left: <?= $actualLeft ?>%; width: <?= $actualWidth ?>%;">
+                            <span class="gantt-bar-label">On Time</span>
                         </div>
                     <?php endif; ?>
 
@@ -325,6 +401,7 @@ include '../topbar.php';
                         ?>
                         <div class="gantt-bar <?= $otColorClass ?>"
                             style="left: <?= $otLeft ?>%; width: <?= $otWidth ?>%;">
+                            <span class="gantt-bar-label">Overtime</span>
                         </div>
                     <?php endif; ?>
 
@@ -342,35 +419,15 @@ include '../topbar.php';
     </div>
 </div>
 
+<div id="gantt-tooltip">
+    <div class="gt-row"><span class="gt-label">Scheduled</span><span class="gt-value" id="gt-sched"></span></div>
+    <div class="gt-row"><span class="gt-label">Time In</span><span class="gt-value" id="gt-actual-in"></span></div>
+    <div class="gt-row"><span class="gt-label">Time Out</span><span class="gt-value" id="gt-actual-out"></span></div>
+    <div class="gt-row gt-late" id="gt-late-row"><span class="gt-label">Late</span><span class="gt-value" id="gt-late"></span></div>
+    <div class="gt-row gt-ot" id="gt-ot-row"><span class="gt-label">Overtime</span><span class="gt-value" id="gt-ot"></span></div>
+</div>
 <script>
-document.querySelectorAll('.gantt-bar-container').forEach(container => {
-    const line  = container.querySelector('.gantt-cursor-line');
-    const label = container.querySelector('.gantt-cursor-label');
-
-    const rangeStart = parseInt(container.dataset.rangeStart);
-    const rangeEnd   = parseInt(container.dataset.rangeEnd);
-    const range      = rangeEnd - rangeStart;
-
-    container.addEventListener('mousemove', (e) => {
-        const rect = container.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const percent = Math.max(0, Math.min(1, x / rect.width));
-
-        const time = Math.floor(rangeStart + (percent * range));
-
-        line.style.left  = (percent * 100) + '%';
-        label.style.left = (percent * 100) + '%';
-
-        // Mirror exactly what PHP's date('g:i A', $t) does
-        const d = new Date(time * 1000);
-        label.textContent = d.toLocaleTimeString('en-US', {
-            hour: 'numeric',
-            minute: '2-digit',  
-            hour12: true,
-            timeZone: 'Asia/Manila'
-        });
-    });
-});
+    initGanttCursors();
 </script>
 
 </body>
