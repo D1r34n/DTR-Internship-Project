@@ -115,8 +115,8 @@ $employees = $pdo->query("SELECT id, name FROM employees WHERE role = 'employee'
     include '../topbar.php'; 
     ?>
 
-    <div class="adminWrapper">
-        <div class="adminBox">
+    <div class="scheduleWrapper">
+        <div class="scheduleBox">
 
             <div class="adminTitleRow">
                 <h5 class="adminTitle">Schedule Management</h5>

@@ -92,8 +92,8 @@ $employees = $pdo->query("SELECT * FROM employees ORDER BY name")->fetchAll(PDO:
     include '../topbar.php'; 
     ?>
 
-    <div class="adminWrapper">
-        <div class="adminBox">
+    <div class="employeeWrapper">
+        <div class="employeeBox">
 
             <div class="adminTitleRow">
             <h5 class="adminTitle">Employee Management</h5>

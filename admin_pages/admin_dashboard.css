@@ -30,10 +30,11 @@ body {
 }
 
 .dashboardContent {
-    position: absolute;
+    position: fixed;
     top: 80px;
-    left: 200px;
+    left: calc(20px + var(--sidebar-width));  /* ← reacts to sidebar hover */
     color: white;
+    transition: left 0.38s cubic-bezier(0.4, 0, 0.2, 1);  /* ← matches sidebar transition */
 }
 
 #currentDate {

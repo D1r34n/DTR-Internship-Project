@@ -17,32 +17,40 @@ body {
     min-height: 100vh;
 }
 
-.adminWrapper {
+.employeeWrapper {
     position: fixed;
     top: 60px;
-    left: 180px;
-    width: calc(100% - 180px);
+    left: calc(10px + var(--sidebar-width));
+    width: calc(100% - (10px + var(--sidebar-width)));
     height: calc(100vh - 60px);
     display: flex;
     justify-content: center;
     align-items: center;
     z-index: 10;
+    transition: left 0.38s cubic-bezier(0.4, 0, 0.2, 1), width 0.38s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.adminBox {
+.employeeBox {
     font-family: 'Poppins', sans-serif;
-    background-color: #ffffff;
+
+    /* ← glass dark style */
+    background: var(--glass-bg);
+    backdrop-filter: blur(32px) saturate(160%) brightness(0.3);
+    -webkit-backdrop-filter: blur(32px) saturate(160%) brightness(0.3);
+    border: 1px solid var(--glass-border);
+    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.5);
+
     padding: 30px;
-    border-radius: 12px;
+    border-radius: 16px;
     width: 1120px;
     max-height: 580px;
     overflow-y: hidden;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
 }
 
 .adminTitle {
     font-weight: 600;
-    margin-bottom: 1rem;
+    margin: 0;
+    color: #fff; /* ← white text */
 }
 
 .editBtn {
@@ -60,14 +68,14 @@ body {
 
 .adminFormWrapper {
     margin-top: 2rem;
-    border-top: 2px solid #e0e0e0;
+    border-top: 2px solid rgba(255, 255, 255, 0.1); /* ← subtle glass divider */
     padding-top: 1.5rem;
 }
 
 .formTitle {
     font-weight: 600;
     margin-bottom: 1rem;
-    color: #333;
+    color: #fff; /* ← white text */
 }
 
 .formGrid {
@@ -86,17 +94,19 @@ body {
 .formGroup label {
     font-size: 0.85rem;
     font-weight: 600;
-    color: #333;
+    color: rgba(255, 255, 255, 0.7); /* ← muted white */
     margin-bottom: 0.4rem;
 }
 
 .formControl {
     font-family: 'Poppins', sans-serif;
     padding: 0.4rem 0.8rem;
-    border: 1px solid #ccc;
+    border: 1px solid rgba(255, 255, 255, 0.15); /* ← glass border */
     border-radius: 6px;
     font-size: 0.9rem;
     outline: none;
+    background: rgba(0, 0, 0, 0.3); /* ← dark glass input */
+    color: #fff; /* ← white text */
     transition: border-color 0.2s;
 }
 
@@ -129,13 +139,13 @@ body {
 
 .btnCancel {
     font-family: 'Poppins', sans-serif;
-    color: #888;
+    color: rgba(255, 255, 255, 0.5); /* ← muted white */
     text-decoration: none;
     font-size: 0.9rem;
 }
 
 .btnCancel:hover {
-    color: #333;
+    color: #fff;
 }
 
 .actionDropdownWrapper {
@@ -148,9 +158,12 @@ body {
     position: absolute;
     top: calc(100% + 4px);
     left: 0;
-    background-color: white;
+    background: var(--glass-bg);
+    backdrop-filter: blur(32px) saturate(160%) brightness(0.3);
+    -webkit-backdrop-filter: blur(32px) saturate(160%) brightness(0.3);
+    border: 1px solid var(--glass-border);
     border-radius: 8px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
     min-width: 130px;
     z-index: 9999;
     overflow: hidden;
@@ -167,22 +180,22 @@ body {
     padding: 0.6rem 1rem;
     font-family: 'Poppins', sans-serif;
     font-size: 0.85rem;
-    color: #333;
+    color: rgba(255, 255, 255, 0.7); /* ← muted white */
     text-decoration: none;
-    transition: background-color 0.2s ease;
+    transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 .actionItem:hover {
-    background-color: #f5f5f5;
+    background-color: rgba(151, 190, 65, 0.1);
     color: #97be41;
 }
 
 .deleteItem {
-    color: #dc3545 !important;
+    color: rgba(220, 53, 69, 0.8) !important;
 }
 
 .deleteItem:hover {
-    background-color: #fff0f0 !important;
+    background-color: rgba(220, 53, 69, 0.12) !important;
     color: #dc3545 !important;
 }
 
@@ -190,18 +203,32 @@ body {
     height: 220px;
     overflow-y: auto;
     border-radius: 6px;
-    border: 1px solid #dee2e6;
+    border: 1px solid rgba(255, 255, 255, 0.1); /* ← glass border */
 }
 
 .tableScrollWrapper table {
     margin-bottom: 0;
 }
 
+/* ← dark glass table */
 .tableScrollWrapper thead th {
     position: sticky;
     top: 0;
-    background-color: #f8f9fa;
+    background-color: rgba(0, 0, 0, 0.4);
+    color: rgba(255, 255, 255, 0.7);
     z-index: 1;
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+.tableScrollWrapper tbody tr td {
+    background-color: rgba(0, 0, 0, 0.2);
+    color: rgba(255, 255, 255, 0.85);
+    border-color: rgba(255, 255, 255, 0.07);
+}
+
+.tableScrollWrapper tbody tr:hover td {
+    background-color: rgba(151, 190, 65, 0.08);
+    color: #fff;
 }
 
 .adminTitleRow {
@@ -211,22 +238,23 @@ body {
     margin-bottom: 1rem;
 }
 
-.adminTitle {
-    font-weight: 600;
-    margin: 0;
-}
-
 .searchInput {
     font-family: 'Poppins', sans-serif;
     padding: 0.4rem 1rem;
-    border: 1px solid #ccc;
+    border: 1px solid rgba(255, 255, 255, 0.15);
     border-radius: 20px;
     font-size: 0.85rem;
     outline: none;
     width: 220px;
+    background: rgba(0, 0, 0, 0.3);
+    color: #fff;
     transition: border-color 0.2s;
 }
 
 .searchInput:focus {
     border-color: #97be41;
+}
+
+.searchInput::placeholder {
+    color: rgba(255, 255, 255, 0.4);
 }
