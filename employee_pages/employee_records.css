@@ -148,9 +148,17 @@ body {
 }
 
 .gantt-label {
-    width: 80px;
-    font-size: 0.85rem;
-    color: #ccc;
+    width: 4rem;
+    font-size: 0.875rem;
+    font-weight: 400;
+    color: var(--text-light);
+}
+
+.gantt-sublabel {
+    width: 100%;
+    font-size: 0.75rem;
+    font-weight: 300;
+    color: var(--text-mute);
 }
 
 .gantt-bar-container {
@@ -196,50 +204,84 @@ body {
     white-space: nowrap;
 }
 
+/* Gantt bar */
 .gantt-bar {
     position: absolute;
     top: 0;
     height: 100%;
     background: linear-gradient(90deg, #4facfe, #00f2fe);
-    border-radius: 10px;
+}
+
+/* Scheduled ghost bar */
+.gantt-bar--scheduled {
+    background: rgba(150, 150, 255, 0.25);
+    border: 1px dashed #7b7bff;
+}
+
+/* Tardiness (red) segment */
+.gantt-bar--tardy {
+    background: rgba(255, 170, 0, 0.75);
+    border: none;
+}
+
+/* On-time (green) segment */
+.gantt-bar--ontime {
+    background: rgba(25, 135, 84, 0.75);
+    border: none;
+}
+
+/* Absent / incomplete full bar */
+.gantt-bar--absent {
+    background: rgba(220, 53, 69, 0.5);
+    border: 1px dashed #dc3545;
+}
+
+/* Status label centered inside the absent bar */
+.gantt-absent-label {
+    position: absolute;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 10px;
+    font-weight: 600;
+    color: #ff8a8a;
+    text-transform: uppercase;
+    pointer-events: none;
+    white-space: nowrap;
+    z-index: 2;
 }
 
 .gantt-marker {
     position: absolute;
-    top: 0;
+    left: 0;
+
+    top: -6px;
+    height: calc(100% + 12px);
+
     width: 2px;
-    height: 100%;
-    z-index: 3;
+    z-index: 999;
+
+    filter: drop-shadow(0 0 6px rgba(255,255,255,0.4));
 }
 
-/* Start of shift */
-.gantt-marker.start {
-    background: #00f2fe;
+/* Actual time in and out markers */
+.gantt-marker--actual-start {
+    border-left: 2px solid #22c55e; /* neon green */
+    filter: drop-shadow(0 0 6px rgba(34,197,94,0.8));
 }
 
-/* End of shift */
-.gantt-marker.end {
-    background: #ff7675;
+.gantt-marker--actual-end {
+    border-left: 2px solid #dc3545; /* neon red */
+    filter: drop-shadow(0 0 6px rgba(249,115,22,0.8));
 }
 
-/* optional glow effect */
-.gantt-marker.start::after,
-.gantt-marker.end::after {
-    content: '';
-    position: absolute;
-    top: -3px;
-    left: -4px;
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
+.gantt-bar--ot-pending {
+    background: #4da3ff; /* blue */
 }
 
-.gantt-marker.start::after {
-    background: #00f2fe;
-    box-shadow: 0 0 8px #00f2fe;
+.gantt-bar--ot-approved {
+    background: #2ecc71; /* green */
 }
 
-.gantt-marker.end::after {
-    background: #ff7675;
-    box-shadow: 0 0 8px #ff7675;
+.gantt-bar--ot-rejected {
+    background: #e74c3c; /* red */
 }

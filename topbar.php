@@ -143,7 +143,11 @@ $timedIn = ($lastLog && $lastLog['log_type'] === 'login');
     // Handle time in/out button click
     function handleTimeIn() {
         fetch('../timeinout.php')
-            .then(res => res.json())
+            .then(async res => {
+                const text = await res.text();
+                console.log("RAW RESPONSE:", text);
+                return JSON.parse(text);
+            })
             .then(response => {
 
                 // Variables 

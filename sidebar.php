@@ -63,7 +63,7 @@ $dashboardLink = ($role === 'admin')
     <?php if ($role === 'admin'): ?>
         <div id="adminMenu" class="sideBarMenu">
             <a href="admin_dashboard.php" class="sideBarMenuItem">
-                <img src="../images/dashboard_icon.svg" class="dashboardIcon">
+                <i class="bi bi-columns-gap sidebarIcon"></i>
                 <span class="menuText">Dashboard</span>
             </a>
 
