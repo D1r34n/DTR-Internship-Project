@@ -27,7 +27,7 @@ $stmt = $pdo->prepare("
     WHERE employee_id = ?
     AND overtime_minutes > 0
     AND actual_time_in IS NOT NULL
-    AND (overtime_status = 'none' OR overtime_status = '' OR overtime_status IS NULL)
+    AND (overtime_status = 'pending' OR overtime_status = '' OR overtime_status IS NULL)
     ORDER BY date DESC
 ");
 
