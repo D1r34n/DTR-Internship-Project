@@ -119,6 +119,20 @@ body {
     display: flex;
     flex-direction: column;
     gap: 3rem;
+
+    padding: 1rem;
+    max-height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+/* custom scrollbar (Chrome/Edge) */
+.gantt::-webkit-scrollbar {
+    width: 6px;
+}
+.gantt::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.15);
+    border-radius: 10px;
 }
 
 .gantt-row {
@@ -201,14 +215,12 @@ body {
     opacity: 1;
 }
 
-/* scale hidden */
 .gantt-scale {
     position: absolute;
-    bottom: -18px;
+    bottom: -20px;
     left: 0;
     width: 100%;
     height: 20px;
-
     opacity: 0;
     transition: opacity 0.2s ease;
     pointer-events: none;
@@ -220,6 +232,14 @@ body {
     font-size: 0.7rem;
     color: #aaa;
     white-space: nowrap;
+}
+
+.gantt-scale-item:first-child {
+    transform: translateX(0%);
+}
+
+.gantt-scale-item:last-child {
+    transform: translateX(-100%);
 }
 
 /* Gantt bar */
@@ -250,10 +270,43 @@ body {
     border: none;
 }
 
+/* Pending full bar */
+.gantt-bar--pending {
+    background: rgba(95, 95, 95, 0.5);
+    border: 1px dashed #303030;
+}
+
 /* Absent / incomplete full bar */
 .gantt-bar--absent {
     background: rgba(220, 53, 69, 0.5);
     border: 1px dashed #dc3545;
+}
+
+.gantt-bar-label {
+    position: absolute;
+    inset: 0; /* replaces left/top + simplifies centering */
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    font-size: 10px;
+    font-weight: 600;
+    color: #fff;
+    text-transform: uppercase;
+
+    white-space: nowrap;
+    overflow: hidden;
+
+    opacity: 0;
+    transition: opacity 0.2s ease;
+
+    pointer-events: none;
+    z-index: 2;
+}
+
+.gantt-bar:hover .gantt-bar-label {
+    opacity: 1;
 }
 
 /* Status label centered inside the absent bar */
@@ -264,6 +317,20 @@ body {
     font-size: 10px;
     font-weight: 600;
     color: #ff8a8a;
+    text-transform: uppercase;
+    pointer-events: none;
+    white-space: nowrap;
+    z-index: 2;
+}
+
+/* Status label centered inside the pending bar */
+.gantt-pending-label {
+    position: absolute;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 10px;
+    font-weight: 600;
+    color: #ffffff;
     text-transform: uppercase;
     pointer-events: none;
     white-space: nowrap;
@@ -305,3 +372,47 @@ body {
 .gantt-bar--ot-rejected {
     background: #e74c3c; /* red */
 }
+
+#gantt-tooltip {
+    position: fixed;
+    background: var(--glass-bg);
+    backdrop-filter: blur(32px) saturate(160%) brightness(0.3);
+    -webkit-backdrop-filter: blur(32px) saturate(160%) brightness(0.3);
+    border: 1px solid var(--glass-border);
+    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.5);
+    color: #fff;
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 0.75rem;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+    white-space: nowrap;
+    z-index: 9999;
+    transform: translate(-50%, calc(-100% - 12px));
+    min-width: 200px;
+}
+
+#gantt-tooltip.visible {
+    opacity: 1;
+}
+
+.gt-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 2px 0;
+}
+
+.gt-label {
+    color: #aaa;
+}
+
+.gt-value {
+    font-weight: 500;
+}
+
+.gt-late .gt-value  { color: #f87171; }
+.gt-ot   .gt-value  { color: #fb923c; }
+.gt-ot.approved .gt-value { color: #4ade80; }
+.gt-ot.rejected .gt-value { color: #f87171; }
