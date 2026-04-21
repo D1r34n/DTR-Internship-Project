@@ -14,17 +14,28 @@ $error = "";
 
 // HANDLE APPROVE / REJECT
 if (isset($_GET['action']) && isset($_GET['type']) && isset($_GET['id'])) {
-    $action = $_GET['action']; // approve or reject
-    $type = $_GET['type'];     // leave or overtime
-    $id = $_GET['id'];
+    $action = $_GET['action'];
+    $type   = $_GET['type'];
+    $id     = $_GET['id'];
     $status = ($action === 'approve') ? 'approved' : 'rejected';
 
     if ($type === 'leave') {
         $stmt = $pdo->prepare("UPDATE leave_requests SET status = ? WHERE id = ?");
         $stmt->execute([$status, $id]);
+
     } else if ($type === 'overtime') {
+        // 1. Update overtime_requests
         $stmt = $pdo->prepare("UPDATE overtime_requests SET status = ? WHERE id = ?");
         $stmt->execute([$status, $id]);
+
+        // 2. Sync back to attendance table
+        $stmt2 = $pdo->prepare("
+            UPDATE attendance a
+            JOIN overtime_requests o ON a.employee_id = o.employee_id AND a.date = o.date
+            SET a.overtime_status = ?
+            WHERE o.id = ?
+        ");
+        $stmt2->execute([$status, $id]);
     }
 
     $success = "Request has been " . ucfirst($status) . "!";
