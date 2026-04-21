@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Apr 20, 2026 at 10:44 AM
+-- Generation Time: Apr 21, 2026 at 11:34 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.0.30
 
@@ -42,6 +42,20 @@ CREATE TABLE `attendance` (
   `status` enum('present','late','absent','incomplete') NOT NULL DEFAULT 'absent',
   `overtime_status` enum('none','pending','approved','rejected') NOT NULL DEFAULT 'none'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `attendance`
+--
+
+INSERT INTO `attendance` (`id`, `employee_id`, `date`, `scheduled_time_in`, `scheduled_time_out`, `actual_time_in`, `actual_time_out`, `total_work_hours`, `late_minutes`, `undertime_minutes`, `overtime_minutes`, `status`, `overtime_status`) VALUES
+(310, 2, '2026-04-13', '08:30:00', '17:30:00', NULL, NULL, 0.00, 0, 0, 0, 'absent', 'none'),
+(311, 2, '2026-04-14', '08:30:00', '17:30:00', NULL, NULL, 0.00, 0, 0, 0, 'absent', 'none'),
+(312, 2, '2026-04-15', '08:30:00', '17:30:00', NULL, NULL, 0.00, 0, 0, 0, 'absent', 'none'),
+(313, 2, '2026-04-16', '08:30:00', '17:30:00', NULL, NULL, 0.00, 0, 0, 0, 'absent', 'none'),
+(314, 2, '2026-04-17', '08:30:00', '17:30:00', NULL, NULL, 0.00, 0, 0, 0, 'absent', 'none'),
+(315, 2, '2026-04-20', '09:00:00', '14:00:00', NULL, NULL, 0.00, 0, 0, 0, 'absent', 'none'),
+(407, 2, '2026-04-21', '09:00:00', '14:00:00', '2026-04-21 08:04:08', '2026-04-21 13:05:16', 0.00, 0, 54, 0, 'incomplete', 'none'),
+(421, 2, '2026-04-22', '09:00:00', '14:00:00', '2026-04-22 08:05:27', '2026-04-22 08:15:37', 0.17, 0, 344, 0, 'incomplete', 'none');
 
 -- --------------------------------------------------------
 
@@ -96,6 +110,18 @@ CREATE TABLE `logs` (
   `log_time` datetime DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Dumping data for table `logs`
+--
+
+INSERT INTO `logs` (`id`, `employee_id`, `log_type`, `log_time`) VALUES
+(972, 2, 'login', '2026-04-21 13:05:14'),
+(973, 2, 'logout', '2026-04-21 13:05:16'),
+(974, 2, 'login', '2026-04-22 08:05:27'),
+(975, 2, 'logout', '2026-04-22 08:15:23'),
+(976, 2, 'login', '2026-04-22 08:15:30'),
+(977, 2, 'logout', '2026-04-22 08:15:37');
+
 -- --------------------------------------------------------
 
 --
@@ -136,8 +162,6 @@ INSERT INTO `schedules` (`id`, `employee_id`, `work_date`, `time_in`, `time_out`
 (110, 2, '2026-06-19', '08:00:00', '16:00:00', 0),
 (111, 2, '2026-06-20', NULL, NULL, 1),
 (112, 2, '2026-06-21', NULL, NULL, 1),
-(118, 2, '2026-04-27', '09:00:00', '17:00:00', 0),
-(119, 2, '2026-04-28', '09:00:00', '17:00:00', 0),
 (127, 2, '2026-04-12', NULL, NULL, 1),
 (128, 2, '2026-04-13', '08:30:00', '17:30:00', 0),
 (129, 2, '2026-04-14', '08:30:00', '17:30:00', 0),
@@ -151,7 +175,14 @@ INSERT INTO `schedules` (`id`, `employee_id`, `work_date`, `time_in`, `time_out`
 (165, 2, '2026-04-23', '09:00:00', '14:00:00', 0),
 (166, 2, '2026-04-24', '09:00:00', '14:00:00', 0),
 (167, 2, '2026-04-25', NULL, NULL, 1),
-(168, 2, '2026-04-26', NULL, NULL, 1);
+(168, 2, '2026-04-26', NULL, NULL, 1),
+(169, 2, '2026-04-27', '18:00:00', '01:00:00', 0),
+(170, 2, '2026-04-28', '18:00:00', '01:00:00', 0),
+(171, 2, '2026-04-29', '18:00:00', '01:00:00', 0),
+(172, 2, '2026-04-30', '18:00:00', '01:00:00', 0),
+(173, 2, '2026-05-01', '18:00:00', '01:00:00', 0),
+(174, 2, '2026-05-02', NULL, NULL, 1),
+(175, 2, '2026-05-03', NULL, NULL, 1);
 
 -- --------------------------------------------------------
 
@@ -169,7 +200,7 @@ CREATE TABLE `system_state` (
 --
 
 INSERT INTO `system_state` (`key_name`, `value`) VALUES
-('attendance_last_finalize', '2026-04-20');
+('attendance_last_finalize', '2026-04-21');
 
 --
 -- Indexes for dumped tables
@@ -231,7 +262,7 @@ ALTER TABLE `system_state`
 -- AUTO_INCREMENT for table `attendance`
 --
 ALTER TABLE `attendance`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=223;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=423;
 
 --
 -- AUTO_INCREMENT for table `employees`
@@ -249,7 +280,7 @@ ALTER TABLE `leave_requests`
 -- AUTO_INCREMENT for table `logs`
 --
 ALTER TABLE `logs`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=718;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=978;
 
 --
 -- AUTO_INCREMENT for table `overtime_requests`
@@ -261,7 +292,7 @@ ALTER TABLE `overtime_requests`
 -- AUTO_INCREMENT for table `schedules`
 --
 ALTER TABLE `schedules`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=169;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=176;
 
 --
 -- Constraints for dumped tables
