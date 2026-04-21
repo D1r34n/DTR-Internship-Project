@@ -1,153 +1,166 @@
 /* ================================
-   TEXT SIZE REFERENCE LIST
+   TEXT SIZE + THINNER TYPOGRAPHY SYSTEM
    ================================
-   Font: Poppins (300, 400, 500, 600)
+   Font: Poppins (300, 400, 500)
    Base: 16px
    ================================ */
 
 /* 🔹 Page Header (Main Title)
    Example: "Employee Dashboard"
    Size: 24px (1.5rem)
-   Weight: 600
+   Weight: 500 (thinner)
 */
+.page-header {
+    font-size: 1.5rem;
+    font-weight: 500;
+}
 
 /* 🔹 Section Title
    Example: Card titles, sections
    Size: 20px (1.25rem)
-   Weight: 600
+   Weight: 500
 */
+.section-title {
+    font-size: 1.25rem;
+    font-weight: 500;
+}
 
 /* 🔹 Subsection Title
    Example: Smaller headings inside sections
    Size: 18px (1.125rem)
-   Weight: 500
+   Weight: 400
 */
+.subsection-title {
+    font-size: 1.125rem;
+    font-weight: 400;
+}
 
 /* 🔹 Primary Text
    Example: Main content, paragraphs
    Size: 16px (1rem)
-   Weight: 400
+   Weight: 300 (thinner)
 */
+.text-primary {
+    font-size: 1rem;
+    font-weight: 300;
+}
 
 /* 🔹 Secondary Text
    Example: Labels, descriptions
    Size: 14px (0.875rem)
-   Weight: 400
-   Color: rgba(255,255,255,0.7) on dark / #666 on light
+   Weight: 300
+   Color: softer
 */
+.text-secondary {
+    font-size: 0.875rem;
+    font-weight: 300;
+    color: rgba(255,255,255,0.75);
+}
 
 /* 🔹 Small / Meta Text
    Example: Timestamps, helper text
    Size: 12px (0.75rem)
    Weight: 300
-   Color: rgba(255,255,255,0.6) on dark / #999 on light
 */
+.text-meta {
+    font-size: 0.75rem;
+    font-weight: 300;
+    color: rgba(255,255,255,0.6);
+}
 
-/* 🔹 Buttons
-   Size: 14–15px (0.9rem)
-   Weight: 500
-*/
+/* 🔹 Buttons */
+button {
+    font-size: 0.9rem;
+    font-weight: 400;
+}
 
-/* 🔹 Input Fields
-   Size: 15px (0.95rem)
-   Weight: 400
-*/
+/* 🔹 Input Fields */
+input, select, textarea {
+    font-size: 0.95rem;
+    font-weight: 300;
+}
 
-/* 🔹 Topbar / Navbar Text
-   Size: 15px (0.95rem)
-   Weight: 500
-*/
+/* 🔹 Topbar / Navbar Text */
+.navbar-text {
+    font-size: 0.95rem;
+    font-weight: 400;
+}
 
-/* 🔹 Sidebar Menu Items
-   Size: 15px (0.95rem)
-   Weight: 400
-*/
+/* 🔹 Sidebar Menu Items */
+.sidebar-item {
+    font-size: 0.95rem;
+    font-weight: 300;
+}
 
-/* 🔹 Big Numbers / Stats
-   Example: Total hours, KPIs
-   Size: 28px (1.75rem)
-   Weight: 600
-*/
+/* 🔹 Big Numbers / Stats */
+.stats-number {
+    font-size: 1.75rem;
+    font-weight: 500;
+}
 
-/* 🔹 Table Content
-   Size: 14px (0.875rem)
-   Weight: 400
-*/
+/* 🔹 Table Content */
+table td {
+    font-size: 0.875rem;
+    font-weight: 300;
+}
 
-/* 🔹 Table Header
-   Size: 12–13px (0.8rem)
-   Weight: 600
-   Transform: uppercase
-   Letter-spacing: 0.05em
-*/
-
-/* ================================
-   SCALE REFERENCE
-   ================================
-   28px → Stats / KPIs
-   24px → Main Title
-   20px → Section Title
-   18px → Subsection
-   16px → Body
-   15px → Navbar / Sidebar / Inputs
-   14px → Secondary / Tables
-   12px → Small / Meta
-*/
+/* 🔹 Table Header */
+table th {
+    font-size: 0.8rem;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
 
 /* ================================
-   POPPINS WEIGHT REFERENCE
-   ================================
-   300 → Light    (small/meta text)
-   400 → Regular  (body, labels, inputs)
-   500 → Medium   (buttons, navbar, subheadings)
-   600 → SemiBold (titles, stats, table headers)
-*/
-
-/* ================================
-   UI COLOR SYSTEM (REFERENCE)
+   GLOBAL THINNER TEXT IMPROVEMENTS
    ================================ */
 
-/* PRIMARY BRAND COLOR
-   - Active states, highlights, hover accents
-   - Example: buttons, icons, active menu items
-*/
+body {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    letter-spacing: 0.2px;
+}
+
+/* ================================
+   UI COLOR SYSTEM (UNCHANGED)
+   ================================ */
+
+/* PRIMARY BRAND COLOR */
 --primary-color: #97be41;
 
 /* TEXT COLORS */
---text-lightest: #ffffff;                  /* Pure white — hover/active text on dark */
---text-light: rgba(255, 255, 255, 0.85);   /* Default text on dark backgrounds */
---text-muted: rgba(255, 255, 255, 0.55);   /* Secondary/meta text on dark */
---text-dark: #333333;                      /* Default text on light backgrounds */
---text-dark-muted: #666666;                /* Secondary text on light backgrounds */
+--text-lightest: #ffffff;
+--text-light: rgba(255, 255, 255, 0.85);
+--text-muted: rgba(255, 255, 255, 0.55);
+--text-dark: #333333;
+--text-dark-muted: #666666;
 
 /* BACKGROUNDS */
---bg-light: #ffffff;       /* Cards, dropdowns, forms */
---bg-soft: #f5f5f5;        /* Hover states, subtle sections */
---bg-dark: #1e1e1e;        /* Dark mode / overlays */
+--bg-light: #ffffff;
+--bg-soft: #f5f5f5;
+--bg-dark: #1e1e1e;
 
-/* GLASS / SIDEBAR TOKENS (dark bg) */
---glass-bg:     rgba(0, 0, 0, 0.85);              /* Sidebar fill */
---glass-border: rgba(255, 255, 255, 0.085);        /* Sidebar right border */
---glass-top:    rgba(255, 255, 255, 0.16);          /* Top sheen line */
---glass-hover:  rgba(255, 255, 255, 0.08);          /* Menu item hover fill */
+/* GLASS / SIDEBAR */
+--glass-bg: rgba(0, 0, 0, 0.85);
+--glass-border: rgba(255, 255, 255, 0.085);
+--glass-top: rgba(255, 255, 255, 0.16);
+--glass-hover: rgba(255, 255, 255, 0.08);
 --sidebar-glow: 0 0 0 1px rgba(255,255,255,0.055),
                 6px 0 48px rgba(0,0,0,0.55),
-                inset -1px 0 0 rgba(255,255,255,0.04); /* Sidebar shadow */
-
-/* HOVER / ACTIVE */
---hover-bg: #f5f5f5;       /* Light UI hover */
+                inset -1px 0 0 rgba(255,255,255,0.04);
 
 /* STATE COLORS */
---success: #97be41;        /* Same as primary */
---danger:  #dc3545;        /* Logout, delete, warnings */
+--success: #97be41;
+--danger: #dc3545;
 
-/* BORDERS / DIVIDERS */
+/* BORDERS */
 --border: rgba(0, 0, 0, 0.1);
 
 /* SHADOWS */
 --shadow: rgba(0, 0, 0, 0.15);
 
-/* TEXT SELECTION */
+/* SELECTION */
 ::selection {
     background: #97be41;
     color: #ffffff;
