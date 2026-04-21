@@ -19,9 +19,12 @@ $current_page = 'schedule';
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Employee Schedule</title>
 
+    <!-- Bootstrap and Poppins Font -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
     <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.css" rel="stylesheet">
+
+    <!-- CSS -->
     <link rel="stylesheet" href="../root.css">
     <link rel="stylesheet" href="../side_and_top_bar.css">
     <link rel="stylesheet" href="employee_schedule.css">

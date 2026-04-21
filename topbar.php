@@ -177,78 +177,7 @@ $timedIn = ($lastLog && $lastLog['log_type'] === 'login')
 
     // ===== GANTT CURSORS =====
     function initGanttCursors() {
-        document.querySelectorAll('.gantt-bar-container').forEach(container => {
-            const line  = container.querySelector('.gantt-cursor-line');
-            const label = container.querySelector('.gantt-cursor-label');
-            if (!line || !label) return;
-
-            const rangeStart = parseInt(container.dataset.rangeStart);
-            const rangeEnd   = parseInt(container.dataset.rangeEnd);
-            const range      = rangeEnd - rangeStart;
-
-            container.addEventListener('mousemove', (e) => {
-                const rect    = container.getBoundingClientRect();
-                const x       = e.clientX - rect.left;
-                const percent = Math.max(0, Math.min(1, x / rect.width));
-                const time    = Math.floor(rangeStart + (percent * range));
-
-                line.style.left  = (percent * 100) + '%';
-                label.style.left = (percent * 100) + '%';
-
-                const d = new Date(time * 1000);
-                label.textContent = d.toLocaleTimeString('en-US', {
-                    hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'Asia/Manila'
-                });
-            });
-        });
-    }
-
-    initGanttCursors();
-
-    // ===== TIME IN/OUT =====
-    function getTotalWorkedHours() {
-        fetch('../get_dashboard_data.php')
-            .then(res => res.json())
-            .then(data => {
-                const week  = document.getElementById('dashboard_week_hours');
-                const month = document.getElementById('dashboard_month_hours');
-                if (week && month) {
-                    week.textContent  = data.weeklyHours  + ' hours';
-                    month.textContent = data.monthlyHours + ' hours';
-                }
-         });
-    }
-
-    function initGanttCursors() {
-        document.querySelectorAll('.gantt-bar-container').forEach(container => {
-            const line  = container.querySelector('.gantt-cursor-line');
-            const label = container.querySelector('.gantt-cursor-label');
-
-            const rangeStart = parseInt(container.dataset.rangeStart);
-            const rangeEnd   = parseInt(container.dataset.rangeEnd);
-            const range      = rangeEnd - rangeStart;
-
-            container.addEventListener('mousemove', (e) => {
-                const rect = container.getBoundingClientRect();
-                const x = e.clientX - rect.left;
-                const percent = Math.max(0, Math.min(1, x / rect.width));
-                const time = Math.floor(rangeStart + (percent * range));
-
-                line.style.left  = (percent * 100) + '%';
-                label.style.left = (percent * 100) + '%';
-
-                label.textContent = new Date(time * 1000).toLocaleTimeString('en-US', {
-                    hour: 'numeric',
-                    minute: '2-digit',
-                    hour12: true,
-                    timeZone: 'Asia/Manila'
-                });
-            });
-        });
-    }
-
-    function initGanttCursors() {
-        const tooltip     = document.getElementById('gantt-tooltip');
+        const tooltip     = document.getElementById('gantt_tooltip');
         const gtSched     = document.getElementById('gt-sched');
         const gtActualIn  = document.getElementById('gt-actual-in');
         const gtActualOut = document.getElementById('gt-actual-out');
@@ -256,16 +185,19 @@ $timedIn = ($lastLog && $lastLog['log_type'] === 'login')
         const gtLate      = document.getElementById('gt-late');
         const gtOtRow     = document.getElementById('gt-ot-row');
         const gtOt        = document.getElementById('gt-ot');
+        const gtUtRow = document.getElementById('gt-ut-row');
+        const gtUt    = document.getElementById('gt-ut');
 
-        document.querySelectorAll('.gantt-bar-container').forEach(container => {
-            const line  = container.querySelector('.gantt-cursor-line');
-            const label = container.querySelector('.gantt-cursor-label');
+        document.querySelectorAll('.ganttBarContainer').forEach(container => {
+            const line  = container.querySelector('.ganttCursorLine');
+            const label = container.querySelector('.ganttCursorLabel');
+            if (!line || !label) return;
 
             const rangeStart = parseInt(container.dataset.rangeStart);
             const rangeEnd   = parseInt(container.dataset.rangeEnd);
             const range      = rangeEnd - rangeStart;
 
-            const hasData = container.dataset.actualIn;
+            const hasData = !!container.dataset.actualIn;
 
             container.addEventListener('mousemove', (e) => {
                 const rect    = container.getBoundingClientRect();
@@ -273,37 +205,44 @@ $timedIn = ($lastLog && $lastLog['log_type'] === 'login')
                 const percent = Math.max(0, Math.min(1, x / rect.width));
                 const time    = Math.floor(rangeStart + (percent * range));
 
-                if (line)  line.style.left  = (percent * 100) + '%';
-                if (label) label.style.left = (percent * 100) + '%';
-
-                if (label) {
-                    label.textContent = new Date(time * 1000).toLocaleTimeString('en-US', {
-                        hour: 'numeric',
-                        minute: '2-digit',
-                        hour12: true,
-                        timeZone: 'Asia/Manila'
-                    });
-                }
+                line.style.left  = (percent * 100) + '%';
+                label.style.left = (percent * 100) + '%';
+                label.textContent = new Date(time * 1000).toLocaleTimeString('en-US', {
+                    hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'Asia/Manila'
+                });
 
                 if (hasData && tooltip) {
                     gtSched.textContent     = container.dataset.schedIn + ' – ' + container.dataset.schedOut;
                     gtActualIn.textContent  = container.dataset.actualIn;
                     gtActualOut.textContent = container.dataset.actualOut;
 
+                    // Show if late
                     if (container.dataset.late) {
-                        gtLate.textContent = container.dataset.late;
-                        gtLateRow.style.display = 'flex';
+                        gtLate.textContent          = container.dataset.late;
+                        gtLateRow.style.display     = 'flex';
                     } else {
                         gtLateRow.style.display = 'none';
                     }
 
+                    // Show overtime if it is approved or rejected
                     if (container.dataset.overtime) {
-                        gtOt.textContent = container.dataset.overtime;
-                        const status = container.dataset.overtimeStatus;
-                        gtOtRow.className = 'gt-row gt-ot ' + (status === 'approved' ? 'approved' : status === 'rejected' ? 'rejected' : '');
+                        gtOt.textContent  = container.dataset.overtime;
+                        const status      = container.dataset.overtimeStatus;
+                        gtOtRow.className = 'ganttToolTipRow ganttToolTipOverTime'
+                                        + (status === 'approved' ? ' approved' : status === 'rejected' ? ' rejected' : '');
                         gtOtRow.style.display = 'flex';
                     } else {
                         gtOtRow.style.display = 'none';
+                    }
+                    
+                    // Show undertime only when it is the next day (day is finished)
+                    const isToday = container.dataset.isToday === '1';
+
+                    if (container.dataset.undertime && !isToday) {
+                        gtUt.textContent = container.dataset.undertime;
+                        gtUtRow.style.display = 'flex';
+                    } else {
+                        gtUtRow.style.display = 'none';
                     }
 
                     tooltip.style.left = e.clientX + 'px';
@@ -318,10 +257,29 @@ $timedIn = ($lastLog && $lastLog['log_type'] === 'login')
         });
     }
 
+    document.addEventListener('DOMContentLoaded', () => {
+        initGanttCursors();
+    });
+
+    // Handle time in and out of employee
+    function getTotalWorkedHours() {
+        fetch('../get_dashboard_data.php')
+            .then(res => res.json())
+            .then(data => {
+                const week  = document.getElementById('dashboard_week_hours');
+                const month = document.getElementById('dashboard_month_hours');
+                if (week && month) {
+                    week.textContent  = data.weeklyHours  + ' hours';
+                    month.textContent = data.monthlyHours + ' hours';
+                }
+         });
+    }
+
     function handleTimeIn() {
         fetch('../timeinout.php')
             .then(async res => JSON.parse(await res.text()))
             .then(response => {
+                console.log(response);
                 const btn    = document.getElementById('timeInBtn');
                 const label  = btn.querySelector('#timeInLabel');
                 const status = document.getElementById('dashboard_status');
@@ -346,10 +304,10 @@ $timedIn = ($lastLog && $lastLog['log_type'] === 'login')
                         .then(html => {
                             const doc    = new DOMParser().parseFromString(html, 'text/html');
                             const newBox = doc.querySelector('.recordBox');
-                            newBox.querySelectorAll('.gantt-bar').forEach(b => b.style.transition = 'none');
+                            newBox.querySelectorAll('.ganttBar').forEach(b => b.style.transition = 'none');
                             document.querySelector('.recordBox').replaceWith(newBox);
                             requestAnimationFrame(() => requestAnimationFrame(() => {
-                                newBox.querySelectorAll('.gantt-bar').forEach(b => b.style.transition = '');
+                                newBox.querySelectorAll('.ganttBar').forEach(b => b.style.transition = '');
                             }));
                             initGanttCursors();
                         });
@@ -358,7 +316,7 @@ $timedIn = ($lastLog && $lastLog['log_type'] === 'login')
             .catch(err => console.log('Error:', err));
     }
 
-    // ===== USER DROPDOWN =====
+    // Dropdown menu
     const toggle = document.getElementById('userDropdownToggle');
     const menu   = document.getElementById('userDropdownMenu');
     let isOpen   = false;
@@ -477,13 +435,13 @@ $timedIn = ($lastLog && $lastLog['log_type'] === 'login')
                                 <div>${fmtDate(date).split(',')[0]}</div>
                                 <div style="font-size:0.75rem; color:#aaa;">${fmtShort(date)}</div>
                             </div>
-                            <div class="gantt-bar-container"
+                            <div class="ganttBarContainer"
                                 style="position:relative; flex:1; height:30px; background:rgba(255,255,255,0.05); background-image:repeating-linear-gradient(to right, rgba(255,255,255,0.08) 0px, rgba(255,255,255,0.08) 1px, transparent 1px, transparent calc(100% / 24)); border-radius:8px; overflow:visible;"
                                 data-range-start="${rangeStart}" data-range-end="${rangeEnd}">
 
-                                <div class="gantt-cursor">
-                                    <div class="gantt-cursor-line"></div>
-                                    <div class="gantt-cursor-label"></div>
+                                <div class="ganttCursor">
+                                    <div class="ganttCursorLine"></div>
+                                    <div class="ganttCursorLabel"></div>
                                 </div>
 
                                 <!-- Scheduled bar -->
