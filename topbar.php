@@ -161,12 +161,14 @@ $timedIn = ($lastLog && $lastLog['log_type'] === 'login')
 
                 if (label) {
                     label.textContent = new Date(time * 1000).toLocaleTimeString('en-US', {
-                        hour: 'numeric',
-                        minute: '2-digit',
-                        hour12: true,
-                        timeZone: 'Asia/Manila'
+                        hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'Asia/Manila'
                     });
                 }
+                line.style.left  = (percent * 100) + '%';
+                label.style.left = (percent * 100) + '%';
+                label.textContent = new Date(time * 1000).toLocaleTimeString('en-US', {
+                    hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'Asia/Manila'
+                });
 
                 if (hasData && tooltip) {
                     gtSched.textContent     = container.dataset.schedIn + ' – ' + container.dataset.schedOut;
@@ -183,9 +185,10 @@ $timedIn = ($lastLog && $lastLog['log_type'] === 'login')
 
                     // Show overtime if it is approved or rejected
                     if (container.dataset.overtime) {
-                        gtOt.textContent = container.dataset.overtime;
-                        const status = container.dataset.overtimeStatus;
-                        gtOtRow.className = 'gt-row gt-ot ' + (status === 'approved' ? 'approved' : status === 'rejected' ? 'rejected' : '');
+                        gtOt.textContent  = container.dataset.overtime;
+                        const status      = container.dataset.overtimeStatus;
+                        gtOtRow.className = 'ganttToolTipRow ganttToolTipOverTime'
+                                        + (status === 'approved' ? ' approved' : status === 'rejected' ? ' rejected' : '');
                         gtOtRow.style.display = 'flex';
                     } else {
                         gtOtRow.style.display = 'none';
@@ -211,6 +214,24 @@ $timedIn = ($lastLog && $lastLog['log_type'] === 'login')
                 if (tooltip) tooltip.classList.remove('visible');
             });
         });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        initGanttCursors();
+    });
+
+    // Handle time in and out of employee
+    function getTotalWorkedHours() {
+        fetch('../get_dashboard_data.php')
+            .then(res => res.json())
+            .then(data => {
+                const week  = document.getElementById('dashboard_week_hours');
+                const month = document.getElementById('dashboard_month_hours');
+                if (week && month) {
+                    week.textContent  = data.weeklyHours  + ' hours';
+                    month.textContent = data.monthlyHours + ' hours';
+                }
+         });
     }
 
     function handleTimeIn() {
@@ -373,13 +394,13 @@ $timedIn = ($lastLog && $lastLog['log_type'] === 'login')
                                 <div>${fmtDate(date).split(',')[0]}</div>
                                 <div style="font-size:0.75rem; color:#aaa;">${fmtShort(date)}</div>
                             </div>
-                            <div class="gantt-bar-container"
+                            <div class="ganttBarContainer"
                                 style="position:relative; flex:1; height:30px; background:rgba(255,255,255,0.05); background-image:repeating-linear-gradient(to right, rgba(255,255,255,0.08) 0px, rgba(255,255,255,0.08) 1px, transparent 1px, transparent calc(100% / 24)); border-radius:8px; overflow:visible;"
                                 data-range-start="${rangeStart}" data-range-end="${rangeEnd}">
 
-                                <div class="gantt-cursor">
-                                    <div class="gantt-cursor-line"></div>
-                                    <div class="gantt-cursor-label"></div>
+                                <div class="ganttCursor">
+                                    <div class="ganttCursorLine"></div>
+                                    <div class="ganttCursorLabel"></div>
                                 </div>
 
                                 <!-- Scheduled bar -->
