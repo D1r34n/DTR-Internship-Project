@@ -95,7 +95,7 @@ $overtimeRequests = $pdo->query("
 
     <!-- TOPBAR -->
     <?php
-    $current_page = 'request';
+    $current_page = 'requests';
     include '../topbar.php';
     ?>
 
