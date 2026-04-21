@@ -10,7 +10,7 @@ body::before {
     background-repeat: no-repeat;
 
     /* blur directly on image */
-    filter: blur(6px);
+    filter: blur(2px);
     transform: scale(1.1); /* prevents edge cut-off from blur */
 
     z-index: -2;
@@ -21,6 +21,23 @@ body {
     min-height: 100vh;
     margin: 0;
     overflow-x: hidden;
+}
+
+body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+
+    /* fade to black overlay */
+    background: linear-gradient(
+        to bottom,
+        rgba(0, 0, 0, 0.15) 0%,
+        rgba(0, 0, 0, 0.55) 50%,
+        rgba(0, 0, 0, 0.85) 100%
+    );
+
+    z-index: -1;
+    pointer-events: none;
 }
 
 .scheduleBoxWrapper {

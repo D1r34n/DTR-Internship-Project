@@ -1,3 +1,4 @@
+<!-- PHP -->
 <?php
 require_once 'db.php';
 
@@ -14,17 +15,19 @@ $skipGuard = false;
 $logs      = [];
 $ran       = false;
 
-// CLI: auto-run without any GET params needed
+// If using CLI auto-run without any GET params needed
 if ($isCLI) {
     $_GET['run'] = '1';
 }
 
+// System get state
 function getSystemValue($pdo, $key) {
     $stmt = $pdo->prepare("SELECT value FROM system_state WHERE key_name = ?");
     $stmt->execute([$key]);
     return $stmt->fetchColumn();
 }
 
+// System set state
 function setSystemValue($pdo, $key, $value) {
     $stmt = $pdo->prepare("
         INSERT INTO system_state (key_name, value)
@@ -52,6 +55,7 @@ if ($startDate && $endDate) {
     $datesToProcess[] = date('Y-m-d', strtotime('-1 day'));
 }
 
+// Lunch break variable
 $BREAK_SECONDS = 3600;
 
 if (isset($_GET['run'])) {
@@ -65,7 +69,7 @@ if (isset($_GET['run'])) {
         $lastRun = getSystemValue($pdo, 'attendance_last_finalize');
 
         if (!$skipGuard && $lastRun === $processDate) {
-            $logs[] = ['type' => 'warn', 'text' => "[$processDate] Already finalized. Use --force or pick a date range to override."];
+            $logs[] = ['type' => 'warn', 'text' => "[$processDate] Already finalized. Pick a date range to override."];
             continue;
         }
 
@@ -201,6 +205,8 @@ if ($isCLI) {
     exit(0);
 }
 ?>
+
+<!-- HTML -->
 <!DOCTYPE html>
 <html lang="en">
 <head>

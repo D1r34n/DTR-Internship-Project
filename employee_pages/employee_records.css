@@ -10,7 +10,7 @@ body::before {
     background-repeat: no-repeat;
 
     /* blur directly on image */
-    filter: blur(6px);
+    filter: blur(2px);
     transform: scale(1.1); /* prevents edge cut-off from blur */
 
     z-index: -2;
@@ -23,6 +23,23 @@ body {
     overflow-x: hidden;
 }
 
+body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+
+    /* fade to black overlay */
+    background: linear-gradient(
+        to bottom,
+        rgba(0, 0, 0, 0.15) 0%,
+        rgba(0, 0, 0, 0.55) 50%,
+        rgba(0, 0, 0, 0.85) 100%
+    );
+
+    z-index: -1;
+    pointer-events: none;
+}
+
 .recordBoxWrapper {
     position: fixed;
     top: 84px;
@@ -30,7 +47,7 @@ body {
     width: calc(100% - var(--sidebar-width));
     height: calc(100vh - 84px);
 
-    padding: 1rem 2rem;
+    padding: 0.5rem 1rem;
 
     display: flex;
     justify-content: center;
@@ -68,10 +85,73 @@ body {
     margin-bottom: 1rem;
 }
 
+.dateWrapper {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    width: auto;
+    max-width: 100%;
+}
+
+/* INPUT */
 .recordTitle {
-    font-size: 1.2rem;
-    font-weight: 600;
-    color: #fff;
+    font-size: 1.125rem;
+    font-weight: 400;
+    color: var(--text-light);
+
+    width: 25rem;
+    padding-right: 28px;
+
+    background-color: transparent;
+    cursor: pointer;
+    border: none;
+
+    transition: 
+        color 0.2s ease,
+        background-color 0.3s ease,
+        box-shadow 0.2s ease,
+        transform 0.2s ease;
+}
+
+/* HOVER */
+.recordTitle:hover {
+    color: var(--text-lightest);
+
+    background: rgba(255, 255, 255, 0.038);
+
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+
+    transform: translateX(3px);
+}
+
+/* ACTIVE / FOCUS */
+.recordTitle:active,
+.recordTitle:focus {
+    color: var(--primary-color);
+    background: rgba(151, 190, 65, 0.1);
+    border-color: rgba(151, 190, 65, 0.2);
+    box-shadow: inset 0 1px 0 rgba(151, 190, 65, 0.1);
+}
+
+/* DROPDOWN ICON */
+.dateIcon {
+    position: absolute;
+    right: 8px;
+    pointer-events: none;
+    color: rgba(255,255,255,0.7);
+    font-size: 0.9rem;
+
+    transition: 
+        color 0.2s ease,
+        transform 0.2s ease;
+}
+
+.dateWrapper:hover .dateIcon{
+    color: var(--text-lightest);
+    transform: translateX(3px);
 }
 
 .datePickerForm {
@@ -115,7 +195,23 @@ body {
     box-shadow: none;
 }
 
-.gantt {
+/* Month dropdown */
+.flatpickr-monthDropdown-months {
+    background: rgba(0,0,0,0.6) !important;
+    color: #fff !important;
+    border: 1px solid var(--glass-border) !important;
+    border-radius: 6px;
+    padding: 4px 6px;
+    font-family: 'Poppins', sans-serif;
+}
+
+/* Options (works in some browsers only) */
+.flatpickr-monthDropdown-months option {
+    background: #1a1a1a;
+    color: #fff;
+}
+
+.ganttContainer {
     display: flex;
     flex-direction: column;
     gap: 3rem;
@@ -127,21 +223,21 @@ body {
 }
 
 /* custom scrollbar (Chrome/Edge) */
-.gantt::-webkit-scrollbar {
+.ganttContainer::-webkit-scrollbar {
     width: 6px;
 }
-.gantt::-webkit-scrollbar-thumb {
-    background: rgba(255,255,255,0.15);
+.ganttContainer::-webkit-scrollbar-thumb {
+    background: var(--text-muted);
     border-radius: 10px;
 }
 
-.gantt-row {
+.ganttRow {
     display: flex;
     align-items: center;
     gap: 10px;
 }
 
-.gantt-cursor {
+.ganttCursor {
     position: absolute;
     top: 0;
     left: 0;
@@ -150,15 +246,15 @@ body {
     pointer-events: none;
     opacity: 0;
     transition: opacity 0.15s ease;
-    z-index: 10;
+    z-index: 20;
 }
 
 /* show only on hover */
-.gantt-bar-container:hover .gantt-cursor {
+.ganttBarContainer:hover .ganttCursor {
     opacity: 1;
 }
 
-.gantt-cursor-line {
+.ganttCursorLine {
     position: absolute;
     top: 0;
     width: 2px;
@@ -167,7 +263,7 @@ body {
     transform: translateX(-1px);
 }
 
-.gantt-cursor-label {
+.ganttCursorLabel {
     position: absolute;
     top: -18px;
     transform: translateX(-50%);
@@ -179,21 +275,21 @@ body {
     white-space: nowrap;
 }
 
-.gantt-label {
-    width: 4rem;
+.ganttLabel {
+    width: 5rem;
     font-size: 0.875rem;
     font-weight: 400;
     color: var(--text-light);
 }
 
-.gantt-sublabel {
+.ganttSubLabel {
     width: 100%;
     font-size: 0.75rem;
     font-weight: 300;
-    color: var(--text-mute);
+    color: var(--text-muted);
 }
 
-.gantt-bar-container {
+.ganttBarContainer {
     position: relative;
     flex: 1;
     height: 30px;
@@ -211,11 +307,11 @@ body {
     overflow: visible;
 }
 
-.gantt-bar-container:hover .gantt-scale {
+.ganttBarContainer:hover .ganttScale {
     opacity: 1;
 }
 
-.gantt-scale {
+.ganttScale {
     position: absolute;
     bottom: -20px;
     left: 0;
@@ -226,7 +322,7 @@ body {
     pointer-events: none;
 }
 
-.gantt-scale-item {
+.ganttScaleItem {
     position: absolute;
     transform: translateX(-50%);
     font-size: 0.7rem;
@@ -234,16 +330,16 @@ body {
     white-space: nowrap;
 }
 
-.gantt-scale-item:first-child {
+.ganttScaleItem:first-child {
     transform: translateX(0%);
 }
 
-.gantt-scale-item:last-child {
+.ganttScaleItem:last-child {
     transform: translateX(-100%);
 }
 
 /* Gantt bar */
-.gantt-bar {
+.ganttBar {
     position: absolute;
     top: 0;
     height: 100%;
@@ -253,36 +349,42 @@ body {
 }
 
 /* Scheduled ghost bar */
-.gantt-bar--scheduled {
+.ganttBarScheduled {
     background: rgba(150, 150, 255, 0.25);
     border: 1px dashed #7b7bff;
 }
 
 /* Tardiness (red) segment */
-.gantt-bar--tardy {
+.ganttBarTardy {
     background: rgba(255, 170, 0, 0.75);
     border: none;
 }
 
 /* On-time (green) segment */
-.gantt-bar--ontime {
+.ganttBarOnTime {
     background: rgba(25, 135, 84, 0.75);
     border: none;
 }
 
 /* Pending full bar */
-.gantt-bar--pending {
+.ganttBarPending{
     background: rgba(95, 95, 95, 0.5);
     border: 1px dashed #303030;
 }
 
 /* Absent / incomplete full bar */
-.gantt-bar--absent {
+.ganttBarAbsent {
     background: rgba(220, 53, 69, 0.5);
     border: 1px dashed #dc3545;
 }
 
-.gantt-bar-label {
+/* Employee forgot to time out */
+.ganttBarNoTimeOut {
+    background: #7c3aed; /* purple */
+    opacity: 0.85;
+}
+
+.ganttBarLabel {
     position: absolute;
     inset: 0; /* replaces left/top + simplifies centering */
 
@@ -305,12 +407,12 @@ body {
     z-index: 2;
 }
 
-.gantt-bar:hover .gantt-bar-label {
+.ganttBar:hover .ganttBarLabel {
     opacity: 1;
 }
 
 /* Status label centered inside the absent bar */
-.gantt-absent-label {
+.ganttAbsentLabel {
     position: absolute;
     top: 50%;
     transform: translate(-50%, -50%);
@@ -324,7 +426,7 @@ body {
 }
 
 /* Status label centered inside the pending bar */
-.gantt-pending-label {
+.ganttPendingLabel {
     position: absolute;
     top: 50%;
     transform: translate(-50%, -50%);
@@ -337,7 +439,7 @@ body {
     z-index: 2;
 }
 
-.gantt-marker {
+.ganttMarker {
     position: absolute;
     left: 0;
 
@@ -345,35 +447,35 @@ body {
     height: calc(100% + 12px);
 
     width: 2px;
-    z-index: 999;
+    z-index: 10;
 
     filter: drop-shadow(0 0 6px rgba(255,255,255,0.4));
 }
 
 /* Actual time in and out markers */
-.gantt-marker--actual-start {
+.ganttMarkerActualStart {
     border-left: 2px solid #22c55e; /* neon green */
     filter: drop-shadow(0 0 6px rgba(34,197,94,0.8));
 }
 
-.gantt-marker--actual-end {
+.ganttMarkerActualEnd {
     border-left: 2px solid #dc3545; /* neon red */
     filter: drop-shadow(0 0 6px rgba(249,115,22,0.8));
 }
 
-.gantt-bar--ot-pending {
+.ganttBarOvertimePending {
     background: #4da3ff; /* blue */
 }
 
-.gantt-bar--ot-approved {
+.ganttBarOvertimeApproved {
     background: #2ecc71; /* green */
 }
 
 .gantt-bar--ot-rejected {
-    background: #e74c3c; /* red */
+    background: #4da3ff; /* red */
 }
 
-#gantt-tooltip {
+#gantt_tooltip {
     position: fixed;
     background: var(--glass-bg);
     backdrop-filter: blur(32px) saturate(160%) brightness(0.3);
@@ -389,30 +491,154 @@ body {
     transition: opacity 0.15s ease;
     white-space: nowrap;
     z-index: 9999;
-    transform: translate(-50%, calc(-100% - 12px));
+    transform: translate(-50%, calc(-100% - 3rem));
     min-width: 200px;
 }
 
-#gantt-tooltip.visible {
+#gantt_tooltip.visible {
     opacity: 1;
 }
 
-.gt-row {
+.ganttToolTipRow {
     display: flex;
     justify-content: space-between;
     gap: 16px;
     padding: 2px 0;
 }
 
-.gt-label {
+.ganttToolTipLabel {
     color: #aaa;
 }
 
-.gt-value {
+.ganttToolTipValue {
     font-weight: 500;
 }
 
-.gt-late .gt-value  { color: #f87171; }
-.gt-ot   .gt-value  { color: #fb923c; }
-.gt-ot.approved .gt-value { color: #4ade80; }
-.gt-ot.rejected .gt-value { color: #f87171; }
+.ganttToolTipLate .ganttToolTipValue  { color: #f87171; }
+.ganttToolTipOverTime   .ganttToolTipValue  { color: #4da3ff; }
+.ganttToolTipUnderTime   .ganttToolTipValue  { color: #ed6809; }
+.ganttToolTipOverTime.approved .gt-value { color: #4ade80; }
+.ganttToolTipOverTime.rejected .gt-value { color: #f87171; }
+
+/* ===== FLATPICKR THEME OVERRIDE ===== */
+
+/* Main calendar container */
+.flatpickr-calendar {
+    background: var(--glass-bg) !important;
+    backdrop-filter: blur(32px) saturate(160%) brightness(0.3) !important;
+    -webkit-backdrop-filter: blur(32px) saturate(160%) brightness(0.3) !important;
+    border: 1px solid var(--glass-border) !important;
+    border-radius: 16px !important;
+    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.5) !important;
+    font-family: 'Poppins', sans-serif !important;
+    color: var(--text-light) !important;
+}
+
+/* Arrow (triangle) on calendar — hide or match */
+.flatpickr-calendar.arrowTop::before,
+.flatpickr-calendar.arrowTop::after {
+    border-bottom-color: var(--glass-border) !important;
+}
+
+/* Month/year header */
+.flatpickr-months {
+    padding: 0.5rem 0;
+}
+
+.flatpickr-month {
+    color: #fff !important;
+    fill: #fff !important;
+}
+
+.flatpickr-current-month input.cur-year,
+.flatpickr-current-month .flatpickr-monthDropdown-months {
+    background: transparent !important;
+    color: #fff !important;
+    font-family: 'Poppins', sans-serif !important;
+    font-weight: 400 !important;
+}
+
+.flatpickr-monthDropdown-months option {
+    background: #1a1a1a !important;
+    color: #fff !important;
+}
+
+/* Prev/next arrows */
+.flatpickr-prev-month,
+.flatpickr-next-month {
+    fill: var(--text-light) !important;
+    color: var(--text-light) !important;
+}
+
+.flatpickr-prev-month:hover,
+.flatpickr-next-month:hover {
+    fill: #fff !important;
+    color: #fff !important;
+}
+
+/* Weekday labels */
+.flatpickr-weekday {
+    color: #aaa !important;
+    font-weight: 500 !important;
+    font-family: 'Poppins', sans-serif !important;
+}
+
+/* Day cells */
+.flatpickr-day {
+    color: var(--text-light) !important;
+    border-radius: 8px !important;
+    font-family: 'Poppins', sans-serif !important;
+}
+
+.flatpickr-day:hover {
+    background: rgba(255, 255, 255, 0.1) !important;
+    border-color: transparent !important;
+}
+
+/* Selected day */
+.flatpickr-day.selected,
+.flatpickr-day.startRange,
+.flatpickr-day.endRange {
+    background: var(--primary, #97be41) !important;
+    border-color: var(--primary, #97be41) !important;
+    color: #fff !important;
+}
+
+/* Range in-between days */
+.flatpickr-day.inRange {
+    background: rgba(151, 190, 65, 0.2) !important;
+    border-color: transparent !important;
+    box-shadow: none !important;
+    color: #fff !important;
+}
+
+/* Today */
+.flatpickr-day.today {
+    border-color: rgba(151, 190, 65, 0.5) !important;
+    color: var(--text-light) !important;
+}
+
+.flatpickr-day.today:hover {
+    background: rgba(151, 190, 65, 0.15) !important;
+}
+
+/* Disabled / out of range days */
+.flatpickr-day.flatpickr-disabled,
+.flatpickr-day.prevMonthDay,
+.flatpickr-day.nextMonthDay {
+    color: rgba(255, 255, 255, 0.2) !important;
+}
+
+/* The alt input field itself */
+.flatpickr-input.form-control,
+.flatpickr-input {
+    background: transparent !important;
+    border: none !important;
+    color: var(--text-light) !important;
+    font-family: 'Poppins', sans-serif !important;
+    font-size: 1.125rem !important;
+    font-weight: 400 !important;
+    cursor: pointer !important;
+    outline: none !important;
+    caret-color: transparent !important;
+}
