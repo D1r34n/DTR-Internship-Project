@@ -26,9 +26,9 @@ if (!$startDate && !$endDate) {
 // Get Attendance table
 $stmt = $pdo->prepare("
     SELECT 
-        date,
-        scheduled_time_in,
-        scheduled_time_out,
+        work_date,
+        scheduled_start_datetime,
+        scheduled_end_datetime,
         actual_time_in,
         actual_time_out,
         total_work_hours,
@@ -37,44 +37,45 @@ $stmt = $pdo->prepare("
         undertime_minutes,
         overtime_minutes,
         overtime_status
-    FROM attendance
+    FROM attendances
     WHERE employee_id = ?
-    AND date BETWEEN ? AND ?
-    ORDER BY date DESC
+    AND work_date BETWEEN ? AND ?
+    ORDER BY work_date DESC
 ");
 $stmt->execute([$employeeId, $startDate, $endDate]);
 $records = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// // DEBUG — To check if inserting data
-// echo '<pre style="position:fixed;top:0;right:0;background:#000;color:#0f0;padding:10px;z-index:9999;font-size:11px;max-height:100vh;overflow:auto;">';
-// echo "Records count: " . count($records) . "\n\n";
-// foreach ($records as $r) {
-//     echo "Date: {$r['date']}\n";
-//     echo "  actual_time_in:  " . var_export($r['actual_time_in'], true) . "\n";
-//     echo "  actual_time_out: " . var_export($r['actual_time_out'], true) . "\n";
-//     echo "  scheduled_time_in:  " . var_export($r['scheduled_time_in'], true) . "\n";
-//     echo "  scheduled_time_out: " . var_export($r['scheduled_time_out'], true) . "\n";
-//     echo "  strtotime(actual_time_in):  " . strtotime($r['actual_time_in']) . "\n";
-//     echo "  strtotime(actual_time_out): " . strtotime($r['actual_time_out']) . "\n\n";
-// }
-// echo '</pre>';
+// DEBUG — To check if inserting data
+echo '<pre style="position:fixed;top:0;right:0;background:#000;color:#0f0;padding:10px;z-index:9999;font-size:11px;max-height:100vh;overflow:auto;">';
+echo "Records count: " . count($records) . "\n\n";
+foreach ($records as $r) {
+    echo "Date: {$r['date']}\n";
+    echo "  actual_time_in:  " . var_export($r['actual_time_in'], true) . "\n";
+    echo "  actual_time_out: " . var_export($r['actual_time_out'], true) . "\n";
+    echo "  scheduled_time_in:  " . var_export($r['scheduled_time_in'], true) . "\n";
+    echo "  scheduled_time_out: " . var_export($r['scheduled_time_out'], true) . "\n";
+    echo "  strtotime(actual_time_in):  " . strtotime($r['actual_time_in']) . "\n";
+    echo "  strtotime(actual_time_out): " . strtotime($r['actual_time_out']) . "\n\n";
+}
+echo '</pre>';
 
 /* =========================
    SCHEDULES
 ========================= */
+// NEW
 $stmtSched = $pdo->prepare("
-    SELECT work_date, time_in, time_out, is_rest_day
+    SELECT schedule_date, scheduled_start_datetime, scheduled_end_datetime, is_rest_day
     FROM schedules
     WHERE employee_id = ?
-    AND work_date BETWEEN ? AND ?
+    AND schedule_date BETWEEN ? AND ?
 ");
 $stmtSched->execute([$employeeId, $startDate, $endDate]);
 $schedulesRaw = $stmtSched->fetchAll(PDO::FETCH_ASSOC);
 
-// Index schedules by work_date for O(1) lookup inside the loop
+// Index schedules by schedule_date for O(1) lookup inside the loop
 $schedules = [];
 foreach ($schedulesRaw as $s) {
-    $schedules[$s['work_date']] = $s;
+    $schedules[$s['schedule_date']] = $s;
 }
 ?>
 
@@ -97,11 +98,13 @@ foreach ($schedulesRaw as $s) {
     <link rel="stylesheet" href="employee_records.css">
 </head>
 <body>
-<?php include '../sidebar.php'; ?>
+    <!-- Include sidebar -->
+    <?php include '../sidebar.php'; ?>
 
-<?php
-include '../topbar.php';
-?>
+    <!-- Include topbar -->
+    <?php
+    include '../topbar.php';
+    ?>
 
 <div class="recordBoxWrapper">
     <div class="recordBox">
@@ -173,7 +176,7 @@ include '../topbar.php';
             $schedIn  = null;
             $schedOut = null;
 
-            $dateKey  = $row['date'];
+            $dateKey  = $row['work_date'];
             $isToday  = ($dateKey === date('Y-m-d'));
             $isFuture = ($dateKey > date('Y-m-d'));
             $dayLabel = $isToday ? 'Today' : date('l', strtotime($dateKey));
@@ -185,18 +188,16 @@ include '../topbar.php';
             $overtimeStatus  = $row['overtime_status'];
             $status          = $row['status'];
 
-            /*
-            SCHEDULE TIMES Prefer the schedules table over the attendance snapshot;
-            fall back to attendance if no schedule row exists
-            */
-            $timeIn  = ($sched['time_in']  ?? null) ?: ($row['scheduled_time_in']  ?? null);
-            $timeOut = ($sched['time_out'] ?? null) ?: ($row['scheduled_time_out'] ?? null);
+            // scheduled_start_datetime / scheduled_end_datetime are full datetimes,
+            // so strtotime() parses them directly — no date prefix needed
+            $schedStartDt = ($sched['scheduled_start_datetime'] ?? null) ?: ($row['scheduled_start_datetime'] ?? null);
+            $schedEndDt   = ($sched['scheduled_end_datetime']   ?? null) ?: ($row['scheduled_end_datetime']   ?? null);
+         
+            if ($schedStartDt && $schedStartDt !== '0000-00-00 00:00:00') {
+                $schedIn  = strtotime($schedStartDt);
+                $schedOut = strtotime($schedEndDt);
 
-            if ($timeIn && $timeIn !== '00:00:00') {
-                $schedIn  = strtotime($dateKey . ' ' . $timeIn);
-                $schedOut = strtotime($dateKey . ' ' . $timeOut);
-
-                // Handle overnight shifts where time_out is past midnight
+                // Handle overnight shifts where end is past midnight
                 if ($schedOut && $schedOut <= $schedIn) {
                     $schedOut = strtotime('+1 day', $schedOut);
                 }

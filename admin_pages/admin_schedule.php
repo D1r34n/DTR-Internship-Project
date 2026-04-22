@@ -18,7 +18,7 @@ if (isset($_GET['delete']) && isset($_GET['week'])) {
     $weekStart = $_GET['week'];
     $weekEnd = date('Y-m-d', strtotime($weekStart . ' +6 days'));
 
-    $stmt = $pdo->prepare("DELETE FROM schedules WHERE employee_id = ? AND work_date BETWEEN ? AND ?");
+    $stmt = $pdo->prepare("DELETE FROM schedules WHERE employee_id = ? AND schedule_date BETWEEN ? AND ?");
     $stmt->execute([$employeeId, $weekStart, $weekEnd]);
 
     $success = "Schedule deleted successfully!";
@@ -28,10 +28,9 @@ if (isset($_GET['delete']) && isset($_GET['week'])) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $employee_id = $_POST['employee_id'];
     $week_monday = $_POST['week_monday'];
-    $time_in = $_POST['time_in'];
-    $time_out = $_POST['time_out'];
+    $time_in = $_POST['time_in'];   // e.g. "08:00"
+    $time_out = $_POST['time_out']; // e.g. "17:00"
 
-    // Generate all 7 days from Monday
     $days = [];
     $monday = new DateTime($week_monday);
 
@@ -41,26 +40,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $dayOfWeek = $current->format('N'); // 1=Mon, 7=Sun
         $isRestDay = ($dayOfWeek >= 6) ? 1 : 0;
 
+        $dateStr = $current->format('Y-m-d');
+
         $days[] = [
-            'date' => $current->format('Y-m-d'),
-            'is_rest_day' => $isRestDay
+            'schedule_date'           => $dateStr,
+            'scheduled_start_datetime'=> $isRestDay ? null : $dateStr . ' ' . $time_in . ':00',
+            'scheduled_end_datetime'  => $isRestDay ? null : $dateStr . ' ' . $time_out . ':00',
+            'is_rest_day'             => $isRestDay
         ];
     }
 
     // Delete existing rows for this employee and week
     $weekStart = $monday->format('Y-m-d');
     $weekEnd = (clone $monday)->modify('+6 days')->format('Y-m-d');
-    $deleteStmt = $pdo->prepare("DELETE FROM schedules WHERE employee_id = ? AND work_date BETWEEN ? AND ?");
+    $deleteStmt = $pdo->prepare("DELETE FROM schedules WHERE employee_id = ? AND schedule_date BETWEEN ? AND ?");
     $deleteStmt->execute([$employee_id, $weekStart, $weekEnd]);
 
     // Insert new rows
-    $insertStmt = $pdo->prepare("INSERT INTO schedules (employee_id, work_date, time_in, time_out, is_rest_day) VALUES (?, ?, ?, ?, ?)");
+    $insertStmt = $pdo->prepare("
+        INSERT INTO schedules (employee_id, schedule_date, scheduled_start_datetime, scheduled_end_datetime, is_rest_day)
+        VALUES (?, ?, ?, ?, ?)
+    ");
     foreach ($days as $day) {
         $insertStmt->execute([
             $employee_id,
-            $day['date'],
-            $day['is_rest_day'] ? null : $time_in,
-            $day['is_rest_day'] ? null : $time_out,
+            $day['schedule_date'],
+            $day['scheduled_start_datetime'],
+            $day['scheduled_end_datetime'],
             $day['is_rest_day']
         ]);
     }
@@ -71,22 +77,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // GET ALL SCHEDULES grouped by employee and week
 $schedules = $pdo->query("
     SELECT 
-        e.name as employee_name,
+        e.name AS employee_name,
         s.employee_id,
-        MIN(s.work_date) as week_start,
-        MAX(s.work_date) as week_end,
-        MIN(s.time_in) as time_in,
-        MAX(s.time_out) as time_out
+        MIN(s.schedule_date) AS week_start,
+        MAX(s.schedule_date) AS week_end,
+        MIN(s.scheduled_start_datetime) AS scheduled_start_datetime,
+        MAX(s.scheduled_end_datetime)   AS scheduled_end_datetime
     FROM schedules s
     JOIN employees e ON s.employee_id = e.id
     WHERE s.is_rest_day = 0
-    AND s.work_date IS NOT NULL
-    GROUP BY s.employee_id, YEARWEEK(s.work_date)
+    AND s.schedule_date IS NOT NULL
+    GROUP BY s.employee_id, YEARWEEK(s.schedule_date)
     ORDER BY week_start DESC, e.name
 ")->fetchAll(PDO::FETCH_ASSOC);
 
 // GET ALL EMPLOYEES
 $employees = $pdo->query("SELECT id, name FROM employees WHERE role = 'employee' ORDER BY name")->fetchAll(PDO::FETCH_ASSOC);
+$current_page = 'schedule';
 ?>
 
 <!doctype html>
@@ -106,14 +113,8 @@ $employees = $pdo->query("SELECT id, name FROM employees WHERE role = 'employee'
     </style>
 </head>
 <body>
-    <!-- SIDEBAR -->
     <?php include '../sidebar.php'; ?>
-
-    <!-- TOPBAR -->
-    <?php 
-    $current_page = 'schedule';
-    include '../topbar.php'; 
-    ?>
+    <?php include '../topbar.php'; ?>
 
     <div class="scheduleWrapper">
         <div class="scheduleBox">
@@ -148,11 +149,11 @@ $employees = $pdo->query("SELECT id, name FROM employees WHERE role = 'employee'
                                 <tr>
                                     <td><?= htmlspecialchars($row['employee_name']) ?></td>
                                     <td>
-                                        <?= date('M d', strtotime($row['week_start'])) ?> - 
+                                        <?= date('M d', strtotime($row['week_start'])) ?> -
                                         <?= date('M d, Y', strtotime($row['week_end'])) ?>
                                     </td>
-                                    <td><?= $row['time_in'] ? date('h:i A', strtotime($row['time_in'])) : '—' ?></td>
-                                    <td><?= $row['time_out'] ? date('h:i A', strtotime($row['time_out'])) : '—' ?></td>
+                                    <td><?= $row['scheduled_start_datetime'] ? date('h:i A', strtotime($row['scheduled_start_datetime'])) : '—' ?></td>
+                                    <td><?= $row['scheduled_end_datetime']   ? date('h:i A', strtotime($row['scheduled_end_datetime']))   : '—' ?></td>
                                     <td>
                                         <div class="actionDropdownWrapper">
                                             <button class="btn btn-sm editBtn actionToggle" onclick="toggleActionMenu(this)">
@@ -163,8 +164,8 @@ $employees = $pdo->query("SELECT id, name FROM employees WHERE role = 'employee'
                                                     '<?= $row['employee_id'] ?>',
                                                     '<?= htmlspecialchars($row['employee_name'], ENT_QUOTES) ?>',
                                                     '<?= $row['week_start'] ?>',
-                                                    '<?= $row['time_in'] ?>',
-                                                    '<?= $row['time_out'] ?>'
+                                                    '<?= $row['scheduled_start_datetime'] ? date('H:i', strtotime($row['scheduled_start_datetime'])) : '' ?>',
+                                                    '<?= $row['scheduled_end_datetime']   ? date('H:i', strtotime($row['scheduled_end_datetime']))   : '' ?>'
                                                 )">
                                                     <i class="bi bi-pencil-fill"></i> Edit
                                                 </a>
@@ -259,7 +260,6 @@ $employees = $pdo->query("SELECT id, name FROM employees WHERE role = 'employee'
     </div>
 
     <script>
-    // Action dropdown toggle
     function toggleActionMenu(btn) {
         const menu = btn.nextElementSibling;
         document.querySelectorAll('.actionMenu').forEach(m => {
@@ -268,18 +268,15 @@ $employees = $pdo->query("SELECT id, name FROM employees WHERE role = 'employee'
         menu.classList.toggle('show');
     }
 
-    // Close action menu when clicking outside
     document.addEventListener('click', (e) => {
         if (!e.target.closest('.actionDropdownWrapper')) {
             document.querySelectorAll('.actionMenu').forEach(m => m.classList.remove('show'));
         }
-        // Close employee dropdown when clicking outside
         if (!e.target.closest('#employeeSearch') && !e.target.closest('#employeeDropdown')) {
             document.getElementById('employeeDropdown').style.display = 'none';
         }
     });
 
-    // Load edit into form
     function loadEdit(employeeId, employeeName, weekStart, timeIn, timeOut) {
         document.getElementById('employeeSearch').value = employeeName;
         document.getElementById('employeeSelect').value = employeeId;
@@ -292,17 +289,14 @@ $employees = $pdo->query("SELECT id, name FROM employees WHERE role = 'employee'
         document.querySelector('.adminFormWrapper').scrollIntoView({ behavior: 'smooth' });
     }
 
-    // Search table
     function searchTable() {
         const input = document.getElementById('searchInput').value.toLowerCase();
         const rows = document.querySelectorAll('.tableScrollWrapper tbody tr');
         rows.forEach(row => {
-            const text = row.textContent.toLowerCase();
-            row.style.display = text.includes(input) ? '' : 'none';
+            row.style.display = row.textContent.toLowerCase().includes(input) ? '' : 'none';
         });
     }
 
-    // Auto-dismiss alerts after 3 seconds
     setTimeout(() => {
         document.querySelectorAll('.alert').forEach(alert => {
             alert.style.transition = 'opacity 0.5s ease';
@@ -311,24 +305,19 @@ $employees = $pdo->query("SELECT id, name FROM employees WHERE role = 'employee'
         });
     }, 3000);
 
-    // Employee search filter
     function filterEmployees() {
         const input = document.getElementById('employeeSearch').value.toLowerCase();
         const dropdown = document.getElementById('employeeDropdown');
         const options = document.querySelectorAll('.employeeOption');
 
         dropdown.style.display = input === '' ? 'none' : 'block';
-
         options.forEach(opt => {
-            const name = opt.getAttribute('data-name').toLowerCase();
-            opt.style.display = name.includes(input) ? 'block' : 'none';
+            opt.style.display = opt.getAttribute('data-name').toLowerCase().includes(input) ? 'block' : 'none';
         });
 
-        // Clear hidden input when typing again
         document.getElementById('employeeSelect').value = '';
     }
 
-    // Select employee from dropdown
     function selectEmployee(el) {
         document.getElementById('employeeSearch').value = el.getAttribute('data-name');
         document.getElementById('employeeSelect').value = el.getAttribute('data-id');

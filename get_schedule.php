@@ -12,31 +12,28 @@ $employeeId = $_SESSION['user_id'];
 $start = isset($_GET['start']) ? substr($_GET['start'], 0, 10) : date('Y-m-01');
 $end   = isset($_GET['end'])   ? substr($_GET['end'],   0, 10) : date('Y-m-t');
 
-
-
 $stmt = $pdo->prepare("
     SELECT * FROM schedules
     WHERE employee_id = ?
-    AND work_date BETWEEN ? AND ?
-    ORDER BY work_date ASC
+    AND schedule_date BETWEEN ? AND ?
+    ORDER BY schedule_date ASC
 ");
 $stmt->execute([$employeeId, $start, $end]);
 $schedules = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// Temporary debug — remove after confirming
 error_log("start=$start end=$end count=" . count($schedules));
 
 $events = array_map(fn($row) => [
     'title'           => $row['is_rest_day']
         ? 'Rest Day'
-        : date('h:i A', strtotime('1970-01-01 ' . $row['time_in'])) . ' – ' . date('h:i A', strtotime('1970-01-01 ' . $row['time_out'])),
-    'start'           => $row['work_date'],
+        : date('h:i A', strtotime($row['scheduled_start_datetime'])) . ' – ' . date('h:i A', strtotime($row['scheduled_end_datetime'])),
+    'start'           => $row['schedule_date'],
     'backgroundColor' => $row['is_rest_day'] ? '#6c757d' : '#97be41',
     'borderColor'     => $row['is_rest_day'] ? '#6c757d' : '#7fae2f',
     'textColor'       => '#ffffff',
     'extendedProps'   => [
         'is_rest_day' => (bool)$row['is_rest_day'],
-        'is_today'    => $row['work_date'] === date('Y-m-d'),
+        'is_today'    => $row['schedule_date'] === date('Y-m-d'),
     ]
 ], $schedules);
 

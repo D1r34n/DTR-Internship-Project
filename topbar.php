@@ -9,6 +9,8 @@ if (!isset($_SESSION['user_id'], $_SESSION['user_role'])) {
     exit();
 }
 
+require_once '../db.php';
+
 $employeeId = $_SESSION['user_id'];
 $role = $_SESSION['user_role'];
 
@@ -23,102 +25,123 @@ if (!in_array($role, ['admin', 'employee'])) {
 $titles = [
     'employee' => [
         'dashboard' => 'Employee Dashboard',
-        'records'    => 'Employee Records',
-        'schedule'   => 'Employee Schedule',
-        'logs'       => 'Employee Activity Logs',
+        'records'   => 'Employee Records',
+        'schedule'  => 'Employee Schedule',
+        'logs'      => 'Employee Activity Logs',
     ],
     'admin' => [
-        'dashboard'  => 'Admin Dashboard',
-        'employees'  => 'Employees',
-        'schedule'   => 'Schedules',
-        'requests'   => 'Requests',
-        'logs'       => 'Logs',
+        'dashboard' => 'Admin Dashboard',
+        'employees' => 'Employees',
+        'schedule'  => 'Schedules',
+        'requests'  => 'Requests',
+        'logs'      => 'Logs',
     ]
 ];
 
+$current_page = $current_page ?? 'dashboard';
 $title = $titles[$role][$current_page] ?? 'Dashboard';
 
-// ---- DB ----
-require_once '../db.php';
-
+// ---- DATE ----
+date_default_timezone_set('Asia/Manila');
 $today = date('Y-m-d');
-$todayStart = date('Y-m-d 00:00:00');
-$todayEnd   = date('Y-m-d 23:59:59');
 
-// Scope to today only
-$stmt = $pdo->prepare("
-    SELECT log_type 
-    FROM logs 
-    WHERE employee_id = ?
-    AND log_time BETWEEN ? AND ?
-    ORDER BY log_time DESC 
-    LIMIT 1
-");
-$stmt->execute([$employeeId, $todayStart, $todayEnd]);
-$lastLog = $stmt->fetch(PDO::FETCH_ASSOC);
-
-// Cross-check attendance table
+// =====================================================
+// ✅ SINGLE SOURCE OF TRUTH: ATTENDANCE ONLY
+// =====================================================
 $stmt = $pdo->prepare("
     SELECT actual_time_in, actual_time_out
-    FROM attendance
-    WHERE employee_id = ? AND date = ?
+    FROM attendances
+    WHERE employee_id = ? AND work_date = ?
+    LIMIT 1
 ");
 $stmt->execute([$employeeId, $today]);
-$todayAttendance = $stmt->fetch(PDO::FETCH_ASSOC);
 
-$timedIn = ($lastLog && $lastLog['log_type'] === 'login')
-        || (
-              $todayAttendance
-              && !empty($todayAttendance['actual_time_in'])
-              && empty($todayAttendance['actual_time_out'])
-           );
-?>  
+$attendance = $stmt->fetch(PDO::FETCH_ASSOC) ?? [
+    'actual_time_in' => null,
+    'actual_time_out' => null
+];
+
+$hasTimeIn  = !empty($attendance['actual_time_in'] ?? null);
+$hasTimeOut = !empty($attendance['actual_time_out'] ?? null);
+
+// FINAL STATE (ONLY THIS CONTROLS UI)
+$timedIn = $hasTimeIn && !$hasTimeOut;
+
+// Optional formatted display (for future use if needed)
+$currentStatus = $timedIn ? 'Timed In' : 'Timed Out';
+
+?>
 
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
-<!-- Top Bar -->
+<!-- TOP BAR -->
 <div class="topBar">
-    <h4 class="dashboardTitle"><?= $title ?></h4>
+    <h4 class="dashboardTitle"><?= htmlspecialchars($title) ?></h4>
 
     <div class="topBarRight">
-        <button class="timeInButton <?= $timedIn ? 'btn-out' : 'btn-in' ?>" id="timeInBtn" onclick="handleTimeIn()">
+
+        <!-- TIME IN / OUT BUTTON -->
+        <button
+            class="timeInButton <?= $timedIn ? 'btn-out' : 'btn-in' ?>"
+            id="timeInBtn"
+            onclick="handleTimeIn()"
+        >
             <i class="bi bi-stopwatch-fill timeInIcon"></i>
-            <span id="timeInLabel"><?= $timedIn ? 'Time Out' : 'Time In' ?></span>
+            <span id="timeInLabel">
+                <?= $timedIn ? 'Time Out' : 'Time In' ?>
+            </span>
         </button>
 
         <div class="verticalDivider"></div>
 
+        <!-- USER DROPDOWN -->
         <div class="navUserProfile">
             <div class="userDropdownWrapper">
+
                 <span class="userEmail dropdown-toggle" id="userDropdownToggle">
                     <i class="bi bi-person-fill userProfileIcon"></i>
-                    <?= htmlspecialchars($_SESSION['user_name'] ?? $_SESSION['user_email']) ?>
+                    <?= htmlspecialchars($_SESSION['user_name'] ?? $_SESSION['user_email'] ?? 'User') ?>
                 </span>
 
                 <div class="userDropdownMenu" id="userDropdownMenu">
                     <div class="dropdownSection">
+
                         <a href="#" class="userDropdownItem" onclick="openOTModal(); return false;">
                             <i class="bi bi-clock-history"></i> Request OT
                         </a>
+
                         <a href="#" class="userDropdownItem">
                             <i class="bi bi-calendar-x"></i> Request Leave
                         </a>
+
                         <a href="#" class="userDropdownItem">
                             <i class="bi bi-briefcase"></i> Request OB
                         </a>
+
                         <a href="#" class="userDropdownItem">
                             <i class="bi bi-pencil-square"></i> Request Log Edit
                         </a>
+
                         <div class="horizontalDivider"></div>
+
                         <a href="../index.php" class="logoutText">
                             <i class="bi bi-box-arrow-right logoutIcon"></i> Logout
                         </a>
+
                     </div>
                 </div>
             </div>
         </div>
+
     </div>
 </div>
+
+<!-- OPTIONAL: expose state to JS (for sync with gantt/table later) -->
+<script>
+    window.__ATTENDANCE_STATE__ = {
+        timedIn: <?= $timedIn ? 'true' : 'false' ?>
+    };
+</script>
 
 <!-- OT REQUEST MODAL -->
 <div id="otModalOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:99999; justify-content:center; align-items:center;">
@@ -259,62 +282,105 @@ $timedIn = ($lastLog && $lastLog['log_type'] === 'login')
 
     document.addEventListener('DOMContentLoaded', () => {
         initGanttCursors();
-    });
 
-    // Handle time in and out of employee
-    function getTotalWorkedHours() {
-        fetch('../get_dashboard_data.php')
-            .then(res => res.json())
-            .then(data => {
-                const week  = document.getElementById('dashboard_week_hours');
-                const month = document.getElementById('dashboard_month_hours');
-                if (week && month) {
-                    week.textContent  = data.weeklyHours  + ' hours';
-                    month.textContent = data.monthlyHours + ' hours';
-                }
-         });
+        window.addEventListener('storage', (event) => {
+            if (event.key !== 'attendance_update') return;
+
+            const tap   = localStorage.getItem('attendance_tap_result');
+            const btn   = document.getElementById('timeInBtn');
+            const label = document.getElementById('timeInLabel');
+            if (tap === 'timed_in') {
+                btn.classList.remove('btn-in');
+                btn.classList.add('btn-out');
+                label.textContent = 'Time Out';
+            } else if (tap === 'timed_out') {
+                btn.classList.remove('btn-out');
+                btn.classList.add('btn-in');
+                label.textContent = 'Time In';
+            }
+        });
+    });
+    
+    let isProcessing = false;
+
+    function debounce(fn, delay = 1000) {
+        let timer;
+        return (...args) => {
+            if (timer) return;
+            fn(...args);
+            timer = setTimeout(() => timer = null, delay);
+        };
     }
 
-    function handleTimeIn() {
-        fetch('../timeinout.php')
-            .then(async res => JSON.parse(await res.text()))
-            .then(response => {
-                console.log(response);
-                const btn    = document.getElementById('timeInBtn');
-                const label  = btn.querySelector('#timeInLabel');
-                const status = document.getElementById('dashboard_status');
+    const handleTimeIn = debounce(async () => {
+        if (isProcessing) return;
 
-                if (response.status === 'timed_in') {
-                    btn.classList.replace('btn-in', 'btn-out');
+        const btn   = document.getElementById('timeInBtn');
+        const label = btn.querySelector('#timeInLabel');
+        const status = document.getElementById('dashboard_status');
+
+        isProcessing = true;
+        btn.disabled = true;
+
+        try {
+
+            navigator.geolocation.getCurrentPosition(async (pos) => {
+
+                const res = await fetch('../attendance_tap.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        lat: pos.coords.latitude,
+                        lng: pos.coords.longitude,
+                        accuracy: pos.coords.accuracy
+                    })
+                });
+
+                const response = await res.json();
+
+                console.log(response);
+
+                if (response.tap === 'timed_in') {
+                    btn.classList.remove('btn-in');
+                    btn.classList.add('btn-out');
                     label.textContent = 'Time Out';
                     if (status) status.textContent = 'Timed In';
-                } else {
-                    btn.classList.replace('btn-out', 'btn-in');
+                } else if (response.tap === 'timed_out') {
+                    btn.classList.remove('btn-out');
+                    btn.classList.add('btn-in');
                     label.textContent = 'Time In';
                     if (status) status.textContent = 'Timed Out';
                 }
 
-                getTotalWorkedHours();
-                if (document.getElementById('logs_table_body')) loadLogs();
+                if (response.tap === 'timed_in' || response.tap === 'timed_out') {
+                    localStorage.setItem('attendance_tap_result', response.tap);
+                    localStorage.setItem('attendance_update', Date.now());
+                }
+
+                // ⚠️ this is your second error source
+                if (typeof getTotalWorkedHours === 'function') {
+                    getTotalWorkedHours();
+                }
+
+                if (document.getElementById('logs_table_body')) fetchLogs();
                 if (document.getElementById('attendance_table_body')) loadAttendance();
 
-                if (document.querySelector('.recordBox')) {
-                    fetch(window.location.href)
-                        .then(r => r.text())
-                        .then(html => {
-                            const doc    = new DOMParser().parseFromString(html, 'text/html');
-                            const newBox = doc.querySelector('.recordBox');
-                            newBox.querySelectorAll('.ganttBar').forEach(b => b.style.transition = 'none');
-                            document.querySelector('.recordBox').replaceWith(newBox);
-                            requestAnimationFrame(() => requestAnimationFrame(() => {
-                                newBox.querySelectorAll('.ganttBar').forEach(b => b.style.transition = '');
-                            }));
-                            initGanttCursors();
-                        });
-                }
-            })
-            .catch(err => console.log('Error:', err));
-    }
+            }, (err) => {
+                console.error("GPS denied:", err);
+                alert("Location permission is required for time in/out.");
+            });
+
+        } catch (err) {
+            console.log('Error:', err);
+        } finally {
+            setTimeout(() => {
+                isProcessing = false;
+                btn.disabled = false;
+            }, 1000);
+        }
+    }, 800);
 
     // Dropdown menu
     const toggle = document.getElementById('userDropdownToggle');
