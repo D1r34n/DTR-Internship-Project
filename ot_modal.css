@@ -1,0 +1,307 @@
+/* ============================================================
+   OT REQUEST MODAL — ot_modal.css
+   ============================================================ */
+
+/* ---------- Overlay ---------- */
+#otModalOverlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 99999;
+    justify-content: center;
+    align-items: center;
+}
+
+/* ---------- Modal Box ---------- */
+.ot-modal-box {
+    background: var(--glass-bg);
+    backdrop-filter: blur(32px) saturate(160%) brightness(0.3);
+    -webkit-backdrop-filter: blur(32px) saturate(160%) brightness(0.3);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    padding: 2rem;
+    width: 700px;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.5);
+    position: relative;
+}
+
+/* ---------- Modal Header ---------- */
+.ot-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.ot-modal-title {
+    color: #fff;
+    margin: 0;
+    font-weight: 600;
+}
+
+.ot-modal-close-btn {
+    background: none;
+    border: none;
+    color: #aaa;
+    font-size: 1.3rem;
+    cursor: pointer;
+}
+
+/* ---------- Step 1 ---------- */
+.ot-step-hint {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.85rem;
+    margin-bottom: 1rem;
+}
+
+#otGanttList {
+    display: flex;
+    flex-direction: column;
+    gap: 2.5rem;
+}
+
+.ot-gantt-loading {
+    color: #aaa;
+    text-align: center;
+}
+
+/* ---------- Gantt Row ---------- */
+.ot-gantt-row {
+    padding: 0.5rem;
+    border-radius: 10px;
+    transition: background 0.2s;
+}
+
+.ot-gantt-row.can-file {
+    cursor: pointer;
+    opacity: 1;
+    border: 1px solid rgba(151, 190, 65, 0.2);
+}
+
+.ot-gantt-row.cannot-file {
+    cursor: not-allowed;
+    opacity: 0.5;
+    border: 1px solid rgba(220, 53, 69, 0.2);
+}
+
+.ot-gantt-row.can-file:hover {
+    background: rgba(151, 190, 65, 0.07);
+}
+
+/* ---------- Gantt Row Inner Layout ---------- */
+.ot-gantt-row-inner {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 1.5rem;
+}
+
+/* ---------- Date Label ---------- */
+.ot-date-label {
+    width: 4rem;
+    font-size: 0.875rem;
+    color: rgba(255, 255, 255, 0.8);
+    flex-shrink: 0;
+}
+
+.ot-date-label-day {
+    /* weekday name */
+}
+
+.ot-date-label-short {
+    font-size: 0.75rem;
+    color: #aaa;
+}
+
+/* ---------- Gantt Bar ---------- */
+.gantt-bar-container {
+    position: relative;
+    flex: 1;
+    height: 30px;
+    background: rgba(255, 255, 255, 0.05);
+    background-image: repeating-linear-gradient(
+        to right,
+        rgba(255, 255, 255, 0.08) 0px,
+        rgba(255, 255, 255, 0.08) 1px,
+        transparent 1px,
+        transparent calc(100% / 24)
+    );
+    border-radius: 8px;
+    overflow: visible;
+}
+
+/* Scheduled block */
+.gantt-sched-bar {
+    position: absolute;
+    top: 0;
+    height: 100%;
+    background: rgba(150, 150, 255, 0.25);
+    border: 1px dashed #7b7bff;
+    border-radius: 10px;
+}
+
+/* Actual work block */
+.gantt-actual-bar {
+    position: absolute;
+    top: 0;
+    height: 100%;
+    background: rgba(25, 135, 84, 0.75);
+    border-radius: 10px;
+}
+
+/* OT block */
+.gantt-ot-bar {
+    position: absolute;
+    top: 0;
+    height: 100%;
+    background: #4da3ff;
+    border-radius: 10px;
+}
+
+/* Time-in marker */
+.gantt-timein-marker {
+    position: absolute;
+    top: -6px;
+    height: calc(100% + 12px);
+    width: 2px;
+    border-left: 2px solid #22c55e;
+    filter: drop-shadow(0 0 6px rgba(34, 197, 94, 0.8));
+    z-index: 999;
+}
+
+/* Time-out marker */
+.gantt-timeout-marker {
+    position: absolute;
+    top: -6px;
+    height: calc(100% + 12px);
+    width: 2px;
+    border-left: 2px solid #dc3545;
+    filter: drop-shadow(0 0 6px rgba(249, 115, 22, 0.8));
+    z-index: 999;
+}
+
+/* ---------- OT Duration Label ---------- */
+.ot-duration-label {
+    font-size: 0.75rem;
+    color: #4da3ff;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+/* ---------- Late Warning ---------- */
+.ot-late-warning {
+    font-size: 0.75rem;
+    padding: 0 0.5rem 0.3rem;
+}
+
+.ot-late-warning.can-file {
+    color: #f0ad4e;
+}
+
+.ot-late-warning.cannot-file {
+    color: #ff8a8a;
+}
+
+/* ---------- Step 2 ---------- */
+.ot-back-btn {
+    background: none;
+    border: none;
+    color: #aaa;
+    font-size: 0.85rem;
+    cursor: pointer;
+    margin-bottom: 1rem;
+}
+
+/* Summary card */
+.ot-summary-card {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.ot-summary-label {
+    color: #aaa;
+    font-size: 0.8rem;
+    margin: 0 0 0.3rem;
+}
+
+.ot-summary-value {
+    color: #fff;
+    font-weight: 600;
+    margin: 0;
+}
+
+.ot-summary-value.highlight {
+    color: #97be41;
+}
+
+/* Reason textarea */
+.ot-reason-label {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.85rem;
+    font-weight: 600;
+    display: block;
+    margin-bottom: 0.5rem;
+}
+
+#otReason {
+    width: 100%;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 8px;
+    color: #fff;
+    padding: 0.6rem 0.8rem;
+    font-family: 'Poppins', sans-serif;
+    font-size: 0.875rem;
+    outline: none;
+    resize: none;
+}
+
+/* Submit button */
+.ot-submit-btn {
+    margin-top: 1rem;
+    background: #97be41;
+    color: #fff;
+    border: none;
+    padding: 0.5rem 1.5rem;
+    border-radius: 8px;
+    font-family: 'Poppins', sans-serif;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.ot-submit-btn:hover {
+    background: #82a835;
+}
+
+/* ---------- Feedback Messages ---------- */
+#otErrorMsg {
+    display: none;
+    margin-top: 1rem;
+    background: rgba(220, 53, 69, 0.15);
+    border: 1px solid rgba(220, 53, 69, 0.3);
+    border-radius: 8px;
+    padding: 0.8rem 1rem;
+    color: #ff8a8a;
+    font-size: 0.875rem;
+}
+
+#otSuccessMsg {
+    display: none;
+    margin-top: 1rem;
+    background: rgba(151, 190, 65, 0.15);
+    border: 1px solid rgba(151, 190, 65, 0.3);
+    border-radius: 8px;
+    padding: 0.8rem 1rem;
+    color: #97be41;
+    font-size: 0.875rem;
+}

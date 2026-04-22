@@ -24,11 +24,9 @@ if (isset($_GET['action'], $_GET['type'], $_GET['id'])) {
             ->execute([$status, $id]);
 
     } elseif ($type === 'overtime') {
-        // Update overtime_requests
         $pdo->prepare("UPDATE overtime_requests SET status = ? WHERE id = ?")
             ->execute([$status, $id]);
 
-        // Sync back to attendance table
         $pdo->prepare("
             UPDATE attendance a
             JOIN overtime_requests o ON a.employee_id = o.employee_id AND a.date = o.date
@@ -173,9 +171,9 @@ $overtimeRequests = $pdo->query("
                                     <td><?= htmlspecialchars($row['employee_name']) ?></td>
                                     <td><span class="badge leaveBadge"><?= ucfirst($row['leave_type']) ?></span></td>
                                     <td><?= date('M d', strtotime($row['start_date'])) ?> - <?= date('M d, Y', strtotime($row['end_date'])) ?></td>
-                                    <td><?= htmlspecialchars($row['reason']) ?></td>
+                                    <td class="reasonCol"><?= htmlspecialchars($row['reason']) ?></td>
                                     <td><?= getStatusBadge($row['status']) ?></td>
-                                    <td><?= getActionButtons('leave', $row['id'], $row['status']) ?></td>
+                                    <td class="actionsCol"><?= getActionButtons('leave', $row['id'], $row['status']) ?></td>
                                 </tr>
                             <?php endforeach; ?>
                             <?php foreach ($overtimeRequests as $row): ?>
@@ -183,9 +181,9 @@ $overtimeRequests = $pdo->query("
                                     <td><?= htmlspecialchars($row['employee_name']) ?></td>
                                     <td><span class="badge overtimeBadge">Overtime</span></td>
                                     <td><?= date('M d, Y', strtotime($row['date'])) ?> | <?= date('h:i A', strtotime($row['time_in'])) ?> - <?= date('h:i A', strtotime($row['time_out'])) ?></td>
-                                    <td><?= htmlspecialchars($row['reason']) ?></td>
+                                    <td class="reasonCol"><?= htmlspecialchars($row['reason']) ?></td>
                                     <td><?= getStatusBadge($row['status']) ?></td>
-                                    <td><?= getActionButtons('overtime', $row['id'], $row['status']) ?></td>
+                                    <td class="actionsCol"><?= getActionButtons('overtime', $row['id'], $row['status']) ?></td>
                                 </tr>
                             <?php endforeach; ?>
                             <?php if (empty($leaveRequests) && empty($overtimeRequests)): ?>
@@ -219,9 +217,9 @@ $overtimeRequests = $pdo->query("
                                         <td><span class="badge leaveBadge"><?= ucfirst($row['leave_type']) ?></span></td>
                                         <td><?= date('M d, Y', strtotime($row['start_date'])) ?></td>
                                         <td><?= date('M d, Y', strtotime($row['end_date'])) ?></td>
-                                        <td><?= htmlspecialchars($row['reason']) ?></td>
+                                        <td class="reasonCol"><?= htmlspecialchars($row['reason']) ?></td>
                                         <td><?= getStatusBadge($row['status']) ?></td>
-                                        <td><?= getActionButtons('leave', $row['id'], $row['status']) ?></td>
+                                        <td class="actionsCol"><?= getActionButtons('leave', $row['id'], $row['status']) ?></td>
                                     </tr>
                                 <?php endforeach; ?>
                             <?php else: ?>
@@ -255,9 +253,9 @@ $overtimeRequests = $pdo->query("
                                         <td><?= date('M d, Y', strtotime($row['date'])) ?></td>
                                         <td><?= date('h:i A', strtotime($row['time_in'])) ?></td>
                                         <td><?= date('h:i A', strtotime($row['time_out'])) ?></td>
-                                        <td><?= htmlspecialchars($row['reason']) ?></td>
+                                        <td class="reasonCol"><?= htmlspecialchars($row['reason']) ?></td>
                                         <td><?= getStatusBadge($row['status']) ?></td>
-                                        <td><?= getActionButtons('overtime', $row['id'], $row['status']) ?></td>
+                                        <td class="actionsCol"><?= getActionButtons('overtime', $row['id'], $row['status']) ?></td>
                                     </tr>
                                 <?php endforeach; ?>
                             <?php else: ?>

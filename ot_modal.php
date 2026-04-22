@@ -1,51 +1,54 @@
+<link rel="stylesheet" href="../ot_modal.css">
+
+
 <!-- OT REQUEST MODAL -->
-<div id="otModalOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:99999; justify-content:center; align-items:center;">
-    <div style="background:var(--glass-bg); backdrop-filter:blur(32px) saturate(160%) brightness(0.3); -webkit-backdrop-filter:blur(32px) saturate(160%) brightness(0.3); border:1px solid var(--glass-border); border-radius:16px; padding:2rem; width:700px; max-height:80vh; overflow-y:auto; box-shadow:0 12px 35px rgba(0,0,0,0.5); position:relative;">
+<div id="otModalOverlay">
+    <div class="ot-modal-box">
 
         <!-- Modal Header -->
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
-            <h5 style="color:#fff; margin:0; font-weight:600;">File OT Request</h5>
-            <button onclick="closeOTModal()" style="background:none; border:none; color:#aaa; font-size:1.3rem; cursor:pointer;">
+        <div class="ot-modal-header">
+            <h5 class="ot-modal-title">File OT Request</h5>
+            <button onclick="closeOTModal()" class="ot-modal-close-btn">
                 <i class="bi bi-x-lg"></i>
             </button>
         </div>
 
         <!-- Step 1: Pick a Gantt row -->
         <div id="otStep1">
-            <p style="color:rgba(255,255,255,0.6); font-size:0.85rem; margin-bottom:1rem;">Select a day to file OT for:</p>
-            <div id="otGanttList" style="display:flex; flex-direction:column; gap:2.5rem;">
-                <p style="color:#aaa; text-align:center;">Loading...</p>
+            <p class="ot-step-hint">Select a day to file OT for:</p>
+            <div id="otGanttList">
+                <p class="ot-gantt-loading">Loading...</p>
             </div>
         </div>
 
         <!-- Step 2: Reason form -->
         <div id="otStep2" style="display:none;">
-            <button onclick="backToStep1()" style="background:none; border:none; color:#aaa; font-size:0.85rem; cursor:pointer; margin-bottom:1rem;">
+            <button onclick="backToStep1()" class="ot-back-btn">
                 <i class="bi bi-arrow-left"></i> Back
             </button>
 
-            <div style="background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:10px; padding:1rem; margin-bottom:1.5rem;">
-                <p style="color:#aaa; font-size:0.8rem; margin:0 0 0.3rem;">Selected Date</p>
-                <p style="color:#fff; font-weight:600; margin:0;" id="otSelectedDate"></p>
-                <p style="color:#aaa; font-size:0.8rem; margin:0.5rem 0 0.3rem;">OT Period</p>
-                <p style="color:#97be41; font-weight:600; margin:0;" id="otSelectedTime"></p>
-                <p style="color:#aaa; font-size:0.8rem; margin:0.5rem 0 0.3rem;">OT Duration</p>
-                <p style="color:#fff; font-weight:600; margin:0;" id="otSelectedDuration"></p>
+            <div class="ot-summary-card">
+                <p class="ot-summary-label">Selected Date</p>
+                <p class="ot-summary-value" id="otSelectedDate"></p>
+                <p class="ot-summary-label" style="margin-top:0.5rem;">OT Period</p>
+                <p class="ot-summary-value highlight" id="otSelectedTime"></p>
+                <p class="ot-summary-label" style="margin-top:0.5rem;">OT Duration</p>
+                <p class="ot-summary-value" id="otSelectedDuration"></p>
             </div>
 
-            <label style="color:rgba(255,255,255,0.7); font-size:0.85rem; font-weight:600; display:block; margin-bottom:0.5rem;">Reason for OT</label>
-            <textarea id="otReason" rows="3" placeholder="Enter reason for overtime..." style="width:100%; background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.15); border-radius:8px; color:#fff; padding:0.6rem 0.8rem; font-family:'Poppins',sans-serif; font-size:0.875rem; outline:none; resize:none;"></textarea>
+            <label class="ot-reason-label">Reason for OT</label>
+            <textarea id="otReason" rows="3" placeholder="Enter reason for overtime..."></textarea>
 
-            <button onclick="submitOTRequest()" style="margin-top:1rem; background:#97be41; color:#fff; border:none; padding:0.5rem 1.5rem; border-radius:8px; font-family:'Poppins',sans-serif; font-size:0.9rem; cursor:pointer; transition:background 0.2s;">
+            <button onclick="submitOTRequest()" class="ot-submit-btn">
                 <i class="bi bi-check-circle-fill"></i> Submit OT Request
             </button>
         </div>
 
         <!-- Error message -->
-        <div id="otErrorMsg" style="display:none; margin-top:1rem; background:rgba(220,53,69,0.15); border:1px solid rgba(220,53,69,0.3); border-radius:8px; padding:0.8rem 1rem; color:#ff8a8a; font-size:0.875rem;"></div>
+        <div id="otErrorMsg"></div>
 
         <!-- Success message -->
-        <div id="otSuccessMsg" style="display:none; margin-top:1rem; background:rgba(151,190,65,0.15); border:1px solid rgba(151,190,65,0.3); border-radius:8px; padding:0.8rem 1rem; color:#97be41; font-size:0.875rem;"></div>
+        <div id="otSuccessMsg"></div>
 
     </div>
 </div>
@@ -76,13 +79,13 @@
 
     function loadOTGantt() {
         const list = document.getElementById('otGanttList');
-        list.innerHTML = '<p style="color:#aaa; text-align:center;">Loading...</p>';
+        list.innerHTML = '<p class="ot-gantt-loading">Loading...</p>';
 
         fetch('get_ot_records.php')
             .then(res => res.json())
             .then(records => {
                 if (records.length === 0) {
-                    list.innerHTML = '<p style="color:#aaa; text-align:center;">No OT records available to file.</p>';
+                    list.innerHTML = '<p class="ot-gantt-loading">No OT records available to file.</p>';
                     return;
                 }
 
@@ -131,23 +134,15 @@
                     const otLabel = otHours > 0 ? `${otHours}h ${otMins}m` : `${otMins}m`;
 
                     const rowEl = document.createElement('div');
-                    rowEl.style.cssText = `
-                        cursor: ${canFile ? 'pointer' : 'not-allowed'};
-                        opacity: ${canFile ? '1' : '0.5'};
-                        padding: 0.5rem;
-                        border-radius: 10px;
-                        border: 1px solid ${canFile ? 'rgba(151,190,65,0.2)' : 'rgba(220,53,69,0.2)'};
-                        transition: background 0.2s;
-                    `;
+                    rowEl.className = `ot-gantt-row ${canFile ? 'can-file' : 'cannot-file'}`;
 
                     rowEl.innerHTML = `
-                        <div style="display:flex; align-items:center; gap:10px; margin-bottom:1.5rem;">
-                            <div style="width:4rem; font-size:0.875rem; color:rgba(255,255,255,0.8); flex-shrink:0;">
-                                <div>${fmtDate(date).split(',')[0]}</div>
-                                <div style="font-size:0.75rem; color:#aaa;">${fmtShort(date)}</div>
+                        <div class="ot-gantt-row-inner">
+                            <div class="ot-date-label">
+                                <div class="ot-date-label-day">${fmtDate(date).split(',')[0]}</div>
+                                <div class="ot-date-label-short">${fmtShort(date)}</div>
                             </div>
                             <div class="gantt-bar-container"
-                                style="position:relative; flex:1; height:30px; background:rgba(255,255,255,0.05); background-image:repeating-linear-gradient(to right, rgba(255,255,255,0.08) 0px, rgba(255,255,255,0.08) 1px, transparent 1px, transparent calc(100% / 24)); border-radius:8px; overflow:visible;"
                                 data-range-start="${rangeStart}" data-range-end="${rangeEnd}">
 
                                 <div class="gantt-cursor">
@@ -155,16 +150,16 @@
                                     <div class="gantt-cursor-label"></div>
                                 </div>
 
-                                <div style="position:absolute; top:0; height:100%; left:${schedLeft}%; width:${schedWidth}%; background:rgba(150,150,255,0.25); border:1px dashed #7b7bff; border-radius:10px;"></div>
-                                <div style="position:absolute; top:0; height:100%; left:${actualLeft}%; width:${actualWidth}%; background:rgba(25,135,84,0.75); border-radius:10px;"></div>
-                                <div style="position:absolute; top:0; height:100%; left:${otLeft}%; width:${otWidth}%; background:#4da3ff; border-radius:10px;"></div>
-                                <div style="position:absolute; top:-6px; height:calc(100% + 12px); left:${inPos}%; width:2px; border-left:2px solid #22c55e; filter:drop-shadow(0 0 6px rgba(34,197,94,0.8)); z-index:999;"></div>
-                                <div style="position:absolute; top:-6px; height:calc(100% + 12px); left:${outPos}%; width:2px; border-left:2px solid #dc3545; filter:drop-shadow(0 0 6px rgba(249,115,22,0.8)); z-index:999;"></div>
+                                <div class="gantt-sched-bar"  style="left:${schedLeft}%;  width:${schedWidth}%;"></div>
+                                <div class="gantt-actual-bar" style="left:${actualLeft}%; width:${actualWidth}%;"></div>
+                                <div class="gantt-ot-bar"     style="left:${otLeft}%;     width:${otWidth}%;"></div>
+                                <div class="gantt-timein-marker"  style="left:${inPos}%;"></div>
+                                <div class="gantt-timeout-marker" style="left:${outPos}%;"></div>
                             </div>
-                            <div style="font-size:0.75rem; color:#4da3ff; white-space:nowrap; flex-shrink:0;">+${otLabel} OT</div>
+                            <div class="ot-duration-label">+${otLabel} OT</div>
                         </div>
                         ${lateMin > 0 ? `
-                        <div style="font-size:0.75rem; color:${canFile ? '#f0ad4e' : '#ff8a8a'}; padding:0 0.5rem 0.3rem;">
+                        <div class="ot-late-warning ${canFile ? 'can-file' : 'cannot-file'}">
                             <i class="bi bi-clock"></i> Late: ${lateMin} min${lateMin !== 1 ? 's' : ''}
                             ${!canFile ? ' — <strong>Cannot file OT (late ≥ 60 mins)</strong>' : ''}
                         </div>` : ''}
@@ -195,11 +190,6 @@
                         document.getElementById('otStep1').style.display = 'none';
                         document.getElementById('otStep2').style.display = 'block';
                     });
-
-                    if (canFile) {
-                        rowEl.addEventListener('mouseenter', () => rowEl.style.background = 'rgba(151,190,65,0.07)');
-                        rowEl.addEventListener('mouseleave', () => rowEl.style.background = 'transparent');
-                    }
 
                     list.appendChild(rowEl);
                 });

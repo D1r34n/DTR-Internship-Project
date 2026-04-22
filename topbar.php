@@ -102,10 +102,10 @@ $timedIn = ($lastLog && $lastLog['log_type'] === 'login')
                         <a href="#" class="userDropdownItem" onclick="openLeaveModal(); return false;">
                             <i class="bi bi-calendar-x"></i> Request Leave
                         </a>
-                        <a href="#" class="userDropdownItem">
+                        <a href="#" class="userDropdownItem" onclick="openOBModal(); return false;">
                             <i class="bi bi-briefcase"></i> Request OB
                         </a>
-                        <a href="#" class="userDropdownItem">
+                        <a href="#" class="userDropdownItem" onclick="openLogEditModal(); return false;">
                             <i class="bi bi-pencil-square"></i> Request Log Edit
                         </a>
                         <div class="horizontalDivider"></div>
@@ -122,6 +122,8 @@ $timedIn = ($lastLog && $lastLog['log_type'] === 'login')
 <!-- MODALS -->
 <?php include '../ot_modal.php'; ?>
 <?php include '../leave_modal.php'; ?>
+<?php include '../ob_modal.php'; ?>
+<?php include '../log_edit_modal.php'; ?>
 
 <!-- JAVASCRIPT -->
 <script defer>
@@ -168,15 +170,15 @@ $timedIn = ($lastLog && $lastLog['log_type'] === 'login')
                     gtActualOut.textContent = container.dataset.actualOut;
 
                     if (container.dataset.late) {
-                        gtLate.textContent          = container.dataset.late;
-                        gtLateRow.style.display     = 'flex';
+                        gtLate.textContent      = container.dataset.late;
+                        gtLateRow.style.display = 'flex';
                     } else {
                         gtLateRow.style.display = 'none';
                     }
 
                     if (container.dataset.overtime) {
-                        gtOt.textContent = container.dataset.overtime;
-                        const status     = container.dataset.overtimeStatus;
+                        gtOt.textContent  = container.dataset.overtime;
+                        const status      = container.dataset.overtimeStatus;
                         gtOtRow.className = 'gt-row gt-ot ' + (status === 'approved' ? 'approved' : status === 'rejected' ? 'rejected' : '');
                         gtOtRow.style.display = 'flex';
                     } else {
