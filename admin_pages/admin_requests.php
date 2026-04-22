@@ -10,61 +10,60 @@ require_once '../db.php';
 date_default_timezone_set('Asia/Manila');
 
 $success = "";
-$error = "";
+$error   = "";
 
-// HANDLE APPROVE / REJECT
-if (isset($_GET['action']) && isset($_GET['type']) && isset($_GET['id'])) {
+// ---- HANDLE APPROVE / REJECT ----
+if (isset($_GET['action'], $_GET['type'], $_GET['id'])) {
     $action = $_GET['action'];
     $type   = $_GET['type'];
     $id     = $_GET['id'];
     $status = ($action === 'approve') ? 'approved' : 'rejected';
 
     if ($type === 'leave') {
-        $stmt = $pdo->prepare("UPDATE leave_requests SET status = ? WHERE id = ?");
-        $stmt->execute([$status, $id]);
+        $pdo->prepare("UPDATE leave_requests SET status = ? WHERE id = ?")
+            ->execute([$status, $id]);
 
-    } else if ($type === 'overtime') {
-        // 1. Update overtime_requests
-        $stmt = $pdo->prepare("UPDATE overtime_requests SET status = ? WHERE id = ?");
-        $stmt->execute([$status, $id]);
+    } elseif ($type === 'overtime') {
+        // Update overtime_requests
+        $pdo->prepare("UPDATE overtime_requests SET status = ? WHERE id = ?")
+            ->execute([$status, $id]);
 
-        // 2. Sync back to attendance table
-        $stmt2 = $pdo->prepare("
+        // Sync back to attendance table
+        $pdo->prepare("
             UPDATE attendance a
             JOIN overtime_requests o ON a.employee_id = o.employee_id AND a.date = o.date
             SET a.overtime_status = ?
             WHERE o.id = ?
-        ");
-        $stmt2->execute([$status, $id]);
+        ")->execute([$status, $id]);
     }
 
     $success = "Request has been " . ucfirst($status) . "!";
 }
 
-// GET SUMMARY COUNTS
-$pendingLeave = $pdo->query("SELECT COUNT(*) FROM leave_requests WHERE status = 'pending'")->fetchColumn();
-$approvedLeave = $pdo->query("SELECT COUNT(*) FROM leave_requests WHERE status = 'approved'")->fetchColumn();
-$rejectedLeave = $pdo->query("SELECT COUNT(*) FROM leave_requests WHERE status = 'rejected'")->fetchColumn();
-$pendingOvertime = $pdo->query("SELECT COUNT(*) FROM overtime_requests WHERE status = 'pending'")->fetchColumn();
+// ---- GET SUMMARY COUNTS ----
+$pendingLeave     = $pdo->query("SELECT COUNT(*) FROM leave_requests    WHERE status = 'pending'")->fetchColumn();
+$approvedLeave    = $pdo->query("SELECT COUNT(*) FROM leave_requests    WHERE status = 'approved'")->fetchColumn();
+$rejectedLeave    = $pdo->query("SELECT COUNT(*) FROM leave_requests    WHERE status = 'rejected'")->fetchColumn();
+$pendingOvertime  = $pdo->query("SELECT COUNT(*) FROM overtime_requests WHERE status = 'pending'")->fetchColumn();
 $approvedOvertime = $pdo->query("SELECT COUNT(*) FROM overtime_requests WHERE status = 'approved'")->fetchColumn();
 $rejectedOvertime = $pdo->query("SELECT COUNT(*) FROM overtime_requests WHERE status = 'rejected'")->fetchColumn();
 
-$totalPending = $pendingLeave + $pendingOvertime;
+$totalPending  = $pendingLeave  + $pendingOvertime;
 $totalApproved = $approvedLeave + $approvedOvertime;
 $totalRejected = $rejectedLeave + $rejectedOvertime;
 $totalOvertime = $pendingOvertime + $approvedOvertime + $rejectedOvertime;
 
-// GET LEAVE REQUESTS
+// ---- GET LEAVE REQUESTS ----
 $leaveRequests = $pdo->query("
-    SELECT lr.*, e.name as employee_name
+    SELECT lr.*, e.name AS employee_name
     FROM leave_requests lr
     JOIN employees e ON lr.employee_id = e.id
     ORDER BY lr.created_at DESC
 ")->fetchAll(PDO::FETCH_ASSOC);
 
-// GET OVERTIME REQUESTS
+// ---- GET OVERTIME REQUESTS ----
 $overtimeRequests = $pdo->query("
-    SELECT or2.*, e.name as employee_name
+    SELECT or2.*, e.name AS employee_name
     FROM overtime_requests or2
     JOIN employees e ON or2.employee_id = e.id
     ORDER BY or2.created_at DESC
@@ -77,26 +76,30 @@ $overtimeRequests = $pdo->query("
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Request Management</title>
+
     <link rel="stylesheet" href="../root.css">
     <link rel="stylesheet" href="admin_requests.css">
     <link rel="stylesheet" href="../side_and_top_bar.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
     <style>
         body::before { background-image: url('../images/drt_bg.jpg'); }
     </style>
 </head>
 <body>
+
     <!-- SIDEBAR -->
     <?php include '../sidebar.php'; ?>
 
     <!-- TOPBAR -->
-    <?php 
-    $current_page = 'request';
-    include '../topbar.php'; 
+    <?php
+    $current_page = 'requests';
+    include '../topbar.php';
     ?>
 
+    <!-- PAGE WRAPPER -->
     <div class="requestsWrapper">
         <div class="requestsBox">
 
@@ -106,6 +109,7 @@ $overtimeRequests = $pdo->query("
                 <input type="text" id="searchInput" class="searchInput" placeholder="Search employee..." onkeyup="searchTable()">
             </div>
 
+            <!-- SUCCESS ALERT -->
             <?php if ($success): ?>
                 <div class="alert alert-success"><?= $success ?></div>
             <?php endif; ?>
@@ -152,7 +156,7 @@ $overtimeRequests = $pdo->query("
             <!-- ALL TAB -->
             <div id="all" class="reqTabContent">
                 <div class="tableScrollWrapper">
-                    <table class="table table-bordered table-hover mt-2">
+                    <table class="table table-bordered table-hover mt-0">
                         <thead>
                             <tr>
                                 <th>Employee</th>
@@ -170,8 +174,8 @@ $overtimeRequests = $pdo->query("
                                     <td><span class="badge leaveBadge"><?= ucfirst($row['leave_type']) ?></span></td>
                                     <td><?= date('M d', strtotime($row['start_date'])) ?> - <?= date('M d, Y', strtotime($row['end_date'])) ?></td>
                                     <td><?= htmlspecialchars($row['reason']) ?></td>
-                                    <td><?php echo getStatusBadge($row['status']); ?></td>
-                                    <td><?php echo getActionButtons('leave', $row['id'], $row['status']); ?></td>
+                                    <td><?= getStatusBadge($row['status']) ?></td>
+                                    <td><?= getActionButtons('leave', $row['id'], $row['status']) ?></td>
                                 </tr>
                             <?php endforeach; ?>
                             <?php foreach ($overtimeRequests as $row): ?>
@@ -180,8 +184,8 @@ $overtimeRequests = $pdo->query("
                                     <td><span class="badge overtimeBadge">Overtime</span></td>
                                     <td><?= date('M d, Y', strtotime($row['date'])) ?> | <?= date('h:i A', strtotime($row['time_in'])) ?> - <?= date('h:i A', strtotime($row['time_out'])) ?></td>
                                     <td><?= htmlspecialchars($row['reason']) ?></td>
-                                    <td><?php echo getStatusBadge($row['status']); ?></td>
-                                    <td><?php echo getActionButtons('overtime', $row['id'], $row['status']); ?></td>
+                                    <td><?= getStatusBadge($row['status']) ?></td>
+                                    <td><?= getActionButtons('overtime', $row['id'], $row['status']) ?></td>
                                 </tr>
                             <?php endforeach; ?>
                             <?php if (empty($leaveRequests) && empty($overtimeRequests)): ?>
@@ -195,7 +199,7 @@ $overtimeRequests = $pdo->query("
             <!-- LEAVE TAB -->
             <div id="leave" class="reqTabContent" style="display:none;">
                 <div class="tableScrollWrapper">
-                    <table class="table table-bordered table-hover mt-2">
+                    <table class="table table-bordered table-hover mt-0">
                         <thead>
                             <tr>
                                 <th>Employee</th>
@@ -216,8 +220,8 @@ $overtimeRequests = $pdo->query("
                                         <td><?= date('M d, Y', strtotime($row['start_date'])) ?></td>
                                         <td><?= date('M d, Y', strtotime($row['end_date'])) ?></td>
                                         <td><?= htmlspecialchars($row['reason']) ?></td>
-                                        <td><?php echo getStatusBadge($row['status']); ?></td>
-                                        <td><?php echo getActionButtons('leave', $row['id'], $row['status']); ?></td>
+                                        <td><?= getStatusBadge($row['status']) ?></td>
+                                        <td><?= getActionButtons('leave', $row['id'], $row['status']) ?></td>
                                     </tr>
                                 <?php endforeach; ?>
                             <?php else: ?>
@@ -231,7 +235,7 @@ $overtimeRequests = $pdo->query("
             <!-- OVERTIME TAB -->
             <div id="overtime" class="reqTabContent" style="display:none;">
                 <div class="tableScrollWrapper">
-                    <table class="table table-bordered table-hover mt-2">
+                    <table class="table table-bordered table-hover mt-0">
                         <thead>
                             <tr>
                                 <th>Employee</th>
@@ -252,8 +256,8 @@ $overtimeRequests = $pdo->query("
                                         <td><?= date('h:i A', strtotime($row['time_in'])) ?></td>
                                         <td><?= date('h:i A', strtotime($row['time_out'])) ?></td>
                                         <td><?= htmlspecialchars($row['reason']) ?></td>
-                                        <td><?php echo getStatusBadge($row['status']); ?></td>
-                                        <td><?php echo getActionButtons('overtime', $row['id'], $row['status']); ?></td>
+                                        <td><?= getStatusBadge($row['status']) ?></td>
+                                        <td><?= getActionButtons('overtime', $row['id'], $row['status']) ?></td>
                                     </tr>
                                 <?php endforeach; ?>
                             <?php else: ?>
@@ -279,6 +283,7 @@ $overtimeRequests = $pdo->query("
     </div>
 
     <?php
+    // ---- HELPER FUNCTIONS ----
     function getStatusBadge($status) {
         $badges = [
             'pending'  => '<span class="badge statusPending">Pending</span>',
@@ -299,29 +304,43 @@ $overtimeRequests = $pdo->query("
                 </a>
             ';
         }
-        return '<span class="text-muted" style="font-size:0.8rem;">No actions</span>';
+        return '<span class="no-action-text">No actions</span>';
     }
     ?>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-    function switchReqTab(tab, btn) {
-        document.querySelectorAll('.reqTabContent').forEach(t => t.style.display = 'none');
-        document.querySelectorAll('.reqTabBtn').forEach(b => b.classList.remove('active'));
-        document.getElementById(tab).style.display = 'block';
-        btn.classList.add('active');
-    }
 
-    function searchTable() {
-        const input = document.getElementById('searchInput').value.toLowerCase();
-        document.querySelectorAll('.reqTabContent:not([style*="display:none"]) tbody tr').forEach(row => {
-            row.style.display = row.textContent.toLowerCase().includes(input) ? '' : 'none';
-        });
-    }
+        // ---- TAB SWITCHING ----
+        function switchReqTab(tab, btn) {
+            document.querySelectorAll('.reqTabContent').forEach(t => t.style.display = 'none');
+            document.querySelectorAll('.reqTabBtn').forEach(b => b.classList.remove('active'));
+            document.getElementById(tab).style.display = 'block';
+            btn.classList.add('active');
+        }
 
-    function closeModal() {
-        document.getElementById('modalOverlay').style.display = 'none';
-    }
+        // ---- SEARCH TABLE ----
+        function searchTable() {
+            const input = document.getElementById('searchInput').value.toLowerCase();
+            document.querySelectorAll('.reqTabContent:not([style*="display:none"]) tbody tr').forEach(row => {
+                row.style.display = row.textContent.toLowerCase().includes(input) ? '' : 'none';
+            });
+        }
+
+        // ---- CLOSE MODAL ----
+        function closeModal() {
+            document.getElementById('modalOverlay').style.display = 'none';
+        }
+
+        // ---- AUTO DISMISS ALERTS ----
+        setTimeout(() => {
+            document.querySelectorAll('.alert').forEach(alert => {
+                alert.style.transition = 'opacity 0.5s ease';
+                alert.style.opacity    = '0';
+                setTimeout(() => alert.remove(), 500);
+            });
+        }, 3000);
+
     </script>
 </body>
 </html>

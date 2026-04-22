@@ -10,7 +10,7 @@ if (!isset($_SESSION['user_id'], $_SESSION['user_role'])) {
 }
 
 $employeeId = $_SESSION['user_id'];
-$role = $_SESSION['user_role'];
+$role       = $_SESSION['user_role'];
 
 // ---- ROLE VALIDATION ----
 if (!in_array($role, ['admin', 'employee'])) {
@@ -23,16 +23,16 @@ if (!in_array($role, ['admin', 'employee'])) {
 $titles = [
     'employee' => [
         'dashboard' => 'Employee Dashboard',
-        'records'    => 'Employee Records',
-        'schedule'   => 'Employee Schedule',
-        'logs'       => 'Employee Activity Logs',
+        'records'   => 'Employee Records',
+        'schedule'  => 'Employee Schedule',
+        'logs'      => 'Employee Activity Logs',
     ],
     'admin' => [
-        'dashboard'  => 'Admin Dashboard',
-        'employees'  => 'Employees',
-        'schedule'   => 'Schedules',
-        'requests'   => 'Requests',
-        'logs'       => 'Logs',
+        'dashboard' => 'Admin Dashboard',
+        'employees' => 'Employees',
+        'schedule'  => 'Schedules',
+        'requests'  => 'Requests',
+        'logs'      => 'Logs',
     ]
 ];
 
@@ -41,11 +41,10 @@ $title = $titles[$role][$current_page] ?? 'Dashboard';
 // ---- DB ----
 require_once '../db.php';
 
-$today = date('Y-m-d');
+$today      = date('Y-m-d');
 $todayStart = date('Y-m-d 00:00:00');
 $todayEnd   = date('Y-m-d 23:59:59');
 
-// Scope to today only
 $stmt = $pdo->prepare("
     SELECT log_type 
     FROM logs 
@@ -57,7 +56,6 @@ $stmt = $pdo->prepare("
 $stmt->execute([$employeeId, $todayStart, $todayEnd]);
 $lastLog = $stmt->fetch(PDO::FETCH_ASSOC);
 
-// Cross-check attendance table
 $stmt = $pdo->prepare("
     SELECT actual_time_in, actual_time_out
     FROM attendance
@@ -72,11 +70,12 @@ $timedIn = ($lastLog && $lastLog['log_type'] === 'login')
               && !empty($todayAttendance['actual_time_in'])
               && empty($todayAttendance['actual_time_out'])
            );
-?>  
+?>
 
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.css" rel="stylesheet">
 
-<!-- Top Bar -->
+<!-- TOP BAR -->
 <div class="topBar">
     <h4 class="dashboardTitle"><?= $title ?></h4>
 
@@ -100,7 +99,7 @@ $timedIn = ($lastLog && $lastLog['log_type'] === 'login')
                         <a href="#" class="userDropdownItem" onclick="openOTModal(); return false;">
                             <i class="bi bi-clock-history"></i> Request OT
                         </a>
-                        <a href="#" class="userDropdownItem">
+                        <a href="#" class="userDropdownItem" onclick="openLeaveModal(); return false;">
                             <i class="bi bi-calendar-x"></i> Request Leave
                         </a>
                         <a href="#" class="userDropdownItem">
@@ -120,71 +119,36 @@ $timedIn = ($lastLog && $lastLog['log_type'] === 'login')
     </div>
 </div>
 
-<!-- OT REQUEST MODAL -->
-<div id="otModalOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:99999; justify-content:center; align-items:center;">
-    <div style="background:var(--glass-bg); backdrop-filter:blur(32px) saturate(160%) brightness(0.3); -webkit-backdrop-filter:blur(32px) saturate(160%) brightness(0.3); border:1px solid var(--glass-border); border-radius:16px; padding:2rem; width:700px; max-height:80vh; overflow-y:auto; box-shadow:0 12px 35px rgba(0,0,0,0.5); position:relative;">
+<!-- MODALS -->
+<?php include '../ot_modal.php'; ?>
+<?php include '../leave_modal.php'; ?>
 
-        <!-- Modal Header -->
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
-            <h5 style="color:#fff; margin:0; font-weight:600;">File OT Request</h5>
-            <button onclick="closeOTModal()" style="background:none; border:none; color:#aaa; font-size:1.3rem; cursor:pointer;">
-                <i class="bi bi-x-lg"></i>
-            </button>
-        </div>
-
-        <!-- Step 1: Pick a Gantt row -->
-        <div id="otStep1">
-            <p style="color:rgba(255,255,255,0.6); font-size:0.85rem; margin-bottom:1rem;">Select a day to file OT for:</p>
-            <div id="otGanttList" style="display:flex; flex-direction:column; gap:2.5rem;">
-                <p style="color:#aaa; text-align:center;">Loading...</p>
-            </div>
-        </div>
-
-        <!-- Step 2: Reason form -->
-        <div id="otStep2" style="display:none;">
-            <button onclick="backToStep1()" style="background:none; border:none; color:#aaa; font-size:0.85rem; cursor:pointer; margin-bottom:1rem;">
-                <i class="bi bi-arrow-left"></i> Back
-            </button>
-
-            <div style="background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:10px; padding:1rem; margin-bottom:1.5rem;">
-                <p style="color:#aaa; font-size:0.8rem; margin:0 0 0.3rem;">Selected Date</p>
-                <p style="color:#fff; font-weight:600; margin:0;" id="otSelectedDate"></p>
-                <p style="color:#aaa; font-size:0.8rem; margin:0.5rem 0 0.3rem;">OT Period</p>
-                <p style="color:#97be41; font-weight:600; margin:0;" id="otSelectedTime"></p>
-                <p style="color:#aaa; font-size:0.8rem; margin:0.5rem 0 0.3rem;">OT Duration</p>
-                <p style="color:#fff; font-weight:600; margin:0;" id="otSelectedDuration"></p>
-            </div>
-
-            <label style="color:rgba(255,255,255,0.7); font-size:0.85rem; font-weight:600; display:block; margin-bottom:0.5rem;">Reason for OT</label>
-            <textarea id="otReason" rows="3" placeholder="Enter reason for overtime..." style="width:100%; background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.15); border-radius:8px; color:#fff; padding:0.6rem 0.8rem; font-family:'Poppins',sans-serif; font-size:0.875rem; outline:none; resize:none;"></textarea>
-
-            <button onclick="submitOTRequest()" style="margin-top:1rem; background:#97be41; color:#fff; border:none; padding:0.5rem 1.5rem; border-radius:8px; font-family:'Poppins',sans-serif; font-size:0.9rem; cursor:pointer; transition:background 0.2s;">
-                <i class="bi bi-check-circle-fill"></i> Submit OT Request
-            </button>
-        </div>
-
-        <!-- Error message -->
-        <div id="otErrorMsg" style="display:none; margin-top:1rem; background:rgba(220,53,69,0.15); border:1px solid rgba(220,53,69,0.3); border-radius:8px; padding:0.8rem 1rem; color:#ff8a8a; font-size:0.875rem;"></div>
-
-        <!-- Success message -->
-        <div id="otSuccessMsg" style="display:none; margin-top:1rem; background:rgba(151,190,65,0.15); border:1px solid rgba(151,190,65,0.3); border-radius:8px; padding:0.8rem 1rem; color:#97be41; font-size:0.875rem;"></div>
-
-    </div>
-</div>
-
-<!-- JavaScript -->
+<!-- JAVASCRIPT -->
 <script defer>
 
     // ===== GANTT CURSORS =====
     function initGanttCursors() {
-        document.querySelectorAll('.gantt-bar-container').forEach(container => {
-            const line  = container.querySelector('.gantt-cursor-line');
-            const label = container.querySelector('.gantt-cursor-label');
+        const tooltip     = document.getElementById('gantt_tooltip');
+        const gtSched     = document.getElementById('gt-sched');
+        const gtActualIn  = document.getElementById('gt-actual-in');
+        const gtActualOut = document.getElementById('gt-actual-out');
+        const gtLateRow   = document.getElementById('gt-late-row');
+        const gtLate      = document.getElementById('gt-late');
+        const gtOtRow     = document.getElementById('gt-ot-row');
+        const gtOt        = document.getElementById('gt-ot');
+        const gtUtRow = document.getElementById('gt-ut-row');
+        const gtUt    = document.getElementById('gt-ut');
+
+        document.querySelectorAll('.ganttBarContainer').forEach(container => {
+            const line  = container.querySelector('.ganttCursorLine');
+            const label = container.querySelector('.ganttCursorLabel');
             if (!line || !label) return;
 
             const rangeStart = parseInt(container.dataset.rangeStart);
             const rangeEnd   = parseInt(container.dataset.rangeEnd);
             const range      = rangeEnd - rangeStart;
+
+            const hasData = !!container.dataset.actualIn;
 
             container.addEventListener('mousemove', (e) => {
                 const rect    = container.getBoundingClientRect();
@@ -192,20 +156,71 @@ $timedIn = ($lastLog && $lastLog['log_type'] === 'login')
                 const percent = Math.max(0, Math.min(1, x / rect.width));
                 const time    = Math.floor(rangeStart + (percent * range));
 
+                if (line)  line.style.left  = (percent * 100) + '%';
+                if (label) label.style.left = (percent * 100) + '%';
+
+                if (label) {
+                    label.textContent = new Date(time * 1000).toLocaleTimeString('en-US', {
+                        hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'Asia/Manila'
+                    });
+                }
                 line.style.left  = (percent * 100) + '%';
                 label.style.left = (percent * 100) + '%';
-
-                const d = new Date(time * 1000);
-                label.textContent = d.toLocaleTimeString('en-US', {
+                label.textContent = new Date(time * 1000).toLocaleTimeString('en-US', {
                     hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'Asia/Manila'
                 });
+
+                if (hasData && tooltip) {
+                    gtSched.textContent     = container.dataset.schedIn + ' – ' + container.dataset.schedOut;
+                    gtActualIn.textContent  = container.dataset.actualIn;
+                    gtActualOut.textContent = container.dataset.actualOut;
+
+                    // Show if late
+                    if (container.dataset.late) {
+                        gtLate.textContent          = container.dataset.late;
+                        gtLateRow.style.display     = 'flex';
+                    } else {
+                        gtLateRow.style.display = 'none';
+                    }
+
+                    // Show overtime if it is approved or rejected
+                    if (container.dataset.overtime) {
+                        gtOt.textContent  = container.dataset.overtime;
+                        const status      = container.dataset.overtimeStatus;
+                        gtOtRow.className = 'ganttToolTipRow ganttToolTipOverTime'
+                                        + (status === 'approved' ? ' approved' : status === 'rejected' ? ' rejected' : '');
+                        gtOtRow.style.display = 'flex';
+                    } else {
+                        gtOtRow.style.display = 'none';
+                    }
+                    
+                    // Show undertime only when it is the next day (day is finished)
+                    const isToday = container.dataset.isToday === '1';
+
+                    if (container.dataset.undertime && !isToday) {
+                        gtUt.textContent = container.dataset.undertime;
+                        gtUtRow.style.display = 'flex';
+                    } else {
+                        gtUtRow.style.display = 'none';
+                    }
+
+                    tooltip.style.left = e.clientX + 'px';
+                    tooltip.style.top  = e.clientY  + 'px';
+                    tooltip.classList.add('visible');
+                }
+            });
+
+            container.addEventListener('mouseleave', () => {
+                if (tooltip) tooltip.classList.remove('visible');
             });
         });
     }
 
-    initGanttCursors();
+    document.addEventListener('DOMContentLoaded', () => {
+        initGanttCursors();
+    });
 
-    // ===== TIME IN/OUT =====
+    // Handle time in and out of employee
     function getTotalWorkedHours() {
         fetch('../get_dashboard_data.php')
             .then(res => res.json())
@@ -219,109 +234,11 @@ $timedIn = ($lastLog && $lastLog['log_type'] === 'login')
          });
     }
 
-    function initGanttCursors() {
-        document.querySelectorAll('.gantt-bar-container').forEach(container => {
-            const line  = container.querySelector('.gantt-cursor-line');
-            const label = container.querySelector('.gantt-cursor-label');
-
-            const rangeStart = parseInt(container.dataset.rangeStart);
-            const rangeEnd   = parseInt(container.dataset.rangeEnd);
-            const range      = rangeEnd - rangeStart;
-
-            container.addEventListener('mousemove', (e) => {
-                const rect = container.getBoundingClientRect();
-                const x = e.clientX - rect.left;
-                const percent = Math.max(0, Math.min(1, x / rect.width));
-                const time = Math.floor(rangeStart + (percent * range));
-
-                line.style.left  = (percent * 100) + '%';
-                label.style.left = (percent * 100) + '%';
-
-                label.textContent = new Date(time * 1000).toLocaleTimeString('en-US', {
-                    hour: 'numeric',
-                    minute: '2-digit',
-                    hour12: true,
-                    timeZone: 'Asia/Manila'
-                });
-            });
-        });
-    }
-
-    function initGanttCursors() {
-        const tooltip     = document.getElementById('gantt-tooltip');
-        const gtSched     = document.getElementById('gt-sched');
-        const gtActualIn  = document.getElementById('gt-actual-in');
-        const gtActualOut = document.getElementById('gt-actual-out');
-        const gtLateRow   = document.getElementById('gt-late-row');
-        const gtLate      = document.getElementById('gt-late');
-        const gtOtRow     = document.getElementById('gt-ot-row');
-        const gtOt        = document.getElementById('gt-ot');
-
-        document.querySelectorAll('.gantt-bar-container').forEach(container => {
-            const line  = container.querySelector('.gantt-cursor-line');
-            const label = container.querySelector('.gantt-cursor-label');
-
-            const rangeStart = parseInt(container.dataset.rangeStart);
-            const rangeEnd   = parseInt(container.dataset.rangeEnd);
-            const range      = rangeEnd - rangeStart;
-
-            const hasData = container.dataset.actualIn;
-
-            container.addEventListener('mousemove', (e) => {
-                const rect    = container.getBoundingClientRect();
-                const x       = e.clientX - rect.left;
-                const percent = Math.max(0, Math.min(1, x / rect.width));
-                const time    = Math.floor(rangeStart + (percent * range));
-
-                if (line)  line.style.left  = (percent * 100) + '%';
-                if (label) label.style.left = (percent * 100) + '%';
-
-                if (label) {
-                    label.textContent = new Date(time * 1000).toLocaleTimeString('en-US', {
-                        hour: 'numeric',
-                        minute: '2-digit',
-                        hour12: true,
-                        timeZone: 'Asia/Manila'
-                    });
-                }
-
-                if (hasData && tooltip) {
-                    gtSched.textContent     = container.dataset.schedIn + ' – ' + container.dataset.schedOut;
-                    gtActualIn.textContent  = container.dataset.actualIn;
-                    gtActualOut.textContent = container.dataset.actualOut;
-
-                    if (container.dataset.late) {
-                        gtLate.textContent = container.dataset.late;
-                        gtLateRow.style.display = 'flex';
-                    } else {
-                        gtLateRow.style.display = 'none';
-                    }
-
-                    if (container.dataset.overtime) {
-                        gtOt.textContent = container.dataset.overtime;
-                        const status = container.dataset.overtimeStatus;
-                        gtOtRow.className = 'gt-row gt-ot ' + (status === 'approved' ? 'approved' : status === 'rejected' ? 'rejected' : '');
-                        gtOtRow.style.display = 'flex';
-                    } else {
-                        gtOtRow.style.display = 'none';
-                    }
-
-                    tooltip.style.left = e.clientX + 'px';
-                    tooltip.style.top  = e.clientY + 'px';
-                    tooltip.classList.add('visible');
-                }
-            });
-
-            container.addEventListener('mouseleave', () => {
-                if (tooltip) tooltip.classList.remove('visible');
-            });
-        });
-    }
-
     function handleTimeIn() {
         fetch('../timeinout.php')
             .then(async res => JSON.parse(await res.text()))
             .then(response => {
+                console.log(response);
                 const btn    = document.getElementById('timeInBtn');
                 const label  = btn.querySelector('#timeInLabel');
                 const status = document.getElementById('dashboard_status');
@@ -346,10 +263,10 @@ $timedIn = ($lastLog && $lastLog['log_type'] === 'login')
                         .then(html => {
                             const doc    = new DOMParser().parseFromString(html, 'text/html');
                             const newBox = doc.querySelector('.recordBox');
-                            newBox.querySelectorAll('.gantt-bar').forEach(b => b.style.transition = 'none');
+                            newBox.querySelectorAll('.ganttBar').forEach(b => b.style.transition = 'none');
                             document.querySelector('.recordBox').replaceWith(newBox);
                             requestAnimationFrame(() => requestAnimationFrame(() => {
-                                newBox.querySelectorAll('.gantt-bar').forEach(b => b.style.transition = '');
+                                newBox.querySelectorAll('.ganttBar').forEach(b => b.style.transition = '');
                             }));
                             initGanttCursors();
                         });
@@ -358,7 +275,7 @@ $timedIn = ($lastLog && $lastLog['log_type'] === 'login')
             .catch(err => console.log('Error:', err));
     }
 
-    // ===== USER DROPDOWN =====
+    // Dropdown menu
     const toggle = document.getElementById('userDropdownToggle');
     const menu   = document.getElementById('userDropdownMenu');
     let isOpen   = false;
@@ -477,13 +394,13 @@ $timedIn = ($lastLog && $lastLog['log_type'] === 'login')
                                 <div>${fmtDate(date).split(',')[0]}</div>
                                 <div style="font-size:0.75rem; color:#aaa;">${fmtShort(date)}</div>
                             </div>
-                            <div class="gantt-bar-container"
+                            <div class="ganttBarContainer"
                                 style="position:relative; flex:1; height:30px; background:rgba(255,255,255,0.05); background-image:repeating-linear-gradient(to right, rgba(255,255,255,0.08) 0px, rgba(255,255,255,0.08) 1px, transparent 1px, transparent calc(100% / 24)); border-radius:8px; overflow:visible;"
                                 data-range-start="${rangeStart}" data-range-end="${rangeEnd}">
 
-                                <div class="gantt-cursor">
-                                    <div class="gantt-cursor-line"></div>
-                                    <div class="gantt-cursor-label"></div>
+                                <div class="ganttCursor">
+                                    <div class="ganttCursorLine"></div>
+                                    <div class="ganttCursorLabel"></div>
                                 </div>
 
                                 <!-- Scheduled bar -->
@@ -589,3 +506,5 @@ $timedIn = ($lastLog && $lastLog['log_type'] === 'login')
     }
 
 </script>
+
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js" defer></script>

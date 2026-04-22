@@ -1,4 +1,5 @@
 <?php
+ob_clean();
 session_start();
 require_once 'db.php';
 
@@ -29,7 +30,7 @@ $stmt = $pdo->prepare("
 $stmt->execute([$employeeId, $today]);
 $schedule = $stmt->fetch(PDO::FETCH_ASSOC);
 
-// Get last log
+// Get last log today
 $stmt = $pdo->prepare("
     SELECT log_type
     FROM logs
@@ -41,13 +42,9 @@ $stmt = $pdo->prepare("
 $stmt->execute([$employeeId, $todayStart, $todayEnd]);
 $lastLog = $stmt->fetch(PDO::FETCH_ASSOC);
 
-/* ================================================
-   CROSS-CHECK ATTENDANCE TABLE
-   If attendance has actual_time_in but no actual_time_out,
-   the employee is considered timed in — regardless of logs.
-================================================ */
+// Get today's attendance row
 $stmt = $pdo->prepare("
-    SELECT actual_time_in, actual_time_out
+    SELECT actual_time_in, actual_time_out, scheduled_time_out, status
     FROM attendance
     WHERE employee_id = ?
     AND date = ?
@@ -55,54 +52,53 @@ $stmt = $pdo->prepare("
 $stmt->execute([$employeeId, $today]);
 $todayAttendance = $stmt->fetch(PDO::FETCH_ASSOC);
 
-$isTimedIn = ($lastLog && $lastLog['log_type'] === 'login')
-          || (
-                $todayAttendance
-                && !empty($todayAttendance['actual_time_in'])
-                && empty($todayAttendance['actual_time_out'])
-             );
+// ✅ Single source of truth: last log determines timed-in state
+$isTimedIn = ($lastLog['log_type'] ?? null) === 'login';
 
-
-/* ================================================
-   TOGGLE
-================================================ */
+// Timein functions
 if (!$isTimedIn) {
-
-    // Time In Function
-
-    $pdo->prepare("
-        INSERT INTO logs (employee_id, log_type)
-        VALUES (?, 'login')
-    ")->execute([$employeeId]);
-
     $schedTimeIn  = $schedule['time_in']  ?? '00:00:00';
     $schedTimeOut = $schedule['time_out'] ?? '00:00:00';
 
-    $allowedStart = strtotime($today . ' ' . $schedTimeIn);
-    $allowedEnd   = strtotime($today . ' ' . $schedTimeOut);
+    if (!$schedule) {
+        $schedTimeIn  = '00:00:00';
+        $schedTimeOut = '00:00:00';
+    }
 
-    // What if the user tried to time in after the scheduled hours?
-    // if (time() < $allowedStart || time() > $allowedEnd) {
-    //     echo json_encode([
-    //         'status' => 'invalid_window',
-    //         'message' => 'You can only time in during your scheduled shift.'
-    //     ]);
-    //     exit();
-    // }
+    $alreadyTimedInBefore = !empty($todayAttendance['actual_time_in']);
 
+    // Only enforce schedule window on the FIRST time-in
+    if (!$alreadyTimedInBefore) {
+        $allowedStart = strtotime($today . ' ' . $schedTimeIn);
+        $allowedEnd   = strtotime($today . ' ' . $schedTimeOut);
+
+        if (time() > $allowedEnd) {
+            echo json_encode([
+                'status'  => 'absent',
+                'message' => 'Shift already ended. Marked as absent.'
+            ]);
+            exit();
+        }
+    }
+
+    // Log the time in
+    $pdo->prepare("
+        INSERT INTO logs (employee_id, log_type, log_time)
+        VALUES (?, 'login', NOW())
+    ")->execute([$employeeId]);
+
+    // Calculate late minutes (only on first time-in)
     $lateMinutes = 0;
-    if ($schedTimeIn && $schedTimeIn !== '00:00:00') {
+    if (empty($todayAttendance['actual_time_in']) && $schedTimeIn !== '00:00:00') {
         $schedTs = strtotime($today . ' ' . $schedTimeIn);
-        $nowTs   = time();
-
-        // Late Computation
-        if ($nowTs > $schedTs) {
-            $lateMinutes = (int) floor(($nowTs - $schedTs) / 60);
+        if (time() > $schedTs) {
+            $lateMinutes = (int) floor((time() - $schedTs) / 60);
         }
     }
 
     $status = $lateMinutes > 0 ? 'late' : 'present';
 
+    // Insert attendance row on first time-in; ignore subsequent time-ins
     $pdo->prepare("
         INSERT INTO attendance (
             employee_id,
@@ -131,78 +127,73 @@ if (!$isTimedIn) {
     exit();
 }
 
+// Timeout functions
 
-/* ================================================
-   TIME OUT
-================================================ */
-
+// Log the time out
 $pdo->prepare("
-    INSERT INTO logs (employee_id, log_type)
-    VALUES (?, 'logout')
+    INSERT INTO logs (employee_id, log_type, log_time)
+    VALUES (?, 'logout', NOW())
 ")->execute([$employeeId]);
 
-$stmt = $pdo->prepare("
-    SELECT actual_time_in, scheduled_time_out
-    FROM attendance
-    WHERE employee_id = ?
-    AND date = ?
-    LIMIT 1
-");
-$stmt->execute([$employeeId, $today]);
-$attendance = $stmt->fetch(PDO::FETCH_ASSOC);
-
-if (!$attendance || empty($attendance['actual_time_in'])) {
+if (!$todayAttendance || empty($todayAttendance['actual_time_in'])) {
     echo json_encode(['status' => 'no_attendance']);
     exit();
 }
 
-$timeIn  = strtotime($attendance['actual_time_in']);
-$timeOut = time();
+// Recalculate total work hours from ALL login/logout pairs today
+$stmt = $pdo->prepare("
+    SELECT log_type, log_time
+    FROM logs
+    WHERE employee_id = ?
+    AND log_time BETWEEN ? AND ?
+    ORDER BY log_time ASC
+");
+$stmt->execute([$employeeId, $todayStart, $todayEnd]);
+$allLogs = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-$secondsWorked = max(0, $timeOut - $timeIn - 3600);
-$hoursWorked   = round($secondsWorked / 3600, 2);
+$totalSeconds  = 0;
+$lastLoginTime = null;
 
-/* =========================
-   UNDERTIME / OVERTIME
-========================= */
-$undertimeMinutes = 0;
-$overtimeMinutes  = 0;
-
-$schedOut = $attendance['scheduled_time_out'];
-
-if ($schedOut && $schedOut !== '00:00:00') {
-    $schedOutTs = strtotime($today . ' ' . $schedOut);
-
-    // Undertime computation
-    if ($timeOut < $schedOutTs) {
-        $undertimeMinutes = (int) floor(($schedOutTs - $timeOut) / 60);
-    } elseif ($timeOut > $schedOutTs) {
-        //Overtime computation
-        $overtimeMinutes = (int) floor(($timeOut - $schedOutTs) / 60);
+foreach ($allLogs as $log) {
+    if ($log['log_type'] === 'login') {
+        $lastLoginTime = strtotime($log['log_time']);
+    } elseif ($log['log_type'] === 'logout' && $lastLoginTime !== null) {
+        $totalSeconds += strtotime($log['log_time']) - $lastLoginTime;
+        $lastLoginTime = null;
     }
 }
 
-/* =========================
-   STATUS
-========================= */
-$finalStatus = $undertimeMinutes > 0 ? 'incomplete' : 'present';
+// Deduct 1-hour break once per day, only if worked more than 1 hour
+if ($totalSeconds > 3600) {
+    $totalSeconds -= 3600;
+}
+$hoursWorked = round($totalSeconds / 3600, 2);
 
-$stmt = $pdo->prepare("
-    SELECT status FROM attendance
-    WHERE employee_id = ?
-    AND date = ?
-");
-$stmt->execute([$employeeId, $today]);
-$currentStatus = $stmt->fetchColumn();
+// Undertime / Overtime
+$undertimeMinutes = 0;
+$overtimeMinutes  = 0;
+$schedOut = $todayAttendance['scheduled_time_out'] ?? '00:00:00';
 
+if ($schedOut && $schedOut !== '00:00:00') {
+    $schedOutTs = strtotime($today . ' ' . $schedOut);
+    $nowTs      = time();
+
+    if ($nowTs < $schedOutTs) {
+        $undertimeMinutes = (int) floor(($schedOutTs - $nowTs) / 60);
+    } else {
+        $overtimeMinutes = (int) floor(($nowTs - $schedOutTs) / 60);
+    }
+}
+
+// Preserve 'late' status if set on first time-in
+$finalStatus   = $undertimeMinutes > 0 ? 'incomplete' : 'present';
+$currentStatus = $todayAttendance['status'] ?? '';
 if ($currentStatus === 'late') {
     $finalStatus = 'late';
 }
 
-/* =========================
-   UPDATE ATTENDANCE
-========================= */
-$stmt = $pdo->prepare("
+// Always overwrite actual_time_out with the latest logout
+$pdo->prepare("
     UPDATE attendance
     SET
         actual_time_out   = NOW(),
@@ -213,9 +204,7 @@ $stmt = $pdo->prepare("
         status            = ?
     WHERE employee_id = ?
     AND date = ?
-");
-
-$stmt->execute([
+")->execute([
     $hoursWorked,
     $undertimeMinutes,
     $overtimeMinutes,
