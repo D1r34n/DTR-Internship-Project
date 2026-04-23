@@ -1,5 +1,3 @@
-<link rel="stylesheet" href="../ob_modal.css">
-
 <!-- OB REQUEST MODAL -->
 <div id="obModalOverlay">
     <div class="ob-modal-box">

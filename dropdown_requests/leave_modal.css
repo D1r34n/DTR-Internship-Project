@@ -219,16 +219,18 @@
     font-size: 0.875rem;
 }
 
-/* ----------------------------------- 
+/* -----------------------------------
      LEAVE CALENDAR OVERRIDES
+     (mirrors employee_schedule.css — scoped to #leaveCalendar)
 ----------------------------------- */
-#leaveCalendar {
-    font-family: 'Poppins', sans-serif;
-}
-
 #leaveCalendar .fc {
     color: var(--text-light);
     font-family: 'Poppins', sans-serif;
+    width: 100%;
+}
+
+#leaveCalendar .fc .fc-toolbar {
+    margin-bottom: 1rem;
 }
 
 #leaveCalendar .fc .fc-toolbar-title {
@@ -246,7 +248,7 @@
     font-weight: 400;
     padding: 0.3rem 0.8rem;
     border-radius: 8px;
-    box-shadow: none !important;
+    box-shadow: none;
     transition: background 0.2s ease, color 0.2s ease;
 }
 
@@ -254,26 +256,52 @@
     background: rgba(255, 255, 255, 0.14);
     border-color: rgba(255, 255, 255, 0.2);
     color: var(--text-lightest);
-    box-shadow: none !important;
+    box-shadow: none;
 }
 
-#leaveCalendar .fc .fc-button:focus,
-#leaveCalendar .fc .fc-button:active {
-    box-shadow: none !important;
+#leaveCalendar .fc .fc-button:focus {
+    box-shadow: none;
     outline: none;
 }
 
 #leaveCalendar .fc .fc-button-primary:not(:disabled).fc-button-active,
 #leaveCalendar .fc .fc-button-primary:not(:disabled):active {
-    background: #97be41;
-    border-color: #7ea832;
+    background: var(--primary-color);
+    border-color: var(--primary-hover);
     color: #fff;
-    box-shadow: none !important;
+    box-shadow: none;
+}
+
+#leaveCalendar .fc .fc-today-button {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--glass-border);
+    color: var(--text-light);
+    font-family: 'Poppins', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 400;
+    padding: 0.3rem 0.8rem;
+    border-radius: 8px;
+    box-shadow: none;
+    transition: background 0.2s ease, color 0.2s ease;
+}
+
+#leaveCalendar .fc .fc-today-button:hover {
+    background: rgba(255, 255, 255, 0.14);
+    border-color: rgba(255, 255, 255, 0.2);
+    color: var(--text-lightest);
+    box-shadow: none;
+}
+
+#leaveCalendar .fc .fc-today-button:active {
+    background: var(--primary-hover);
+    border-color: var(--primary-hover);
+    color: #fff;
+    box-shadow: none;
 }
 
 #leaveCalendar .fc .fc-today-button:disabled {
-    background-color: #97be41;
-    border-color: #97be41;
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
     color: #fff;
     opacity: 1;
     cursor: default;
@@ -316,7 +344,7 @@
 }
 
 #leaveCalendar .fc .fc-day-today .fc-daygrid-day-number {
-    color: #97be41 !important;
+    color: var(--primary-color);
     font-weight: 600;
 }
 
@@ -340,6 +368,16 @@
     background: transparent;
 }
 
+/* Smooth resize transition (matches schedule page) */
+#leaveCalendar .fc .fc-daygrid-body,
+#leaveCalendar .fc .fc-scrollgrid-sync-table,
+#leaveCalendar .fc table,
+#leaveCalendar .fc td,
+#leaveCalendar .fc th {
+    transition: width 0.38s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ---------- Leave-specific states ---------- */
 #leaveCalendar .fc-day-selected {
     background: rgba(151, 190, 65, 0.25) !important;
 }
@@ -353,7 +391,7 @@
     display: inline-flex;
     align-items: center;
     margin-left: 4px;
-    color: #97be41;
+    color: var(--primary-color);
     font-size: 0.75rem;
     vertical-align: middle;
 }
@@ -363,7 +401,7 @@
     align-items: center;
 }
 
-/* ----------------------------------------- 
+/* -----------------------------------------
          MODAL SCROLLBAR OVERRIDES
 ----------------------------------------- */
 #leaveModalOverlay ::-webkit-scrollbar {

@@ -1,5 +1,3 @@
-<link rel="stylesheet" href="../leave_modal.css">
-
 <!-- LEAVE REQUEST MODAL -->
 <div id="leaveModalOverlay">
     <div class="leave-modal-box">
@@ -112,7 +110,7 @@
         document.querySelector('.leaveTypeToggle').classList.remove('selected');
         leaveSelectedDates = [];
 
-        fetch('get_schedule_dates.php')
+        fetch('/DTR-Internship-Project/employee_pages/get_schedule_dates.php')
             .then(res => res.json())
             .then(dates => {
                 leaveScheduledDates = dates;
@@ -265,7 +263,7 @@
         formData.append('end_date',   endDate);
         formData.append('reason',     reason);
 
-        fetch('submit_leave_request.php', {
+        fetch('/DTR-Internship-Project/employee_pages/submit_leave_request.php', {
             method: 'POST',
             body:   formData
         })

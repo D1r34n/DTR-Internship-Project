@@ -1,5 +1,3 @@
-<link rel="stylesheet" href="../ot_modal.css">
-
 
 <!-- OT REQUEST MODAL -->
 <div id="otModalOverlay">

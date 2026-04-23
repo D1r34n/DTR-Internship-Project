@@ -74,6 +74,10 @@ $timedIn = ($lastLog && $lastLog['log_type'] === 'login')
 
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.css" rel="stylesheet">
+<link rel="stylesheet" href="/DTR-Internship-Project/dropdown_requests/ot_modal.css">
+<link rel="stylesheet" href="/DTR-Internship-Project/dropdown_requests/leave_modal.css">
+<link rel="stylesheet" href="/DTR-Internship-Project/dropdown_requests/ob_modal.css">
+<link rel="stylesheet" href="/DTR-Internship-Project/dropdown_requests/log_edit_modal.css">
 
 <!-- TOP BAR -->
 <div class="topBar">
@@ -120,10 +124,10 @@ $timedIn = ($lastLog && $lastLog['log_type'] === 'login')
 </div>
 
 <!-- MODALS -->
-<?php include '../ot_modal.php'; ?>
-<?php include '../leave_modal.php'; ?>
-<?php include '../ob_modal.php'; ?>
-<?php include '../log_edit_modal.php'; ?>
+<?php include '../dropdown_requests/ot_modal.php'; ?>
+<?php include '../dropdown_requests/leave_modal.php'; ?>
+<?php include '../dropdown_requests/ob_modal.php'; ?>
+<?php include '../dropdown_requests/log_edit_modal.php'; ?>
 
 <!-- JAVASCRIPT -->
 <script defer>

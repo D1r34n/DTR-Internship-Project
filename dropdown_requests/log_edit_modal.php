@@ -1,5 +1,3 @@
-<link rel="stylesheet" href="../log_edit_modal.css">
-
 <!-- LOG EDIT REQUEST MODAL -->
 <div id="logEditModalOverlay">
     <div class="log-edit-modal-box">
