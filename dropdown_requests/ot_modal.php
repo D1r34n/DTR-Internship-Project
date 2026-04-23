@@ -79,7 +79,7 @@
         const list = document.getElementById('otGanttList');
         list.innerHTML = '<p class="ot-gantt-loading">Loading...</p>';
 
-        fetch('get_ot_records.php')
+        fetch('/DTR-Internship-Project/employee_pages/get_ot_records.php')
             .then(res => res.json())
             .then(records => {
                 if (records.length === 0) {
@@ -218,7 +218,7 @@
         formData.append('time_out', otSelectedRecord.time_out);
         formData.append('reason',   reason);
 
-        fetch('submit_ot_request.php', {
+        fetch('/DTR-Internship-Project/employee_pages/submit_ot_request.php', {
             method: 'POST',
             body:   formData
         })

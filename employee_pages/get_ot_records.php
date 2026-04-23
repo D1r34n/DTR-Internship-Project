@@ -15,20 +15,20 @@ $employeeId = $_SESSION['user_id'];
 
 $stmt = $pdo->prepare("
     SELECT 
-        date,
-        scheduled_time_in,
-        scheduled_time_out,
+        work_date                AS date,
+        scheduled_start_datetime AS scheduled_time_in,
+        scheduled_end_datetime   AS scheduled_time_out,
         actual_time_in,
         actual_time_out,
         overtime_minutes,
         late_minutes,
         status
-    FROM attendance
+    FROM attendances
     WHERE employee_id = ?
     AND overtime_minutes > 0
     AND actual_time_in IS NOT NULL
-    AND (overtime_status = 'pending' OR overtime_status = '' OR overtime_status IS NULL)
-    ORDER BY date DESC
+    AND overtime_status = 'none'
+    ORDER BY work_date DESC
 ");
 
 $stmt->execute([$employeeId]);

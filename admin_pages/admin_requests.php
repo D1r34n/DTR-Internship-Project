@@ -28,7 +28,7 @@ if (isset($_GET['action'], $_GET['type'], $_GET['id'])) {
             ->execute([$status, $id]);
 
         $pdo->prepare("
-            UPDATE attendance a
+            UPDATE attendances a
             JOIN overtime_requests o ON a.employee_id = o.employee_id AND a.date = o.date
             SET a.overtime_status = ?
             WHERE o.id = ?
