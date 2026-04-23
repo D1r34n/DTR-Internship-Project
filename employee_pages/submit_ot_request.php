@@ -32,9 +32,9 @@ try {
     ");
     $stmt->execute([$employeeId, $date, $time_in, $time_out, $reason]);
 
-    // 2. Update attendance overtime_status to 'pending'
+    // 2. Update attendances overtime_status to 'pending'
     $stmt2 = $pdo->prepare("
-        UPDATE attendance 
+        UPDATE attendances 
         SET overtime_status = 'pending'
         WHERE employee_id = ? AND date = ?
     ");

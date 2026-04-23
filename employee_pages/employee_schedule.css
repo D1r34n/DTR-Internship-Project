@@ -250,3 +250,46 @@ body::after {
 .fc th {
     transition: width 0.38s cubic-bezier(0.4, 0, 0.2, 1);
 }
+
+/* ============================================================
+   SHIFT TYPE LEGEND
+   ============================================================ */
+.shiftLegend {
+    display: flex;
+    gap: 1.5rem;
+    align-items: center;
+    padding: 0.5rem 0 1rem;
+    flex-wrap: wrap;
+}
+
+.shiftLegendItem {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.75rem;
+    color: var(--text-light);
+}
+
+.shiftLegendDot {
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+    flex-shrink: 0;
+}
+
+.shiftLegendDot.day {
+    background: #97be41;
+}
+
+.shiftLegendDot.night {
+    background: #4da3ff;
+}
+
+.shiftLegendDot.night-cont {
+    background: rgba(77, 163, 255, 0.15);
+    border: 2px dashed #4da3ff;
+}
+
+.shiftLegendDot.rest {
+    background: #6c757d;
+}

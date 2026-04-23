@@ -49,8 +49,29 @@ body {
     padding: 30px;
     border-radius: 16px;
     width: 1120px;
-    max-height: 580px;
-    overflow-y: hidden;
+    max-height: 780px;
+    overflow-y: auto;
+}
+
+/* ============================================================
+   MAIN BOX SCROLLBAR
+   ============================================================ */
+.scheduleBox::-webkit-scrollbar {
+    width: 6px;
+}
+
+.scheduleBox::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+}
+
+.scheduleBox::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
+}
+
+.scheduleBox::-webkit-scrollbar-thumb:hover {
+    background: #97be41;
 }
 
 /* ============================================================
@@ -126,6 +147,7 @@ body {
     background-color: rgba(0, 0, 0, 0.2);
     color: rgba(255, 255, 255, 0.85);
     border-color: rgba(255, 255, 255, 0.07);
+    vertical-align: middle;
 }
 
 .tableScrollWrapper tbody tr:hover td {
@@ -155,7 +177,20 @@ body {
 }
 
 /* ============================================================
-   ACTION DROPDOWN (Actions Button)
+   SHIFT TYPE BADGES
+   ============================================================ */
+.dayShiftBadge {
+    background: #97be41;
+    color: #fff;
+}
+
+.nightShiftBadge {
+    background: #4da3ff;
+    color: #fff;
+}
+
+/* ============================================================
+   ACTION DROPDOWN
    ============================================================ */
 .actionDropdownWrapper {
     position: relative;
@@ -239,7 +274,7 @@ body {
 }
 
 /* ============================================================
-   FORM GROUPS (Employee, Week, Time In, Time Out)
+   FORM GROUPS
    ============================================================ */
 .formGroup {
     display: flex;
@@ -271,8 +306,89 @@ body {
     border-color: #97be41;
 }
 
+.formHint {
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 0.8rem;
+    margin-bottom: 0.5rem;
+}
+
+.nightShiftHint {
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 0.75rem;
+}
+
 /* ============================================================
-   FORM ACTION BUTTONS (Save, Cancel)
+   EMPLOYEE DROPDOWN
+   ============================================================ */
+.employeeDropdown {
+    display: none;
+    position: absolute;
+    bottom: 60%;
+    top: auto;
+    left: 0;
+    background: white;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    max-height: 180px;
+    overflow-y: auto;
+    z-index: 9999;
+    width: 100%;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.employeeOption {
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-family: 'Poppins', sans-serif;
+    color: #333;
+    transition: background-color 0.2s;
+}
+
+.employeeOption:hover {
+    background-color: #f5f5f5;
+}
+
+/* ============================================================
+   SELECTED DATES
+   ============================================================ */
+.selectedDatesList {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.8rem;
+}
+
+.selectedDateTag {
+    background: rgba(151, 190, 65, 0.15);
+    border: 1px solid rgba(151, 190, 65, 0.3);
+    color: #97be41;
+    border-radius: 20px;
+    padding: 0.3rem 0.8rem;
+    font-size: 0.8rem;
+    font-family: 'Poppins', sans-serif;
+    display: inline-flex;
+    align-items: center;
+}
+
+.selectedDateRemove {
+    cursor: pointer;
+    margin-left: 4px;
+    opacity: 0.7;
+}
+
+.selectedDateRemove:hover {
+    opacity: 1;
+}
+
+.noDateSelected {
+    color: rgba(255, 255, 255, 0.3);
+    font-size: 0.8rem;
+    margin: 0;
+}
+
+/* ============================================================
+   FORM ACTION BUTTONS
    ============================================================ */
 .formActions {
     display: flex;
@@ -306,4 +422,78 @@ body {
 
 .btnCancel:hover {
     color: #fff;
+}
+
+/* ============================================================
+   FLATPICKR DARK THEME OVERRIDES
+   ============================================================ */
+.flatpickr-calendar {
+    background: rgba(20, 20, 20, 0.98) !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    border-radius: 12px !important;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5) !important;
+}
+
+.flatpickr-month {
+    background: transparent !important;
+    color: #fff !important;
+}
+
+.flatpickr-current-month select,
+.flatpickr-current-month input {
+    color: #fff !important;
+}
+
+.flatpickr-weekday {
+    color: rgba(255, 255, 255, 0.5) !important;
+    background: transparent !important;
+}
+
+.flatpickr-day {
+    color: rgba(255, 255, 255, 0.8) !important;
+    border-radius: 8px !important;
+}
+
+.flatpickr-day:hover {
+    background: rgba(255, 255, 255, 0.08) !important;
+    border-color: transparent !important;
+}
+
+.flatpickr-day.selected,
+.flatpickr-day.selected:hover {
+    background: #97be41 !important;
+    border-color: #97be41 !important;
+    color: #fff !important;
+}
+
+.flatpickr-day.today {
+    border-color: #97be41 !important;
+    color: #97be41 !important;
+}
+
+.flatpickr-day.today.selected {
+    color: #fff !important;
+}
+
+.flatpickr-day.prevMonthDay,
+.flatpickr-day.nextMonthDay {
+    color: rgba(255, 255, 255, 0.2) !important;
+}
+
+.flatpickr-prev-month svg,
+.flatpickr-next-month svg {
+    fill: rgba(255, 255, 255, 0.6) !important;
+}
+
+.flatpickr-prev-month:hover svg,
+.flatpickr-next-month:hover svg {
+    fill: #97be41 !important;
+}
+
+.numInputWrapper:hover {
+    background: transparent !important;
+}
+
+.numInput {
+    color: #fff !important;
 }

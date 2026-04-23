@@ -16,17 +16,17 @@ $today      = date('Y-m-d');
 
 // Get all future scheduled work days (non-rest days)
 $stmt = $pdo->prepare("
-    SELECT work_date
+    SELECT schedule_date
     FROM schedules
     WHERE employee_id = ?
     AND is_rest_day = 0
-    AND work_date > ?
-    ORDER BY work_date ASC
+    AND schedule_date > ?
+    ORDER BY schedule_date ASC
 ");
 
 $stmt->execute([$employeeId, $today]);
 $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-$dates = array_column($rows, 'work_date');
+$dates = array_column($rows, 'schedule_date');
 
 echo json_encode($dates);
