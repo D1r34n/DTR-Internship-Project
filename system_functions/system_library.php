@@ -1,6 +1,6 @@
 <?php
 /**
- * attendance_library.php
+ * system_library.php
  * -------------------------------------------------
  * SHARED UTILITY LAYER (PURE HELPERS ONLY)
  *
@@ -46,6 +46,9 @@ function distanceMeters($lat1, $lon1, $lat2, $lon2)
 }
 
 // Check if dayshift or nightsift
+CONST isNightShift = '9:00 AM';
+CONST isDayShift = '7:00 AM';
+
 
 /* =========================
    GANTT CHART HELPERS

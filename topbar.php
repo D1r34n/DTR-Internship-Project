@@ -129,7 +129,7 @@ $currentStatus = $timedIn ? 'Timed In' : 'Timed Out';
 
                         <div class="horizontalDivider"></div>
 
-                        <a href="../index.php" class="logoutText">
+                        <a href="../logout.php" class="logoutText">
                             <i class="bi bi-box-arrow-right logoutIcon"></i> Logout
                         </a>
 
@@ -438,6 +438,9 @@ $currentStatus = $timedIn ? 'Timed In' : 'Timed Out';
                 if (tapSuccess) {
                     localStorage.setItem('attendance_tap_result', response.tap);
                     localStorage.setItem('attendance_update', Date.now());
+
+                    if (document.getElementById('attendanceTimeline')) refreshChart();
+                    
                 }
 
                 if (typeof getTotalWorkedHours === 'function') getTotalWorkedHours();

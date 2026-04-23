@@ -1,6 +1,6 @@
 <?php
 /**
- * attendance_service.php
+ * system_service.php
  * -------------------------------------------------
  * SERVICE LAYER (BUSINESS LOGIC CORE)
  *
@@ -31,13 +31,11 @@ function processAttendanceTap($pdo, $employee_id, $lat, $lng, $accuracy)
     $officeLng = 120.99562631352414;
     $radius = 100;
 
-
     // -------------------------------------------------
     // 2. COMPUTE DISTANCE (UTILITY LAYER)
     // -------------------------------------------------
     $distance = distanceMeters($lat, $lng, $officeLat, $officeLng);
     $isWithin = $distance <= $radius ? 1 : 0;
-
 
     // -------------------------------------------------
     // 3. GET LAST LOG
@@ -50,20 +48,17 @@ function processAttendanceTap($pdo, $employee_id, $lat, $lng, $accuracy)
         LIMIT 1
     ");
     $stmt->execute([$employee_id]);
-
     $lastLog = $stmt->fetch(PDO::FETCH_ASSOC);
-
 
     // -------------------------------------------------
     // 4. DETERMINE IN / OUT STATE
     // -------------------------------------------------
-    $isIn = (!$lastLog || $lastLog['log_type'] === 'OUT');
+    $isIn     = (!$lastLog || $lastLog['log_type'] === 'OUT');
     $nextType = $isIn ? 'IN' : 'OUT';
     $response = $isIn ? 'timed_in' : 'timed_out';
 
-
     // -------------------------------------------------
-    // 5. SHIFT DETECTION (IN AND OUT)
+    // 5. SHIFT DETECTION
     // -------------------------------------------------
     $isFirstLogOfShift = false;
     $schedule = null;
@@ -77,13 +72,10 @@ function processAttendanceTap($pdo, $employee_id, $lat, $lng, $accuracy)
         ORDER BY scheduled_end_datetime DESC
         LIMIT 1
     ");
-
     $stmt->execute([$employee_id]);
     $schedule = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if ($nextType === 'IN' && $schedule) {
-
-        // Check if there is already an IN log within shift window
         $stmt = $pdo->prepare("
             SELECT 1
             FROM logs
@@ -92,16 +84,49 @@ function processAttendanceTap($pdo, $employee_id, $lat, $lng, $accuracy)
               AND log_time BETWEEN ? AND DATE_ADD(?, INTERVAL 6 HOUR)
             LIMIT 1
         ");
-
         $stmt->execute([
             $employee_id,
             $schedule['scheduled_start_datetime'],
             $schedule['scheduled_end_datetime']
         ]);
-
         $isFirstLogOfShift = !$stmt->fetchColumn();
     }
 
+    // -------------------------------------------------
+    // 5b. AUTO-FINALIZE EXPIRED SHIFTS ON TAP
+    // -------------------------------------------------
+    // If the last log was IN (not OUT), it means the employee forgot to
+    // time out from a previous shift. Finalize those expired shifts as incomplete.
+    if ($nextType === 'IN' && $lastLog && $lastLog['log_type'] === 'IN') {
+        $stmt = $pdo->prepare("
+            SELECT
+                s.schedule_date,
+                s.scheduled_start_datetime,
+                s.scheduled_end_datetime
+            FROM schedules s
+            LEFT JOIN attendances a
+                ON  a.employee_id = s.employee_id
+                AND a.work_date   = s.schedule_date
+            WHERE s.employee_id = ?
+            AND DATE_ADD(s.scheduled_end_datetime, INTERVAL 6 HOUR) < NOW()
+            AND s.is_rest_day = 0
+            AND (
+                    a.work_date IS NULL
+                OR  a.status = 'incomplete'
+            )
+            ORDER BY s.scheduled_end_datetime DESC
+        ");
+        $stmt->execute([$employee_id]);
+        $expiredShifts = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        foreach ($expiredShifts as $expiredShift) {
+            try {
+                finalizeEmployeeAttendance($pdo, $employee_id, $expiredShift);
+            } catch (Throwable $e) {
+                error_log("Auto-finalize expired shift error: " . $e->getMessage());
+            }
+        }
+    }
 
     // -------------------------------------------------
     // 6. INSERT LOG
@@ -119,7 +144,6 @@ function processAttendanceTap($pdo, $employee_id, $lat, $lng, $accuracy)
         )
         VALUES (?, ?, NOW(), ?, ?, ?, ?, ?)
     ");
-
     $stmt->execute([
         $employee_id,
         $nextType,
@@ -130,17 +154,12 @@ function processAttendanceTap($pdo, $employee_id, $lat, $lng, $accuracy)
         $distance
     ]);
 
-
     // -------------------------------------------------
-    // 7. FINALIZE ATTENDANCE (OPTIONAL BUSINESS HOOK)
+    // 7. FINALIZE ATTENDANCE FOR CURRENT SHIFT
     // -------------------------------------------------
     if ($schedule) {
         try {
-            finalizeEmployeeAttendance(
-                $pdo,
-                $employee_id,
-                $schedule
-            );
+            finalizeEmployeeAttendance($pdo, $employee_id, $schedule);
         } catch (Throwable $e) {
             error_log("Attendance finalize error: " . $e->getMessage());
         }
@@ -150,10 +169,10 @@ function processAttendanceTap($pdo, $employee_id, $lat, $lng, $accuracy)
     // 8. RESPONSE PAYLOAD
     // -------------------------------------------------
     return [
-        'tap' => $response,
-        'log_type' => $nextType,
-        'distance_meters' => round($distance, 2),
-        'is_within_office' => $isWithin,
+        'tap'                   => $response,
+        'log_type'              => $nextType,
+        'distance_meters'       => round($distance, 2),
+        'is_within_office'      => $isWithin,
         'is_first_log_of_shift' => $isFirstLogOfShift
     ];
 }
@@ -167,9 +186,6 @@ function processAttendanceTap($pdo, $employee_id, $lat, $lng, $accuracy)
  * - Computes final attendance state for a given work date
  * - Calculates late, undertime, overtime minutes
  * - Upserts into attendances table
- *
- * Triggered when:
- * - First IN of a shift is recorded
  */
 function finalizeEmployeeAttendance(PDO $pdo, int $employeeId, array $schedule)
 {
@@ -178,25 +194,40 @@ function finalizeEmployeeAttendance(PDO $pdo, int $employeeId, array $schedule)
     $scheduledEnd   = $schedule['scheduled_end_datetime'];
 
     // -------------------------------------------------
-    // 1. Get all logs for the day
+    // 1. Get all logs within the shift window (handles cross-day taps)
     // -------------------------------------------------
     $stmt = $pdo->prepare("
         SELECT log_type, log_time
         FROM logs
         WHERE employee_id = ?
-          AND DATE(log_time) = ?
+        AND log_time BETWEEN ? AND DATE_ADD(?, INTERVAL 6 HOUR)
         ORDER BY log_time ASC
     ");
-
-    $stmt->execute([$employeeId, $date]);
+    $stmt->execute([$employeeId, $scheduledStart, $scheduledEnd]);
     $logs = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+    // -------------------------------------------------
+    // 2. No logs at all — mark absent
+    // -------------------------------------------------
     if (!$logs) {
+        $stmt = $pdo->prepare("
+            INSERT INTO attendances (
+                employee_id, work_date,
+                scheduled_start_datetime, scheduled_end_datetime,
+                actual_time_in, actual_time_out,
+                total_work_hours, late_minutes,
+                undertime_minutes, overtime_minutes, status
+            )
+            VALUES (?, ?, ?, ?, NULL, NULL, 0, 0, 0, 0, 'absent')
+            ON DUPLICATE KEY UPDATE
+                status = IF(status IN ('incomplete', 'absent'), 'absent', status)
+        ");
+        $stmt->execute([$employeeId, $date, $scheduledStart, $scheduledEnd]);
         return;
     }
 
     // -------------------------------------------------
-    // 2. Extract first IN and last OUT
+    // 3. Extract first IN and last OUT
     // -------------------------------------------------
     $firstIn = null;
     $lastOut = null;
@@ -211,7 +242,7 @@ function finalizeEmployeeAttendance(PDO $pdo, int $employeeId, array $schedule)
     }
 
     // -------------------------------------------------
-    // 3. Compute derived fields
+    // 4. Compute derived fields
     // -------------------------------------------------
     $totalWorkHours   = 0;
     $lateMinutes      = 0;
@@ -235,33 +266,27 @@ function finalizeEmployeeAttendance(PDO $pdo, int $employeeId, array $schedule)
 
     $status = 'incomplete';
     if ($firstIn && $lastOut) {
-        if ($lateMinutes > 0)      $status = 'late';
+        if ($lateMinutes > 0)          $status = 'late';
         elseif ($undertimeMinutes > 0) $status = 'undertime';
         else                           $status = 'present';
     }
 
     // -------------------------------------------------
-    // 4. Upsert into attendances
+    // 5. Upsert into attendances
     // -------------------------------------------------
     $stmt = $pdo->prepare("
         INSERT INTO attendances (
-            employee_id,
-            work_date,
-            scheduled_start_datetime,
-            scheduled_end_datetime,
-            actual_time_in,
-            actual_time_out,
-            total_work_hours,
-            late_minutes,
-            undertime_minutes,
-            overtime_minutes,
-            status
+            employee_id, work_date,
+            scheduled_start_datetime, scheduled_end_datetime,
+            actual_time_in, actual_time_out,
+            total_work_hours, late_minutes,
+            undertime_minutes, overtime_minutes, status
         )
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON DUPLICATE KEY UPDATE
             scheduled_start_datetime = VALUES(scheduled_start_datetime),
             scheduled_end_datetime   = VALUES(scheduled_end_datetime),
-            actual_time_in           = VALUES(actual_time_in),
+            actual_time_in           = COALESCE(actual_time_in, VALUES(actual_time_in)),
             actual_time_out          = VALUES(actual_time_out),
             total_work_hours         = VALUES(total_work_hours),
             late_minutes             = VALUES(late_minutes),
@@ -269,7 +294,6 @@ function finalizeEmployeeAttendance(PDO $pdo, int $employeeId, array $schedule)
             overtime_minutes         = VALUES(overtime_minutes),
             status                   = VALUES(status)
     ");
-
     $stmt->execute([
         $employeeId,
         $date,
@@ -303,7 +327,8 @@ function getAttendanceRecords(PDO $pdo, int $employeeId, string $startDate, stri
             late_minutes,
             undertime_minutes,
             overtime_minutes,
-            overtime_status
+            overtime_status,
+            DATE(actual_time_out) != work_date AS timeout_next_day
         FROM attendances
         WHERE employee_id = ?
         AND work_date BETWEEN ? AND ?
