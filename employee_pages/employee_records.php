@@ -114,6 +114,9 @@ function toTs(datetimeStr) {
     return new Date(datetimeStr.replace(' ', 'T')).getTime();
 }
 
+/**
+ * Format a real timestamp (ms since epoch) as a clock time string.
+ */
 function fmtTime(ts) {
     const d    = new Date(ts);
     let h      = d.getHours();
@@ -123,10 +126,18 @@ function fmtTime(ts) {
     return `${h}:${m} ${ampm}`;
 }
 
+/**
+ * Format an offset (ms from shift anchor) as a clock time string,
+ * given the anchor timestamp so we can recover the real wall-clock time.
+ */
+function fmtOffset(offsetMs, anchorTs) {
+    return fmtTime(anchorTs + offsetMs);
+}
+
 function fmtLabel(dateStr) {
-    const d        = new Date(dateStr + 'T00:00:00');
-    const now      = new Date();
-    const isToday  = d.toDateString() === now.toDateString();
+    const d       = new Date(dateStr + 'T00:00:00');
+    const now     = new Date();
+    const isToday = d.toDateString() === now.toDateString();
     const monthDay = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     const weekday  = isToday ? 'Today' : d.toLocaleDateString('en-US', { weekday: 'short' });
     return `${weekday}\n${monthDay}`;
@@ -166,7 +177,12 @@ function buildOption(records, schedules) {
         undertime:  [],
         notimeout:  []
     };
-    const allTs = [];
+
+    // Track all relative offsets across all rows to compute a shared x-axis window.
+    // Each row is normalised to its own anchor (schedStart ?? actualIn),
+    // so offset 0 always means "shift start" and the x-axis represents duration.
+    let globalMinOffset = Infinity;
+    let globalMaxOffset = -Infinity;
 
     const sorted = [...records].sort((a, b) => b.work_date.localeCompare(a.work_date));
 
@@ -181,57 +197,120 @@ function buildOption(records, schedules) {
 
         yCategories.push(fmtLabel(row.work_date));
 
-        // collect timestamps for x-axis auto-fit
-        if (schedStart) allTs.push(schedStart);
-        if (schedEnd)   allTs.push(schedEnd);
-        if (actualIn)   allTs.push(actualIn);
-        if (actualOut)  allTs.push(actualOut);
+        // Anchor: prefer schedStart so offset 0 = scheduled shift start.
+        // Fall back to actualIn if no schedule exists.
+        const anchor = schedStart ?? actualIn ?? 0;
 
-        // Schedule bar
-        if (schedStart && schedEnd) {
-            barData.scheduled.push({ value: [yi, schedStart, schedEnd] });
+        /**
+         * Convert an absolute timestamp to a relative offset from this row's anchor.
+         * This eliminates date differences so night-shift rows (e.g. 6 PM – 1 AM)
+         * and day-shift rows (e.g. 9 AM – 5 PM) are both plotted correctly:
+         * a timestamp that is 2 hours after anchor becomes offset = 2 * 3600000
+         * regardless of which calendar date the shift falls on.
+         */
+        function rel(ts) {
+            return ts != null ? ts - anchor : null;
         }
 
-        // No Timeout bar — status is incomplete (tapped IN, never OUT)
-        // and the shift has fully expired. Draw from actualIn to schedEnd.
-        if (status === 'incomplete' && actualIn && schedEnd && now > schedEnd) {
-            const noTimeoutEnd = schedEnd;
-            allTs.push(noTimeoutEnd);
-            barData.notimeout.push({ value: [yi, actualIn, noTimeoutEnd] });
+        // Helper to track x-axis extents
+        function trackOffset(offset) {
+            if (offset == null) return;
+            if (offset < globalMinOffset) globalMinOffset = offset;
+            if (offset > globalMaxOffset) globalMaxOffset = offset;
         }
 
-        // Work bar — only if both times exist, clamped to schedEnd
-        if (actualIn && actualOut && status !== 'incomplete') {
-            const workEnd = (schedEnd && actualOut > schedEnd) ? schedEnd : actualOut;
-            if (workEnd > actualIn) {
-                barData.work.push({ value: [yi, actualIn, workEnd] });
-            }
-        }
+        const relSchedStart = rel(schedStart);   // always 0 when anchor = schedStart
+        const relSchedEnd   = rel(schedEnd);
+        const relActualIn   = rel(actualIn);
+        const relActualOut  = rel(actualOut);
 
-        // Late bar — gap between schedStart and actualIn
-        if (row.late_minutes > 0 && schedStart) {
-            barData.late.push({
-                value: [yi, schedStart, schedStart + row.late_minutes * 60000]
+        trackOffset(relSchedStart);
+        trackOffset(relSchedEnd);
+        trackOffset(relActualIn);
+        trackOffset(relActualOut);
+
+        // ── Schedule bar ──────────────────────────────────────────────────────
+        if (relSchedStart != null && relSchedEnd != null) {
+            barData.scheduled.push({
+                value:  [yi, relSchedStart, relSchedEnd],
+                anchor: anchor
             });
         }
 
-        // OT bar — actualOut goes past schedEnd
-        if (actualOut && schedEnd && actualOut > schedEnd && status !== 'incomplete') {
-            barData.ot.push({ value: [yi, schedEnd, actualOut] });
+        // ── No Timeout bar ────────────────────────────────────────────────────
+        // Employee clocked in but never out, and the shift has fully ended.
+        if (status === 'incomplete' && relActualIn != null && relSchedEnd != null && now > schedEnd) {
+            trackOffset(relSchedEnd);
+            barData.notimeout.push({
+                value:  [yi, relActualIn, relSchedEnd],
+                anchor: anchor
+            });
         }
 
-        // Undertime bar — left early, shift has fully ended
-        if (actualOut && schedEnd && actualOut < schedEnd && now > schedEnd && status !== 'incomplete') {
-            barData.undertime.push({ value: [yi, actualOut, schedEnd] });
+        // ── Work bar ──────────────────────────────────────────────────────────
+        // Clamped to schedEnd so OT doesn't bleed into the work bar.
+        if (relActualIn != null && relActualOut != null && status !== 'incomplete') {
+            const workEndTs  = (schedEnd && actualOut > schedEnd) ? schedEnd : actualOut;
+            const relWorkEnd = rel(workEndTs);
+            if (relWorkEnd > relActualIn) {
+                trackOffset(relWorkEnd);
+                barData.work.push({
+                    value:  [yi, relActualIn, relWorkEnd],
+                    anchor: anchor
+                });
+            }
+        }
+
+        // ── Late bar ──────────────────────────────────────────────────────────
+        // Gap between scheduled start (offset 0) and actual clock-in.
+        if (row.late_minutes > 0 && relSchedStart != null) {
+            const lateEnd = relSchedStart + row.late_minutes * 60000;
+            trackOffset(lateEnd);
+            barData.late.push({
+                value:  [yi, relSchedStart, lateEnd],
+                anchor: anchor
+            });
+        }
+
+        // ── Overtime bar ──────────────────────────────────────────────────────
+        // Employee clocked out after scheduled end.
+        if (relActualOut != null && relSchedEnd != null && actualOut > schedEnd && status !== 'incomplete') {
+            trackOffset(relActualOut);
+            barData.ot.push({
+                value:  [yi, relSchedEnd, relActualOut],
+                anchor: anchor
+            });
+        }
+
+        // ── Undertime bar ─────────────────────────────────────────────────────
+        // Employee left before scheduled end and the shift has fully ended.
+        if (relActualOut != null && relSchedEnd != null && actualOut < schedEnd && now > schedEnd && status !== 'incomplete') {
+            barData.undertime.push({
+                value:  [yi, relActualOut, relSchedEnd],
+                anchor: anchor
+            });
         }
     });
 
-    // x-axis window
-    const refDate = sorted.length
-        ? sorted[sorted.length - 1].work_date
-        : new Date().toISOString().slice(0, 10);
-    const xMin = allTs.length ? Math.min(...allTs) - 30 * 60000 : new Date(`${refDate}T06:00:00`).getTime();
-    const xMax = allTs.length ? Math.max(...allTs) + 30 * 60000 : new Date(`${refDate}T20:00:00`).getTime();
+    // ── x-axis window ────────────────────────────────────────────────────────
+    // Add 30-minute padding on each side. If no data at all, default to a
+    // 12-hour window (0 to 12 h in ms).
+    const PADDING = 30 * 60000;
+    const xMin = isFinite(globalMinOffset) ? globalMinOffset - PADDING : 0;
+    const xMax = isFinite(globalMaxOffset) ? globalMaxOffset + PADDING : 12 * 3600000;
+
+    // ── x-axis label formatter ────────────────────────────────────────────────
+    // The axis now carries relative offsets (ms from shift start), so we
+    // display them as "+ H h M m" durations rather than clock times.
+    // This makes it immediately obvious that the axis is shift-relative.
+    function fmtAxisOffset(ms) {
+        const sign    = ms < 0 ? '-' : '+';
+        const abs     = Math.abs(ms);
+        const h       = Math.floor(abs / 3600000);
+        const m       = Math.floor((abs % 3600000) / 60000);
+        if (h === 0 && m === 0) return 'Start';
+        return m === 0 ? `${sign}${h}h` : `${sign}${h}h${m}m`;
+    }
 
     return {
         backgroundColor: 'transparent',
@@ -239,8 +318,11 @@ function buildOption(records, schedules) {
             trigger: 'item',
             formatter(params) {
                 const { seriesName, data } = params;
-                const dur = Math.round((data.value[2] - data.value[1]) / 60000);
-                return `<b>${seriesName}</b><br>${fmtTime(data.value[1])} – ${fmtTime(data.value[2])}<br>${dur} min`;
+                const anchor = data.anchor ?? 0;
+                const start  = fmtOffset(data.value[1], anchor);
+                const end    = fmtOffset(data.value[2], anchor);
+                const dur    = Math.round((data.value[2] - data.value[1]) / 60000);
+                return `<b>${seriesName}</b><br>${start} – ${end}<br>${dur} min`;
             }
         },
         legend: {
@@ -250,10 +332,13 @@ function buildOption(records, schedules) {
         },
         grid: { left: 110, right: 24, top: 48, bottom: 40 },
         xAxis: {
-            type: 'time',
-            min: xMin,
-            max: xMax,
-            axisLabel: { formatter: val => fmtTime(val), color: '#aaa' },
+            type:  'value',   // ← value axis, not time axis, carries ms offsets
+            min:   xMin,
+            max:   xMax,
+            axisLabel: {
+                formatter: val => fmtAxisOffset(val),
+                color: '#aaa'
+            },
             splitLine: { lineStyle: { color: 'rgba(255,255,255,0.06)' } },
             axisLine:  { lineStyle: { color: 'rgba(255,255,255,0.15)' } }
         },
