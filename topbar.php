@@ -77,10 +77,10 @@ $currentStatus = $timedIn ? 'Timed In' : 'Timed Out';
 
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.css" rel="stylesheet">
-<link rel="stylesheet" href="/DTR-Internship-Project/dropdown_requests/ot_modal.css">
-<link rel="stylesheet" href="/DTR-Internship-Project/dropdown_requests/leave_modal.css">
-<link rel="stylesheet" href="/DTR-Internship-Project/dropdown_requests/ob_modal.css">
-<link rel="stylesheet" href="/DTR-Internship-Project/dropdown_requests/log_edit_modal.css">
+<link rel="stylesheet" href="../dropdown_requests/ot_modal.css">
+<link rel="stylesheet" href="../dropdown_requests/leave_modal.css">
+<link rel="stylesheet" href="../dropdown_requests/ob_modal.css">
+<link rel="stylesheet" href="../dropdown_requests/log_edit_modal.css">
 
 <!-- TOP BAR -->
 <div class="topBar">
@@ -366,6 +366,16 @@ $currentStatus = $timedIn ? 'Timed In' : 'Timed Out';
         document.head.appendChild(style);
     }
 
+    // ===== PRE-CACHE GPS ON PAGE LOAD =====
+    let cachedPosition = null;
+
+    navigator.geolocation.watchPosition(
+        (pos) => { cachedPosition = pos; },
+        (err) => { console.warn('GPS watch error:', err); },
+        { enableHighAccuracy: false, maximumAge: 60000, timeout: 10000 }
+    );
+
+    // ===== TIME IN / OUT =====
     let isProcessing = false;
 
     const handleTimeIn = async () => {
@@ -380,14 +390,11 @@ $currentStatus = $timedIn ? 'Timed In' : 'Timed Out';
         btn.disabled = true;
 
         const originalText = label.textContent;
-
-        // ONLY spinner (no background override here)
         showSpinner(btn);
 
-        navigator.geolocation.getCurrentPosition(async (pos) => {
-
+        const submitTap = async (pos) => {
             try {
-                const res = await fetch('/DTR-Internship-Project/system_functions/attendance_tap.php', {
+                const res = await fetch('../system_functions/attendance_tap.php', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -398,20 +405,13 @@ $currentStatus = $timedIn ? 'Timed In' : 'Timed Out';
                 });
 
                 const response = await res.json();
-
                 console.log(response);
 
-                // 🔴 SERVER COOLDOWN HANDLES EVERYTHING
                 if (response.error === 'too_fast') {
                     const wait = response.seconds_remaining || 5;
-
                     startCooldown(btn, wait, originalText);
                     return;
                 }
-
-                // =========================
-                // SUCCESS STATE RESET HERE
-                // =========================
 
                 btn.disabled = false;
                 btn.style.pointerEvents = '';
@@ -438,9 +438,7 @@ $currentStatus = $timedIn ? 'Timed In' : 'Timed Out';
                 if (tapSuccess) {
                     localStorage.setItem('attendance_tap_result', response.tap);
                     localStorage.setItem('attendance_update', Date.now());
-
                     if (document.getElementById('attendanceTimeline')) refreshChart();
-                    
                 }
 
                 if (typeof getTotalWorkedHours === 'function') getTotalWorkedHours();
@@ -452,8 +450,9 @@ $currentStatus = $timedIn ? 'Timed In' : 'Timed Out';
             } finally {
                 isProcessing = false;
             }
+        };
 
-        }, (err) => {
+        const onError = (err) => {
             console.error(err);
             alert('Location permission is required.');
             isProcessing = false;
@@ -461,9 +460,19 @@ $currentStatus = $timedIn ? 'Timed In' : 'Timed Out';
             btn.style.pointerEvents = '';
             btn.style.backgroundColor = '';
             label.innerHTML = originalText;
-        });
-    };
+        };
 
+        // Use cached position if available, otherwise request fresh
+        if (cachedPosition) {
+            await submitTap(cachedPosition);
+        } else {
+            navigator.geolocation.getCurrentPosition(
+                async (pos) => await submitTap(pos),
+                onError,
+                { enableHighAccuracy: false, maximumAge: 60000, timeout: 10000 }
+            );
+        }
+    };
     // Dropdown menu
     const toggle = document.getElementById('userDropdownToggle');
     const menu   = document.getElementById('userDropdownMenu');
