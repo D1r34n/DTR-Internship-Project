@@ -485,7 +485,7 @@ $currentStatus = $timedIn ? 'Timed In' : 'Timed Out';
     });
 
 </script>
-
+<script>
     function openOTModal() {
         document.getElementById('otModalOverlay').style.display = 'flex';
         document.getElementById('otStep1').style.display        = 'block';
