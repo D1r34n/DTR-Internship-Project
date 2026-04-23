@@ -1,0 +1,80 @@
+/* ============================================================
+   LOG EDIT REQUEST MODAL — log_edit_modal.css
+   ============================================================ */
+
+/* ---------- Overlay ---------- */
+#logEditModalOverlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 99999;
+    justify-content: center;
+    align-items: center;
+}
+
+/* ---------- Modal Box ---------- */
+.log-edit-modal-box {
+    background: var(--glass-bg);
+    backdrop-filter: blur(32px) saturate(160%) brightness(0.3);
+    -webkit-backdrop-filter: blur(32px) saturate(160%) brightness(0.3);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    padding: 2rem;
+    width: 500px;
+    max-height: 85vh;
+    overflow-y: auto;
+    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.5);
+}
+
+/* ---------- Modal Header ---------- */
+.log-edit-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.log-edit-modal-title {
+    color: #fff;
+    margin: 0;
+    font-weight: 600;
+}
+
+.log-edit-modal-close-btn {
+    background: none;
+    border: none;
+    color: #aaa;
+    font-size: 1.3rem;
+    cursor: pointer;
+}
+
+/* ---------- Placeholder ---------- */
+.log-edit-coming-soon {
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 0.875rem;
+    text-align: center;
+    margin-top: 2rem;
+}
+
+/* ---------- Scrollbar ---------- */
+.log-edit-modal-box::-webkit-scrollbar {
+    width: 6px;
+}
+
+.log-edit-modal-box::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+}
+
+.log-edit-modal-box::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
+}
+
+.log-edit-modal-box::-webkit-scrollbar-thumb:hover {
+    background: #97be41;
+}

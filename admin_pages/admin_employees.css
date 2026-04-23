@@ -1,3 +1,6 @@
+/* ============================================================
+   BACKGROUND
+   ============================================================ */
 body::before {
     content: '';
     position: fixed;
@@ -17,6 +20,9 @@ body {
     min-height: 100vh;
 }
 
+/* ============================================================
+   PAGE WRAPPER
+   ============================================================ */
 .employeeWrapper {
     position: fixed;
     top: 60px;
@@ -30,16 +36,16 @@ body {
     transition: left 0.38s cubic-bezier(0.4, 0, 0.2, 1), width 0.38s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* ============================================================
+   MAIN BOX (Glass Dark Style)
+   ============================================================ */
 .employeeBox {
     font-family: 'Poppins', sans-serif;
-
-    /* ← glass dark style */
     background: var(--glass-bg);
     backdrop-filter: blur(32px) saturate(160%) brightness(0.3);
     -webkit-backdrop-filter: blur(32px) saturate(160%) brightness(0.3);
     border: 1px solid var(--glass-border);
     box-shadow: 0 12px 35px rgba(0, 0, 0, 0.5);
-
     padding: 30px;
     border-radius: 16px;
     width: 1120px;
@@ -47,35 +53,183 @@ body {
     overflow-y: hidden;
 }
 
+/* ============================================================
+   TITLE ROW (Header + Search)
+   ============================================================ */
+.adminTitleRow {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
 .adminTitle {
     font-weight: 600;
     margin: 0;
-    color: #fff; /* ← white text */
+    color: #fff;
 }
 
-.editBtn {
-    background-color: #97be41;
-    color: white;
-    border: none;
+/* ============================================================
+   SEARCH INPUT
+   ============================================================ */
+.searchInput {
     font-family: 'Poppins', sans-serif;
-    font-size: 0.8rem;
+    padding: 0.4rem 1rem;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 20px;
+    font-size: 0.85rem;
+    outline: none;
+    width: 220px;
+    background: rgba(0, 0, 0, 0.3);
+    color: #fff;
+    transition: border-color 0.2s;
 }
 
-.editBtn:hover {
-    background-color: #7ea832;
-    color: white;
+.searchInput:focus {
+    border-color: #97be41;
 }
 
+.searchInput::placeholder {
+    color: rgba(255, 255, 255, 0.4);
+}
+
+/* ============================================================
+   EMPLOYEE TABLE
+   ============================================================ */
+.tableScrollWrapper {
+    height: 220px;
+    overflow-y: auto;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.tableScrollWrapper table {
+    margin-bottom: 0;
+    border-color: rgba(255, 255, 255, 0.07) !important;
+}
+
+.tableScrollWrapper table td,
+.tableScrollWrapper table th {
+    border-color: rgba(255, 255, 255, 0.07) !important;
+}
+
+.tableScrollWrapper thead th {
+    position: sticky;
+    top: 0;
+    background-color: rgb(30, 30, 30) !important;
+    color: rgba(255, 255, 255, 0.9) !important;
+    z-index: 1;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.tableScrollWrapper tbody tr td {
+    background-color: rgba(0, 0, 0, 0.2);
+    color: rgba(255, 255, 255, 0.85);
+    border-color: rgba(255, 255, 255, 0.07);
+}
+
+.tableScrollWrapper tbody tr:hover td {
+    background-color: rgba(151, 190, 65, 0.08);
+    color: #fff;
+}
+
+/* ============================================================
+   TABLE SCROLLBAR
+   ============================================================ */
+.tableScrollWrapper::-webkit-scrollbar {
+    width: 6px;
+}
+
+.tableScrollWrapper::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+}
+
+.tableScrollWrapper::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
+}
+
+.tableScrollWrapper::-webkit-scrollbar-thumb:hover {
+    background: #97be41;
+}
+
+/* ============================================================
+   ACTION DROPDOWN (Actions Button)
+   ============================================================ */
+.actionDropdownWrapper {
+    position: relative;
+    display: inline-block;
+}
+
+.actionToggle {
+    color: #fff !important;
+    background-color: transparent !important;
+    border: none !important;
+}
+
+.actionToggle:hover {
+    background-color: transparent !important;
+    color: #97be41 !important;
+}
+
+.actionMenu {
+    display: none;
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    background: #ffffff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    min-width: 130px;
+    z-index: 9999;
+    overflow: hidden;
+}
+
+.actionMenu.show {
+    display: block;
+}
+
+.actionItem {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 1rem;
+    font-family: 'Poppins', sans-serif;
+    font-size: 0.85rem;
+    color: #333;
+    text-decoration: none;
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.actionItem:hover {
+    background-color: rgba(151, 190, 65, 0.1);
+    color: #97be41;
+}
+
+.deleteItem {
+    color: rgba(220, 53, 69, 0.8) !important;
+}
+
+.deleteItem:hover {
+    background-color: rgba(220, 53, 69, 0.08) !important;
+    color: #dc3545 !important;
+}
+
+/* ============================================================
+   ADD / EDIT FORM WRAPPER
+   ============================================================ */
 .adminFormWrapper {
     margin-top: 2rem;
-    border-top: 2px solid rgba(255, 255, 255, 0.1); /* ← subtle glass divider */
+    border-top: 2px solid rgba(255, 255, 255, 0.1);
     padding-top: 1.5rem;
 }
 
 .formTitle {
     font-weight: 600;
     margin-bottom: 1rem;
-    color: #fff; /* ← white text */
+    color: #fff;
 }
 
 .formGrid {
@@ -84,6 +238,9 @@ body {
     gap: 1rem;
 }
 
+/* ============================================================
+   FORM GROUPS (Name, Email, Password, Role)
+   ============================================================ */
 .formGroup {
     display: flex;
     flex-direction: column;
@@ -94,19 +251,19 @@ body {
 .formGroup label {
     font-size: 0.85rem;
     font-weight: 600;
-    color: rgba(255, 255, 255, 0.7); /* ← muted white */
+    color: rgba(255, 255, 255, 0.7);
     margin-bottom: 0.4rem;
 }
 
 .formControl {
     font-family: 'Poppins', sans-serif;
     padding: 0.4rem 0.8rem;
-    border: 1px solid rgba(255, 255, 255, 0.15); /* ← glass border */
+    border: 1px solid rgba(255, 255, 255, 0.15);
     border-radius: 6px;
     font-size: 0.9rem;
     outline: none;
-    background: rgba(0, 0, 0, 0.3); /* ← dark glass input */
-    color: #fff; /* ← white text */
+    background: rgba(0, 0, 0, 0.3);
+    color: #fff;
     transition: border-color 0.2s;
 }
 
@@ -114,6 +271,67 @@ body {
     border-color: #97be41;
 }
 
+/* ============================================================
+   ROLE CUSTOM DROPDOWN
+   ============================================================ */
+.customSelectWrapper {
+    position: relative;
+}
+
+.customSelectToggle {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.4rem 0.8rem;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 6px;
+    background: rgba(0, 0, 0, 0.3);
+    color: #fff;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: border-color 0.2s;
+    user-select: none;
+}
+
+.customSelectToggle:hover {
+    border-color: #97be41;
+}
+
+.customSelectMenu {
+    display: none;
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    width: 100%;
+    background: #ffffff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    z-index: 9999;
+    overflow: hidden;
+}
+
+.customSelectMenu.show {
+    display: block;
+}
+
+.customSelectItem {
+    padding: 0.6rem 1rem;
+    font-family: 'Poppins', sans-serif;
+    font-size: 0.85rem;
+    color: #333;
+    cursor: pointer;
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.customSelectItem:hover {
+    background-color: rgba(151, 190, 65, 0.1);
+    color: #97be41;
+}
+
+/* ============================================================
+   FORM ACTION BUTTONS (Save, Cancel)
+   ============================================================ */
 .formActions {
     display: flex;
     align-items: center;
@@ -139,122 +357,11 @@ body {
 
 .btnCancel {
     font-family: 'Poppins', sans-serif;
-    color: rgba(255, 255, 255, 0.5); /* ← muted white */
+    color: rgb(255, 255, 255);
     text-decoration: none;
     font-size: 0.9rem;
 }
 
 .btnCancel:hover {
-    color: #fff;
-}
-
-.actionDropdownWrapper {
-    position: relative;
-    display: inline-block;
-}
-
-.actionMenu {
-    display: none;
-    position: absolute;
-    top: calc(100% + 4px);
-    left: 0;
-    background: var(--glass-bg);
-    backdrop-filter: blur(32px) saturate(160%) brightness(0.3);
-    -webkit-backdrop-filter: blur(32px) saturate(160%) brightness(0.3);
-    border: 1px solid var(--glass-border);
-    border-radius: 8px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
-    min-width: 130px;
-    z-index: 9999;
-    overflow: hidden;
-}
-
-.actionMenu.show {
-    display: block;
-}
-
-.actionItem {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.6rem 1rem;
-    font-family: 'Poppins', sans-serif;
-    font-size: 0.85rem;
-    color: rgba(255, 255, 255, 0.7); /* ← muted white */
-    text-decoration: none;
-    transition: background-color 0.2s ease, color 0.2s ease;
-}
-
-.actionItem:hover {
-    background-color: rgba(151, 190, 65, 0.1);
-    color: #97be41;
-}
-
-.deleteItem {
-    color: rgba(220, 53, 69, 0.8) !important;
-}
-
-.deleteItem:hover {
-    background-color: rgba(220, 53, 69, 0.12) !important;
-    color: #dc3545 !important;
-}
-
-.tableScrollWrapper {
-    height: 220px;
-    overflow-y: auto;
-    border-radius: 6px;
-    border: 1px solid rgba(255, 255, 255, 0.1); /* ← glass border */
-}
-
-.tableScrollWrapper table {
-    margin-bottom: 0;
-}
-
-/* ← dark glass table */
-.tableScrollWrapper thead th {
-    position: sticky;
-    top: 0;
-    background-color: rgba(0, 0, 0, 0.4);
-    color: rgba(255, 255, 255, 0.7);
-    z-index: 1;
-    border-color: rgba(255, 255, 255, 0.1);
-}
-
-.tableScrollWrapper tbody tr td {
-    background-color: rgba(0, 0, 0, 0.2);
-    color: rgba(255, 255, 255, 0.85);
-    border-color: rgba(255, 255, 255, 0.07);
-}
-
-.tableScrollWrapper tbody tr:hover td {
-    background-color: rgba(151, 190, 65, 0.08);
-    color: #fff;
-}
-
-.adminTitleRow {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1rem;
-}
-
-.searchInput {
-    font-family: 'Poppins', sans-serif;
-    padding: 0.4rem 1rem;
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    border-radius: 20px;
-    font-size: 0.85rem;
-    outline: none;
-    width: 220px;
-    background: rgba(0, 0, 0, 0.3);
-    color: #fff;
-    transition: border-color 0.2s;
-}
-
-.searchInput:focus {
-    border-color: #97be41;
-}
-
-.searchInput::placeholder {
-    color: rgba(255, 255, 255, 0.4);
+    color: #ff0000;
 }

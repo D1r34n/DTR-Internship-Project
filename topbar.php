@@ -12,7 +12,7 @@ if (!isset($_SESSION['user_id'], $_SESSION['user_role'])) {
 require_once '../db.php';
 
 $employeeId = $_SESSION['user_id'];
-$role = $_SESSION['user_role'];
+$role       = $_SESSION['user_role'];
 
 // Validate role
 if (!in_array($role, ['admin', 'employee'])) {
@@ -76,6 +76,11 @@ $currentStatus = $timedIn ? 'Timed In' : 'Timed Out';
 ?>
 
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.css" rel="stylesheet">
+<link rel="stylesheet" href="/DTR-Internship-Project/dropdown_requests/ot_modal.css">
+<link rel="stylesheet" href="/DTR-Internship-Project/dropdown_requests/leave_modal.css">
+<link rel="stylesheet" href="/DTR-Internship-Project/dropdown_requests/ob_modal.css">
+<link rel="stylesheet" href="/DTR-Internship-Project/dropdown_requests/log_edit_modal.css">
 
 <!-- TOP BAR -->
 <div class="topBar">
@@ -112,16 +117,13 @@ $currentStatus = $timedIn ? 'Timed In' : 'Timed Out';
                         <a href="#" class="userDropdownItem" onclick="openOTModal(); return false;">
                             <i class="bi bi-clock-history"></i> Request OT
                         </a>
-
-                        <a href="#" class="userDropdownItem">
+                        <a href="#" class="userDropdownItem" onclick="openLeaveModal(); return false;">
                             <i class="bi bi-calendar-x"></i> Request Leave
                         </a>
-
-                        <a href="#" class="userDropdownItem">
+                        <a href="#" class="userDropdownItem" onclick="openOBModal(); return false;">
                             <i class="bi bi-briefcase"></i> Request OB
                         </a>
-
-                        <a href="#" class="userDropdownItem">
+                        <a href="#" class="userDropdownItem" onclick="openLogEditModal(); return false;">
                             <i class="bi bi-pencil-square"></i> Request Log Edit
                         </a>
 
@@ -139,66 +141,13 @@ $currentStatus = $timedIn ? 'Timed In' : 'Timed Out';
     </div>
 </div>
 
-<!-- OPTIONAL: expose state to JS (for sync with gantt/table later) -->
-<script>
-    window.__ATTENDANCE_STATE__ = {
-        timedIn: <?= $timedIn ? 'true' : 'false' ?>
-    };
-</script>
+<!-- MODALS -->
+<?php include '../dropdown_requests/ot_modal.php'; ?>
+<?php include '../dropdown_requests/leave_modal.php'; ?>
+<?php include '../dropdown_requests/ob_modal.php'; ?>
+<?php include '../dropdown_requests/log_edit_modal.php'; ?>
 
-<!-- OT REQUEST MODAL -->
-<div id="otModalOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:99999; justify-content:center; align-items:center;">
-    <div style="background:var(--glass-bg); backdrop-filter:blur(32px) saturate(160%) brightness(0.3); -webkit-backdrop-filter:blur(32px) saturate(160%) brightness(0.3); border:1px solid var(--glass-border); border-radius:16px; padding:2rem; width:700px; max-height:80vh; overflow-y:auto; box-shadow:0 12px 35px rgba(0,0,0,0.5); position:relative;">
-
-        <!-- Modal Header -->
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
-            <h5 style="color:#fff; margin:0; font-weight:600;">File OT Request</h5>
-            <button onclick="closeOTModal()" style="background:none; border:none; color:#aaa; font-size:1.3rem; cursor:pointer;">
-                <i class="bi bi-x-lg"></i>
-            </button>
-        </div>
-
-        <!-- Step 1: Pick a Gantt row -->
-        <div id="otStep1">
-            <p style="color:rgba(255,255,255,0.6); font-size:0.85rem; margin-bottom:1rem;">Select a day to file OT for:</p>
-            <div id="otGanttList" style="display:flex; flex-direction:column; gap:2.5rem;">
-                <p style="color:#aaa; text-align:center;">Loading...</p>
-            </div>
-        </div>
-
-        <!-- Step 2: Reason form -->
-        <div id="otStep2" style="display:none;">
-            <button onclick="backToStep1()" style="background:none; border:none; color:#aaa; font-size:0.85rem; cursor:pointer; margin-bottom:1rem;">
-                <i class="bi bi-arrow-left"></i> Back
-            </button>
-
-            <div style="background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:10px; padding:1rem; margin-bottom:1.5rem;">
-                <p style="color:#aaa; font-size:0.8rem; margin:0 0 0.3rem;">Selected Date</p>
-                <p style="color:#fff; font-weight:600; margin:0;" id="otSelectedDate"></p>
-                <p style="color:#aaa; font-size:0.8rem; margin:0.5rem 0 0.3rem;">OT Period</p>
-                <p style="color:#97be41; font-weight:600; margin:0;" id="otSelectedTime"></p>
-                <p style="color:#aaa; font-size:0.8rem; margin:0.5rem 0 0.3rem;">OT Duration</p>
-                <p style="color:#fff; font-weight:600; margin:0;" id="otSelectedDuration"></p>
-            </div>
-
-            <label style="color:rgba(255,255,255,0.7); font-size:0.85rem; font-weight:600; display:block; margin-bottom:0.5rem;">Reason for OT</label>
-            <textarea id="otReason" rows="3" placeholder="Enter reason for overtime..." style="width:100%; background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.15); border-radius:8px; color:#fff; padding:0.6rem 0.8rem; font-family:'Poppins',sans-serif; font-size:0.875rem; outline:none; resize:none;"></textarea>
-
-            <button onclick="submitOTRequest()" style="margin-top:1rem; background:#97be41; color:#fff; border:none; padding:0.5rem 1.5rem; border-radius:8px; font-family:'Poppins',sans-serif; font-size:0.9rem; cursor:pointer; transition:background 0.2s;">
-                <i class="bi bi-check-circle-fill"></i> Submit OT Request
-            </button>
-        </div>
-
-        <!-- Error message -->
-        <div id="otErrorMsg" style="display:none; margin-top:1rem; background:rgba(220,53,69,0.15); border:1px solid rgba(220,53,69,0.3); border-radius:8px; padding:0.8rem 1rem; color:#ff8a8a; font-size:0.875rem;"></div>
-
-        <!-- Success message -->
-        <div id="otSuccessMsg" style="display:none; margin-top:1rem; background:rgba(151,190,65,0.15); border:1px solid rgba(151,190,65,0.3); border-radius:8px; padding:0.8rem 1rem; color:#97be41; font-size:0.875rem;"></div>
-
-    </div>
-</div>
-
-<!-- JavaScript -->
+<!-- JAVASCRIPT -->
 <script defer>
 
     // ===== GANTT CURSORS =====
@@ -231,11 +180,14 @@ $currentStatus = $timedIn ? 'Timed In' : 'Timed Out';
                 const percent = Math.max(0, Math.min(1, x / rect.width));
                 const time    = Math.floor(rangeStart + (percent * range));
 
-                line.style.left  = (percent * 100) + '%';
-                label.style.left = (percent * 100) + '%';
-                label.textContent = new Date(time * 1000).toLocaleTimeString('en-US', {
-                    hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'Asia/Manila'
-                });
+                if (line)  line.style.left  = (percent * 100) + '%';
+                if (label) label.style.left = (percent * 100) + '%';
+
+                if (label) {
+                    label.textContent = new Date(time * 1000).toLocaleTimeString('en-US', {
+                        hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'Asia/Manila'
+                    });
+                }
 
                 if (hasData && tooltip) {
                     gtSched.textContent     = container.dataset.schedIn + ' – ' + container.dataset.schedOut;
@@ -272,7 +224,7 @@ $currentStatus = $timedIn ? 'Timed In' : 'Timed Out';
                     }
 
                     tooltip.style.left = e.clientX + 'px';
-                    tooltip.style.top  = e.clientY + 'px';
+                    tooltip.style.top  = e.clientY  + 'px';
                     tooltip.classList.add('visible');
                 }
             });
@@ -532,8 +484,7 @@ $currentStatus = $timedIn ? 'Timed In' : 'Timed Out';
         }
     });
 
-    // ===== OT MODAL =====
-    let otSelectedRecord = null;
+</script>
 
     function openOTModal() {
         document.getElementById('otModalOverlay').style.display = 'flex';

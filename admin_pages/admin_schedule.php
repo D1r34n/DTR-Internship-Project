@@ -10,13 +10,13 @@ require_once '../db.php';
 date_default_timezone_set('Asia/Manila');
 
 $success = "";
-$error = "";
+$error   = "";
 
-// HANDLE DELETE
-if (isset($_GET['delete']) && isset($_GET['week'])) {
+// ---- HANDLE DELETE ----
+if (isset($_GET['delete'], $_GET['week'])) {
     $employeeId = $_GET['delete'];
-    $weekStart = $_GET['week'];
-    $weekEnd = date('Y-m-d', strtotime($weekStart . ' +6 days'));
+    $weekStart  = $_GET['week'];
+    $weekEnd    = date('Y-m-d', strtotime($weekStart . ' +6 days'));
 
     $stmt = $pdo->prepare("DELETE FROM schedules WHERE employee_id = ? AND schedule_date BETWEEN ? AND ?");
     $stmt->execute([$employeeId, $weekStart, $weekEnd]);
@@ -24,7 +24,7 @@ if (isset($_GET['delete']) && isset($_GET['week'])) {
     $success = "Schedule deleted successfully!";
 }
 
-// HANDLE ADD / OVERWRITE
+// ---- HANDLE ADD / OVERWRITE ----
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $employee_id = $_POST['employee_id'];
     $week_monday = $_POST['week_monday'];
@@ -34,8 +34,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $days = [];
     $monday = new DateTime($week_monday);
 
+    // Generate all 7 days from Monday
     for ($i = 0; $i < 7; $i++) {
-        $current = clone $monday;
+        $current   = clone $monday;
         $current->modify("+$i days");
         $dayOfWeek = $current->format('N'); // 1=Mon, 7=Sun
         $isRestDay = ($dayOfWeek >= 6) ? 1 : 0;
@@ -74,7 +75,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $success = "Schedule saved successfully!";
 }
 
-// GET ALL SCHEDULES grouped by employee and week
+// ---- GET ALL SCHEDULES ----
 $schedules = $pdo->query("
     SELECT 
         e.name AS employee_name,
@@ -102,12 +103,14 @@ $current_page = 'schedule';
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Schedule Management</title>
+
     <link rel="stylesheet" href="../root.css">
     <link rel="stylesheet" href="admin_schedule.css">
     <link rel="stylesheet" href="../side_and_top_bar.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
     <style>
         body::before { background-image: url('../images/drt_bg.jpg'); }
     </style>
@@ -116,14 +119,17 @@ $current_page = 'schedule';
     <?php include '../sidebar.php'; ?>
     <?php include '../topbar.php'; ?>
 
+    <!-- PAGE WRAPPER -->
     <div class="scheduleWrapper">
         <div class="scheduleBox">
 
+            <!-- TITLE ROW -->
             <div class="adminTitleRow">
                 <h5 class="adminTitle">Schedule Management</h5>
                 <input type="text" id="searchInput" class="searchInput" placeholder="Search schedule..." onkeyup="searchTable()">
             </div>
 
+            <!-- ALERTS -->
             <?php if ($success): ?>
                 <div class="alert alert-success"><?= $success ?></div>
             <?php endif; ?>
@@ -131,9 +137,9 @@ $current_page = 'schedule';
                 <div class="alert alert-danger"><?= $error ?></div>
             <?php endif; ?>
 
-            <!-- SCHEDULE LIST -->
+            <!-- SCHEDULE TABLE -->
             <div class="tableScrollWrapper">
-                <table class="table table-bordered table-hover mt-3">
+                <table class="table table-bordered table-hover mt-0">
                     <thead>
                         <tr>
                             <th>Employee</th>
@@ -156,7 +162,7 @@ $current_page = 'schedule';
                                     <td><?= $row['scheduled_end_datetime']   ? date('h:i A', strtotime($row['scheduled_end_datetime']))   : '—' ?></td>
                                     <td>
                                         <div class="actionDropdownWrapper">
-                                            <button class="btn btn-sm editBtn actionToggle" onclick="toggleActionMenu(this)">
+                                            <button class="btn btn-sm actionToggle" onclick="toggleActionMenu(this)">
                                                 Actions <i class="bi bi-chevron-down"></i>
                                             </button>
                                             <div class="actionMenu">
@@ -193,7 +199,7 @@ $current_page = 'schedule';
 
                     <div class="formGrid">
 
-                        <!-- EMPLOYEE SEARCH INPUT -->
+                        <!-- Employee Search -->
                         <div class="formGroup" style="position:relative;">
                             <label>Employee</label>
                             <input type="text" id="employeeSearch" class="formControl"
@@ -201,20 +207,20 @@ $current_page = 'schedule';
                                 oninput="filterEmployees()">
                             <input type="hidden" name="employee_id" id="employeeSelect" required>
                             <div id="employeeDropdown" style="
-                               display:none;
-                               position:absolute;
-                               bottom: 60%;
-                               top:auto;
-                               left:0;
-                               background:white;
-                               border:1px solid #ccc;
-                               border-radius:6px;
-                               max-height:180px;
-                               overflow-y:auto;
-                               z-index:9999;
-                               width:100%;
-                               box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-                               ">
+                                display: none;
+                                position: absolute;
+                                bottom: 60%;
+                                top: auto;
+                                left: 0;
+                                background: white;
+                                border: 1px solid #ccc;
+                                border-radius: 6px;
+                                max-height: 180px;
+                                overflow-y: auto;
+                                z-index: 9999;
+                                width: 100%;
+                                box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+                            ">
                                 <?php foreach ($employees as $emp): ?>
                                     <div class="employeeOption"
                                         style="padding:0.5rem 1rem; cursor:pointer; font-size:0.85rem; font-family:'Poppins',sans-serif;"
@@ -229,16 +235,19 @@ $current_page = 'schedule';
                             </div>
                         </div>
 
+                        <!-- Week Monday Date -->
                         <div class="formGroup">
                             <label>Week Monday Date</label>
                             <input type="date" name="week_monday" id="weekMonday" class="formControl" required>
                         </div>
 
+                        <!-- Time In -->
                         <div class="formGroup">
                             <label>Time In</label>
                             <input type="time" name="time_in" id="timeIn" class="formControl" required>
                         </div>
 
+                        <!-- Time Out -->
                         <div class="formGroup">
                             <label>Time Out</label>
                             <input type="time" name="time_out" id="timeOut" class="formControl" required>
@@ -246,6 +255,7 @@ $current_page = 'schedule';
 
                     </div>
 
+                    <!-- Form Actions -->
                     <div class="formActions">
                         <button type="submit" class="btnSave">
                             <i class="bi bi-check-circle-fill"></i>
@@ -253,12 +263,14 @@ $current_page = 'schedule';
                         </button>
                         <a href="admin_schedule.php" class="btnCancel" id="cancelBtn" style="display:none;">Cancel</a>
                     </div>
+
                 </form>
             </div>
 
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
     <script>
     function toggleActionMenu(btn) {
         const menu = btn.nextElementSibling;
@@ -324,7 +336,5 @@ $current_page = 'schedule';
         document.getElementById('employeeDropdown').style.display = 'none';
     }
     </script>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
