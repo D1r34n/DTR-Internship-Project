@@ -106,7 +106,7 @@ $schedules = getSchedulesByDateRange($pdo, $employeeId, $startDate, $endDate);
         </script>
 
         <!-- Attendance chart: one row per attendance record -->
-        <canvas class="attendanceChartContainer" id="attendanceChart"></canvas>
+        <canvas id="attendanceChart"></canvas>
 
         <script>
         const attendanceData = <?= json_encode($records) ?>;
@@ -132,28 +132,24 @@ $schedules = getSchedulesByDateRange($pdo, $employeeId, $startDate, $endDate);
                 labels: labels,
                 datasets: [
                     {
-                        label: 'LATE',
+                        label: 'Late',
                         data: late,
-                        backgroundColor: 'rgba(255, 170, 0, 0.75)',
-                        barThickness: 20
+                        backgroundColor: '#ff6b6b'
                     },
                     {
-                        label: 'ONTIME',
+                        label: 'Work',
                         data: work,
-                        backgroundColor: 'rgba(25, 135, 84, 0.75)',
-                        barThickness: 20
+                        backgroundColor: '#51cf66'
                     },
                     {
-                        label: 'OVERTIME',
+                        label: 'Overtime',
                         data: overtime,
-                        backgroundColor: '#4da3ff',
-                        barThickness: 20
+                        backgroundColor: '#845ef7'
                     },
                     {
-                        label: 'UNDERTIME',
+                        label: 'Undertime',
                         data: undertime,
-                        backgroundColor: '#7c3aed',
-                        barThickness: 20
+                        backgroundColor: '#ffa94d'
                     }
                 ]
             },
@@ -179,10 +175,6 @@ $schedules = getSchedulesByDateRange($pdo, $employeeId, $startDate, $endDate);
 
                         formatter: function(value, context) {
                             return value > 0 ? context.dataset.label : '';
-                        },
-
-                        display: function(context) {
-                            return context.active === true;
                         },
 
                         anchor: 'center',

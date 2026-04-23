@@ -211,21 +211,37 @@ $current_page = 'logs';
             Accuracy: ±${acc} m &nbsp; Distance: ${dist} m
         `;
 
-        if (popupMap) {
-            popupMap.remove();
-            popupMap = null;
-        }
-
         setTimeout(() => {
-            popupMap = L.map('map_pop_up', {
-                zoomControl: false,
-                attributionControl: false
-            }).setView([lat, lng], 17);
+            const mapContainer = document.getElementById('map_pop_up');
 
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png')
-                .addTo(popupMap);
+            // ✅ Create map only once
+            if (!popupMap) {
+                popupMap = L.map('map_pop_up', {
+                    zoomControl: false,
+                    attributionControl: false
+                });
 
-            L.marker([lat, lng]).addTo(popupMap);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png')
+                    .addTo(popupMap);
+
+                // store marker reference
+                popupMap._marker = null;
+            }
+
+            // ✅ Fix layout when reused
+            popupMap.invalidateSize();
+
+            // ✅ Move map
+            popupMap.setView([lat, lng], 17);
+
+            // ✅ Remove old marker safely
+            if (popupMap._marker) {
+                popupMap.removeLayer(popupMap._marker);
+            }
+
+            // ✅ Add new marker and store it
+            popupMap._marker = L.marker([lat, lng]).addTo(popupMap);
+
         }, 50);
     });
 

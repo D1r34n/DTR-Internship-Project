@@ -3,7 +3,7 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// ---- AUTH CHECK ----
+// Authentication check
 if (!isset($_SESSION['user_id'], $_SESSION['user_role'])) {
     header("Location: ../index.php");
     exit();
@@ -14,14 +14,14 @@ require_once '../db.php';
 $employeeId = $_SESSION['user_id'];
 $role = $_SESSION['user_role'];
 
-// ---- ROLE VALIDATION ----
+// Validate role
 if (!in_array($role, ['admin', 'employee'])) {
     session_destroy();
     header("Location: ../index.php");
     exit();
 }
 
-// ---- PAGE TITLES ----
+// Page titles
 $titles = [
     'employee' => [
         'dashboard' => 'Employee Dashboard',
@@ -38,38 +38,41 @@ $titles = [
     ]
 ];
 
+// Set current page title
 $current_page = $current_page ?? 'dashboard';
 $title = $titles[$role][$current_page] ?? 'Dashboard';
 
-// ---- DATE ----
+// Set date timezone (Philippines)
 date_default_timezone_set('Asia/Manila');
 $today = date('Y-m-d');
 
-// =====================================================
-// ✅ SINGLE SOURCE OF TRUTH: ATTENDANCE ONLY
-// =====================================================
+// Get last log entry
 $stmt = $pdo->prepare("
-    SELECT actual_time_in, actual_time_out
-    FROM attendances
-    WHERE employee_id = ? AND work_date = ?
+    SELECT log_type
+    FROM logs
+    WHERE employee_id = ?
+    ORDER BY log_time DESC
     LIMIT 1
 ");
-$stmt->execute([$employeeId, $today]);
 
-$attendance = $stmt->fetch(PDO::FETCH_ASSOC) ?? [
-    'actual_time_in' => null,
-    'actual_time_out' => null
-];
+$stmt->execute([$employeeId]);
 
-$hasTimeIn  = !empty($attendance['actual_time_in'] ?? null);
-$hasTimeOut = !empty($attendance['actual_time_out'] ?? null);
+$lastLog = $stmt->fetch(PDO::FETCH_ASSOC);
 
-// FINAL STATE (ONLY THIS CONTROLS UI)
+// Determine the attendance state based on logs
+
+// TRUE if last action is IN and not yet followed by OUT
+$hasTimeIn  = $lastLog && $lastLog['log_type'] === 'IN';
+
+// TRUE if last action is OUT
+$hasTimeOut = $lastLog && $lastLog['log_type'] === 'OUT';
+
+// FINAL UI STATE:
+// Employee is considered "Timed In" only if last action is IN
 $timedIn = $hasTimeIn && !$hasTimeOut;
 
-// Optional formatted display (for future use if needed)
+// Display text for UI
 $currentStatus = $timedIn ? 'Timed In' : 'Timed Out';
-
 ?>
 
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -300,37 +303,141 @@ $currentStatus = $timedIn ? 'Timed In' : 'Timed Out';
             }
         });
     });
-    
-    let isProcessing = false;
 
-    function debounce(fn, delay = 1000) {
-        let timer;
-        return (...args) => {
-            if (timer) return;
-            fn(...args);
-            timer = setTimeout(() => timer = null, delay);
-        };
+    // Cooldown function for debounce (UI feedback)
+    const startCooldown = (btn, seconds, originalText) => {
+        const label = btn.querySelector('#timeInLabel');
+
+        btn.disabled = true;
+        btn.style.position = 'relative';
+        btn.style.overflow = 'hidden';
+        btn.style.pointerEvents = 'none';
+        btn.style.backgroundColor = '#9ca3af'; // fixed gray
+
+        const fill = document.createElement('div');
+        fill.style.cssText = `
+            position: absolute;
+            top: 0; left: 0;
+            height: 100%;
+            width: 0%;
+            background: rgba(255,255,255,0.2);
+            transition: width ${seconds}s linear;
+            pointer-events: none;
+            z-index: 0;
+        `;
+        btn.appendChild(fill);
+
+        label.style.position = 'relative';
+        label.style.zIndex = '1';
+
+        let remaining = seconds;
+
+        label.innerHTML = `
+            <span style="display:flex;align-items:center;justify-content:center;gap:6px;">
+                <span style="
+                    display: inline-block;
+                    width: 14px;
+                    height: 14px;
+                    border: 2px solid rgba(255,255,255,0.3);
+                    border-top-color: white;
+                    border-radius: 50%;
+                    animation: btn-spin 0.7s linear infinite;
+                    flex-shrink: 0;
+                "></span>
+                <span class="cooldown-text">(${remaining}s)</span>
+            </span>
+        `;
+
+        const interval = setInterval(() => {
+            remaining--;
+            const countEl = btn.querySelector('.cooldown-text');
+            if (remaining > 0 && countEl) {
+                countEl.textContent = `(${remaining}s)`;
+            }
+        }, 1000);
+
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                fill.style.width = '100%';
+            });
+        });
+
+        setTimeout(() => {
+            clearInterval(interval);
+            if (btn.contains(fill)) btn.removeChild(fill);
+
+            label.innerHTML = originalText;
+            label.style.position = '';
+            label.style.zIndex = '';
+
+            btn.style.overflow = '';
+            btn.style.pointerEvents = '';
+            btn.style.backgroundColor = '';
+            btn.disabled = false;
+            isProcessing = false;
+
+        }, seconds * 1000);
+    };
+
+    // Spinner helpers
+    const showSpinner = (btn) => {
+        const label = btn.querySelector('#timeInLabel');
+
+        btn.style.pointerEvents = 'none';
+        btn.style.backgroundColor = '#9ca3af'; // fixed gray
+
+        label.innerHTML = `
+            <span style="
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                width: 100%;
+            ">
+                <span style="
+                    display: inline-block;
+                    width: 18px;
+                    height: 18px;
+                    border: 3px solid rgba(255,255,255,0.3);
+                    border-top-color: white;
+                    border-radius: 50%;
+                    animation: btn-spin 0.7s linear infinite;
+                "></span>
+            </span>
+        `;
+    };
+
+    // Inject keyframes once
+    if (!document.getElementById('btn-spin-style')) {
+        const style = document.createElement('style');
+        style.id = 'btn-spin-style';
+        style.textContent = `@keyframes btn-spin { to { transform: rotate(360deg); } }`;
+        document.head.appendChild(style);
     }
 
-    const handleTimeIn = debounce(async () => {
-        if (isProcessing) return;
+    let isProcessing = false;
 
-        const btn   = document.getElementById('timeInBtn');
+    const handleTimeIn = async () => {
+        if (isProcessing) return;
+        if (document.getElementById('timeInBtn').disabled) return;
+
+        const btn = document.getElementById('timeInBtn');
         const label = btn.querySelector('#timeInLabel');
         const status = document.getElementById('dashboard_status');
 
         isProcessing = true;
         btn.disabled = true;
 
-        try {
+        const originalText = label.textContent;
 
-            navigator.geolocation.getCurrentPosition(async (pos) => {
+        // ONLY spinner (no background override here)
+        showSpinner(btn);
 
-                const res = await fetch('../attendance_tap.php', {
+        navigator.geolocation.getCurrentPosition(async (pos) => {
+
+            try {
+                const res = await fetch('/DTR-Internship-Project/system_functions/attendance_tap.php', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         lat: pos.coords.latitude,
                         lng: pos.coords.longitude,
@@ -342,45 +449,65 @@ $currentStatus = $timedIn ? 'Timed In' : 'Timed Out';
 
                 console.log(response);
 
+                // 🔴 SERVER COOLDOWN HANDLES EVERYTHING
+                if (response.error === 'too_fast') {
+                    const wait = response.seconds_remaining || 5;
+
+                    startCooldown(btn, wait, originalText);
+                    return;
+                }
+
+                // =========================
+                // SUCCESS STATE RESET HERE
+                // =========================
+
+                btn.disabled = false;
+                btn.style.pointerEvents = '';
+                btn.style.backgroundColor = '';
+
+                let tapSuccess = false;
+
                 if (response.tap === 'timed_in') {
                     btn.classList.remove('btn-in');
                     btn.classList.add('btn-out');
-                    label.textContent = 'Time Out';
+                    label.innerHTML = 'Time Out';
                     if (status) status.textContent = 'Timed In';
-                } else if (response.tap === 'timed_out') {
-                    btn.classList.remove('btn-out');
-                    btn.classList.add('btn-in');
-                    label.textContent = 'Time In';
-                    if (status) status.textContent = 'Timed Out';
+                    tapSuccess = true;
                 }
 
-                if (response.tap === 'timed_in' || response.tap === 'timed_out') {
+                if (response.tap === 'timed_out') {
+                    btn.classList.remove('btn-out');
+                    btn.classList.add('btn-in');
+                    label.innerHTML = 'Time In';
+                    if (status) status.textContent = 'Timed Out';
+                    tapSuccess = true;
+                }
+
+                if (tapSuccess) {
                     localStorage.setItem('attendance_tap_result', response.tap);
                     localStorage.setItem('attendance_update', Date.now());
                 }
 
-                // ⚠️ this is your second error source
-                if (typeof getTotalWorkedHours === 'function') {
-                    getTotalWorkedHours();
-                }
-
+                if (typeof getTotalWorkedHours === 'function') getTotalWorkedHours();
                 if (document.getElementById('logs_table_body')) fetchLogs();
                 if (document.getElementById('attendance_table_body')) loadAttendance();
 
-            }, (err) => {
-                console.error("GPS denied:", err);
-                alert("Location permission is required for time in/out.");
-            });
-
-        } catch (err) {
-            console.log('Error:', err);
-        } finally {
-            setTimeout(() => {
+            } catch (err) {
+                console.error(err);
+            } finally {
                 isProcessing = false;
-                btn.disabled = false;
-            }, 1000);
-        }
-    }, 800);
+            }
+
+        }, (err) => {
+            console.error(err);
+            alert('Location permission is required.');
+            isProcessing = false;
+            btn.disabled = false;
+            btn.style.pointerEvents = '';
+            btn.style.backgroundColor = '';
+            label.innerHTML = originalText;
+        });
+    };
 
     // Dropdown menu
     const toggle = document.getElementById('userDropdownToggle');
