@@ -1,444 +1,299 @@
 <?php
+// Start the session to access session variables
 session_start();
 
+// Redirect unauthenticated users to the login page
 if (!isset($_SESSION['user_id'])) {
     header("Location: ../index.php");
     exit();
 }
 
+// Load database connection and helper libraries
 require_once '../db.php';
 require_once '../system_functions/system_library.php';
 require_once '../system_functions/system_service.php';
 
+// Set timezone to Philippine Standard Time
 date_default_timezone_set('Asia/Manila');
 
+// Set the active sidebar item and get the logged-in employee's ID
 $current_page = 'records';
 $employeeId   = $_SESSION['user_id'];
 
+// Read optional date range from GET params (used when user picks a range)
 $startDate = $_GET['start'] ?? null;
 $endDate   = $_GET['end'] ?? null;
 
+// Default to the current calendar month if no date range is provided
 if (!$startDate && !$endDate) {
-    $startDate = date('Y-m-01');
-    $endDate   = date('Y-m-t');
+    $startDate = date('Y-m-01'); // First day of the current month
+    $endDate   = date('Y-m-t');  // Last day of the current month
 }
 
+// Fetch attendance records and schedules for the employee within the selected range
 $records   = getAttendanceRecords($pdo, $employeeId, $startDate, $endDate);
 $schedules = getSchedulesByDateRange($pdo, $employeeId, $startDate, $endDate);
 ?>
+
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Employee Records</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Employee Schedule</title>
 
-<!-- Bootstrap -->
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
+    <!-- Bootstrap CSS framework -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
+    <!-- Flatpickr date picker CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <!-- Flatpickr JS (loaded early since it has no dependencies) -->
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 
-<!-- Flatpickr -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-
-<!-- Apache ECharts -->
-<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
-
-<link rel="stylesheet" href="../root.css">
-<link rel="stylesheet" href="../side_and_top_bar.css">
-<link rel="stylesheet" href="employee_records.css">
-
-<style>
-#attendanceTimeline {
-    width: 100%;
-    height: 600px;
-    border-radius: 10px;
-}
-</style>
+    <!-- Project-specific stylesheets -->
+    <link rel="stylesheet" href="../root.css">
+    <link rel="stylesheet" href="../side_and_top_bar.css">
+    <link rel="stylesheet" href="employee_records.css">
 </head>
-
 <body>
+    <!-- Shared sidebar navigation -->
+    <?php include '../sidebar.php'; ?>
 
-<?php include '../sidebar.php'; ?>
-<?php include '../topbar.php'; ?>
+    <!-- Shared top navigation bar -->
+    <?php include '../topbar.php'; ?>
 
 <div class="recordBoxWrapper">
-<div class="recordBox">
+    <div class="recordBox">
 
-<!-- DATE PICKER -->
-<div class="recordHeader">
-    <div class="dateWrapper">
-        <input type="text" id="dateRangePicker"
-            value="<?= date('F j', strtotime($startDate)) ?> – <?= date('F j, Y', strtotime($endDate)) ?>"
-            class="recordTitle" readonly>
-        <i class="bi bi-chevron-down dateIcon"></i>
+        <!-- Header: shows a clickable date range that opens the date picker -->
+        <div class="recordHeader">
+            <div class="dateWrapper">
+                <!-- Display the currently selected date range as human-readable text -->
+                <input type="text" id="dateRangePicker"
+                    value="<?= date('F j', strtotime($startDate)) ?> – <?= date('F j, Y', strtotime($endDate)) ?>"
+                    class="recordTitle"
+                    readonly>
+
+                <!-- Chevron icon acting as a visual cue to open the date picker -->
+                <i class="bi bi-chevron-down dateIcon"></i>
+            </div>
+        </div>
+
+        <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Initialize Flatpickr as a date range picker on the header input
+            flatpickr('#dateRangePicker', {
+                mode: 'range',          // Allow selecting a start and end date
+                dateFormat: 'Y-m-d',    // Internal format sent to the server
+                altInput: true,         // Show a human-friendly display input
+                altFormat: 'F j, Y',    // e.g. "April 1, 2025"
+                defaultDate: ['<?= $startDate ?>', '<?= $endDate ?>'], // Pre-select the active range
+
+                // Reload the page with the new date range once both dates are chosen
+                onChange(selectedDates, dateStr, instance) {
+                    if (selectedDates.length === 2) {
+                        const start = instance.formatDate(selectedDates[0], "Y-m-d");
+                        const end   = instance.formatDate(selectedDates[1], "Y-m-d");
+                        window.location.href = `?start=${start}&end=${end}`;
+                    }
+                }
+            });
+        });
+        </script>
+
+        <!-- Gantt chart: one row per attendance record -->
+        <div class="ganttContainer">
+            <?php 
+            $hasRows = false;
+            foreach ($records as $row): ?>
+            <?php
+            // Look up the schedule for this specific work date (may be null if unscheduled)
+            $sched = $schedules[$row['work_date']] ?? null;
+
+            // Compute all Gantt positioning values for this row
+            $ganttBar = computeGanttRow($row, $sched);
+
+            // Skip rows that have no renderable data
+            if ($ganttBar === null) continue;
+            $hasRows = true;
+            ?>
+
+            <?php if ($ganttBar['type'] === 'absent_or_future'): ?>
+            <!-- ── Absent / future day row ── -->
+            <!-- Shows only the schedule ghost bar (or an empty bar for future dates) -->
+            <div class="ganttRow">
+                <div class="ganttLabel">
+                    <div><?= $ganttBar['dayLabel'] ?></div><!-- e.g. "Mon" -->
+                    <div style="font-size: 0.75rem; color: #aaa;"><?= $ganttBar['dateNum'] ?></div><!-- e.g. "14" -->
+                </div>
+                <div class="ganttBarContainer"
+                    data-range-start="<?= $ganttBar['rangeStart'] ?>"
+                    data-range-end="<?= $ganttBar['rangeEnd'] ?>">
+
+                    <!-- Animated cursor line showing the current time -->
+                    <?= gantt_cursor() ?>
+                    <!-- Hour/half-hour tick marks along the timeline axis -->
+                    <?= gantt_scale($ganttBar['rangeStart'], $ganttBar['rangeEnd']) ?>
+
+                    <!-- Single bar representing the absent/future status -->
+                    <div class="ganttBar <?= $ganttBar['barClass'] ?>"
+                        style="left: <?= $ganttBar['barLeft'] ?>%; width: <?= $ganttBar['barWidth'] ?>%;">
+                    </div>
+                    
+                    <!-- Status label centered inside the bar -->
+                    <div class="<?= $ganttBar['labelClass'] ?>" style="left: <?= $ganttBar['midLeft'] ?>%">
+                        <?= $ganttBar['labelText'] ?>
+                    </div>
+                </div>
+            </div>
+
+            <?php else: ?>
+            <!-- ── Normal attendance row ── -->
+            <!-- Contains layered bars for schedule, tardiness, worked time, undertime, and overtime -->
+            <div class="ganttRow">
+                <div class="ganttLabel">
+                    <div><?= $ganttBar['dayLabel'] ?></div><!-- Abbreviated day name, e.g. "Tue" -->
+                    <div class="ganttSubLabel"><?= $ganttBar['dateNum'] ?></div><!-- Numeric date, e.g. "15" -->
+                </div>
+
+                <!-- Bar container — data-* attributes power the hover tooltip -->
+                <div class="ganttBarContainer"
+                    data-is-today="<?= $ganttBar['isToday'] ? '1' : '0' ?>"
+                    data-range-start="<?= $ganttBar['rangeStart'] ?>"
+                    data-range-end="<?= $ganttBar['rangeEnd'] ?>"
+                    data-sched-in="<?= $ganttBar['schedInLabel'] ?>"
+                    data-sched-out="<?= $ganttBar['schedOutLabel'] ?>"
+                    data-actual-in="<?= $ganttBar['actualInLabel'] ?>"
+                    data-actual-out="<?= $ganttBar['actualOutLabel'] ?>"
+                    data-early="<?= $ganttBar['earlyLabel'] ?>"
+                    data-late="<?= $ganttBar['lateLabel'] ?>"
+                    data-overtime="<?= $ganttBar['overtimeLabel'] ?>"
+                    data-overtime-status="<?= $ganttBar['overtimeStatusLabel'] ?>"
+                    data-undertime="<?= $ganttBar['undertimeLabel'] ?>">
+
+                    <!-- Animated cursor line showing the current time of day -->
+                    <?= gantt_cursor() ?>
+
+                    <!-- Scale tick marks (hours) spanning the visible range -->
+                    <?= gantt_scale($ganttBar['rangeStart'], $ganttBar['rangeEnd']) ?>
+
+                    <!-- Scheduled block — ghost/outline bar showing the expected shift window -->
+                    <?php if ($ganttBar['schedIn'] !== null): ?>
+                        <div class="ganttBar ganttBarScheduled"
+                            style="left: <?= $ganttBar['schedLeft'] ?>%; width: <?= $ganttBar['schedWidth'] ?>%;"></div>
+                    <?php endif; ?>
+                    
+                    <!-- Early bar — fills the gap between actual check-in and scheduled start -->
+                    <?php if ($ganttBar['isEarly'] && $ganttBar['schedIn']): ?>
+                        <div class="ganttBar ganttBarEarly"
+                            style="left: <?= $ganttBar['earlyLeft'] ?>%; width: <?= $ganttBar['earlyWidth'] ?>%;">
+                            <span class="ganttBarLabel">Early</span>
+                        </div>
+                    <?php endif; ?>
+
+                    <!-- Late bar — fills the gap between scheduled check-in and actual check-in -->
+                    <?php if ($ganttBar['isTardy']): ?>
+                        <div class="ganttBar ganttBarTardy"
+                            style="left: <?= $ganttBar['tardyLeft'] ?>%; width: <?= $ganttBar['tardyWidth'] ?>%;">
+                            <span class="ganttBarLabel">Late</span>
+                        </div>
+                    <?php endif; ?>
+
+                    <!-- Main bar — green when clocked out normally, purple when no time-out is recorded -->
+                    <div class="ganttBar <?= $ganttBar['noTimeOut'] ? 'ganttBarNoTimeOut' : 'ganttBarOnTime' ?>"
+                        style="left: <?= $ganttBar['actualLeft'] ?>%; width: <?= $ganttBar['onTimeWidth'] ?>%;">
+                        <span class="ganttBarLabel"><?= $ganttBar['noTimeOut'] ? 'No Time Out' : 'On Time' ?></span>
+                    </div>
+
+                    <!-- Undertime bar — fills the gap between actual check-out and scheduled end time -->
+                    <?php if ($ganttBar['isUndertime'] && $ganttBar['schedOut']): ?>
+                        <div class="ganttBar ganttBarUndertime"
+                            style="left: <?= $ganttBar['undertimeLeft'] ?>%; width: <?= $ganttBar['undertimeWidth'] ?>%;">
+                            <span class="ganttBarLabel">Undertime</span>
+                        </div>
+                    <?php endif; ?>
+
+                    <!-- Overtime bar — extends beyond the scheduled end; color reflects approval status -->
+                    <?php if ($ganttBar['overtimeMinutes'] > 0 && $ganttBar['schedOut']): ?>
+                        <div class="ganttBar <?= $ganttBar['otColorClass'] ?>"
+                            style="left: <?= $ganttBar['overtimeLeft'] ?>%; width: <?= $ganttBar['overtimeWidth'] ?>%;">
+                            <span class="ganttBarLabel">Overtime</span>
+                        </div>
+                    <?php endif; ?>
+
+                    <!-- Marker lines — thin vertical lines pinpointing exact time-in and time-out moments -->
+                    <div class="ganttMarker ganttMarkerActualStart" style="left: <?= $ganttBar['actualInPos'] ?>%"></div>
+                    <div class="ganttMarker ganttMarkerActualEnd"   style="left: <?= $ganttBar['actualOutPos'] ?>%"></div>
+                </div>
+            </div>
+
+            <?php endif; ?>
+            <?php endforeach; ?>
+
+            <?php if (!$hasRows): ?>
+                <div class="ganttEmpty">
+                    <i class="bi bi-calendar-x ganttEmptyIcon"></i>
+                    <div>No records found for this period.</div>
+                </div>
+            <?php endif; ?>
+
+        </div>
     </div>
 </div>
 
-<script>
-document.addEventListener('DOMContentLoaded', () => {
-    flatpickr('#dateRangePicker', {
-        mode: 'range',
-        dateFormat: 'Y-m-d',
-        altInput: true,
-        altFormat: 'F j, Y',
-        defaultDate: ['<?= $startDate ?>', '<?= $endDate ?>'],
-        onChange(selectedDates, dateStr, instance) {
-            if (selectedDates.length === 2) {
-                const start = instance.formatDate(selectedDates[0], "Y-m-d");
-                const end   = instance.formatDate(selectedDates[1], "Y-m-d");
-                window.location.href = `?start=${start}&end=${end}`;
-            }
-        }
-    });
-});
-</script>
-
-<!-- TIMELINE -->
-<div id="attendanceTimeline"></div>
-
+<!-- Hover tooltip — populated dynamically by initGanttCursors() -->
+<div id="gantt_tooltip">
+    <div class="ganttToolTipRow">
+        <span class="ganttToolTipLabel">Scheduled</span>
+        <span class="ganttToolTipValue" id="gt-sched"></span>
+    </div>
+    
+    <!-- Actual in label -->
+    <div class="ganttToolTipRow">
+        <span class="ganttToolTipLabel">Time In</span>
+        <span class="ganttToolTipValue" id="gt-actual-in"></span>
+    </div>
+    
+    <!-- Actual out label -->
+    <div class="ganttToolTipRow">
+        <span class="ganttToolTipLabel">Time Out</span>
+        <span class="ganttToolTipValue" id="gt-actual-out"></span>
+    </div>
+    
+    <!-- Late row — hidden by default, shown only when the employee was tardy -->
+    <div class="ganttToolTipRow ganttToolTipLate" id="gt-late-row">
+        <span class="ganttToolTipLabel">Late</span>
+        <span class="ganttToolTipValue" id="gt-late"></span>
+    </div>
+    
+    <!-- Overtime row — hidden by default, shown only when overtime exists -->
+    <div class="ganttToolTipRow ganttToolTipOverTime" id="gt-ot-row">
+        <span class="ganttToolTipLabel">Overtime</span>
+        <span class="ganttToolTipValue" id="gt-ot"></span>
+    </div>
+    
+    <!-- Undertime row — hidden by default, shown only when undertime exists -->
+    <div class="ganttToolTipRow ganttToolTipUnderTime" id="gt-ut-row">
+        <span class="ganttToolTipLabel">Undertime</span>
+        <span class="ganttToolTipValue" id="gt-ut"></span>
+    </div>
+    
+    <!-- Early row — hidden by default, shown only when employee arrived early -->
+    <div class="ganttToolTipRow ganttToolTipEarly" id="gt-early-row">
+        <span class="ganttToolTipLabel">Early</span>
+        <span class="ganttToolTipValue" id="gt-early"></span>
+    </div>
 </div>
-</div>
 
+<!-- Bootstrap JS bundle (includes Popper) -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+<script src="../system_functions/gantt.js"></script>
 <script>
-const records   = <?= json_encode(array_values($records)) ?>;
-const schedules = <?= json_encode($schedules) ?>;
-
-const startDate = "<?= $startDate ?>";
-const endDate   = "<?= $endDate ?>";
-
-// ── Formatters ────────────────────────────────────────────────────────────────
-
-function toTs(datetimeStr) {
-    if (!datetimeStr) return null;
-    return new Date(datetimeStr.replace(' ', 'T')).getTime();
-}
-
-/**
- * Format a real timestamp (ms since epoch) as a clock time string.
- */
-function fmtTime(ts) {
-    const d    = new Date(ts);
-    let h      = d.getHours();
-    const m    = String(d.getMinutes()).padStart(2, '0');
-    const ampm = h >= 12 ? 'PM' : 'AM';
-    h = h % 12 || 12;
-    return `${h}:${m} ${ampm}`;
-}
-
-/**
- * Format an offset (ms from shift anchor) as a clock time string,
- * given the anchor timestamp so we can recover the real wall-clock time.
- */
-function fmtOffset(offsetMs, anchorTs) {
-    return fmtTime(anchorTs + offsetMs);
-}
-
-function fmtLabel(dateStr) {
-    const d       = new Date(dateStr + 'T00:00:00');
-    const now     = new Date();
-    const isToday = d.toDateString() === now.toDateString();
-    const monthDay = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-    const weekday  = isToday ? 'Today' : d.toLocaleDateString('en-US', { weekday: 'short' });
-    return `${weekday}\n${monthDay}`;
-}
-
-// ── renderItem (shared by all series) ────────────────────────────────────────
-
-function renderBar(params, api) {
-    const yIdx      = api.value(0);
-    const start     = api.coord([api.value(1), yIdx]);
-    const end       = api.coord([api.value(2), yIdx]);
-    const barHeight = api.size([0, 1])[1] * 0.45;
-
-    return {
-        type: 'rect',
-        shape: {
-            x:      start[0],
-            y:      start[1] - barHeight / 2,
-            width:  Math.max(end[0] - start[0], 2),
-            height: barHeight,
-            r:      4
-        },
-        style:    api.style(),
-        emphasis: api.styleEmphasis()
-    };
-}
-
-// ── buildOption ───────────────────────────────────────────────────────────────
-
-function buildOption(records, schedules) {
-    const yCategories = [];
-    const barData     = {
-        scheduled:  [],
-        work:       [],
-        late:       [],
-        ot:         [],
-        undertime:  [],
-        notimeout:  []
-    };
-
-    // Track all relative offsets across all rows to compute a shared x-axis window.
-    // Each row is normalised to its own anchor (schedStart ?? actualIn),
-    // so offset 0 always means "shift start" and the x-axis represents duration.
-    let globalMinOffset = Infinity;
-    let globalMaxOffset = -Infinity;
-
-    const sorted = [...records].sort((a, b) => b.work_date.localeCompare(a.work_date));
-
-    sorted.forEach((row, yi) => {
-        const sched      = schedules[row.work_date] || null;
-        const schedStart = toTs(sched?.scheduled_start_datetime);
-        const schedEnd   = toTs(sched?.scheduled_end_datetime);
-        const actualIn   = toTs(row.actual_time_in);
-        const actualOut  = toTs(row.actual_time_out);
-        const status     = row.status;
-        const now        = Date.now();
-
-        yCategories.push(fmtLabel(row.work_date));
-
-        // Anchor: prefer schedStart so offset 0 = scheduled shift start.
-        // Fall back to actualIn if no schedule exists.
-        const anchor = schedStart ?? actualIn ?? 0;
-
-        /**
-         * Convert an absolute timestamp to a relative offset from this row's anchor.
-         * This eliminates date differences so night-shift rows (e.g. 6 PM – 1 AM)
-         * and day-shift rows (e.g. 9 AM – 5 PM) are both plotted correctly:
-         * a timestamp that is 2 hours after anchor becomes offset = 2 * 3600000
-         * regardless of which calendar date the shift falls on.
-         */
-        function rel(ts) {
-            return ts != null ? ts - anchor : null;
-        }
-
-        // Helper to track x-axis extents
-        function trackOffset(offset) {
-            if (offset == null) return;
-            if (offset < globalMinOffset) globalMinOffset = offset;
-            if (offset > globalMaxOffset) globalMaxOffset = offset;
-        }
-
-        const relSchedStart = rel(schedStart);   // always 0 when anchor = schedStart
-        const relSchedEnd   = rel(schedEnd);
-        const relActualIn   = rel(actualIn);
-        const relActualOut  = rel(actualOut);
-
-        trackOffset(relSchedStart);
-        trackOffset(relSchedEnd);
-        trackOffset(relActualIn);
-        trackOffset(relActualOut);
-
-        // ── Schedule bar ──────────────────────────────────────────────────────
-        if (relSchedStart != null && relSchedEnd != null) {
-            barData.scheduled.push({
-                value:  [yi, relSchedStart, relSchedEnd],
-                anchor: anchor
-            });
-        }
-
-        // ── No Timeout bar ────────────────────────────────────────────────────
-        // Employee clocked in but never out, and the shift has fully ended.
-        if (status === 'incomplete' && relActualIn != null && relSchedEnd != null && now > schedEnd) {
-            trackOffset(relSchedEnd);
-            barData.notimeout.push({
-                value:  [yi, relActualIn, relSchedEnd],
-                anchor: anchor
-            });
-        }
-
-        // ── Work bar ──────────────────────────────────────────────────────────
-        // Clamped to schedEnd so OT doesn't bleed into the work bar.
-        if (relActualIn != null && relActualOut != null && status !== 'incomplete') {
-            const workEndTs  = (schedEnd && actualOut > schedEnd) ? schedEnd : actualOut;
-            const relWorkEnd = rel(workEndTs);
-            if (relWorkEnd > relActualIn) {
-                trackOffset(relWorkEnd);
-                barData.work.push({
-                    value:  [yi, relActualIn, relWorkEnd],
-                    anchor: anchor
-                });
-            }
-        }
-
-        // ── Late bar ──────────────────────────────────────────────────────────
-        // Gap between scheduled start (offset 0) and actual clock-in.
-        if (row.late_minutes > 0 && relSchedStart != null) {
-            const lateEnd = relSchedStart + row.late_minutes * 60000;
-            trackOffset(lateEnd);
-            barData.late.push({
-                value:  [yi, relSchedStart, lateEnd],
-                anchor: anchor
-            });
-        }
-
-        // ── Overtime bar ──────────────────────────────────────────────────────
-        // Employee clocked out after scheduled end.
-        if (relActualOut != null && relSchedEnd != null && actualOut > schedEnd && status !== 'incomplete') {
-            trackOffset(relActualOut);
-            barData.ot.push({
-                value:  [yi, relSchedEnd, relActualOut],
-                anchor: anchor
-            });
-        }
-
-        // ── Undertime bar ─────────────────────────────────────────────────────
-        // Employee left before scheduled end and the shift has fully ended.
-        if (relActualOut != null && relSchedEnd != null && actualOut < schedEnd && now > schedEnd && status !== 'incomplete') {
-            barData.undertime.push({
-                value:  [yi, relActualOut, relSchedEnd],
-                anchor: anchor
-            });
-        }
+    document.addEventListener('DOMContentLoaded', () => {
+        // Wire up cursor tracking and tooltip behavior for all Gantt rows
+        initGanttCursors();
     });
-
-    // ── x-axis window ────────────────────────────────────────────────────────
-    // Add 30-minute padding on each side. If no data at all, default to a
-    // 12-hour window (0 to 12 h in ms).
-    const PADDING = 30 * 60000;
-    const xMin = isFinite(globalMinOffset) ? globalMinOffset - PADDING : 0;
-    const xMax = isFinite(globalMaxOffset) ? globalMaxOffset + PADDING : 12 * 3600000;
-
-    // ── x-axis label formatter ────────────────────────────────────────────────
-    // The axis now carries relative offsets (ms from shift start), so we
-    // display them as "+ H h M m" durations rather than clock times.
-    // This makes it immediately obvious that the axis is shift-relative.
-    function fmtAxisOffset(ms) {
-        const sign    = ms < 0 ? '-' : '+';
-        const abs     = Math.abs(ms);
-        const h       = Math.floor(abs / 3600000);
-        const m       = Math.floor((abs % 3600000) / 60000);
-        if (h === 0 && m === 0) return 'Start';
-        return m === 0 ? `${sign}${h}h` : `${sign}${h}h${m}m`;
-    }
-
-    return {
-        backgroundColor: 'transparent',
-        tooltip: {
-            trigger: 'item',
-            formatter(params) {
-                const { seriesName, data } = params;
-                const anchor = data.anchor ?? 0;
-                const start  = fmtOffset(data.value[1], anchor);
-                const end    = fmtOffset(data.value[2], anchor);
-                const dur    = Math.round((data.value[2] - data.value[1]) / 60000);
-                return `<b>${seriesName}</b><br>${start} – ${end}<br>${dur} min`;
-            }
-        },
-        legend: {
-            top: 8, right: 16,
-            data: ['Schedule', 'Work', 'Late', 'Overtime', 'Undertime', 'No Timeout'],
-            textStyle: { color: '#ccc' }
-        },
-        grid: { left: 110, right: 24, top: 48, bottom: 40 },
-        xAxis: {
-            type:  'value',   // ← value axis, not time axis, carries ms offsets
-            min:   xMin,
-            max:   xMax,
-            axisLabel: {
-                formatter: val => fmtAxisOffset(val),
-                color: '#aaa'
-            },
-            splitLine: { lineStyle: { color: 'rgba(255,255,255,0.06)' } },
-            axisLine:  { lineStyle: { color: 'rgba(255,255,255,0.15)' } }
-        },
-        yAxis: {
-            type: 'category',
-            data: yCategories,
-            axisLabel: { color: '#ccc' },
-            axisLine:  { lineStyle: { color: 'rgba(255,255,255,0.15)' } },
-            splitLine: { show: false }
-        },
-        series: [
-            {
-                name: 'Schedule',
-                type: 'custom',
-                renderItem: renderBar,
-                encode: { x: [1, 2], y: 0 },
-                data: barData.scheduled,
-                itemStyle: {
-                    color: 'rgba(150,150,255,0.18)',
-                    borderColor: '#7b7bff',
-                    borderWidth: 1,
-                    borderType: 'dashed'
-                },
-                z: 1
-            },
-            {
-                name: 'Work',
-                type: 'custom',
-                renderItem: renderBar,
-                encode: { x: [1, 2], y: 0 },
-                data: barData.work,
-                itemStyle: { color: 'rgba(25,135,84,0.80)' },
-                z: 2
-            },
-            {
-                name: 'No Timeout',
-                type: 'custom',
-                renderItem: renderBar,
-                encode: { x: [1, 2], y: 0 },
-                data: barData.notimeout,
-                itemStyle: {
-                    color: 'rgba(180,100,255,0.80)',
-                    borderColor: '#c084fc',
-                    borderWidth: 1,
-                    borderType: 'dashed'
-                },
-                z: 2
-            },
-            {
-                name: 'Late',
-                type: 'custom',
-                renderItem: renderBar,
-                encode: { x: [1, 2], y: 0 },
-                data: barData.late,
-                itemStyle: { color: 'rgba(255,170,0,0.85)' },
-                z: 3
-            },
-            {
-                name: 'Overtime',
-                type: 'custom',
-                renderItem: renderBar,
-                encode: { x: [1, 2], y: 0 },
-                data: barData.ot,
-                itemStyle: { color: 'rgba(77,163,255,0.85)' },
-                z: 3
-            },
-            {
-                name: 'Undertime',
-                type: 'custom',
-                renderItem: renderBar,
-                encode: { x: [1, 2], y: 0 },
-                data: barData.undertime,
-                itemStyle: { color: 'rgba(255,80,80,0.80)' },
-                z: 3
-            }
-        ]
-    };
-}
-
-// ── Chart init ────────────────────────────────────────────────────────────────
-
-const chart = echarts.init(document.getElementById('attendanceTimeline'));
-chart.setOption(buildOption(records, schedules));
-window.addEventListener('resize', () => chart.resize());
-
-// ── Update / Refresh ──────────────────────────────────────────────────────────
-
-function updateChart(records, schedules) {
-    chart.setOption(buildOption(records, schedules), true);
-}
-
-function refreshChart() {
-    fetch(`../system_functions/employee_records_data.php?start=${startDate}&end=${endDate}`)
-        .then(res => res.json())
-        .then(data => updateChart(data.records, data.schedules))
-        .catch(err => console.error('refreshChart error:', err));
-}
-
-refreshChart();
 </script>
-
 </body>
 </html>

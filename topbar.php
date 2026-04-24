@@ -77,10 +77,10 @@ $currentStatus = $timedIn ? 'Timed In' : 'Timed Out';
 
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.css" rel="stylesheet">
-<link rel="stylesheet" href="/DTR-Internship-Project/dropdown_requests/ot_modal.css">
-<link rel="stylesheet" href="/DTR-Internship-Project/dropdown_requests/leave_modal.css">
-<link rel="stylesheet" href="/DTR-Internship-Project/dropdown_requests/ob_modal.css">
-<link rel="stylesheet" href="/DTR-Internship-Project/dropdown_requests/log_edit_modal.css">
+<link rel="stylesheet" href="../dropdown_requests/ot_modal.css">
+<link rel="stylesheet" href="../dropdown_requests/leave_modal.css">
+<link rel="stylesheet" href="../dropdown_requests/ob_modal.css">
+<link rel="stylesheet" href="../dropdown_requests/log_edit_modal.css">
 
 <!-- TOP BAR -->
 <div class="topBar">
@@ -149,95 +149,7 @@ $currentStatus = $timedIn ? 'Timed In' : 'Timed Out';
 
 <!-- JAVASCRIPT -->
 <script defer>
-
-    // ===== GANTT CURSORS =====
-    function initGanttCursors() {
-        const tooltip     = document.getElementById('gantt_tooltip');
-        const gtSched     = document.getElementById('gt-sched');
-        const gtActualIn  = document.getElementById('gt-actual-in');
-        const gtActualOut = document.getElementById('gt-actual-out');
-        const gtLateRow   = document.getElementById('gt-late-row');
-        const gtLate      = document.getElementById('gt-late');
-        const gtOtRow     = document.getElementById('gt-ot-row');
-        const gtOt        = document.getElementById('gt-ot');
-        const gtUtRow = document.getElementById('gt-ut-row');
-        const gtUt    = document.getElementById('gt-ut');
-
-        document.querySelectorAll('.ganttBarContainer').forEach(container => {
-            const line  = container.querySelector('.ganttCursorLine');
-            const label = container.querySelector('.ganttCursorLabel');
-            if (!line || !label) return;
-
-            const rangeStart = parseInt(container.dataset.rangeStart);
-            const rangeEnd   = parseInt(container.dataset.rangeEnd);
-            const range      = rangeEnd - rangeStart;
-
-            const hasData = !!container.dataset.actualIn;
-
-            container.addEventListener('mousemove', (e) => {
-                const rect    = container.getBoundingClientRect();
-                const x       = e.clientX - rect.left;
-                const percent = Math.max(0, Math.min(1, x / rect.width));
-                const time    = Math.floor(rangeStart + (percent * range));
-
-                if (line)  line.style.left  = (percent * 100) + '%';
-                if (label) label.style.left = (percent * 100) + '%';
-
-                if (label) {
-                    label.textContent = new Date(time * 1000).toLocaleTimeString('en-US', {
-                        hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'Asia/Manila'
-                    });
-                }
-
-                if (hasData && tooltip) {
-                    gtSched.textContent     = container.dataset.schedIn + ' – ' + container.dataset.schedOut;
-                    gtActualIn.textContent  = container.dataset.actualIn;
-                    gtActualOut.textContent = container.dataset.actualOut;
-
-                    // Show if late
-                    if (container.dataset.late) {
-                        gtLate.textContent          = container.dataset.late;
-                        gtLateRow.style.display     = 'flex';
-                    } else {
-                        gtLateRow.style.display = 'none';
-                    }
-
-                    // Show overtime if it is approved or rejected
-                    if (container.dataset.overtime) {
-                        gtOt.textContent  = container.dataset.overtime;
-                        const status      = container.dataset.overtimeStatus;
-                        gtOtRow.className = 'ganttToolTipRow ganttToolTipOverTime'
-                                        + (status === 'approved' ? ' approved' : status === 'rejected' ? ' rejected' : '');
-                        gtOtRow.style.display = 'flex';
-                    } else {
-                        gtOtRow.style.display = 'none';
-                    }
-                    
-                    // Show undertime only when it is the next day (day is finished)
-                    const isToday = container.dataset.isToday === '1';
-
-                    if (container.dataset.undertime && !isToday) {
-                        gtUt.textContent = container.dataset.undertime;
-                        gtUtRow.style.display = 'flex';
-                    } else {
-                        gtUtRow.style.display = 'none';
-                    }
-
-                    tooltip.style.left = e.clientX + 'px';
-                    tooltip.style.top  = e.clientY  + 'px';
-                    tooltip.classList.add('visible');
-                }
-            });
-
-            container.addEventListener('mouseleave', () => {
-                if (tooltip) tooltip.classList.remove('visible');
-            });
-        });
-    }
-
     document.addEventListener('DOMContentLoaded', () => {
-        initGanttCursors();
-
         window.addEventListener('storage', (event) => {
             if (event.key !== 'attendance_update') return;
 
@@ -366,6 +278,16 @@ $currentStatus = $timedIn ? 'Timed In' : 'Timed Out';
         document.head.appendChild(style);
     }
 
+    // ===== PRE-CACHE GPS ON PAGE LOAD =====
+    let cachedPosition = null;
+
+    navigator.geolocation.watchPosition(
+        (pos) => { cachedPosition = pos; },
+        (err) => { console.warn('GPS watch error:', err); },
+        { enableHighAccuracy: false, maximumAge: 60000, timeout: 10000 }
+    );
+
+    // ===== TIME IN / OUT =====
     let isProcessing = false;
 
     const handleTimeIn = async () => {
@@ -380,14 +302,11 @@ $currentStatus = $timedIn ? 'Timed In' : 'Timed Out';
         btn.disabled = true;
 
         const originalText = label.textContent;
-
-        // ONLY spinner (no background override here)
         showSpinner(btn);
 
-        navigator.geolocation.getCurrentPosition(async (pos) => {
-
+        const submitTap = async (pos) => {
             try {
-                const res = await fetch('/DTR-Internship-Project/system_functions/attendance_tap.php', {
+                const res = await fetch('../system_functions/attendance_tap.php', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -398,27 +317,79 @@ $currentStatus = $timedIn ? 'Timed In' : 'Timed Out';
                 });
 
                 const response = await res.json();
-
                 console.log(response);
 
-                // 🔴 SERVER COOLDOWN HANDLES EVERYTHING
+                // Clicked too fast
                 if (response.error === 'too_fast') {
                     const wait = response.seconds_remaining || 5;
-
                     startCooldown(btn, wait, originalText);
+                    isProcessing = false;
+                    return;
+                }
+                
+                // Log corrupted
+                if (response.error === 'log_corrupted') {
+                    btn.disabled = false;
+                    btn.style.pointerEvents  = '';
+                    btn.style.backgroundColor = '';
+                    label.innerHTML = originalText;
+                    isProcessing = false;
+
+                    // Show a visible warning banner instead of a raw alert
+                    const existing = document.getElementById('log-corruption-warning');
+                    if (!existing) {
+                        const warning = document.createElement('div');
+                        warning.id = 'log-corruption-warning';
+                        warning.style.cssText = `
+                            position: fixed;
+                            top: 1rem;
+                            left: 50%;
+                            transform: translateX(-50%);
+                            background: #dc3545;
+                            color: white;
+                            padding: 0.75rem 1.25rem;
+                            border-radius: 10px;
+                            font-size: 0.875rem;
+                            font-family: 'Poppins', sans-serif;
+                            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+                            z-index: 9999;
+                            display: flex;
+                            align-items: center;
+                            gap: 0.5rem;
+                            max-width: 420px;
+                            text-align: center;
+                        `;
+                        warning.innerHTML = `
+                            <i class="bi bi-exclamation-triangle-fill" style="font-size:1.1rem; flex-shrink:0;"></i>
+                            <span>Attendance log corrupted. Please contact your administrator to fix your records.</span>
+                        `;
+                        document.body.appendChild(warning);
+
+                        // Auto-dismiss after 6 seconds
+                        setTimeout(() => warning.remove(), 6000);
+                    }
+
+                    console.warn('Log corruption detected:', response);
                     return;
                 }
 
-                // =========================
-                // SUCCESS STATE RESET HERE
-                // =========================
+                // Shift has already ended, employee tried to time in
+                if (response.error === 'shift_ended') {
+                    btn.disabled = false;
+                    btn.style.pointerEvents = '';
+                    btn.style.backgroundColor = '';
+                    label.innerHTML = originalText;
+                    isProcessing = false;
+                    alert('Your shift has already ended. You have been marked absent.');
+                    return;
+                }
 
                 btn.disabled = false;
                 btn.style.pointerEvents = '';
                 btn.style.backgroundColor = '';
 
                 let tapSuccess = false;
-
+                
                 if (response.tap === 'timed_in') {
                     btn.classList.remove('btn-in');
                     btn.classList.add('btn-out');
@@ -438,9 +409,8 @@ $currentStatus = $timedIn ? 'Timed In' : 'Timed Out';
                 if (tapSuccess) {
                     localStorage.setItem('attendance_tap_result', response.tap);
                     localStorage.setItem('attendance_update', Date.now());
-
                     if (document.getElementById('attendanceTimeline')) refreshChart();
-                    
+                    if (document.querySelector('.ganttContainer')) refreshGantt();
                 }
 
                 if (typeof getTotalWorkedHours === 'function') getTotalWorkedHours();
@@ -451,9 +421,11 @@ $currentStatus = $timedIn ? 'Timed In' : 'Timed Out';
                 console.error(err);
             } finally {
                 isProcessing = false;
-            }
 
-        }, (err) => {
+            }
+        };
+
+        const onError = (err) => {
             console.error(err);
             alert('Location permission is required.');
             isProcessing = false;
@@ -461,9 +433,20 @@ $currentStatus = $timedIn ? 'Timed In' : 'Timed Out';
             btn.style.pointerEvents = '';
             btn.style.backgroundColor = '';
             label.innerHTML = originalText;
-        });
-    };
+        };
 
+        // Use cached position if available, otherwise request fresh
+        if (cachedPosition) {
+            await submitTap(cachedPosition);
+        } else {
+            navigator.geolocation.getCurrentPosition(
+                async (pos) => await submitTap(pos),
+                onError,
+                { enableHighAccuracy: false, maximumAge: 60000, timeout: 10000 }
+            );
+        }
+    };
+    
     // Dropdown menu
     const toggle = document.getElementById('userDropdownToggle');
     const menu   = document.getElementById('userDropdownMenu');

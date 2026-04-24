@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Apr 22, 2026 at 11:26 AM
+-- Generation Time: Apr 20, 2026 at 05:47 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.0.30
 
@@ -39,10 +39,19 @@ CREATE TABLE `attendances` (
   `late_minutes` int(11) DEFAULT 0,
   `undertime_minutes` int(11) DEFAULT 0,
   `overtime_minutes` int(11) DEFAULT 0,
-  `status` enum('present','absent','incomplete','late','undertime') DEFAULT 'incomplete',
+  `status` enum('present','absent','incomplete','late','undertime') NOT NULL DEFAULT 'incomplete',
   `overtime_status` enum('none','pending','approved') DEFAULT 'none',
+  `missed_time_out` tinyint(1) NOT NULL DEFAULT 0,
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `attendances`
+--
+
+INSERT INTO `attendances` (`id`, `employee_id`, `work_date`, `scheduled_start_datetime`, `scheduled_end_datetime`, `actual_time_in`, `actual_time_out`, `total_work_hours`, `late_minutes`, `undertime_minutes`, `overtime_minutes`, `status`, `overtime_status`, `missed_time_out`, `updated_at`) VALUES
+(271, 2, '2026-04-20', '2026-04-20 00:00:00', '2026-04-20 09:00:00', NULL, NULL, 0.00, 0, 0, 0, 'absent', 'none', 0, '2026-04-20 15:37:09'),
+(272, 2, '2026-04-21', '2026-04-21 00:00:00', '2026-04-21 09:00:00', '2026-04-20 23:37:09', '2026-04-20 23:37:16', 0.00, 0, 563, 0, 'undertime', 'none', 0, '2026-04-20 15:37:16');
 
 -- --------------------------------------------------------
 
@@ -84,6 +93,13 @@ CREATE TABLE `leave_requests` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Dumping data for table `leave_requests`
+--
+
+INSERT INTO `leave_requests` (`id`, `employee_id`, `leave_type`, `start_date`, `end_date`, `reason`, `status`, `created_at`) VALUES
+(1, 2, 'birthday leave', '2026-04-24', '2026-04-24', 'bday', 'approved', '2026-04-23 01:35:37');
+
 -- --------------------------------------------------------
 
 --
@@ -108,8 +124,8 @@ CREATE TABLE `logs` (
 --
 
 INSERT INTO `logs` (`id`, `employee_id`, `log_type`, `log_time`, `longitude`, `latitude`, `accuracy`, `is_within_office`, `distance_meters`, `created_at`) VALUES
-(69, 2, 'IN', '2026-04-22 17:03:44', 120.9954933, 14.5842660, 55, 1, 21.954, '2026-04-22 09:03:44'),
-(70, 2, 'OUT', '2026-04-22 17:04:07', 139.6917060, 35.6894870, 150, 0, 2996100, '2026-04-22 09:04:07');
+(483, 2, 'IN', '2026-04-20 23:37:09', 120.9954855, 14.5842718, 55, 1, 22.037, '2026-04-20 15:37:09'),
+(484, 2, 'OUT', '2026-04-20 23:37:16', 120.9954855, 14.5842718, 55, 1, 22.037, '2026-04-20 15:37:16');
 
 -- --------------------------------------------------------
 
@@ -148,13 +164,11 @@ CREATE TABLE `schedules` (
 --
 
 INSERT INTO `schedules` (`id`, `employee_id`, `schedule_date`, `scheduled_start_datetime`, `scheduled_end_datetime`, `is_rest_day`) VALUES
-(4, 2, '2026-04-22', '2026-04-22 07:20:00', '2026-04-22 16:22:00', 0),
-(5, 2, '2026-04-23', '2026-04-23 07:20:00', '2026-04-23 16:22:00', 0),
-(6, 2, '2026-04-24', '2026-04-24 07:20:00', '2026-04-24 16:22:00', 0),
-(7, 2, '2026-04-25', NULL, NULL, 1),
-(8, 2, '2026-04-26', NULL, NULL, 1),
-(9, 2, '2026-04-27', '2026-04-27 07:20:00', '2026-04-27 16:22:00', 0),
-(10, 2, '2026-04-28', '2026-04-28 07:20:00', '2026-04-28 16:22:00', 0);
+(51, 2, '2026-04-22', '2026-04-22 23:00:00', '2026-04-23 08:00:00', 0),
+(52, 2, '2026-04-23', '2026-04-23 00:00:00', '2026-04-23 09:00:00', 0),
+(53, 2, '2026-04-24', '2026-04-24 00:00:00', '2026-04-24 09:00:00', 0),
+(54, 2, '2026-04-20', '2026-04-20 00:00:00', '2026-04-20 09:00:00', 0),
+(55, 2, '2026-04-21', '2026-04-21 00:00:00', '2026-04-21 09:00:00', 0);
 
 -- --------------------------------------------------------
 
@@ -236,7 +250,7 @@ ALTER TABLE `system_state`
 -- AUTO_INCREMENT for table `attendances`
 --
 ALTER TABLE `attendances`
-  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=274;
 
 --
 -- AUTO_INCREMENT for table `employees`
@@ -248,13 +262,13 @@ ALTER TABLE `employees`
 -- AUTO_INCREMENT for table `leave_requests`
 --
 ALTER TABLE `leave_requests`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `logs`
 --
 ALTER TABLE `logs`
-  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=71;
+  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=485;
 
 --
 -- AUTO_INCREMENT for table `overtime_requests`
@@ -266,7 +280,7 @@ ALTER TABLE `overtime_requests`
 -- AUTO_INCREMENT for table `schedules`
 --
 ALTER TABLE `schedules`
-  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=56;
 
 --
 -- Constraints for dumped tables
