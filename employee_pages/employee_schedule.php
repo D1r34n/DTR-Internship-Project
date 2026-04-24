@@ -20,30 +20,44 @@
         <div class="scheduleBox">
 
             <!-- SHIFT LEGEND -->
-            <div class="shiftLegend">
-                <div class="shiftLegendItem">
-                    <div class="shiftLegendDot day"></div>
-                    Day Shift
-                </div>
-                <div class="shiftLegendItem">
-                    <div class="shiftLegendDot night"></div>
-                    Night Shift
-                </div>
-                <div class="shiftLegendItem">
-                    <div class="shiftLegendDot night-cont"></div>
-                    Night Shift (cont.)
-                </div>
-                <div class="shiftLegendItem">
-                    <div class="shiftLegendDot rest"></div>
-                    Rest Day
-                </div>
-            </div>
+<div class="shiftLegend">
+    <div class="shiftLegendItem">
+        <div class="shiftLegendDot day"></div>
+        Day Shift
+    </div>
+    <div class="shiftLegendItem">
+        <div class="shiftLegendDot night"></div>
+        Night Shift
+    </div>
+    <div class="shiftLegendItem">
+        <div class="shiftLegendDot night-cont"></div>
+        Night Shift (cont.)
+    </div>
+    <div class="shiftLegendItem">
+        <div class="shiftLegendDot rest"></div>
+        Rest Day
+    </div>
+    <div class="shiftLegendItem">
+        <div class="shiftLegendDot leave-approved"></div>
+        On Leave
+    </div>
+    <div class="shiftLegendItem">
+        <div class="shiftLegendDot leave-pending"></div>
+        Leave Pending
+    </div>
+    <div class="shiftLegendItem">
+        <div class="shiftLegendDot leave-rejected"></div>
+        Leave Rejected
+    </div>
+</div>
 
             <!-- CALENDAR -->
             <div id="calendar"></div>
 
         </div>
     </div>
+
+    
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>

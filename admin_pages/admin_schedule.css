@@ -31,11 +31,10 @@ body {
     height: calc(100vh - 60px);
     display: flex;
     justify-content: center;
-    align-items: center;
+    align-items: center; /* ← back to center */
     z-index: 10;
     transition: left 0.38s cubic-bezier(0.4, 0, 0.2, 1), width 0.38s cubic-bezier(0.4, 0, 0.2, 1);
 }
-
 /* ============================================================
    MAIN BOX (Glass Dark Style)
    ============================================================ */
@@ -49,10 +48,9 @@ body {
     padding: 30px;
     border-radius: 16px;
     width: 1120px;
-    max-height: 780px;
+    max-height: calc(100vh - 100px); /* ← fits screen */
     overflow-y: auto;
 }
-
 /* ============================================================
    MAIN BOX SCROLLBAR
    ============================================================ */
