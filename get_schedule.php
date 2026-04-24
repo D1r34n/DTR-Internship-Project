@@ -13,6 +13,7 @@ $employeeId = $_SESSION['user_id'];
 $start      = isset($_GET['start']) ? substr($_GET['start'], 0, 10) : date('Y-m-01');
 $end        = isset($_GET['end'])   ? substr($_GET['end'],   0, 10) : date('Y-m-t');
 
+// ---- GET SCHEDULES ----
 $stmt = $pdo->prepare("
     SELECT * FROM schedules
     WHERE employee_id = ?
@@ -21,6 +22,36 @@ $stmt = $pdo->prepare("
 ");
 $stmt->execute([$employeeId, $start, $end]);
 $schedules = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+// ---- GET LEAVE REQUESTS ----
+$leaveStmt = $pdo->prepare("
+    SELECT start_date, end_date, status
+    FROM leave_requests
+    WHERE employee_id = ?
+    AND (
+        start_date BETWEEN ? AND ?
+        OR end_date BETWEEN ? AND ?
+        OR (start_date <= ? AND end_date >= ?)
+    )
+");
+$leaveStmt->execute([$employeeId, $start, $end, $start, $end, $start, $end]);
+$leaveRequests = $leaveStmt->fetchAll(PDO::FETCH_ASSOC);
+
+// ---- BUILD LEAVE MAP (date => status) ----
+$leaveMap = [];
+foreach ($leaveRequests as $leave) {
+    $current = new DateTime($leave['start_date']);
+    $endDate = new DateTime($leave['end_date']);
+
+    while ($current <= $endDate) {
+        $dateStr = $current->format('Y-m-d');
+        // Only store if within range
+        if ($dateStr >= $start && $dateStr <= $end) {
+            $leaveMap[$dateStr] = $leave['status'];
+        }
+        $current->modify('+1 day');
+    }
+}
 
 $events = [];
 
@@ -39,23 +70,64 @@ foreach ($schedules as $row) {
         continue;
     }
 
-    $startDT  = $row['scheduled_start_datetime'];
-    $endDT    = $row['scheduled_end_datetime'];
+    $startDT     = $row['scheduled_start_datetime'];
+    $endDT       = $row['scheduled_end_datetime'];
+    $date        = $row['schedule_date'];
 
     if (!$startDT || !$endDT) continue;
 
-    $startDate    = date('Y-m-d', strtotime($startDT));
-    $endDate      = date('Y-m-d', strtotime($endDT));
-    $isOvernight  = $endDate > $startDate;
+    $startDate   = date('Y-m-d', strtotime($startDT));
+    $endDate     = date('Y-m-d', strtotime($endDT));
+    $isOvernight = $endDate > $startDate;
 
     $startTimeStr = date('h:i A', strtotime($startDT));
     $endTimeStr   = date('h:i A', strtotime($endDT));
 
+    // ---- CHECK LEAVE STATUS FOR THIS DATE ----
+    $leaveStatus = $leaveMap[$date] ?? null;
+
+    if ($leaveStatus === 'approved') {
+        // ---- APPROVED LEAVE — orange, replaces shift ----
+        $events[] = [
+            'title'           => 'On Leave',
+            'start'           => $date,
+            'backgroundColor' => '#fd7e14',
+            'borderColor'     => '#e8610a',
+            'textColor'       => '#ffffff',
+            'extendedProps'   => ['shift_type' => 'leave_approved']
+        ];
+        continue;
+
+    } elseif ($leaveStatus === 'pending') {
+        // ---- PENDING LEAVE — yellow, replaces shift ----
+        $events[] = [
+            'title'           => 'Leave Pending',
+            'start'           => $date,
+            'backgroundColor' => '#f0ad4e',
+            'borderColor'     => '#d99a3a',
+            'textColor'       => '#ffffff',
+            'extendedProps'   => ['shift_type' => 'leave_pending']
+        ];
+        continue;
+
+    } elseif ($leaveStatus === 'rejected') {
+        // ---- REJECTED LEAVE — show alongside shift ----
+        $events[] = [
+            'title'           => 'Leave Rejected',
+            'start'           => $date,
+            'backgroundColor' => '#dc3545',
+            'borderColor'     => '#b02a37',
+            'textColor'       => '#ffffff',
+            'extendedProps'   => ['shift_type' => 'leave_rejected']
+        ];
+        // Don't continue — fall through to also show the shift
+    }
+
+    // ---- REGULAR SHIFT ----
     if (!$isOvernight) {
-        // ---- REGULAR DAY SHIFT ----
         $events[] = [
             'title'           => $startTimeStr . ' – ' . $endTimeStr,
-            'start'           => $row['schedule_date'],
+            'start'           => $date,
             'backgroundColor' => '#97be41',
             'borderColor'     => '#7fae2f',
             'textColor'       => '#ffffff',
@@ -66,12 +138,10 @@ foreach ($schedules as $row) {
             ]
         ];
     } else {
-        // ---- OVERNIGHT SHIFT — two events ----
-
-        // Event 1: Start day — show full time range
+        // ---- OVERNIGHT SHIFT START ----
         $events[] = [
             'title'           => $startTimeStr . ' – ' . $endTimeStr . ' ↪',
-            'start'           => $row['schedule_date'],
+            'start'           => $date,
             'backgroundColor' => '#4da3ff',
             'borderColor'     => '#2e8fe8',
             'textColor'       => '#ffffff',
@@ -82,7 +152,7 @@ foreach ($schedules as $row) {
             ]
         ];
 
-        // Event 2: Next day continuation — only if within the requested range
+        // ---- OVERNIGHT CONTINUATION ----
         if ($endDate <= $end) {
             $events[] = [
                 'title'           => '↪ until ' . $endTimeStr,

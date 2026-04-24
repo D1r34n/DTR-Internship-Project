@@ -293,3 +293,15 @@ body::after {
 .shiftLegendDot.rest {
     background: #6c757d;
 }
+
+.shiftLegendDot.leave-approved {
+    background: #fd7e14;
+}
+
+.shiftLegendDot.leave-pending {
+    background: #f0ad4e;
+}
+
+.shiftLegendDot.leave-rejected {
+    background: #dc3545;
+}

@@ -99,17 +99,19 @@
 
     // ---- OPEN / CLOSE MODAL ----
     function openLeaveModal() {
-        document.getElementById('leaveModalOverlay').style.display    = 'flex';
-        document.getElementById('leaveErrorMsg').style.display        = 'none';
-        document.getElementById('leaveSuccessMsg').style.display      = 'none';
-        document.getElementById('leaveSelectedDates').style.display   = 'none';
-        document.getElementById('leaveSelectedDatesText').textContent = '';
-        document.getElementById('leaveReason').value                  = '';
-        document.getElementById('leaveType').value                    = '';
-        document.getElementById('leaveTypeLabel').textContent         = 'Select leave type...';
-        document.querySelector('.leaveTypeToggle').classList.remove('selected');
-        leaveSelectedDates = [];
+    document.getElementById('leaveModalOverlay').style.display    = 'flex';
+    document.getElementById('leaveErrorMsg').style.display        = 'none';
+    document.getElementById('leaveSuccessMsg').style.display      = 'none';
+    document.getElementById('leaveSelectedDates').style.display   = 'none';
+    document.getElementById('leaveSelectedDatesText').textContent = '';
+    document.getElementById('leaveReason').value                  = '';
+    document.getElementById('leaveType').value                    = '';
+    document.getElementById('leaveTypeLabel').textContent         = 'Select leave type...';
+    document.querySelector('.leaveTypeToggle').classList.remove('selected');
+    leaveSelectedDates = [];
 
+    // ← small delay to ensure page is fully loaded
+    setTimeout(() => {
         fetch('/DTR-Internship-Project/employee_pages/get_schedule_dates.php')
             .then(res => res.json())
             .then(dates => {
@@ -117,10 +119,23 @@
                 renderLeaveCalendar();
             })
             .catch(() => {
-                document.getElementById('leaveErrorMsg').style.display = 'block';
-                document.getElementById('leaveErrorMsg').textContent   = 'Failed to load schedule dates.';
+                // ← retry once on failure
+                setTimeout(() => {
+                    fetch('/DTR-Internship-Project/employee_pages/get_schedule_dates.php')
+                        .then(res => res.json())
+                        .then(dates => {
+                            leaveScheduledDates = dates;
+                            document.getElementById('leaveErrorMsg').style.display = 'none';
+                            renderLeaveCalendar();
+                        })
+                        .catch(() => {
+                            document.getElementById('leaveErrorMsg').style.display = 'block';
+                            document.getElementById('leaveErrorMsg').textContent   = 'Failed to load schedule dates.';
+                        });
+                }, 1000);
             });
-    }
+    }, 300);
+}
 
     function closeLeaveModal() {
         document.getElementById('leaveModalOverlay').style.display = 'none';
