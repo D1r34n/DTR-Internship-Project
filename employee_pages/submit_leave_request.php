@@ -11,14 +11,15 @@ if (!isset($_SESSION['user_id'])) {
 require_once '../db.php';
 date_default_timezone_set('Asia/Manila');
 
-$employeeId = $_SESSION['user_id'];
-$leaveType  = trim($_POST['leave_type']  ?? '');
-$startDate  = trim($_POST['start_date']  ?? '');
-$endDate    = trim($_POST['end_date']    ?? '');
-$reason     = trim($_POST['reason']      ?? '');
+$employeeId    = $_SESSION['user_id'];
+$leaveType     = trim($_POST['leave_type']     ?? '');
+$startDate     = trim($_POST['start_date']     ?? '');
+$endDate       = trim($_POST['end_date']       ?? '');
+$reason        = trim($_POST['reason']         ?? '');
+$selectedDates = trim($_POST['selected_dates'] ?? '');
 
-// ---- VALIDATION ----
-if (!$leaveType || !$startDate || !$endDate || !$reason) {
+// ---- BASIC VALIDATION ----
+if (!$leaveType || !$startDate || !$endDate || !$reason || !$selectedDates) {
     echo json_encode(['success' => false, 'message' => 'All fields are required.']);
     exit();
 }
@@ -29,18 +30,83 @@ if (!in_array(strtolower($leaveType), $validTypes)) {
     exit();
 }
 
-$today = date('Y-m-d');
-if ($startDate <= $today || $endDate <= $today) {
-    echo json_encode(['success' => false, 'message' => 'Only future dates are allowed.']);
+$today         = date('Y-m-d');
+$datesArray    = json_decode($selectedDates, true);
+
+if (!is_array($datesArray) || empty($datesArray)) {
+    echo json_encode(['success' => false, 'message' => 'No dates selected.']);
     exit();
 }
 
-if ($startDate > $endDate) {
-    echo json_encode(['success' => false, 'message' => 'Start date cannot be after end date.']);
+$days = count($datesArray);
+
+// ---- PER TYPE RULES ----
+if (strtolower($leaveType) === 'sick leave') {
+    foreach ($datesArray as $d) {
+        if ($d >= $today) {
+            echo json_encode(['success' => false, 'message' => 'Sick leave can only be filed for past dates (before today).']);
+            exit();
+        }
+    }
+    if ($days > 4) {
+        echo json_encode(['success' => false, 'message' => 'Sick leave is limited to 4 days maximum.']);
+        exit();
+    }
+}
+
+if (strtolower($leaveType) === 'vacation leave') {
+    foreach ($datesArray as $d) {
+        if ($d <= $today) {
+            echo json_encode(['success' => false, 'message' => 'Vacation leave can only be filed for future dates.']);
+            exit();
+        }
+    }
+}
+
+if (strtolower($leaveType) === 'birthday leave') {
+    if ($days > 1) {
+        echo json_encode(['success' => false, 'message' => 'Birthday leave is limited to 1 day only.']);
+        exit();
+    }
+}
+
+if (strtolower($leaveType) === 'solo parent leave') {
+    if ($days > 2) {
+        echo json_encode(['success' => false, 'message' => 'Solo parent leave is limited to 2 days maximum.']);
+        exit();
+    }
+}
+
+// ---- ANNUAL CAP CHECK (16 days approved per year) ----
+$year    = date('Y', strtotime($startDate));
+$capStmt = $pdo->prepare("
+    SELECT selected_dates
+    FROM leave_requests
+    WHERE employee_id = ?
+    AND status = 'approved'
+    AND YEAR(start_date) = ?
+");
+$capStmt->execute([$employeeId, $year]);
+$approvedRows = $capStmt->fetchAll(PDO::FETCH_ASSOC);
+
+$usedDays = 0;
+foreach ($approvedRows as $row) {
+    $dates = json_decode($row['selected_dates'], true);
+    if (is_array($dates)) {
+        $usedDays += count($dates);
+    }
+}
+
+if ($usedDays + $days > 16) {
+    $remaining = max(0, 16 - $usedDays);
+    echo json_encode([
+        'success' => false,
+        'message' => "You have only {$remaining} leave day(s) remaining for {$year}. You cannot exceed the 16-day annual limit."
+    ]);
     exit();
 }
 
-// ---- CHECK FOR EXISTING PENDING REQUEST ----
+// ---- CHECK FOR DUPLICATE PENDING REQUEST ----
 $check = $pdo->prepare("
     SELECT COUNT(*) FROM leave_requests
     WHERE employee_id = ?
@@ -59,9 +125,9 @@ if ($check->fetchColumn() > 0) {
 // ---- INSERT ----
 try {
     $pdo->prepare("
-        INSERT INTO leave_requests (employee_id, leave_type, start_date, end_date, reason, status)
-        VALUES (?, ?, ?, ?, ?, 'pending')
-    ")->execute([$employeeId, $leaveType, $startDate, $endDate, $reason]);
+        INSERT INTO leave_requests (employee_id, leave_type, start_date, end_date, selected_dates, reason, status)
+        VALUES (?, ?, ?, ?, ?, ?, 'pending')
+    ")->execute([$employeeId, $leaveType, $startDate, $endDate, $selectedDates, $reason]);
 
     echo json_encode(['success' => true, 'message' => 'Leave request submitted successfully!']);
 

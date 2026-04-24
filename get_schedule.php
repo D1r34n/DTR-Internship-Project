@@ -25,7 +25,7 @@ $schedules = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // ---- GET LEAVE REQUESTS ----
 $leaveStmt = $pdo->prepare("
-    SELECT start_date, end_date, status
+    SELECT start_date, end_date, selected_dates, status
     FROM leave_requests
     WHERE employee_id = ?
     AND (
@@ -37,24 +37,36 @@ $leaveStmt = $pdo->prepare("
 $leaveStmt->execute([$employeeId, $start, $end, $start, $end, $start, $end]);
 $leaveRequests = $leaveStmt->fetchAll(PDO::FETCH_ASSOC);
 
-// ---- BUILD LEAVE MAP (date => status) ----
+// ---- BUILD LEAVE MAP (using actual selected dates) ----
 $leaveMap = [];
 foreach ($leaveRequests as $leave) {
-    $current = new DateTime($leave['start_date']);
-    $endDate = new DateTime($leave['end_date']);
+    $dates = json_decode($leave['selected_dates'], true);
 
-    while ($current <= $endDate) {
-        $dateStr = $current->format('Y-m-d');
-        // Only store if within range
-        if ($dateStr >= $start && $dateStr <= $end) {
-            $leaveMap[$dateStr] = $leave['status'];
+    if (is_array($dates) && !empty($dates)) {
+        // Use actual selected dates
+        foreach ($dates as $dateStr) {
+            if ($dateStr >= $start && $dateStr <= $end) {
+                $leaveMap[$dateStr] = $leave['status'];
+            }
         }
-        $current->modify('+1 day');
+    } else {
+        // Fallback for old records without selected_dates
+        $current = new DateTime($leave['start_date']);
+        $endDate = new DateTime($leave['end_date']);
+        while ($current <= $endDate) {
+            $dateStr = $current->format('Y-m-d');
+            $dow     = (int) $current->format('N');
+            if ($dow < 6 && $dateStr >= $start && $dateStr <= $end) {
+                $leaveMap[$dateStr] = $leave['status'];
+            }
+            $current->modify('+1 day');
+        }
     }
 }
+$events        = [];
+$scheduleDates = array_column($schedules, 'schedule_date');
 
-$events = [];
-
+// ---- LOOP THROUGH SCHEDULES ----
 foreach ($schedules as $row) {
 
     // ---- REST DAY ----
@@ -87,7 +99,6 @@ foreach ($schedules as $row) {
     $leaveStatus = $leaveMap[$date] ?? null;
 
     if ($leaveStatus === 'approved') {
-        // ---- APPROVED LEAVE — orange, replaces shift ----
         $events[] = [
             'title'           => 'On Leave',
             'start'           => $date,
@@ -99,7 +110,6 @@ foreach ($schedules as $row) {
         continue;
 
     } elseif ($leaveStatus === 'pending') {
-        // ---- PENDING LEAVE — yellow, replaces shift ----
         $events[] = [
             'title'           => 'Leave Pending',
             'start'           => $date,
@@ -111,7 +121,6 @@ foreach ($schedules as $row) {
         continue;
 
     } elseif ($leaveStatus === 'rejected') {
-        // ---- REJECTED LEAVE — show alongside shift ----
         $events[] = [
             'title'           => 'Leave Rejected',
             'start'           => $date,
@@ -167,6 +176,42 @@ foreach ($schedules as $row) {
                 ]
             ];
         }
+    }
+}
+
+// ---- LEAVE EVENTS FOR DATES WITHOUT SCHEDULE ----
+// Handles leave on days that have no schedule entry (e.g. May 4, 5)
+foreach ($leaveMap as $leaveDate => $leaveStatus) {
+    if (in_array($leaveDate, $scheduleDates)) continue;
+    if ($leaveDate < $start || $leaveDate > $end) continue;
+
+    if ($leaveStatus === 'approved') {
+        $events[] = [
+            'title'           => 'On Leave',
+            'start'           => $leaveDate,
+            'backgroundColor' => '#fd7e14',
+            'borderColor'     => '#e8610a',
+            'textColor'       => '#ffffff',
+            'extendedProps'   => ['shift_type' => 'leave_approved']
+        ];
+    } elseif ($leaveStatus === 'pending') {
+        $events[] = [
+            'title'           => 'Leave Pending',
+            'start'           => $leaveDate,
+            'backgroundColor' => '#f0ad4e',
+            'borderColor'     => '#d99a3a',
+            'textColor'       => '#ffffff',
+            'extendedProps'   => ['shift_type' => 'leave_pending']
+        ];
+    } elseif ($leaveStatus === 'rejected') {
+        $events[] = [
+            'title'           => 'Leave Rejected',
+            'start'           => $leaveDate,
+            'backgroundColor' => '#dc3545',
+            'borderColor'     => '#b02a37',
+            'textColor'       => '#ffffff',
+            'extendedProps'   => ['shift_type' => 'leave_rejected']
+        ];
     }
 }
 

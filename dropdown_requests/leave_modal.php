@@ -29,8 +29,8 @@
         </div>
 
         <!-- Instruction -->
-        <p class="leave-instruction">
-            Select up to <strong class="leave-instruction-highlight">2 work days</strong> from the calendar below:
+        <p class="leave-instruction" id="leaveInstruction">
+            Select a leave type first to load the calendar.
         </p>
 
         <!-- Selected Dates Display -->
@@ -65,6 +65,7 @@
     let leaveCalendarInstance = null;
     let leaveScheduledDates   = [];
     let leaveSelectedDates    = [];
+    let currentLeaveType      = '';
 
     // ---- TIMEZONE FIX ----
     function localDateStr(date) {
@@ -78,6 +79,36 @@
         return localDateStr(new Date());
     }
 
+    // ---- GET RULES FOR LEAVE TYPE ----
+    function getLeaveRules(type) {
+        switch(type) {
+            case 'sick leave':
+                return { maxDays: 4,   direction: 'past',   label: 'up to 4 past dates only (before today)' };
+            case 'vacation leave':
+                return { maxDays: 999, direction: 'future', label: 'future dates only' };
+            case 'birthday leave':
+                return { maxDays: 1,   direction: 'any',    label: '1 day only' };
+            case 'solo parent leave':
+                return { maxDays: 2,   direction: 'any',    label: 'up to 2 days' };
+            default:
+                return { maxDays: 0,   direction: 'none',   label: '' };
+        }
+    }
+
+    // ---- CHECK IF DATE IS SELECTABLE ----
+    function isDateSelectable(dateStr, rules) {
+        const today = todayStr();
+        if (rules.direction === 'past')   return dateStr < today;
+        if (rules.direction === 'future') return dateStr > today;
+        if (rules.direction === 'any')    return true;
+        return false;
+    }
+
+    // ---- CAPITALIZE ----
+    function capitalize(str) {
+        return str.charAt(0).toUpperCase() + str.slice(1);
+    }
+
     // ---- LEAVE TYPE DROPDOWN ----
     function toggleLeaveTypeDropdown() {
         document.getElementById('leaveTypeDropdown').classList.toggle('show');
@@ -88,8 +119,34 @@
         document.getElementById('leaveTypeLabel').textContent = label;
         document.getElementById('leaveTypeDropdown').classList.remove('show');
         document.querySelector('.leaveTypeToggle').classList.add('selected');
+
+        currentLeaveType   = value;
+        leaveSelectedDates = [];
+
+        // Update instruction text
+        const rules = getLeaveRules(value);
+        document.getElementById('leaveInstruction').innerHTML =
+            `Select <strong class="leave-instruction-highlight">${rules.label}</strong> from the calendar below:`;
+
+        // Clear error and selected display
+        document.getElementById('leaveErrorMsg').style.display        = 'none';
+        document.getElementById('leaveSelectedDates').style.display   = 'none';
+        document.getElementById('leaveSelectedDatesText').textContent = '';
+
+        // Reload schedule dates for this leave type then re-render
+        fetch(`/DTR-Internship-Project/employee_pages/get_schedule_dates.php?leave_type=${encodeURIComponent(value)}`)
+            .then(res => res.json())
+            .then(dates => {
+                leaveScheduledDates = dates;
+                renderLeaveCalendar();
+            })
+            .catch(() => {
+                document.getElementById('leaveErrorMsg').style.display = 'block';
+                document.getElementById('leaveErrorMsg').textContent   = 'Failed to load schedule dates.';
+            });
     }
 
+    // Close leave type dropdown when clicking outside
     document.addEventListener('click', (e) => {
         if (!e.target.closest('.leaveTypeWrapper')) {
             const dropdown = document.getElementById('leaveTypeDropdown');
@@ -97,46 +154,26 @@
         }
     });
 
-    // ---- OPEN / CLOSE MODAL ----
+    // ---- OPEN MODAL ----
     function openLeaveModal() {
-    document.getElementById('leaveModalOverlay').style.display    = 'flex';
-    document.getElementById('leaveErrorMsg').style.display        = 'none';
-    document.getElementById('leaveSuccessMsg').style.display      = 'none';
-    document.getElementById('leaveSelectedDates').style.display   = 'none';
-    document.getElementById('leaveSelectedDatesText').textContent = '';
-    document.getElementById('leaveReason').value                  = '';
-    document.getElementById('leaveType').value                    = '';
-    document.getElementById('leaveTypeLabel').textContent         = 'Select leave type...';
-    document.querySelector('.leaveTypeToggle').classList.remove('selected');
-    leaveSelectedDates = [];
+        document.getElementById('leaveModalOverlay').style.display    = 'flex';
+        document.getElementById('leaveErrorMsg').style.display        = 'none';
+        document.getElementById('leaveSuccessMsg').style.display      = 'none';
+        document.getElementById('leaveSelectedDates').style.display   = 'none';
+        document.getElementById('leaveSelectedDatesText').textContent = '';
+        document.getElementById('leaveReason').value                  = '';
+        document.getElementById('leaveType').value                    = '';
+        document.getElementById('leaveTypeLabel').textContent         = 'Select leave type...';
+        document.querySelector('.leaveTypeToggle').classList.remove('selected');
+        document.getElementById('leaveInstruction').textContent       = 'Select a leave type first to load the calendar.';
+        currentLeaveType   = '';
+        leaveSelectedDates = [];
 
-    // ← small delay to ensure page is fully loaded
-    setTimeout(() => {
-        fetch('/DTR-Internship-Project/employee_pages/get_schedule_dates.php')
-            .then(res => res.json())
-            .then(dates => {
-                leaveScheduledDates = dates;
-                renderLeaveCalendar();
-            })
-            .catch(() => {
-                // ← retry once on failure
-                setTimeout(() => {
-                    fetch('/DTR-Internship-Project/employee_pages/get_schedule_dates.php')
-                        .then(res => res.json())
-                        .then(dates => {
-                            leaveScheduledDates = dates;
-                            document.getElementById('leaveErrorMsg').style.display = 'none';
-                            renderLeaveCalendar();
-                        })
-                        .catch(() => {
-                            document.getElementById('leaveErrorMsg').style.display = 'block';
-                            document.getElementById('leaveErrorMsg').textContent   = 'Failed to load schedule dates.';
-                        });
-                }, 1000);
-            });
-    }, 300);
-}
+        // Render empty calendar on open
+        renderLeaveCalendar();
+    }
 
+    // ---- CLOSE MODAL ----
     function closeLeaveModal() {
         document.getElementById('leaveModalOverlay').style.display = 'none';
         if (leaveCalendarInstance) {
@@ -144,6 +181,7 @@
             leaveCalendarInstance = null;
         }
         leaveSelectedDates = [];
+        currentLeaveType   = '';
     }
 
     // ---- RENDER CALENDAR ----
@@ -155,7 +193,7 @@
 
         const calendarEl = document.getElementById('leaveCalendar');
         calendarEl.innerHTML = '';
-        const today = todayStr();
+        const rules = getLeaveRules(currentLeaveType);
 
         leaveCalendarInstance = new FullCalendar.Calendar(calendarEl, {
             initialView: 'dayGridMonth',
@@ -167,6 +205,7 @@
                 right:  ''
             },
 
+            // Highlight scheduled work days
             events: leaveScheduledDates.map(date => ({
                 start:   date,
                 display: 'background',
@@ -174,11 +213,10 @@
             })),
 
             dayCellDidMount: function(info) {
-                const dateStr     = localDateStr(info.date);
-                const isScheduled = leaveScheduledDates.includes(dateStr);
-                const isFuture    = dateStr > today;
+                const dateStr    = localDateStr(info.date);
+                const selectable = currentLeaveType && isDateSelectable(dateStr, rules);
 
-                if (!isScheduled || !isFuture) {
+                if (!selectable) {
                     info.el.classList.add('fc-day-dimmed');
                 }
 
@@ -199,7 +237,23 @@
                 const dateStr = info.dateStr;
                 const errEl   = document.getElementById('leaveErrorMsg');
 
-                if (!leaveScheduledDates.includes(dateStr) || dateStr <= today) return;
+                // Must select leave type first
+                if (!currentLeaveType) {
+                    errEl.style.display = 'block';
+                    errEl.textContent   = 'Please select a leave type first.';
+                    return;
+                }
+
+                // Check if date is selectable
+                if (!isDateSelectable(dateStr, rules)) {
+                    errEl.style.display = 'block';
+                    if (rules.direction === 'past') {
+                        errEl.textContent = 'Sick leave can only be filed for past dates (before today).';
+                    } else if (rules.direction === 'future') {
+                        errEl.textContent = 'Vacation leave can only be filed for future dates.';
+                    }
+                    return;
+                }
 
                 const idx = leaveSelectedDates.indexOf(dateStr);
 
@@ -207,9 +261,9 @@
                     leaveSelectedDates.splice(idx, 1);
                     errEl.style.display = 'none';
                 } else {
-                    if (leaveSelectedDates.length >= 2) {
+                    if (leaveSelectedDates.length >= rules.maxDays) {
                         errEl.style.display = 'block';
-                        errEl.textContent   = 'You can only select up to 2 dates.';
+                        errEl.textContent   = `${capitalize(currentLeaveType)} is limited to ${rules.maxDays} day${rules.maxDays > 1 ? 's' : ''} only.`;
                         return;
                     }
                     leaveSelectedDates.push(dateStr);
@@ -273,10 +327,11 @@
         const endDate   = leaveSelectedDates[leaveSelectedDates.length - 1];
 
         const formData = new FormData();
-        formData.append('leave_type', leaveType);
-        formData.append('start_date', startDate);
-        formData.append('end_date',   endDate);
-        formData.append('reason',     reason);
+            formData.append('leave_type',     leaveType);
+            formData.append('start_date',     startDate);
+            formData.append('end_date',       endDate);
+            formData.append('selected_dates', JSON.stringify(leaveSelectedDates));
+            formData.append('reason',         reason);
 
         fetch('/DTR-Internship-Project/employee_pages/submit_leave_request.php', {
             method: 'POST',
