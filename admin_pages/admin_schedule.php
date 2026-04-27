@@ -45,6 +45,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (empty($dates)) {
         $error = "Please select at least one date.";
     } elseif ($is_edit) {
+        $existsStmt = $pdo->prepare("SELECT id FROM schedules WHERE employee_id = ? AND schedule_date = ?");
         $updateStmt = $pdo->prepare("
             UPDATE schedules
             SET scheduled_start = ?, scheduled_end = ?
@@ -55,13 +56,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             SET scheduled_start = ?, scheduled_end = ?
             WHERE employee_id = ? AND work_date = ? AND actual_time_in IS NULL
         ");
+        $insertSchedule = $pdo->prepare("
+            INSERT INTO schedules (employee_id, schedule_date, scheduled_start, scheduled_end, is_rest_day)
+            VALUES (?, ?, ?, ?, 0)
+        ");
+        $insertAttendance = $pdo->prepare("
+            INSERT INTO attendances (
+                employee_id, schedule_id, work_date,
+                scheduled_start, scheduled_end,
+                actual_time_in, actual_time_out,
+                total_work_minutes, late_minutes,
+                undertime_minutes, overtime_minutes,
+                status, missed_time_out
+            )
+            VALUES (?, ?, ?, ?, ?, NULL, NULL, 0, 0, 0, 0, 'incomplete', 0)
+            ON DUPLICATE KEY UPDATE
+                scheduled_start = VALUES(scheduled_start),
+                scheduled_end   = VALUES(scheduled_end)
+        ");
         foreach ($dates as $date) {
             $startDatetime = $date . ' ' . $time_in . ':00';
             $endDatetime   = $is_overnight
                 ? date('Y-m-d', strtotime($date . ' +1 day')) . ' ' . $time_out . ':00'
                 : $date . ' ' . $time_out . ':00';
-            $updateStmt->execute([$startDatetime, $endDatetime, $employee_id, $date]);
-            $updateAttendance->execute([$startDatetime, $endDatetime, $employee_id, $date]);
+
+            $existsStmt->execute([$employee_id, $date]);
+            $existingRow = $existsStmt->fetch(PDO::FETCH_ASSOC);
+
+            if ($existingRow) {
+                $updateStmt->execute([$startDatetime, $endDatetime, $employee_id, $date]);
+                $updateAttendance->execute([$startDatetime, $endDatetime, $employee_id, $date]);
+            } else {
+                $insertSchedule->execute([$employee_id, $date, $startDatetime, $endDatetime]);
+                $scheduleId = $pdo->lastInsertId() ?: null;
+                $insertAttendance->execute([$employee_id, $scheduleId, $date, $startDatetime, $endDatetime]);
+            }
         }
         $success = "Schedule updated successfully!";
     } else {
@@ -199,10 +228,10 @@ $current_page = 'schedule';
                         <?php if (count($schedules) > 0): ?>
                             <?php foreach ($schedules as $row): ?>
                                 <?php
-                                    $startDT     = $row['scheduled_start'];
-                                    $endDT       = $row['scheduled_end'];
-                                    $isOvernight = $startDT && $endDT &&
-                                                   date('Y-m-d', strtotime($endDT)) > $row['schedule_date'];
+                                    $startDT      = $row['scheduled_start'];
+                                    $endDT        = $row['scheduled_end'];
+                                    $startHour    = $startDT ? (int)date('H', strtotime($startDT)) : 6;
+                                    $isNightShift = ($startHour >= 18 || $startHour < 6);
                                 ?>
                                 <tr>
                                     <td><?= htmlspecialchars($row['employee_name']) ?></td>
@@ -210,7 +239,7 @@ $current_page = 'schedule';
                                     <td><?= $startDT ? date('h:i A', strtotime($startDT)) : '—' ?></td>
                                     <td><?= $endDT   ? date('h:i A', strtotime($endDT))   : '—' ?></td>
                                     <td>
-                                        <?php if ($isOvernight): ?>
+                                        <?php if ($isNightShift): ?>
                                             <span class="badge nightShiftBadge">Night Shift</span>
                                         <?php else: ?>
                                             <span class="badge dayShiftBadge">Day Shift</span>

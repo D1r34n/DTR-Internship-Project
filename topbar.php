@@ -67,6 +67,7 @@ $currentStatus = $timedIn ? 'Timed In' : 'Timed Out';
 
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
 <link rel="stylesheet" href="../dropdown_requests/ot_modal.css">
 <link rel="stylesheet" href="../dropdown_requests/leave_modal.css">
 <link rel="stylesheet" href="../dropdown_requests/ob_modal.css">
