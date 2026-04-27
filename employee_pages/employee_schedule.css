@@ -305,3 +305,15 @@ body::after {
 .shiftLegendDot.leave-rejected {
     background: #dc3545;
 }
+
+.shiftLegendDot.ob-approved {
+    background: #6f42c1;
+}
+
+.shiftLegendDot.ob-pending {
+    background: #f0ad4e;
+}
+
+.shiftLegendDot.ob-rejected {
+    background: #dc3545;
+}

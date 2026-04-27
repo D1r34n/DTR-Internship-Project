@@ -42,12 +42,16 @@
         On Leave
     </div>
     <div class="shiftLegendItem">
+        <div class="shiftLegendDot ob-approved"></div>
+        On OB
+    </div>
+    <div class="shiftLegendItem">
         <div class="shiftLegendDot leave-pending"></div>
-        Leave Pending
+        Leave/OB Pending
     </div>
     <div class="shiftLegendItem">
         <div class="shiftLegendDot leave-rejected"></div>
-        Leave Rejected
+        Leave/OB Rejected
     </div>
 </div>
 
@@ -60,7 +64,6 @@
     
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {

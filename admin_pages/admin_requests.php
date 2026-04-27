@@ -301,6 +301,40 @@ $obRequests = $pdo->query("
                 </div>
             </div>
 
+            <!-- OFFICIAL BUSINESS TAB -->
+            <div id="ob" class="reqTabContent" style="display:none;">
+                <div class="tableScrollWrapper">
+                    <table class="table table-bordered table-hover mt-0">
+                        <thead>
+                            <tr>
+                                <th>Employee</th>
+                                <th>Date</th>
+                                <th>Client Name</th>
+                                <th>Reason</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php if (count($obRequests) > 0): ?>
+                                <?php foreach ($obRequests as $row): ?>
+                                    <tr>
+                                        <td><?= htmlspecialchars($row['employee_name']) ?></td>
+                                        <td><?= date('M d, Y', strtotime($row['ob_date'])) ?></td>
+                                        <td><?= htmlspecialchars($row['client_name']) ?></td>
+                                        <td class="reasonCol"><?= htmlspecialchars($row['reason']) ?></td>
+                                        <td><?= getStatusBadge($row['status']) ?></td>
+                                        <td class="actionsCol"><?= getActionButtons('ob', $row['id'], $row['status']) ?></td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            <?php else: ?>
+                                <tr><td colspan="6" class="text-center">No OB requests found.</td></tr>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
         </div>
     </div>
 

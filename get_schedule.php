@@ -37,6 +37,19 @@ $leaveStmt = $pdo->prepare("
 $leaveStmt->execute([$employeeId, $start, $end, $start, $end, $start, $end]);
 $leaveRequests = $leaveStmt->fetchAll(PDO::FETCH_ASSOC);
 
+// ---- GET OB REQUESTS ----
+$obStmt = $pdo->prepare("
+    SELECT ob_date, status
+    FROM ob_requests
+    WHERE employee_id = ?
+    AND ob_date BETWEEN ? AND ?
+");
+$obStmt->execute([$employeeId, $start, $end]);
+$obMap = [];
+foreach ($obStmt->fetchAll(PDO::FETCH_ASSOC) as $ob) {
+    $obMap[$ob['ob_date']] = $ob['status'];
+}
+
 // ---- BUILD LEAVE MAP (using actual selected dates) ----
 $leaveMap = [];
 foreach ($leaveRequests as $leave) {
@@ -88,12 +101,13 @@ foreach ($schedules as $row) {
 
     if (!$startDT || !$endDT) continue;
 
-    $startDate   = date('Y-m-d', strtotime($startDT));
-    $endDate     = date('Y-m-d', strtotime($endDT));
-    $isOvernight = $endDate > $startDate; 
+    $startDate    = date('Y-m-d', strtotime($startDT));
+    $endDate      = date('Y-m-d', strtotime($endDT));
+    $isOvernight  = $endDate > $startDate;
 
-    // 6pm to 5:59AM is night shift
-    // 6am is dayshift
+    // Night shift = starts 6pm–5:59am; Day shift = starts 6am–5:59pm
+    $startHour    = (int)date('H', strtotime($startDT));
+    $isNightShift = ($startHour >= 18 || $startHour < 6);
 
     $startTimeStr = date('h:i A', strtotime($startDT));
     $endTimeStr   = date('h:i A', strtotime($endDT));
@@ -135,37 +149,61 @@ foreach ($schedules as $row) {
         // Don't continue — fall through to also show the shift
     }
 
-    // ---- REGULAR SHIFT ----
-    if (!$isOvernight) {
+    // ---- CHECK OB STATUS FOR THIS DATE ----
+    $obStatus = $obMap[$date] ?? null;
+
+    if ($obStatus === 'approved') {
         $events[] = [
-            'title'           => $startTimeStr . ' – ' . $endTimeStr,
+            'title'           => 'On OB',
             'start'           => $date,
-            'backgroundColor' => '#97be41',
-            'borderColor'     => '#7fae2f',
+            'backgroundColor' => '#6f42c1',
+            'borderColor'     => '#59359a',
             'textColor'       => '#ffffff',
-            'extendedProps'   => [
-                'is_rest_day'  => false,
-                'is_overnight' => false,
-                'shift_type'   => 'day'
-            ]
+            'extendedProps'   => ['shift_type' => 'ob_approved']
         ];
-    } else {
-        // ---- OVERNIGHT SHIFT START ----
+        continue;
+
+    } elseif ($obStatus === 'pending') {
         $events[] = [
-            'title'           => $startTimeStr . ' – ' . $endTimeStr . ' ↪',
+            'title'           => 'OB Pending',
+            'start'           => $date,
+            'backgroundColor' => '#f0ad4e',
+            'borderColor'     => '#d99a3a',
+            'textColor'       => '#ffffff',
+            'extendedProps'   => ['shift_type' => 'ob_pending']
+        ];
+        continue;
+
+    } elseif ($obStatus === 'rejected') {
+        $events[] = [
+            'title'           => 'Rejected OB',
+            'start'           => $date,
+            'backgroundColor' => '#dc3545',
+            'borderColor'     => '#b02a37',
+            'textColor'       => '#ffffff',
+            'extendedProps'   => ['shift_type' => 'ob_rejected']
+        ];
+        // Don't continue — fall through to also show the shift
+    }
+
+    // ---- REGULAR SHIFT ----
+    if ($isNightShift) {
+        // ---- NIGHT SHIFT ----
+        $events[] = [
+            'title'           => $startTimeStr . ' – ' . $endTimeStr . ($isOvernight ? ' ↪' : ''),
             'start'           => $date,
             'backgroundColor' => '#4da3ff',
             'borderColor'     => '#2e8fe8',
             'textColor'       => '#ffffff',
             'extendedProps'   => [
                 'is_rest_day'  => false,
-                'is_overnight' => true,
+                'is_overnight' => $isOvernight,
                 'shift_type'   => 'night_start'
             ]
         ];
 
-        // ---- OVERNIGHT CONTINUATION ----
-        if ($endDate <= $end) {
+        // ---- OVERNIGHT CONTINUATION (only when shift actually crosses midnight) ----
+        if ($isOvernight && $endDate <= $end) {
             $events[] = [
                 'title'           => '↪ until ' . $endTimeStr,
                 'start'           => $endDate,
@@ -179,6 +217,20 @@ foreach ($schedules as $row) {
                 ]
             ];
         }
+    } else {
+        // ---- DAY SHIFT ----
+        $events[] = [
+            'title'           => $startTimeStr . ' – ' . $endTimeStr,
+            'start'           => $date,
+            'backgroundColor' => '#97be41',
+            'borderColor'     => '#7fae2f',
+            'textColor'       => '#ffffff',
+            'extendedProps'   => [
+                'is_rest_day'  => false,
+                'is_overnight' => false,
+                'shift_type'   => 'day'
+            ]
+        ];
     }
 }
 
@@ -214,6 +266,41 @@ foreach ($leaveMap as $leaveDate => $leaveStatus) {
             'borderColor'     => '#b02a37',
             'textColor'       => '#ffffff',
             'extendedProps'   => ['shift_type' => 'leave_rejected']
+        ];
+    }
+}
+
+// ---- OB EVENTS FOR DATES WITHOUT SCHEDULE ----
+foreach ($obMap as $obDate => $obStatus) {
+    if (in_array($obDate, $scheduleDates)) continue;
+    if ($obDate < $start || $obDate > $end) continue;
+
+    if ($obStatus === 'approved') {
+        $events[] = [
+            'title'           => 'On OB',
+            'start'           => $obDate,
+            'backgroundColor' => '#6f42c1',
+            'borderColor'     => '#59359a',
+            'textColor'       => '#ffffff',
+            'extendedProps'   => ['shift_type' => 'ob_approved']
+        ];
+    } elseif ($obStatus === 'pending') {
+        $events[] = [
+            'title'           => 'OB Pending',
+            'start'           => $obDate,
+            'backgroundColor' => '#f0ad4e',
+            'borderColor'     => '#d99a3a',
+            'textColor'       => '#ffffff',
+            'extendedProps'   => ['shift_type' => 'ob_pending']
+        ];
+    } elseif ($obStatus === 'rejected') {
+        $events[] = [
+            'title'           => 'Rejected OB',
+            'start'           => $obDate,
+            'backgroundColor' => '#dc3545',
+            'borderColor'     => '#b02a37',
+            'textColor'       => '#ffffff',
+            'extendedProps'   => ['shift_type' => 'ob_rejected']
         ];
     }
 }

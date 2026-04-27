@@ -77,24 +77,32 @@ if (strtolower($leaveType) === 'solo parent leave') {
     }
 }
 
-// ---- ANNUAL CAP CHECK (16 days approved per year) ----
+// ---- ANNUAL CAP CHECK (16 days per year; approved + pending both count) ----
 $year    = date('Y', strtotime($startDate));
 $capStmt = $pdo->prepare("
     SELECT selected_dates
     FROM leave_requests
     WHERE employee_id = ?
-    AND status = 'approved'
+    AND status IN ('approved', 'pending')
     AND YEAR(start_date) = ?
 ");
 $capStmt->execute([$employeeId, $year]);
-$approvedRows = $capStmt->fetchAll(PDO::FETCH_ASSOC);
+$usedRows = $capStmt->fetchAll(PDO::FETCH_ASSOC);
 
 $usedDays = 0;
-foreach ($approvedRows as $row) {
+foreach ($usedRows as $row) {
     $dates = json_decode($row['selected_dates'], true);
     if (is_array($dates)) {
         $usedDays += count($dates);
     }
+}
+
+if ($usedDays >= 16) {
+    echo json_encode([
+        'success' => false,
+        'message' => 'No more remaining leave requests.'
+    ]);
+    exit();
 }
 
 if ($usedDays + $days > 16) {
