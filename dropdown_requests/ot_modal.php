@@ -200,8 +200,7 @@
     }
 
     function submitOTRequest() {
-        const reason = document.getElementById('otReason').valu']
-        e.trim();
+        const reason = document.getElementById('otReason').value.trim();
         const errEl  = document.getElementById('otErrorMsg');
         const sucEl  = document.getElementById('otSuccessMsg');
 

@@ -92,8 +92,8 @@ function computeGanttRow(array $row, ?array $sched): ?array
     $nextDay  = date('Y-m-d', strtotime('+1 day', strtotime($dateKey)));
 
     // --- Resolve scheduled start/end from the schedule record, falling back to the attendance row ---
-    $schedStartDt = ($sched['scheduled_start_datetime'] ?? null) ?: ($row['scheduled_start_datetime'] ?? null);
-    $schedEndDt   = ($sched['scheduled_end_datetime']   ?? null) ?: ($row['scheduled_end_datetime']   ?? null);
+    $schedStartDt = ($sched['scheduled_start'] ?? null) ?: ($row['scheduled_start'] ?? null);
+    $schedEndDt   = ($sched['scheduled_end']   ?? null) ?: ($row['scheduled_end']   ?? null);
 
     // Check if shift crosses midnight to show a date range label
     // Must be done after $schedIn/$schedOut are resolved, so we use the raw datetimes here

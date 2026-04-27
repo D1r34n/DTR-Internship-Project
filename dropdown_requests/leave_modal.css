@@ -387,6 +387,11 @@
     pointer-events: none !important;
 }
 
+#leaveCalendar .fc-day-on-leave {
+    background: rgba(220, 53, 69, 0.18) !important;
+    opacity: 0.6 !important;
+}
+
 #leaveCalendar .leave-check {
     display: inline-flex;
     align-items: center;

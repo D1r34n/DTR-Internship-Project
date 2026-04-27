@@ -167,8 +167,8 @@ function buildOption(records, schedules) {
 
         const sched = schedules[row.work_date] || null;
 
-        const schedStart = toTs(sched?.scheduled_start_datetime ?? row.scheduled_start_datetime);
-        const schedEnd   = toTs(sched?.scheduled_end_datetime   ?? row.scheduled_end_datetime);
+        const schedStart = toTs(sched?.scheduled_start ?? row.scheduled_start);
+        const schedEnd   = toTs(sched?.scheduled_end   ?? row.scheduled_end);
         const inTs       = toTs(row.actual_time_in);
         const outTs      = toTs(row.actual_time_out);
 
