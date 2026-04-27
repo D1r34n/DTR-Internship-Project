@@ -176,7 +176,7 @@ foreach ($schedules as $row) {
 
     } elseif ($obStatus === 'rejected') {
         $events[] = [
-            'title'           => 'Rejected OB',
+            'title'           => 'OB Rejected',
             'start'           => $date,
             'backgroundColor' => '#dc3545',
             'borderColor'     => '#b02a37',
