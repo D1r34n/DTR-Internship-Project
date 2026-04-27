@@ -76,12 +76,12 @@ function processAttendanceTap($pdo, $employee_id, $lat, $lng, $accuracy, $now = 
     $schedule = null;
 
     $stmt = $pdo->prepare("
-        SELECT schedule_date, scheduled_start_datetime, scheduled_end_datetime
+        SELECT schedule_date, scheduled_start, scheduled_end
         FROM schedules
         WHERE employee_id = ?
-          AND ? BETWEEN DATE_SUB(scheduled_start_datetime, INTERVAL 2 HOUR)
-                        AND DATE_ADD(scheduled_end_datetime, INTERVAL 6 HOUR)
-        ORDER BY scheduled_end_datetime DESC
+          AND ? BETWEEN DATE_SUB(scheduled_start, INTERVAL 2 HOUR)
+                        AND DATE_ADD(scheduled_end, INTERVAL 6 HOUR)
+        ORDER BY scheduled_end DESC
         LIMIT 1
     ");
     $stmt->execute([$employee_id, $now]);
@@ -101,8 +101,8 @@ function processAttendanceTap($pdo, $employee_id, $lat, $lng, $accuracy, $now = 
         ");
         $stmt->execute([
             $employee_id,
-            $schedule['scheduled_start_datetime'],
-            $schedule['scheduled_end_datetime']
+            $schedule['scheduled_start'],
+            $schedule['scheduled_end']
         ]);
         $isFirstLogOfShift = !$stmt->fetchColumn();
         $debug[] = "Is first log of shift: " . ($isFirstLogOfShift ? 'yes' : 'no');
@@ -110,7 +110,7 @@ function processAttendanceTap($pdo, $employee_id, $lat, $lng, $accuracy, $now = 
 
     if ($nextType === 'IN' && $schedule && $isFirstLogOfShift) {
 
-        if ($now > $schedule['scheduled_end_datetime']) {
+        if ($now > $schedule['scheduled_end']) {
             $debug[] = "Late first time-in after shift end → forcing absent";
 
             try {
@@ -138,20 +138,20 @@ function processAttendanceTap($pdo, $employee_id, $lat, $lng, $accuracy, $now = 
         $stmt = $pdo->prepare("
             SELECT
                 s.schedule_date,
-                s.scheduled_start_datetime,
-                s.scheduled_end_datetime
+                s.scheduled_start,
+                s.scheduled_end
             FROM schedules s
             LEFT JOIN attendances a
                 ON  a.employee_id = s.employee_id
                 AND a.work_date   = s.schedule_date
             WHERE s.employee_id = ?
-            AND DATE_ADD(s.scheduled_end_datetime, INTERVAL 6 HOUR) < ?
+            AND DATE_ADD(s.scheduled_end, INTERVAL 6 HOUR) < ?
             AND s.is_rest_day = 0
             AND (
                     a.work_date IS NULL
                 OR  a.status NOT IN ('present', 'late', 'undertime', 'overtime', 'absent')
             )
-            ORDER BY s.scheduled_end_datetime DESC
+            ORDER BY s.scheduled_end DESC
         ");
         $stmt->execute([$employee_id, $now]);
         $expiredShifts = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -209,7 +209,7 @@ function processAttendanceTap($pdo, $employee_id, $lat, $lng, $accuracy, $now = 
         $debug[] = "No active schedule, trying fallback by last IN date: {$lastInDate}";
 
         $stmt = $pdo->prepare("
-            SELECT schedule_date, scheduled_start_datetime, scheduled_end_datetime
+            SELECT schedule_date, scheduled_start, scheduled_end
             FROM schedules
             WHERE employee_id = ?
               AND schedule_date = ?
@@ -300,12 +300,12 @@ function processAttendanceTapTest(PDO $pdo, int $employeeId, string $now): array
 
    // Find schedule that covers the simulated time — handles midnight-crossing shifts
     $stmt = $pdo->prepare("
-        SELECT schedule_date, scheduled_start_datetime, scheduled_end_datetime
+        SELECT schedule_date, scheduled_start, scheduled_end
         FROM schedules
         WHERE employee_id = ?
-        AND ? BETWEEN DATE_SUB(scheduled_start_datetime, INTERVAL 2 HOUR)
-                    AND DATE_ADD(scheduled_end_datetime, INTERVAL 6 HOUR)
-        ORDER BY scheduled_end_datetime DESC
+        AND ? BETWEEN DATE_SUB(scheduled_start, INTERVAL 2 HOUR)
+                    AND DATE_ADD(scheduled_end, INTERVAL 6 HOUR)
+        ORDER BY scheduled_end DESC
         LIMIT 1
     ");
     $stmt->execute([$employeeId, $now]);
@@ -326,12 +326,100 @@ function processAttendanceTapTest(PDO $pdo, int $employeeId, string $now): array
     ];
 }
 
+// Handles break in / break out tap
+// Inserts a BREAK_IN or BREAK_OUT log based on the last log state
+function processBreakTap(PDO $pdo, int $employeeId, ?float $lat, ?float $lng, ?float $accuracy, ?string $now = null): array
+{
+    $now   = $now ?? date('Y-m-d H:i:s');
+    $debug = [];
+
+    // Office location for distance calculation
+    $officeLat = 14.584415691940826;
+    $officeLng = 120.99562631352414;
+    $radius    = 100;
+
+    $distance = ($lat && $lng)
+        ? distanceMeters($lat, $lng, $officeLat, $officeLng)
+        : 0;
+    $isWithin = $distance <= $radius ? 1 : 0;
+    $debug[]  = "Distance from office: {$distance}m, within radius: " . ($isWithin ? 'yes' : 'no');
+
+    // Get the last log to determine break direction
+    $stmt = $pdo->prepare("
+        SELECT log_type, log_time
+        FROM logs
+        WHERE employee_id = ?
+        ORDER BY log_time DESC
+        LIMIT 1
+    ");
+    $stmt->execute([$employeeId]);
+    $lastLog = $stmt->fetch(PDO::FETCH_ASSOC);
+    $debug[] = "Last log: " . ($lastLog ? "{$lastLog['log_type']} at {$lastLog['log_time']}" : "none");
+
+    // Determine break direction from last log
+    // null = not allowed (employee not timed in)
+    $isBreakIn = match($lastLog['log_type'] ?? null) {
+        'IN'        => true,   // just timed in → can break in
+        'BREAK_OUT' => true,   // returned from break → can break in again
+        'BREAK_IN'  => false,  // currently on break → break out
+        default     => null,   // OUT or no log → not allowed
+    };
+
+    // Block break if employee is not timed in
+    if ($isBreakIn === null) {
+        $debug[] = "Break blocked: employee is not timed in";
+        return [
+            'tap'     => 'error',
+            'error'   => 'not_timed_in',
+            'message' => 'You must be timed in to use break.',
+            'debug'   => $debug,
+        ];
+    }
+
+    $logType  = $isBreakIn ? 'BREAK_IN'  : 'BREAK_OUT';
+    $response = $isBreakIn ? 'break_in'  : 'break_out';
+    $debug[]  = "Break tap type: {$logType}";
+
+    // Insert the break log
+    $stmt = $pdo->prepare("
+        INSERT INTO logs (
+            employee_id,
+            log_type,
+            log_time,
+            latitude,
+            longitude,
+            accuracy,
+            is_within_office,
+            distance_meters
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    ");
+    $stmt->execute([
+        $employeeId,
+        $logType,
+        $now,
+        $lat ?? $officeLat,
+        $lng ?? $officeLng,
+        $accuracy ?? 10,
+        $isWithin,
+        round($distance, 2),
+    ]);
+    $debug[] = "Break log inserted: {$logType} at {$now}";
+
+    return [
+        'tap'      => $response,
+        'log_type' => $logType,
+        'log_time' => $now,
+        'debug'    => $debug,
+    ];
+}
+
 // Computes and upserts the final attendance record for a given shift
 function finalizeEmployeeAttendance(PDO $pdo, int $employeeId, array $schedule)
 {
     $date           = $schedule['schedule_date'];
-    $scheduledStart = $schedule['scheduled_start_datetime'];
-    $scheduledEnd   = $schedule['scheduled_end_datetime'];
+    $scheduledStart = $schedule['scheduled_start'];
+    $scheduledEnd   = $schedule['scheduled_end'];
 
     // Fetch all logs within the shift window, including cross-day taps
     $stmt = $pdo->prepare("
@@ -349,7 +437,7 @@ function finalizeEmployeeAttendance(PDO $pdo, int $employeeId, array $schedule)
         $stmt = $pdo->prepare("
             INSERT INTO attendances (
                 employee_id, work_date,
-                scheduled_start_datetime, scheduled_end_datetime,
+                scheduled_start, scheduled_end,
                 actual_time_in, actual_time_out,
                 total_work_hours, late_minutes,
                 undertime_minutes, overtime_minutes, status, missed_time_out
@@ -432,15 +520,15 @@ function finalizeEmployeeAttendance(PDO $pdo, int $employeeId, array $schedule)
     $stmt = $pdo->prepare("
         INSERT INTO attendances (
             employee_id, work_date,
-            scheduled_start_datetime, scheduled_end_datetime,
+            scheduled_start, scheduled_end,
             actual_time_in, actual_time_out,
             total_work_hours, late_minutes,
             undertime_minutes, overtime_minutes, status, missed_time_out
         )
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON DUPLICATE KEY UPDATE
-            scheduled_start_datetime = VALUES(scheduled_start_datetime),
-            scheduled_end_datetime   = VALUES(scheduled_end_datetime),
+            scheduled_start = VALUES(scheduled_start),
+            scheduled_end   = VALUES(scheduled_end),
             actual_time_in           = COALESCE(actual_time_in, VALUES(actual_time_in)),
               actual_time_out        = COALESCE(VALUES(actual_time_out), actual_time_out),
             total_work_hours         = VALUES(total_work_hours),
@@ -473,8 +561,8 @@ function getAttendanceRecords(PDO $pdo, int $employeeId, string $startDate, stri
     $stmt = $pdo->prepare("
         SELECT
             work_date,
-            scheduled_start_datetime,
-            scheduled_end_datetime,
+            scheduled_start,
+            scheduled_end,
             actual_time_in,
             actual_time_out,
             total_work_hours,
@@ -498,7 +586,7 @@ function getAttendanceRecords(PDO $pdo, int $employeeId, string $startDate, stri
 function getSchedulesByDateRange(PDO $pdo, int $employeeId, string $startDate, string $endDate): array
 {
     $stmt = $pdo->prepare("
-        SELECT schedule_date, scheduled_start_datetime, scheduled_end_datetime, is_rest_day
+        SELECT schedule_date, scheduled_start, scheduled_end, is_rest_day
         FROM schedules
         WHERE employee_id = ?
         AND schedule_date BETWEEN ? AND ?

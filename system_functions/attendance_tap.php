@@ -59,12 +59,10 @@ if ($isLocalhost) {
 }
 
 // -------------------------------------------------
-// 2.5. CONTROLLER DEBOUNCE (ANTI-SPAM UI PROTECTION)
-// Skip debounce entirely when in testing mode
+// 2.5. CONTROLLER DEBOUNCE
 // -------------------------------------------------
 if (!$testing_mode || !$isLocalhost) {
     define('TAP_COOLDOWN_SECONDS', 5);
-
     $now     = time();
     $lastTap = $_SESSION['last_attendance_tap'] ?? 0;
 
@@ -91,12 +89,22 @@ if ((!$lat || !$lng) && (!$testing_mode || !$isLocalhost)) {
 // -------------------------------------------------
 try {
 
+    // ── BREAK IN / OUT — after debounce ──
+    if (!empty($data['break_tap'])) {
+        $result = processBreakTap($pdo, $employee_id, $lat, $lng, $accuracy, $simulatedNow);
+        $result['env'] = [
+            'is_localhost'  => $isLocalhost,
+            'testing_mode'  => $testing_mode && $isLocalhost,
+            'simulated_now' => $simulatedNow ?? 'none',
+        ];
+        echo json_encode($result);
+        exit;
+    }
+
     if ($testing_mode && $isLocalhost) {
-        // Relaxed tap — bypasses GPS, debounce, and schedule window
         $now    = $simulatedNow ?? date('Y-m-d H:i:s');
         $result = processAttendanceTapTest($pdo, $employee_id, $now);
     } else {
-        // Normal tap — full validation
         $result = processAttendanceTap($pdo, $employee_id, $lat, $lng, $accuracy, $simulatedNow);
     }
 

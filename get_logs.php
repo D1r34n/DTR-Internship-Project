@@ -51,9 +51,25 @@ foreach ($records as $row):
     <td><?= date('F d, Y', strtotime($row['log_time'])) ?></td>
     <td><?= date('h:i A',  strtotime($row['log_time'])) ?></td>
     <td>
-        <div class="logBackground <?= $row['log_type'] === 'IN' ? 'log-in' : 'log-out' ?>">
+        <div class="logBackground <?php
+            echo match($row['log_type']) {
+                'IN'        => 'log-in',
+                'OUT'       => 'log-out',
+                'BREAK_IN'  => 'log-break-in',
+                'BREAK_OUT' => 'log-break-out',
+                default     => 'log-out'
+            };
+        ?>">
             <span class="logLabel">
-                <?= $row['log_type'] === 'IN' ? 'Time In' : 'Time Out' ?>
+                <?php
+                echo match($row['log_type']) {
+                    'IN'        => 'Time In',
+                    'OUT'       => 'Time Out',
+                    'BREAK_IN'  => 'Break In',
+                    'BREAK_OUT' => 'Break Out',
+                    default     => $row['log_type']
+                };
+                ?>
             </span>
         </div>
     </td>

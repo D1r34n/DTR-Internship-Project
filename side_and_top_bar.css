@@ -300,7 +300,14 @@ a:focus, img:focus {
     -webkit-user-drag: none;
 }
 
+
 /* Time Button */
+.timeInWrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
 .timeInButton {
     display: inline-flex;
     align-items: center;
@@ -355,6 +362,109 @@ a:focus, img:focus {
     align-items: center;
     justify-content: center;
     color: inherit;
+}
+
+/* Break dropdown */
+.breakDropdownWrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.breakMenu {
+    position: absolute;
+    top: calc(100% + 0.2rem);
+    right: 0;
+
+    padding: 1rem 0rem;
+    background: transparent;
+
+    min-width: 10rem;
+    z-index: 9999;
+    overflow: visible;
+
+    pointer-events: none;
+    visibility: hidden;
+
+    transition: visibility 0s linear 0.25s;
+}
+
+.breakMenu.show {
+    pointer-events: auto;
+    visibility: visible;
+    transition: visibility 0s;
+}
+
+/* Glass inner section — mirrors .dropdownSection */
+.breakMenuSection {
+    padding: 0.5rem;
+
+    background: var(--glass-bg);
+    backdrop-filter: blur(32px) saturate(160%) brightness(0.3);
+    -webkit-backdrop-filter: blur(32px) saturate(160%) brightness(0.3);
+
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.5);
+
+    clip-path: inset(0 0 100% 0 round 12px);
+    transition: clip-path 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.breakMenu.show .breakMenuSection {
+    clip-path: inset(0 0 0% 0 round 12px);
+}
+
+.breakMenuItem {
+    width: 100%;
+    padding: 0.7rem 1.2rem;
+    border-radius: 12px;
+    border: none;
+    font-family: 'Poppins', sans-serif;
+    font-size: 0.875rem;
+    font-weight: 300;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    transition: color 0.2s ease, background-color 0.3s ease, transform 0.2s ease;
+    background: transparent;
+}
+
+.breakInBtn {
+    color: #fbbf24;
+}
+
+.breakInBtn i {
+    color: #fbbf24;
+    font-size: 1rem;
+}
+
+.breakInBtn:hover {
+    color: #fbbf24;
+    background: rgba(251, 191, 36, 0.1);
+    transform: translateX(4px);
+}
+
+.breakOutBtn {
+    color: #22c55e;
+}
+
+.breakOutBtn i {
+    color: #22c55e;
+    font-size: 1rem;
+}
+
+.breakOutBtn:hover {
+    color: #22c55e;
+    background: rgba(34, 197, 94, 0.1);
+    transform: translateX(4px);
+}
+
+.breakMenuItem:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    transform: none !important;
 }
 
 .verticalDivider {
