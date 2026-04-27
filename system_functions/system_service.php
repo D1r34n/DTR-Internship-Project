@@ -75,17 +75,37 @@ function processAttendanceTap($pdo, $employee_id, $lat, $lng, $accuracy, $now = 
     $isFirstLogOfShift = false;
     $schedule = null;
 
-    $stmt = $pdo->prepare("
-        SELECT schedule_date, scheduled_start, scheduled_end
-        FROM schedules
-        WHERE employee_id = ?
-          AND ? BETWEEN DATE_SUB(scheduled_start, INTERVAL 2 HOUR)
-                        AND DATE_ADD(scheduled_end, INTERVAL 6 HOUR)
-        ORDER BY scheduled_end DESC
-        LIMIT 1
-    ");
-    $stmt->execute([$employee_id, $now]);
-    $schedule = $stmt->fetch(PDO::FETCH_ASSOC);
+    if ($nextType === 'IN') {
+        // For IN taps, use the time window as before
+        $stmt = $pdo->prepare("
+            SELECT schedule_date, scheduled_start, scheduled_end
+            FROM schedules
+            WHERE employee_id = ?
+            AND ? BETWEEN DATE_SUB(scheduled_start, INTERVAL 2 HOUR)
+                            AND DATE_ADD(scheduled_end, INTERVAL 6 HOUR)
+            ORDER BY scheduled_end DESC
+            LIMIT 1
+        ");
+        $stmt->execute([$employee_id, $now]);
+        $schedule = $stmt->fetch(PDO::FETCH_ASSOC);
+    } else {
+        // For OUT taps, anchor to the date of the last IN log to avoid
+        // bleeding into the next day's schedule window
+        $lastInDate = $lastLog ? date('Y-m-d', strtotime($lastLog['log_time'])) : null;
+        $schedule = null;
+
+        if ($lastInDate) {
+            $stmt = $pdo->prepare("
+                SELECT schedule_date, scheduled_start, scheduled_end
+                FROM schedules
+                WHERE employee_id = ?
+                AND schedule_date = ?
+                LIMIT 1
+            ");
+            $stmt->execute([$employee_id, $lastInDate]);
+            $schedule = $stmt->fetch(PDO::FETCH_ASSOC);
+        }
+    }
     $debug[] = "Active schedule: " . ($schedule ? "found for {$schedule['schedule_date']}" : "none found");
 
     // Check if this is the first IN tap for the current shift
@@ -153,44 +173,14 @@ function processAttendanceTap($pdo, $employee_id, $lat, $lng, $accuracy, $now = 
     // Finalize attendance record for the current shift
     if ($schedule) {
         try {
-            if ($nextType === 'IN' || date('Y-m-d', strtotime($lastLog['log_time'] ?? $now)) === $schedule['schedule_date']) {
-                finalizeEmployeeAttendance($pdo, $employee_id, $schedule, $now);
-                $debug[] = "Attendance finalized for schedule: {$schedule['schedule_date']}";
-            } else {
-                $debug[] = "Skipped finalize: OUT tap schedule date doesn't match last IN date";
-            }
+            finalizeEmployeeAttendance($pdo, $employee_id, $schedule, $now);
+            $debug[] = "Attendance finalized for schedule: {$schedule['schedule_date']}";
         } catch (Throwable $e) {
             $debug[] = "Finalize error: {$e->getMessage()}";
             error_log("Attendance finalize error: " . $e->getMessage());
         }
-    } else if ($nextType === 'OUT' && $lastLog) {
-        // Fallback: find schedule by the date of the last IN log if no active schedule found
-        $lastInDate = date('Y-m-d', strtotime($lastLog['log_time']));
-        $debug[] = "No active schedule, trying fallback by last IN date: {$lastInDate}";
-
-        $stmt = $pdo->prepare("
-            SELECT schedule_date, scheduled_start, scheduled_end
-            FROM schedules
-            WHERE employee_id = ?
-              AND schedule_date = ?
-            LIMIT 1
-        ");
-        $stmt->execute([$employee_id, $lastInDate]);
-        $fallbackSchedule = $stmt->fetch(PDO::FETCH_ASSOC);
-
-        if ($fallbackSchedule) {
-            try {
-                finalizeEmployeeAttendance($pdo, $employee_id, $fallbackSchedule, $now);
-                $debug[] = "Attendance finalized via fallback for: {$lastInDate}";
-            } catch (Throwable $e) {
-                $debug[] = "Fallback finalize error: {$e->getMessage()}";
-                error_log("Attendance finalize fallback error: " . $e->getMessage());
-            }
-        } else {
-            $debug[] = "Fallback schedule not found for date: {$lastInDate}";
-        }
     } else {
-        $debug[] = "No schedule found and no fallback triggered";
+        $debug[] = "No schedule found for this tap";
     }
 
     // Return result to the controller
@@ -424,10 +414,11 @@ function finalizeEmployeeAttendance(PDO $pdo, int $employeeId, array $schedule, 
         FROM logs
         WHERE employee_id = ?
         AND log_time BETWEEN DATE_SUB(?, INTERVAL 2 HOUR)
-                        AND DATE_ADD(?, INTERVAL 6 HOUR)
+                        AND DATE_ADD(?, INTERVAL 2 HOUR)
+        AND log_time <= ?
         ORDER BY log_time ASC
     ");
-    $stmt->execute([$employeeId, $scheduledStart, $scheduledEnd]);
+    $stmt->execute([$employeeId, $scheduledStart, $scheduledEnd, $now]);
     $logs = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     // Initialize parsed values
@@ -476,32 +467,17 @@ function finalizeEmployeeAttendance(PDO $pdo, int $employeeId, array $schedule, 
 
         // Fallback to the current date where it sets the time in and out to the current time out
         if ($fallbackIn) {
-            $stmt = $pdo->prepare("
-                INSERT INTO attendances (
-                    employee_id, work_date,
-                    scheduled_start, scheduled_end,
-                    actual_time_in, actual_time_out,
-                    total_work_minutes, late_minutes,
-                    undertime_minutes, overtime_minutes,
-                    break_minutes, status, missed_time_out
-                )
-                VALUES (?, ?, ?, ?, NULL, NULL, 0, 0, 0, 0, 0, 'incomplete', 0)
-                ON DUPLICATE KEY UPDATE
-                    scheduled_start    = IF(status NOT IN ('present','late','undertime','overtime','absent'), VALUES(scheduled_start), scheduled_start),
-                    scheduled_end      = IF(status NOT IN ('present','late','undertime','overtime','absent'), VALUES(scheduled_end),   scheduled_end),
-                    actual_time_in     = IF(status NOT IN ('present','late','undertime','overtime','absent'), NULL,                   actual_time_in),
-                    actual_time_out    = IF(status NOT IN ('present','late','undertime','overtime','absent'), NULL,                   actual_time_out),
-                    total_work_minutes = IF(status NOT IN ('present','late','undertime','overtime','absent'), 0,                      total_work_minutes),
-                    late_minutes       = IF(status NOT IN ('present','late','undertime','overtime','absent'), 0,                      late_minutes),
-                    undertime_minutes  = IF(status NOT IN ('present','late','undertime','overtime','absent'), 0,                      undertime_minutes),
-                    overtime_minutes   = IF(status NOT IN ('present','late','undertime','overtime','absent'), 0,                      overtime_minutes),
-                    break_minutes      = IF(status NOT IN ('present','late','undertime','overtime','absent'), 0,                      break_minutes),
-                    status             = IF(status NOT IN ('present','late','undertime','overtime','absent'), 'incomplete',           status),
-                    missed_time_out    = IF(status NOT IN ('present','late','undertime','overtime','absent'), 0,                      missed_time_out)
-            ");
-            $stmt->execute([$employeeId, $date, $scheduledStart, $scheduledEnd]);
-            return;
+            $firstIn = $fallbackIn['log_time'];
+
+            //prevent cross-day / unrelated OUT pairing
+            if ($lastOut && strtotime($lastOut) - strtotime($firstIn) > 16 * 3600) {
+                $lastOut = null;
+            }
         }
+    }
+
+    if ($firstIn && $lastOut && strtotime($lastOut) < strtotime($firstIn)) {
+    $lastOut = null;
     }
 
     // Close unclosed break
