@@ -82,8 +82,8 @@ foreach ($schedules as $row) {
         continue;
     }
 
-    $startDT     = $row['scheduled_start_datetime'];
-    $endDT       = $row['scheduled_end_datetime'];
+    $startDT     = $row['scheduled_start'];
+    $endDT       = $row['scheduled_end'];
     $date        = $row['schedule_date'];
 
     if (!$startDT || !$endDT) continue;
