@@ -20,8 +20,25 @@ if (isset($_GET['delete'], $_GET['date'])) {
     $pdo->prepare("DELETE FROM schedules WHERE employee_id = ? AND schedule_date = ?")
         ->execute([$employeeId, $date]);
 
+    // Also delete the attendance row for this schedule
+    // Only delete if no actual time-in has been recorded yet
+    // If the employee already timed in, preserve the attendance record
+    $pdo->prepare("
+        DELETE FROM attendances 
+        WHERE employee_id = ? 
+        AND work_date = ?
+        AND actual_time_in IS NULL
+    ")->execute([$employeeId, $date]);
+
     $success = "Schedule deleted successfully!";
 }
+
+// // Hard delete — removes attendance even if employee already timed in
+// $pdo->prepare("
+//     DELETE FROM attendances 
+//     WHERE employee_id = ? 
+//     AND work_date = ?
+// ")->execute([$employeeId, $date]);
 
 // ---- HANDLE ADD / OVERWRITE ----
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -34,12 +51,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (empty($dates)) {
         $error = "Please select at least one date.";
     } else {
-        $insertStmt = $pdo->prepare("
-            INSERT INTO schedules (employee_id, schedule_date, scheduled_start_datetime, scheduled_end_datetime, is_rest_day)
+        $insertSchedule = $pdo->prepare("
+            INSERT INTO schedules (employee_id, schedule_date, scheduled_start, scheduled_end, is_rest_day)
             VALUES (?, ?, ?, ?, 0)
             ON DUPLICATE KEY UPDATE
-                scheduled_start_datetime = VALUES(scheduled_start_datetime),
-                scheduled_end_datetime   = VALUES(scheduled_end_datetime)
+                scheduled_start = VALUES(scheduled_start),
+                scheduled_end   = VALUES(scheduled_end)
+        ");
+
+        // Upsert attendance row when a schedule is created or updated
+        // Preserves existing actual_time_in/out if already recorded
+        $insertAttendance = $pdo->prepare("
+            INSERT INTO attendances (
+                employee_id, schedule_id, work_date,
+                scheduled_start, scheduled_end,
+                actual_time_in, actual_time_out,
+                total_work_minutes, late_minutes,
+                undertime_minutes, overtime_minutes,
+                status, missed_time_out
+            )
+            VALUES (?, ?, ?, ?, ?, NULL, NULL, 0, 0, 0, 0, 'incomplete', 0)
+            ON DUPLICATE KEY UPDATE
+                scheduled_start = VALUES(scheduled_start),
+                scheduled_end   = VALUES(scheduled_end)
+                -- Intentionally NOT updating actual times, status, or minutes
+                -- so existing attendance data is preserved on schedule edit
         ");
 
         foreach ($dates as $date) {
@@ -48,7 +84,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ? date('Y-m-d', strtotime($date . ' +1 day')) . ' ' . $time_out . ':00'
                 : $date . ' ' . $time_out . ':00';
 
-            $insertStmt->execute([$employee_id, $date, $startDatetime, $endDatetime]);
+            // Save schedule
+            $insertSchedule->execute([$employee_id, $date, $startDatetime, $endDatetime]);
+
+            // Get the schedule_id that was just inserted or already existed
+            $scheduleId = $pdo->lastInsertId() ?: null;
+
+            // Create attendance placeholder — skips if already has real data
+            $insertAttendance->execute([
+                $employee_id,
+                $scheduleId,
+                $date,
+                $startDatetime,
+                $endDatetime,
+            ]);
         }
 
         $success = "Schedule saved successfully!";
@@ -61,8 +110,8 @@ $schedules = $pdo->query("
         e.name AS employee_name,
         s.employee_id,
         s.schedule_date,
-        s.scheduled_start_datetime,
-        s.scheduled_end_datetime,
+        s.scheduled_start,
+        s.scheduled_end,
         s.is_rest_day
     FROM schedules s
     JOIN employees e ON s.employee_id = e.id
@@ -136,8 +185,8 @@ $current_page = 'schedule';
                         <?php if (count($schedules) > 0): ?>
                             <?php foreach ($schedules as $row): ?>
                                 <?php
-                                    $startDT     = $row['scheduled_start_datetime'];
-                                    $endDT       = $row['scheduled_end_datetime'];
+                                    $startDT     = $row['scheduled_start'];
+                                    $endDT       = $row['scheduled_end'];
                                     $isOvernight = $startDT && $endDT &&
                                                    date('Y-m-d', strtotime($endDT)) > $row['schedule_date'];
                                 ?>
