@@ -23,35 +23,57 @@ if (isset($_GET['delete'], $_GET['date'])) {
     $success = "Schedule deleted successfully!";
 }
 
-// ---- HANDLE ADD / OVERWRITE ----
+// ---- HANDLE ADD / EDIT ----
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $employee_id  = $_POST['employee_id'];
     $dates        = json_decode($_POST['selected_dates'], true);
     $time_in      = $_POST['time_in'];
     $time_out     = $_POST['time_out'];
+    $is_edit      = !empty($_POST['is_edit']) && $_POST['is_edit'] === '1';
     $is_overnight = $time_out < $time_in;
 
     if (empty($dates)) {
         $error = "Please select at least one date.";
-    } else {
-        $insertStmt = $pdo->prepare("
-            INSERT INTO schedules (employee_id, schedule_date, scheduled_start_datetime, scheduled_end_datetime, is_rest_day)
-            VALUES (?, ?, ?, ?, 0)
-            ON DUPLICATE KEY UPDATE
-                scheduled_start_datetime = VALUES(scheduled_start_datetime),
-                scheduled_end_datetime   = VALUES(scheduled_end_datetime)
+    } elseif ($is_edit) {
+        $updateStmt = $pdo->prepare("
+            UPDATE schedules
+            SET scheduled_start_datetime = ?, scheduled_end_datetime = ?
+            WHERE employee_id = ? AND schedule_date = ?
         ");
-
         foreach ($dates as $date) {
             $startDatetime = $date . ' ' . $time_in . ':00';
             $endDatetime   = $is_overnight
                 ? date('Y-m-d', strtotime($date . ' +1 day')) . ' ' . $time_out . ':00'
                 : $date . ' ' . $time_out . ':00';
-
-            $insertStmt->execute([$employee_id, $date, $startDatetime, $endDatetime]);
+            $updateStmt->execute([$startDatetime, $endDatetime, $employee_id, $date]);
+        }
+        $success = "Schedule updated successfully!";
+    } else {
+        $checkStmt     = $pdo->prepare("SELECT COUNT(*) FROM schedules WHERE employee_id = ? AND schedule_date = ?");
+        $duplicateDates = [];
+        foreach ($dates as $date) {
+            $checkStmt->execute([$employee_id, $date]);
+            if ($checkStmt->fetchColumn() > 0) {
+                $duplicateDates[] = date('M d, Y', strtotime($date));
+            }
         }
 
-        $success = "Schedule saved successfully!";
+        if (!empty($duplicateDates)) {
+            $error = "Schedule already exist for: " . implode(', ', $duplicateDates) . ".";
+        } else {
+            $insertStmt = $pdo->prepare("
+                INSERT INTO schedules (employee_id, schedule_date, scheduled_start_datetime, scheduled_end_datetime, is_rest_day)
+                VALUES (?, ?, ?, ?, 0)
+            ");
+            foreach ($dates as $date) {
+                $startDatetime = $date . ' ' . $time_in . ':00';
+                $endDatetime   = $is_overnight
+                    ? date('Y-m-d', strtotime($date . ' +1 day')) . ' ' . $time_out . ':00'
+                    : $date . ' ' . $time_out . ':00';
+                $insertStmt->execute([$employee_id, $date, $startDatetime, $endDatetime]);
+            }
+            $success = "Schedule saved successfully!";
+        }
     }
 }
 
@@ -192,6 +214,7 @@ $current_page = 'schedule';
 
                     <input type="hidden" name="employee_id" id="employeeSelect">
                     <input type="hidden" name="selected_dates" id="selectedDatesInput">
+                    <input type="hidden" name="is_edit" id="isEditMode" value="0">
 
                     <div class="formGrid">
 
@@ -332,6 +355,7 @@ $current_page = 'schedule';
             document.getElementById('formTitle').textContent     = 'Edit Schedule';
             document.getElementById('submitLabel').textContent   = 'Update Schedule';
             document.getElementById('cancelBtn').style.display   = 'inline-block';
+            document.getElementById('isEditMode').value          = '1';
 
             selectedDates = [date];
             fp.setDate(selectedDates);
