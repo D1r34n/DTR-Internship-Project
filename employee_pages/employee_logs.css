@@ -187,6 +187,7 @@ body::after {
     color: var(--primary-color) !important;
 }
 
+/* Log type filter */
 #logTypeToggle {
     display: inline-flex;
     align-items: center;
@@ -243,6 +244,30 @@ body::after {
 #logTypeToggle:hover .logArrow {
     transform: rotate(180deg);
 }
+
+.logTypeSection {
+    padding: 0.5rem;
+
+    /* semi-transparent base (required for glass effect) */
+    background: rgba(0, 0, 0, 0.95);
+
+    /* real glass blur */
+    backdrop-filter: blur(32px);
+    -webkit-backdrop-filter: blur(32px);
+
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 12px;
+
+    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.5);
+
+    clip-path: inset(0 0 100% 0 round 12px);
+    transition: clip-path 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.userDropdownMenu.show .logTypeSection {
+    clip-path: inset(0 0 0% 0 round 12px);
+}
+
 
 /* =========================
    TABLE HEADER (SEPARATE GLASS)

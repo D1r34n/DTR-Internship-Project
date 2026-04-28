@@ -67,7 +67,7 @@ $current_page = 'logs';
                         <i class="bi bi-chevron-down logArrow"></i>
                     </span>
                     <div class="userDropdownMenu" id="logTypeMenu">
-                        <div class="dropdownSection">
+                        <div class="logTypeSection">
                             <a href="#" class="userDropdownItem" data-value="ALL">All Types</a>
                             <a href="#" class="userDropdownItem" data-value="IN">Time in</a>
                             <a href="#" class="userDropdownItem" data-value="OUT">Time out</a>
