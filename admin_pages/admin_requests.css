@@ -133,6 +133,7 @@ body {
 .reqCard.rejected { background-color: #dc3545; }
 .reqCard.overtime { background-color: #6f42c1; }
 .reqCard.ob       { background-color: #17a2b8; }
+.reqCard.log-edit { background-color: #e83e8c; }
 
 /* ============================================================
    TABS
@@ -255,6 +256,7 @@ body {
 .leaveBadge    { background-color: #0d6efd; }
 .overtimeBadge { background-color: #6f42c1; }
 .obBadge       { background-color: #17a2b8; }
+.logEditBadge  { background-color: #e83e8c; }
 .statusPending  { background-color: #f0ad4e; }
 .statusApproved { background-color: #97be41; }
 .statusRejected { background-color: #dc3545; }

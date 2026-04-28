@@ -30,7 +30,7 @@ if (isset($_GET['action'], $_GET['type'], $_GET['id'])) {
 
         $pdo->prepare("
             UPDATE attendances a
-            JOIN overtime_requests o ON a.employee_id = o.employee_id AND a.date = o.date
+            JOIN overtime_requests o ON a.employee_id = o.employee_id AND a.work_date = o.date
             SET a.overtime_status = ?
             WHERE o.id = ?
         ")->execute([$status, $id]);
@@ -38,6 +38,25 @@ if (isset($_GET['action'], $_GET['type'], $_GET['id'])) {
     } elseif ($type === 'ob') {
         $pdo->prepare("UPDATE ob_requests SET status = ? WHERE id = ?")
             ->execute([$status, $id]);
+
+    } elseif ($type === 'log_edit') {
+        $pdo->prepare("UPDATE log_edit_requests SET status = ? WHERE id = ?")
+            ->execute([$status, $id]);
+
+        if ($status === 'approved') {
+            $pdo->prepare("
+                UPDATE attendances a
+                JOIN log_edit_requests le ON le.attendance_id = a.id
+                SET
+                    a.actual_time_out    = le.requested_time_out,
+                    a.missed_time_out    = 0,
+                    a.status             = 'present',
+                    a.total_work_minutes = GREATEST(0, TIMESTAMPDIFF(MINUTE, a.actual_time_in, le.requested_time_out) - COALESCE(a.break_minutes, 0)),
+                    a.undertime_minutes  = GREATEST(0, TIMESTAMPDIFF(MINUTE, le.requested_time_out, a.scheduled_end)),
+                    a.overtime_minutes   = GREATEST(0, TIMESTAMPDIFF(MINUTE, a.scheduled_end, le.requested_time_out))
+                WHERE le.id = ?
+            ")->execute([$id]);
+        }
     }
 
     $success = "Request has been " . ucfirst($status) . "!";
@@ -50,15 +69,19 @@ $rejectedLeave    = $pdo->query("SELECT COUNT(*) FROM leave_requests    WHERE st
 $pendingOvertime  = $pdo->query("SELECT COUNT(*) FROM overtime_requests WHERE status = 'pending'")->fetchColumn();
 $approvedOvertime = $pdo->query("SELECT COUNT(*) FROM overtime_requests WHERE status = 'approved'")->fetchColumn();
 $rejectedOvertime = $pdo->query("SELECT COUNT(*) FROM overtime_requests WHERE status = 'rejected'")->fetchColumn();
-$pendingOB        = $pdo->query("SELECT COUNT(*) FROM ob_requests       WHERE status = 'pending'")->fetchColumn();
-$approvedOB       = $pdo->query("SELECT COUNT(*) FROM ob_requests       WHERE status = 'approved'")->fetchColumn();
-$rejectedOB       = $pdo->query("SELECT COUNT(*) FROM ob_requests       WHERE status = 'rejected'")->fetchColumn();
+$pendingOB        = $pdo->query("SELECT COUNT(*) FROM ob_requests         WHERE status = 'pending'")->fetchColumn();
+$approvedOB       = $pdo->query("SELECT COUNT(*) FROM ob_requests         WHERE status = 'approved'")->fetchColumn();
+$rejectedOB       = $pdo->query("SELECT COUNT(*) FROM ob_requests         WHERE status = 'rejected'")->fetchColumn();
+$pendingLogEdit   = $pdo->query("SELECT COUNT(*) FROM log_edit_requests   WHERE status = 'pending'")->fetchColumn();
+$approvedLogEdit  = $pdo->query("SELECT COUNT(*) FROM log_edit_requests   WHERE status = 'approved'")->fetchColumn();
+$rejectedLogEdit  = $pdo->query("SELECT COUNT(*) FROM log_edit_requests   WHERE status = 'rejected'")->fetchColumn();
 
-$totalPending  = $pendingLeave  + $pendingOvertime  + $pendingOB;
-$totalApproved = $approvedLeave + $approvedOvertime + $approvedOB;
-$totalRejected = $rejectedLeave + $rejectedOvertime + $rejectedOB;
+$totalPending  = $pendingLeave  + $pendingOvertime  + $pendingOB  + $pendingLogEdit;
+$totalApproved = $approvedLeave + $approvedOvertime + $approvedOB + $approvedLogEdit;
+$totalRejected = $rejectedLeave + $rejectedOvertime + $rejectedOB + $rejectedLogEdit;
 $totalOvertime = $pendingOvertime + $approvedOvertime + $rejectedOvertime;
 $totalOB       = $pendingOB + $approvedOB + $rejectedOB;
+$totalLogEdit  = $pendingLogEdit + $approvedLogEdit + $rejectedLogEdit;
 
 // ---- GET LEAVE REQUESTS ----
 $leaveRequests = $pdo->query("
@@ -82,6 +105,14 @@ $obRequests = $pdo->query("
     FROM ob_requests ob
     JOIN employees e ON ob.employee_id = e.id
     ORDER BY ob.created_at DESC
+")->fetchAll(PDO::FETCH_ASSOC);
+
+// ---- GET LOG EDIT REQUESTS ----
+$logEditRequests = $pdo->query("
+    SELECT le.*, e.name AS employee_name
+    FROM log_edit_requests le
+    JOIN employees e ON le.employee_id = e.id
+    ORDER BY le.created_at DESC
 ")->fetchAll(PDO::FETCH_ASSOC);
 ?>
 
@@ -166,6 +197,13 @@ $obRequests = $pdo->query("
                         <h5><?= $totalOB ?></h5>
                     </div>
                 </div>
+                <div class="reqCard log-edit">
+                    <i class="bi bi-pencil-square"></i>
+                    <div>
+                        <p>Log Edits</p>
+                        <h5><?= $totalLogEdit ?></h5>
+                    </div>
+                </div>
             </div>
 
             <!-- TABS -->
@@ -174,6 +212,7 @@ $obRequests = $pdo->query("
                 <button class="reqTabBtn" onclick="switchReqTab('leave', this)">Leave</button>
                 <button class="reqTabBtn" onclick="switchReqTab('overtime', this)">Overtime</button>
                 <button class="reqTabBtn" onclick="switchReqTab('ob', this)">Official Business</button>
+                <button class="reqTabBtn" onclick="switchReqTab('log-edit', this)">Log Edit</button>
             </div>
 
             <!-- ALL TAB -->
@@ -221,7 +260,17 @@ $obRequests = $pdo->query("
                                     <td class="actionsCol"><?= getActionButtons('ob', $row['id'], $row['status']) ?></td>
                                 </tr>
                             <?php endforeach; ?>
-                            <?php if (empty($leaveRequests) && empty($overtimeRequests) && empty($obRequests)): ?>
+                            <?php foreach ($logEditRequests as $row): ?>
+                                <tr>
+                                    <td><?= htmlspecialchars($row['employee_name']) ?></td>
+                                    <td><span class="badge logEditBadge">Log Edit</span></td>
+                                    <td><?= date('M d, Y', strtotime($row['work_date'])) ?> | In: <?= date('h:i A', strtotime($row['actual_time_in'])) ?> → Out: <?= date('h:i A', strtotime($row['requested_time_out'])) ?></td>
+                                    <td class="reasonCol"><?= htmlspecialchars($row['reason']) ?></td>
+                                    <td><?= getStatusBadge($row['status']) ?></td>
+                                    <td class="actionsCol"><?= getActionButtons('log_edit', $row['id'], $row['status']) ?></td>
+                                </tr>
+                            <?php endforeach; ?>
+                            <?php if (empty($leaveRequests) && empty($overtimeRequests) && empty($obRequests) && empty($logEditRequests)): ?>
                                 <tr><td colspan="6" class="text-center">No requests found.</td></tr>
                             <?php endif; ?>
                         </tbody>
@@ -295,6 +344,42 @@ $obRequests = $pdo->query("
                                 <?php endforeach; ?>
                             <?php else: ?>
                                 <tr><td colspan="7" class="text-center">No overtime requests found.</td></tr>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- LOG EDIT TAB -->
+            <div id="log-edit" class="reqTabContent" style="display:none;">
+                <div class="tableScrollWrapper">
+                    <table class="table table-bordered table-hover mt-0">
+                        <thead>
+                            <tr>
+                                <th>Employee</th>
+                                <th>Date</th>
+                                <th>Time In</th>
+                                <th>Requested Time Out</th>
+                                <th>Reason</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php if (count($logEditRequests) > 0): ?>
+                                <?php foreach ($logEditRequests as $row): ?>
+                                    <tr>
+                                        <td><?= htmlspecialchars($row['employee_name']) ?></td>
+                                        <td><?= date('M d, Y', strtotime($row['work_date'])) ?></td>
+                                        <td><?= date('h:i A', strtotime($row['actual_time_in'])) ?></td>
+                                        <td><?= date('h:i A', strtotime($row['requested_time_out'])) ?></td>
+                                        <td class="reasonCol"><?= htmlspecialchars($row['reason']) ?></td>
+                                        <td><?= getStatusBadge($row['status']) ?></td>
+                                        <td class="actionsCol"><?= getActionButtons('log_edit', $row['id'], $row['status']) ?></td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            <?php else: ?>
+                                <tr><td colspan="7" class="text-center">No log edit requests found.</td></tr>
                             <?php endif; ?>
                         </tbody>
                     </table>

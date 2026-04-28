@@ -24,25 +24,26 @@ if (isset($_GET['delete'])) {
 
 // ---- HANDLE ADD / EDIT ----
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $name     = trim($_POST['name']);
-    $email    = trim($_POST['email']);
-    $password = trim($_POST['password']);
-    $role     = $_POST['role'];
+    $name       = trim($_POST['name']);
+    $email      = trim($_POST['email']);
+    $password   = trim($_POST['password']);
+    $role       = $_POST['role'];
+    $department = !empty($_POST['department']) ? $_POST['department'] : null;
 
     if (!empty($_POST['employee_id'])) {
         // EDIT
         if (!empty($password)) {
-            $pdo->prepare("UPDATE employees SET name=?, email=?, password=?, role=? WHERE id=?")
-                ->execute([$name, $email, $password, $role, $_POST['employee_id']]);
+            $pdo->prepare("UPDATE employees SET name=?, email=?, password=?, role=?, department=? WHERE id=?")
+                ->execute([$name, $email, $password, $role, $department, $_POST['employee_id']]);
         } else {
-            $pdo->prepare("UPDATE employees SET name=?, email=?, role=? WHERE id=?")
-                ->execute([$name, $email, $role, $_POST['employee_id']]);
+            $pdo->prepare("UPDATE employees SET name=?, email=?, role=?, department=? WHERE id=?")
+                ->execute([$name, $email, $role, $department, $_POST['employee_id']]);
         }
         $success = "Employee updated successfully!";
     } else {
         // ADD
-        $pdo->prepare("INSERT INTO employees (name, email, password, role) VALUES (?, ?, ?, ?)")
-            ->execute([$name, $email, $password, $role]);
+        $pdo->prepare("INSERT INTO employees (name, email, password, role, department) VALUES (?, ?, ?, ?, ?)")
+            ->execute([$name, $email, $password, $role, $department]);
         $success = "Employee added successfully!";
     }
 }
@@ -110,6 +111,7 @@ $employees = $pdo->query("SELECT * FROM employees ORDER BY name")->fetchAll(PDO:
                             <th>Name</th>
                             <th>Email</th>
                             <th>Role</th>
+                            <th>Department</th>
                             <th>Action</th>
                         </tr>
                     </thead>
@@ -120,6 +122,7 @@ $employees = $pdo->query("SELECT * FROM employees ORDER BY name")->fetchAll(PDO:
                                     <td><?= htmlspecialchars($row['name']) ?></td>
                                     <td><?= htmlspecialchars($row['email']) ?></td>
                                     <td><?= ucfirst($row['role']) ?></td>
+                                    <td><?= $row['department'] ? htmlspecialchars($row['department']) : '—' ?></td>
                                     <td>
                                         <div class="actionDropdownWrapper">
                                             <button class="btn btn-sm actionToggle" onclick="toggleActionMenu(this)">
@@ -139,7 +142,7 @@ $employees = $pdo->query("SELECT * FROM employees ORDER BY name")->fetchAll(PDO:
                                 </tr>
                             <?php endforeach; ?>
                         <?php else: ?>
-                            <tr><td colspan="4" class="text-center">No employees found.</td></tr>
+                            <tr><td colspan="5" class="text-center">No employees found.</td></tr>
                         <?php endif; ?>
                     </tbody>
                 </table>
@@ -187,10 +190,28 @@ $employees = $pdo->query("SELECT * FROM employees ORDER BY name")->fetchAll(PDO:
                                 </div>
                                 <div class="customSelectMenu" id="roleDropdown">
                                     <div class="customSelectItem" onclick="selectRole('employee', 'Employee')">Employee</div>
+                                    <div class="customSelectItem" onclick="selectRole('workforce', 'Workforce')">Workforce</div>
                                     <div class="customSelectItem" onclick="selectRole('admin', 'Admin')">Admin</div>
                                 </div>
                             </div>
                             <input type="hidden" name="role" id="roleInput" value="<?= $editData ? $editData['role'] : 'employee' ?>">
+                        </div>
+
+                        <!-- Department -->
+                        <div class="formGroup">
+                            <label>Department</label>
+                            <div class="customSelectWrapper">
+                                <div class="customSelectToggle" onclick="toggleDeptDropdown()">
+                                    <span id="deptLabel"><?= $editData && $editData['department'] ? htmlspecialchars($editData['department']) : 'None' ?></span>
+                                    <i class="bi bi-chevron-down"></i>
+                                </div>
+                                <div class="customSelectMenu" id="deptDropdown">
+                                    <div class="customSelectItem" onclick="selectDept('', 'None')">None</div>
+                                    <div class="customSelectItem" onclick="selectDept('CSS', 'CSS')">CSS</div>
+                                    <div class="customSelectItem" onclick="selectDept('HR', 'HR')">HR</div>
+                                </div>
+                            </div>
+                            <input type="hidden" name="department" id="deptInput" value="<?= $editData ? htmlspecialchars($editData['department'] ?? '') : '' ?>">
                         </div>
 
                     </div>
@@ -234,12 +255,25 @@ $employees = $pdo->query("SELECT * FROM employees ORDER BY name")->fetchAll(PDO:
         // ---- ROLE CUSTOM DROPDOWN ----
         function toggleRoleDropdown() {
             document.getElementById('roleDropdown').classList.toggle('show');
+            document.getElementById('deptDropdown').classList.remove('show');
         }
 
         function selectRole(value, label) {
-            document.getElementById('roleInput').value   = value;
+            document.getElementById('roleInput').value       = value;
             document.getElementById('roleLabel').textContent = label;
             document.getElementById('roleDropdown').classList.remove('show');
+        }
+
+        // ---- DEPARTMENT CUSTOM DROPDOWN ----
+        function toggleDeptDropdown() {
+            document.getElementById('deptDropdown').classList.toggle('show');
+            document.getElementById('roleDropdown').classList.remove('show');
+        }
+
+        function selectDept(value, label) {
+            document.getElementById('deptInput').value       = value;
+            document.getElementById('deptLabel').textContent = label;
+            document.getElementById('deptDropdown').classList.remove('show');
         }
 
         // ---- CLOSE DROPDOWNS ON OUTSIDE CLICK ----
@@ -249,6 +283,7 @@ $employees = $pdo->query("SELECT * FROM employees ORDER BY name")->fetchAll(PDO:
             }
             if (!e.target.closest('.customSelectWrapper')) {
                 document.getElementById('roleDropdown').classList.remove('show');
+                document.getElementById('deptDropdown').classList.remove('show');
             }
         });
 

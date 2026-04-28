@@ -97,10 +97,11 @@
                     const schedOut    = row.scheduled_time_out;
                     const actualIn    = row.actual_time_in;
                     const actualOut   = row.actual_time_out;
-                    const canFile     = lateMin < 60;
+                    const isPending   = row.overtime_status === 'pending';
+                    const canFile     = !isPending && lateMin < 60;
 
-                    const tsSchedIn   = Date.parse(date + 'T' + schedIn)           / 1000;
-                    const tsSchedOut  = Date.parse(date + 'T' + schedOut)          / 1000;
+                    const tsSchedIn   = Date.parse(schedIn.replace(' ', 'T'))      / 1000;
+                    const tsSchedOut  = Date.parse(schedOut.replace(' ', 'T'))     / 1000;
                     const tsActualIn  = Date.parse(actualIn.replace(' ', 'T'))     / 1000;
                     const tsActualOut = Date.parse(actualOut.replace(' ', 'T'))    / 1000;
 
@@ -132,7 +133,7 @@
                     const otLabel = otHours > 0 ? `${otHours}h ${otMins}m` : `${otMins}m`;
 
                     const rowEl = document.createElement('div');
-                    rowEl.className = `ot-gantt-row ${canFile ? 'can-file' : 'cannot-file'}`;
+                    rowEl.className = `ot-gantt-row ${isPending ? 'ot-pending' : canFile ? 'can-file' : 'cannot-file'}`;
 
                     rowEl.innerHTML = `
                         <div class="ot-gantt-row-inner">
@@ -154,9 +155,14 @@
                                 <div class="gantt-timein-marker"  style="left:${inPos}%;"></div>
                                 <div class="gantt-timeout-marker" style="left:${outPos}%;"></div>
                             </div>
-                            <div class="ot-duration-label">+${otLabel} OT</div>
+                            <div class="ot-duration-label ${isPending ? 'ot-pending-label' : ''}">
+                                ${isPending ? 'OT Pending' : '+' + otLabel + ' OT'}
+                            </div>
                         </div>
-                        ${lateMin > 0 ? `
+                        ${isPending ? `
+                        <div class="ot-late-warning can-file">
+                            <i class="bi bi-hourglass-split"></i> OT request is pending admin approval.
+                        </div>` : lateMin > 0 ? `
                         <div class="ot-late-warning ${canFile ? 'can-file' : 'cannot-file'}">
                             <i class="bi bi-clock"></i> Late: ${lateMin} min${lateMin !== 1 ? 's' : ''}
                             ${!canFile ? ' — <strong>Cannot file OT (late ≥ 60 mins)</strong>' : ''}
@@ -165,6 +171,12 @@
 
                     rowEl.addEventListener('click', () => {
                         const errEl = document.getElementById('otErrorMsg');
+
+                        if (isPending) {
+                            errEl.style.display = 'block';
+                            errEl.textContent   = 'You already have a pending OT request for this date.';
+                            return;
+                        }
 
                         if (!canFile) {
                             errEl.style.display = 'block';

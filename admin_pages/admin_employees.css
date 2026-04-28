@@ -300,15 +300,17 @@ body {
 .customSelectMenu {
     display: none;
     position: absolute;
-    top: calc(100% + 4px);
+    bottom: calc(100% + 4px);
+    top: auto;
     left: 0;
     width: 100%;
     background: #ffffff;
     border: 1px solid #e0e0e0;
     border-radius: 8px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
     z-index: 9999;
-    overflow: hidden;
+    max-height: 200px;
+    overflow-y: auto;
 }
 
 .customSelectMenu.show {

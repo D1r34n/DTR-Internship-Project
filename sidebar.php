@@ -7,13 +7,13 @@ if (session_status() === PHP_SESSION_NONE) {
 $role = $_SESSION['user_role'] ?? null;
 
 if (!$role) {
-    header("Location: index.php");
+    header("Location: ../index.php");
     exit();
 }
 
-if (!in_array($role, ['admin', 'employee'])) {
+if (!in_array($role, ['admin', 'employee', 'workforce'])) {
     session_destroy();
-    header("Location: index.php");
+    header("Location: ../index.php");
     exit();
 }
 
@@ -24,12 +24,12 @@ $dashboardLink = ($role === 'admin')
 
 <div class="sideBar">
     <div class="topSideBar">
-        <a href="employee_dashboard.php" class="topSideBarItem">
+        <a href="<?= $dashboardLink ?>" class="topSideBarItem">
             <img src="../images/hsn_logo_white.png" class="sideBarLogo">
             <span class="topSideBarText">DTR System</span>
         </a>
     </div>
-    
+
     <a class="horizontalDivider"></a>
 
     <?php if ($role === 'employee'): ?>
@@ -46,7 +46,7 @@ $dashboardLink = ($role === 'admin')
                 <span class="menuText">Records</span>
             </a>
 
-            <a href="employee_schedule.php" 
+            <a href="employee_schedule.php"
             class="sideBarMenuItem <?= ($current_page === 'schedule') ? 'active' : '' ?>">
                 <i class="bi bi-calendar-week sidebarIcon"></i>
                 <span class="menuText">Schedules</span>
@@ -60,28 +60,72 @@ $dashboardLink = ($role === 'admin')
         </div>
     <?php endif; ?>
 
-    <?php if ($role === 'admin'): ?>
-        <div id="adminMenu" class="sideBarMenu">
-            <a href="admin_dashboard.php" class="sideBarMenuItem">
+    <?php if ($role === 'workforce'): ?>
+        <div id="workforceMenu" class="sideBarMenu">
+            <a href="employee_dashboard.php"
+            class="sideBarMenuItem <?= ($current_page === 'dashboard') ? 'active' : '' ?>">
                 <i class="bi bi-columns-gap sidebarIcon"></i>
                 <span class="menuText">Dashboard</span>
             </a>
 
-        <a href="admin_employees.php" class="sideBarMenuItem">
-            <i class="bi bi-people-fill sidebarIcon"></i>
-            <span class="menuText">Employees</span>
-        </a>
+            <a href="employee_records.php"
+            class="sideBarMenuItem <?= ($current_page === 'records') ? 'active' : '' ?>">
+                <i class="bi bi-bar-chart-steps sidebarIcon"></i>
+                <span class="menuText">Records</span>
+            </a>
 
-        <a href="admin_schedule.php" class="sideBarMenuItem">
-            <i class="bi bi-calendar-week sidebarIcon"></i>
-            <span class="menuText">Schedules</span>
-        </a>
+            <a href="employee_schedule.php"
+            class="sideBarMenuItem <?= ($current_page === 'schedule') ? 'active' : '' ?>">
+                <i class="bi bi-calendar-week sidebarIcon"></i>
+                <span class="menuText">Schedules</span>
+            </a>
 
-        <a href="admin_requests.php" class="sideBarMenuItem">
-            <i class="bi bi-envelope-paper sidebarIcon"></i>
-            <span class="menuText">Requests</span>
-        </a>
-    </div>
+            <a href="employee_logs.php"
+            class="sideBarMenuItem <?= ($current_page === 'logs') ? 'active' : '' ?>">
+                <i class="bi bi-clipboard-minus sidebarIcon"></i>
+                <span class="menuText">Logs</span>
+            </a>
+
+            <a href="workforce_schedule.php"
+            class="sideBarMenuItem <?= ($current_page === 'workforce_schedule') ? 'active' : '' ?>">
+                <i class="bi bi-calendar-plus sidebarIcon"></i>
+                <span class="menuText">Manage Schedules</span>
+            </a>
+        </div>
+    <?php endif; ?>
+
+    <?php if ($role === 'admin'): ?>
+        <div id="adminMenu" class="sideBarMenu">
+            <a href="admin_dashboard.php"
+            class="sideBarMenuItem <?= ($current_page === 'dashboard') ? 'active' : '' ?>">
+                <i class="bi bi-columns-gap sidebarIcon"></i>
+                <span class="menuText">Dashboard</span>
+            </a>
+
+            <a href="admin_employees.php"
+            class="sideBarMenuItem <?= ($current_page === 'employees') ? 'active' : '' ?>">
+                <i class="bi bi-people-fill sidebarIcon"></i>
+                <span class="menuText">Employees</span>
+            </a>
+
+            <a href="admin_schedule.php"
+            class="sideBarMenuItem <?= ($current_page === 'schedule') ? 'active' : '' ?>">
+                <i class="bi bi-calendar-week sidebarIcon"></i>
+                <span class="menuText">Schedules</span>
+            </a>
+
+            <a href="admin_requests.php"
+            class="sideBarMenuItem <?= ($current_page === 'requests') ? 'active' : '' ?>">
+                <i class="bi bi-envelope-paper sidebarIcon"></i>
+                <span class="menuText">Requests</span>
+            </a>
+
+            <a href="admin_logs.php"
+            class="sideBarMenuItem <?= ($current_page === 'employee_logs') ? 'active' : '' ?>">
+                <i class="bi bi-journal-text sidebarIcon"></i>
+                <span class="menuText">Logs</span>
+            </a>
+        </div>
     <?php endif; ?>
 </div>
 

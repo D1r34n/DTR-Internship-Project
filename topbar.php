@@ -15,7 +15,7 @@ $employeeId = $_SESSION['user_id'];
 $role       = $_SESSION['user_role'];
 
 // Validate role
-if (!in_array($role, ['admin', 'employee'])) {
+if (!in_array($role, ['admin', 'employee', 'workforce'])) {
     session_destroy();
     header("Location: ../index.php");
     exit();
@@ -29,12 +29,20 @@ $titles = [
         'schedule'  => 'Employee Schedule',
         'logs'      => 'Employee Activity Logs',
     ],
+    'workforce' => [
+        'dashboard'          => 'Employee Dashboard',
+        'records'            => 'Employee Records',
+        'schedule'           => 'Employee Schedule',
+        'logs'               => 'Employee Activity Logs',
+        'workforce_schedule' => 'Manage Schedules',
+    ],
     'admin' => [
-        'dashboard' => 'Admin Dashboard',
-        'employees' => 'Employees',
-        'schedule'  => 'Schedules',
-        'requests'  => 'Requests',
-        'logs'      => 'Logs',
+        'dashboard'    => 'Admin Dashboard',
+        'employees'    => 'Employees',
+        'schedule'     => 'Schedules',
+        'requests'     => 'Requests',
+        'logs'         => 'Logs',
+        'employee_logs' => 'Employee Logs',
     ]
 ];
 
@@ -678,6 +686,27 @@ $currentStatus = $timedIn ? 'Timed In' : 'Timed Out';
             menu.classList.remove('show');
             isOpen = false;
         }
+    });
+
+    let _allowUnload = false;
+
+    document.addEventListener('click', (e) => {
+        const link = e.target.closest('a[href]');
+        if (!link) return;
+        const href = link.getAttribute('href');
+        if (!href || href === '#' || href.startsWith('javascript:') || href.startsWith('#')) return;
+        try {
+            const url = new URL(link.href, window.location.href);
+            if (url.origin === window.location.origin) _allowUnload = true;
+        } catch (_) {}
+    });
+
+    document.addEventListener('submit', () => { _allowUnload = true; });
+
+    window.addEventListener('beforeunload', (e) => {
+        if (_allowUnload) return;
+        e.preventDefault();
+        e.returnValue = '';
     });
 
 </script>

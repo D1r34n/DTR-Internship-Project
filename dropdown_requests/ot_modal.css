@@ -94,6 +94,16 @@
     background: rgba(151, 190, 65, 0.07);
 }
 
+.ot-gantt-row.ot-pending {
+    cursor: default;
+    opacity: 0.75;
+    border: 1px solid rgba(240, 173, 78, 0.3);
+}
+
+.ot-pending-label {
+    color: #f0ad4e !important;
+}
+
 /* ---------- Gantt Row Inner Layout ---------- */
 .ot-gantt-row-inner {
     display: flex;
