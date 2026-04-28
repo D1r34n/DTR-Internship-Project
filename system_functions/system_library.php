@@ -84,13 +84,42 @@ function gantt_scale(int $rangeStart, int $rangeEnd): string
  * plus all pre-computed positions, widths, labels, and flags.
  */
 function computeGanttRow(array $row, ?array $sched): ?array
-{
+{    
     // --- Basic date metadata ---
     $dateKey  = $row['work_date'];
-    $isToday  = ($dateKey === date('Y-m-d'));          // True if this row is the current day
-    $isFuture = ($dateKey > date('Y-m-d'));            // True if the date hasn't happened yet
-    $dayLabel = $isToday ? 'Today' : date('l', strtotime($dateKey)); // e.g. "Today" or "Monday"
-    $dateNum  = date('M d', strtotime($dateKey));      // e.g. "Apr 14"
+    $isToday  = ($dateKey === date('Y-m-d'));
+    $isFuture = ($dateKey > date('Y-m-d'));
+    $nextDay  = date('Y-m-d', strtotime('+1 day', strtotime($dateKey)));
+
+    // --- Resolve scheduled start/end from the schedule record, falling back to the attendance row ---
+    $schedStartDt = ($sched['scheduled_start_datetime'] ?? null) ?: ($row['scheduled_start_datetime'] ?? null);
+    $schedEndDt   = ($sched['scheduled_end_datetime']   ?? null) ?: ($row['scheduled_end_datetime']   ?? null);
+
+    // Check if shift crosses midnight to show a date range label
+    // Must be done after $schedIn/$schedOut are resolved, so we use the raw datetimes here
+    $schedEndTs      = $schedEndDt ? strtotime($schedEndDt) : null;
+    $schedStartTs    = $schedStartDt ? strtotime($schedStartDt) : null;
+    $crossesMidnight = ($schedEndTs && $schedStartTs) && (
+    $schedEndTs <= $schedStartTs ||                          // same-date stored (e.g. 18:00 → 01:00)
+    date('Y-m-d', $schedEndTs) !== date('Y-m-d', $schedStartTs) // different-date stored correctly
+    );
+
+    // Day label — show range if shift crosses midnight
+    if ($isToday) {
+        $dayLabel = $crossesMidnight
+            ? 'Today – ' . date('l', strtotime($nextDay))
+            : 'Today';
+    } else {
+        $dayLabel = $crossesMidnight
+            ? date('l', strtotime($dateKey)) . ' – ' . date('l', strtotime($nextDay))
+            : date('l', strtotime($dateKey));
+    }
+
+    // Date number label — show range if shift crosses midnight
+    $dateNum = $crossesMidnight
+        ? date('M j', strtotime($dateKey)) . ' – ' . date('M j', strtotime($nextDay))
+        : date('M d', strtotime($dateKey));
+
 
     // --- Attendance metrics from the DB row ---
     $lateMinutes      = (int) $row['late_minutes'];
@@ -98,10 +127,6 @@ function computeGanttRow(array $row, ?array $sched): ?array
     $overtimeMinutes  = (int) $row['overtime_minutes'];
     $overtimeStatus   = $row['overtime_status'];       // 'approved', 'rejected', or 'pending'
     $status           = $row['status'];                // e.g. 'absent', 'leave', etc.
-
-    // --- Resolve scheduled start/end from the schedule record, falling back to the attendance row ---
-    $schedStartDt = ($sched['scheduled_start_datetime'] ?? null) ?: ($row['scheduled_start_datetime'] ?? null);
-    $schedEndDt   = ($sched['scheduled_end_datetime']   ?? null) ?: ($row['scheduled_end_datetime']   ?? null);
 
     // Convert schedule datetimes to Unix timestamps
     $schedIn  = null;

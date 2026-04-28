@@ -276,7 +276,7 @@ body::after {
 }
 
 .ganttLabel {
-    width: 5rem;
+    width: 10rem;
     font-size: 0.875rem;
     font-weight: 400;
     color: var(--text-light);
