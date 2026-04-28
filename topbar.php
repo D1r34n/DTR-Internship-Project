@@ -15,7 +15,7 @@ $employeeId = $_SESSION['user_id'];
 $role       = $_SESSION['user_role'];
 
 // Validate role
-if (!in_array($role, ['admin', 'employee'])) {
+if (!in_array($role, ['admin', 'employee', 'workforce'])) {
     session_destroy();
     header("Location: ../index.php");
     exit();
@@ -29,12 +29,20 @@ $titles = [
         'schedule'  => 'Employee Schedule',
         'logs'      => 'Employee Activity Logs',
     ],
+    'workforce' => [
+        'dashboard'          => 'Employee Dashboard',
+        'records'            => 'Employee Records',
+        'schedule'           => 'Employee Schedule',
+        'logs'               => 'Employee Activity Logs',
+        'workforce_schedule' => 'Manage Schedules',
+    ],
     'admin' => [
-        'dashboard' => 'Admin Dashboard',
-        'employees' => 'Employees',
-        'schedule'  => 'Schedules',
-        'requests'  => 'Requests',
-        'logs'      => 'Logs',
+        'dashboard'    => 'Admin Dashboard',
+        'employees'    => 'Employees',
+        'schedule'     => 'Schedules',
+        'requests'     => 'Requests',
+        'logs'         => 'Logs',
+        'employee_logs' => 'Employee Logs',
     ]
 ];
 

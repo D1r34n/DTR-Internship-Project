@@ -69,7 +69,7 @@ CREATE TABLE `employees` (
   `name` varchar(100) DEFAULT NULL,
   `email` varchar(100) DEFAULT NULL,
   `password` varchar(255) DEFAULT NULL,
-  `role` enum('admin','employee') NOT NULL DEFAULT 'employee'
+  `role` enum('admin','employee','workforce') NOT NULL DEFAULT 'employee'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --

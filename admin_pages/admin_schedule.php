@@ -12,6 +12,47 @@ date_default_timezone_set('Asia/Manila');
 $success = "";
 $error   = "";
 
+// ---- HANDLE PENDING SCHEDULE APPROVE / REJECT ----
+if (isset($_GET['pending_action'], $_GET['id'])) {
+    $pendingId = (int)$_GET['id'];
+
+    if ($_GET['pending_action'] === 'approve') {
+        $schedRow = $pdo->prepare("SELECT * FROM schedules WHERE id = ? AND status = 'pending'");
+        $schedRow->execute([$pendingId]);
+        $sched = $schedRow->fetch(PDO::FETCH_ASSOC);
+
+        if ($sched) {
+            $pdo->prepare("UPDATE schedules SET status = 'approved' WHERE id = ?")->execute([$pendingId]);
+
+            $pdo->prepare("
+                INSERT INTO attendances (
+                    employee_id, schedule_id, work_date,
+                    scheduled_start, scheduled_end,
+                    actual_time_in, actual_time_out,
+                    total_work_minutes, late_minutes,
+                    undertime_minutes, overtime_minutes,
+                    status, missed_time_out
+                )
+                VALUES (?, ?, ?, ?, ?, NULL, NULL, 0, 0, 0, 0, 'incomplete', 0)
+                ON DUPLICATE KEY UPDATE
+                    scheduled_start = VALUES(scheduled_start),
+                    scheduled_end   = VALUES(scheduled_end)
+            ")->execute([
+                $sched['employee_id'],
+                $sched['id'],
+                $sched['schedule_date'],
+                $sched['scheduled_start'],
+                $sched['scheduled_end'],
+            ]);
+
+            $success = "Schedule approved successfully!";
+        }
+    } elseif ($_GET['pending_action'] === 'reject') {
+        $pdo->prepare("DELETE FROM schedules WHERE id = ? AND status = 'pending'")->execute([$pendingId]);
+        $success = "Schedule request rejected.";
+    }
+}
+
 // ---- HANDLE DELETE ----
 if (isset($_GET['delete'], $_GET['date'])) {
     $employeeId = $_GET['delete'];
@@ -147,7 +188,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// ---- GET ALL SCHEDULES ----
+// ---- GET ALL APPROVED SCHEDULES ----
 $schedules = $pdo->query("
     SELECT
         e.name AS employee_name,
@@ -158,12 +199,28 @@ $schedules = $pdo->query("
         s.is_rest_day
     FROM schedules s
     JOIN employees e ON s.employee_id = e.id
-    WHERE s.is_rest_day = 0
+    WHERE s.is_rest_day = 0 AND s.status = 'approved'
     ORDER BY s.schedule_date DESC, e.name
 ")->fetchAll(PDO::FETCH_ASSOC);
 
-// ---- GET ALL EMPLOYEES ----
-$employees = $pdo->query("SELECT id, name FROM employees WHERE role = 'employee' ORDER BY name")
+// ---- GET PENDING SCHEDULE REQUESTS ----
+$pendingSchedules = $pdo->query("
+    SELECT
+        s.id,
+        e.name AS employee_name,
+        e.department,
+        s.employee_id,
+        s.schedule_date,
+        s.scheduled_start,
+        s.scheduled_end
+    FROM schedules s
+    JOIN employees e ON s.employee_id = e.id
+    WHERE s.status = 'pending' AND s.is_rest_day = 0
+    ORDER BY s.schedule_date ASC, e.name
+")->fetchAll(PDO::FETCH_ASSOC);
+
+// ---- GET ALL EMPLOYEES (employee + workforce) ----
+$employees = $pdo->query("SELECT id, name FROM employees WHERE role IN ('employee','workforce') ORDER BY name")
                  ->fetchAll(PDO::FETCH_ASSOC);
 
 $current_page = 'schedule';
@@ -276,6 +333,70 @@ $current_page = 'schedule';
                     </tbody>
                 </table>
             </div>
+
+            <!-- PENDING SCHEDULE REQUESTS -->
+            <?php if (count($pendingSchedules) > 0): ?>
+            <div class="adminFormWrapper" style="margin-top:1.5rem;">
+                <h6 class="formTitle" style="color:#f0ad4e;">
+                    <i class="bi bi-hourglass-split"></i>
+                    Pending Schedule Requests
+                    <span style="font-size:0.8rem; font-weight:400; color:rgba(255,255,255,0.5); margin-left:0.5rem;"><?= count($pendingSchedules) ?> awaiting approval</span>
+                </h6>
+                <div class="tableScrollWrapper" style="height:auto; max-height:220px;">
+                    <table class="table table-bordered table-hover mt-0">
+                        <thead>
+                            <tr>
+                                <th>Employee</th>
+                                <th>Dept</th>
+                                <th>Date</th>
+                                <th>Time In</th>
+                                <th>Time Out</th>
+                                <th>Type</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($pendingSchedules as $row): ?>
+                                <?php
+                                    $startDT      = $row['scheduled_start'];
+                                    $endDT        = $row['scheduled_end'];
+                                    $startHour    = $startDT ? (int)date('H', strtotime($startDT)) : 6;
+                                    $isNightShift = ($startHour >= 18 || $startHour < 6);
+                                ?>
+                                <tr>
+                                    <td><?= htmlspecialchars($row['employee_name']) ?></td>
+                                    <td><?= $row['department'] ? htmlspecialchars($row['department']) : '—' ?></td>
+                                    <td><?= date('M d, Y', strtotime($row['schedule_date'])) ?></td>
+                                    <td><?= $startDT ? date('h:i A', strtotime($startDT)) : '—' ?></td>
+                                    <td><?= $endDT   ? date('h:i A', strtotime($endDT))   : '—' ?></td>
+                                    <td>
+                                        <?php if ($isNightShift): ?>
+                                            <span class="badge nightShiftBadge">Night</span>
+                                        <?php else: ?>
+                                            <span class="badge dayShiftBadge">Day</span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td>
+                                        <div style="display:flex;gap:0.4rem;flex-wrap:wrap;">
+                                            <a href="admin_schedule.php?pending_action=approve&id=<?= $row['id'] ?>"
+                                               style="background:#97be41;color:#fff;border:none;padding:0.2rem 0.7rem;border-radius:6px;font-size:0.75rem;text-decoration:none;display:inline-flex;align-items:center;gap:4px;"
+                                               onclick="return confirm('Approve this schedule?')">
+                                                <i class="bi bi-check-lg"></i> Approve
+                                            </a>
+                                            <a href="admin_schedule.php?pending_action=reject&id=<?= $row['id'] ?>"
+                                               style="background:rgba(220,53,69,0.15);color:#ff8a8a;border:1px solid rgba(220,53,69,0.3);padding:0.2rem 0.7rem;border-radius:6px;font-size:0.75rem;text-decoration:none;display:inline-flex;align-items:center;gap:4px;"
+                                               onclick="return confirm('Reject this schedule request?')">
+                                                <i class="bi bi-x-lg"></i> Reject
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <?php endif; ?>
 
             <!-- ADD / EDIT FORM -->
             <div class="adminFormWrapper">

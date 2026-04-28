@@ -13,11 +13,12 @@ $employeeId = $_SESSION['user_id'];
 $start      = isset($_GET['start']) ? substr($_GET['start'], 0, 10) : date('Y-m-01');
 $end        = isset($_GET['end'])   ? substr($_GET['end'],   0, 10) : date('Y-m-t');
 
-// ---- GET SCHEDULES ----
+// ---- GET SCHEDULES (approved only) ----
 $stmt = $pdo->prepare("
     SELECT * FROM schedules
     WHERE employee_id = ?
     AND schedule_date BETWEEN ? AND ?
+    AND status = 'approved'
     ORDER BY schedule_date ASC
 ");
 $stmt->execute([$employeeId, $start, $end]);
