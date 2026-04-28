@@ -10,8 +10,10 @@ require_once '../db.php';
 
 date_default_timezone_set('Asia/Manila');
 
-$startDate = !empty($_GET['start']) ? date('Y-m-d', strtotime($_GET['start'])) : date('Y-m-01');
-$endDate   = !empty($_GET['end'])   ? date('Y-m-d', strtotime($_GET['end']))   : date('Y-m-t');
+$today = date('Y-m-d');
+
+$startDate = !empty($_GET['start']) ? date('Y-m-d', strtotime($_GET['start'])) : $today;
+$endDate   = !empty($_GET['end'])   ? date('Y-m-d', strtotime($_GET['end']))   : $today;
 
 $current_page = 'logs';
 ?>
@@ -44,21 +46,38 @@ $current_page = 'logs';
 </head>
 
 <body>
-    <!-- Include sidebar -->
     <?php include '../sidebar.php'; ?>
-
-    <!-- Include topbar -->
-    <?php
-    include '../topbar.php';
-    ?>
+    <?php include '../topbar.php'; ?>
 
     <div class="recordBoxWrapper">
         <div class="recordBox">
 
-            <!-- DATE RANGE PICKER -->
-            <div class="dateWrapper">
-                <input type="text" id="dateRangePicker" class="recordTitle" readonly>
-                <i class="bi bi-chevron-down dateIcon"></i>
+            <!-- Filter Section -->
+            <div class="filterWrapper">
+
+                <div class="dateWrapper">
+                    <input type="text" id="dateRangePicker" class="recordTitle" readonly>
+                    <i class="bi bi-calendar3 dateIcon"></i>
+                </div>
+
+                <!-- Log Type Filter -->
+                <div class="userDropdownWrapper logTypeDropdown">
+                    <span class="userEmail dropdown-toggle" id="logTypeToggle">
+                        All Types
+                        <i class="bi bi-chevron-down logArrow"></i>
+                    </span>
+                    <div class="userDropdownMenu" id="logTypeMenu">
+                        <div class="dropdownSection">
+                            <a href="#" class="userDropdownItem" data-value="ALL">All Types</a>
+                            <a href="#" class="userDropdownItem" data-value="IN">Time in</a>
+                            <a href="#" class="userDropdownItem" data-value="OUT">Time out</a>
+                            <a href="#" class="userDropdownItem" data-value="BREAK_IN">Break In</a>
+                            <a href="#" class="userDropdownItem" data-value="BREAK_OUT">Break Out</a>
+                        </div>
+                    </div>
+                </div>
+
+                <input type="hidden" id="logTypeFilter" value="ALL">
                 <input type="hidden" id="startDate" value="<?= $startDate ?>">
                 <input type="hidden" id="endDate" value="<?= $endDate ?>">
             </div>
@@ -68,10 +87,18 @@ $current_page = 'logs';
                 <table class="table table-borderless mb-0">
                     <thead>
                         <tr>
-                            <th>Date</th>
-                            <th>Time</th>
-                            <th>Log Type</th>
-                            <th>Location</th>
+                            <th class="sortable active desc" data-sort="date">
+                                Date <i class="bi bi-chevron-down sort-icon"></i>
+                            </th>
+                            <th class="sortable" data-sort="time">
+                                Time <i class="bi bi-chevron-down sort-icon"></i>
+                            </th>
+                            <th class="sortable" data-sort="type">
+                                Log Type <i class="bi bi-chevron-down sort-icon"></i>
+                            </th>
+                            <th class="sortable" data-sort="location">
+                                Location <i class="bi bi-chevron-down sort-icon"></i>
+                            </th>
                         </tr>
                     </thead>
                 </table>
@@ -91,188 +118,267 @@ $current_page = 'logs';
 
     <!-- Map Hover Popup -->
     <div class="mapPopUpContainer" id="map_pop_up_container">
-        
-        <!-- Actual Map -->
         <div class="mapPopUp" id="map_pop_up"></div>
-
-        <!-- Map details -->
         <div class="mapPopUpInfo" id="map_pop_up_info"></div>
-
-        <!-- BUTTON -->
         <div style="padding: 10px;">
             <a class="openGoogleMapsBtn" id="open_gmaps_btn" href="#" target="_blank">
                 Open in Google Maps
             </a>
         </div>
-
     </div>
 
-    <script>
-    const tbody = document.getElementById('logs_table_body');
+<script>
+const tbody = document.getElementById('logs_table_body');
 
-    // FETCH — get HTML rows from get_logs.php and inject directly
-    function fetchLogs() {
-        const start = document.getElementById('startDate').value;
-        const end   = document.getElementById('endDate').value;
+/* =========================
+   FETCH LOGS (AJAX)
+========================= */
+function fetchLogs() {
+    const start = document.getElementById('startDate').value;
+    const end   = document.getElementById('endDate').value;
+    const type  = document.getElementById('logTypeFilter').value;
 
-        fetch(`../get_logs.php?start=${start}&end=${end}`)
-            .then(res => res.text())
-            .then(html => {
-                tbody.innerHTML = html;
-            })
-            .catch(() => {
-                tbody.innerHTML = `
-                    <tr>
-                        <td colspan="4" class="text-center text-danger">
-                            Failed to load logs.
-                        </td>
-                    </tr>`;
-            });
+    fetch(`../get_logs.php?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}&type=${encodeURIComponent(type)}&sort=${sortColumn}&dir=${sortDirection}`)
+        .then(res => res.text())
+        .then(html => { tbody.innerHTML = html; });
+}
+
+/* =========================
+   DATE RESIZE FIX
+========================= */
+function resizeDateInput() {
+    const input =
+        document.querySelector(".flatpickr-input.active") ||
+        document.querySelector(".flatpickr-input");
+    if (!input) return;
+
+    const wrapper = input.closest('.dateWrapper');
+    if (!wrapper) return;
+
+    const icon  = wrapper.querySelector('.dateIcon');
+    const style = window.getComputedStyle(input);
+
+    const mirror = document.createElement('span');
+    document.body.appendChild(mirror);
+    mirror.style.position   = 'absolute';
+    mirror.style.visibility = 'hidden';
+    mirror.style.whiteSpace = 'pre';
+    mirror.style.font       = style.font;
+    mirror.textContent      = input.value || '';
+
+    const iconWidth     = icon ? icon.offsetWidth : 20;
+    const computedWidth = mirror.offsetWidth + iconWidth + 40;
+    const maxWidth      = wrapper.parentElement.offsetWidth * 0.6;
+
+    wrapper.style.width = Math.min(computedWidth, maxWidth) + 'px';
+    document.body.removeChild(mirror);
+}
+
+/* =========================
+   FLATPICKR INIT
+========================= */
+const startInput = document.getElementById('startDate');
+const endInput   = document.getElementById('endDate');
+
+flatpickr("#dateRangePicker", {
+    mode: "range",
+    dateFormat: "Y-m-d",
+    altInput: true,
+    altFormat: "F j, Y",
+    defaultDate: [startInput.value, endInput.value],
+
+    onReady(selectedDates) {
+        if (selectedDates.length === 0) {
+            startInput.value = endInput.value = startInput.value;
+        }
+    },
+
+    onChange(selectedDates) {
+        if (selectedDates.length !== 2) return;
+
+        const pad     = n => String(n).padStart(2, '0');
+        const toLocal = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+
+        startInput.value = toLocal(selectedDates[0]);
+        endInput.value   = toLocal(selectedDates[1]);
+
+        fetchLogs();
+        setTimeout(resizeDateInput, 0);
     }
+});
 
-    // FLATPICKR
-    flatpickr("#dateRangePicker", {
-        mode: "range",
-        dateFormat: "Y-m-d",
-        altInput: true,
-        altFormat: "F j, Y",
-        defaultDate: [document.getElementById('startDate').value, document.getElementById('endDate').value],
-        onChange(selectedDates, dateStr, instance) {
-            if (selectedDates.length === 2) {
-                const pad = n => String(n).padStart(2, '0');
-                const toLocal = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+/* =========================
+   LOG TYPE FILTER
+========================= */
+const logTypeWrapper = document.querySelector('.logTypeDropdown');
+const logTypeToggle  = document.getElementById('logTypeToggle');
+const logTypeMenu    = document.getElementById('logTypeMenu');
+const logTypeHidden  = document.getElementById('logTypeFilter');
 
-                const start = toLocal(selectedDates[0]);
-                const end   = toLocal(selectedDates[1]);
+let logTypeOpen = false;
 
-                window.location.href = `?start=${start}&end=${end}`;
-            }
-        }
+logTypeToggle.addEventListener('mouseenter', () => logTypeMenu.classList.add('show'));
+logTypeToggle.addEventListener('mouseleave', () => { if (!logTypeOpen) logTypeMenu.classList.remove('show'); });
+logTypeMenu.addEventListener('mouseenter',   () => logTypeMenu.classList.add('show'));
+logTypeMenu.addEventListener('mouseleave',   () => { if (!logTypeOpen) logTypeMenu.classList.remove('show'); });
+
+logTypeToggle.addEventListener('click', e => {
+    e.stopPropagation();
+    logTypeOpen = !logTypeOpen;
+    logTypeMenu.classList.toggle('show', logTypeOpen);
+});
+
+document.addEventListener('click', e => {
+    if (!logTypeWrapper.contains(e.target)) {
+        logTypeMenu.classList.remove('show');
+        logTypeOpen = false;
+    }
+});
+
+document.querySelectorAll('#logTypeMenu .userDropdownItem').forEach(item => {
+    item.addEventListener('click', e => {
+        e.preventDefault();
+        logTypeToggle.textContent = item.textContent;
+        logTypeHidden.value = item.dataset.value;
+        logTypeMenu.classList.remove('show');
+        logTypeOpen = false;
+        fetchLogs();
+    });
+});
+
+/* =========================
+   SORTING — 3-STATE PER COLUMN
+   1st click on column  → ASC
+   2nd click same column → DESC
+   3rd click same column → reset to default (date DESC)
+========================= */
+const DEFAULT_SORT_COL = 'date';
+const DEFAULT_SORT_DIR = 'desc';
+
+let sortColumn    = DEFAULT_SORT_COL;
+let sortDirection = DEFAULT_SORT_DIR;
+
+function applyHeaderUI() {
+    document.querySelectorAll('.sortable').forEach(el => {
+        el.classList.remove('active', 'asc', 'desc');
     });
 
-    // MAP HOVER POPUP
-    let popupMap = null;
-    let hideTimeout = null;
-    const mapPopup = document.getElementById('map_pop_up_container');
+    const activeTh = document.querySelector(`.sortable[data-sort="${sortColumn}"]`);
+    if (activeTh) activeTh.classList.add('active', sortDirection);
+}
 
-    // Hover in
-    document.addEventListener('mouseover', e => {
-        const trigger = e.target.closest('.loc-trigger');
-        if (!trigger) return;
+document.querySelectorAll('.sortable').forEach(th => {
+    th.addEventListener('click', () => {
+        const column = th.dataset.sort;
 
-        clearTimeout(hideTimeout);
-
-        const lat   = parseFloat(trigger.dataset.lat);
-        const lng   = parseFloat(trigger.dataset.lng);
-        const label = trigger.dataset.label;
-        const acc   = trigger.dataset.acc;
-        const dist  = trigger.dataset.dist;
-
-        const mapBtn = document.getElementById('open_gmaps_btn');
-        mapBtn.href = `https://www.google.com/maps?q=${lat},${lng}`;
-
-        const rect = trigger.getBoundingClientRect();
-        const popupHeight = 320; // approximate height of popup
-        const spaceBelow = window.innerHeight - rect.bottom;
-        const spaceAbove = rect.top;
-
-        let topPos;
-        if (spaceBelow < popupHeight && spaceAbove > spaceBelow) {
-            // flip above
-            topPos = rect.top + window.scrollY - popupHeight - 3;
+        if (sortColumn === column) {
+            if (sortDirection === 'asc') {
+                // 2nd click → flip to DESC
+                sortDirection = 'desc';
+            } else {
+                // 3rd click → reset to default
+                sortColumn    = DEFAULT_SORT_COL;
+                sortDirection = DEFAULT_SORT_DIR;
+            }
         } else {
-            // default below
-            topPos = rect.bottom + window.scrollY + 3;
+            // New column → start ASC
+            sortColumn    = column;
+            sortDirection = 'asc';
         }
 
-        // also prevent going off right edge
-        const popupWidth = 300;
-        const LEFT_OFFSET = 310;
+        applyHeaderUI();
+        fetchLogs();
+    });
+});
 
-        const spaceRight = window.innerWidth - rect.left;
+/* =========================
+   MAP POPUP
+========================= */
+let popupMap    = null;
+let hideTimeout = null;
+const mapPopup  = document.getElementById('map_pop_up_container');
 
-        let leftPos;
+document.addEventListener('mouseover', e => {
+    const trigger = e.target.closest('.loc-trigger');
+    if (!trigger) return;
 
-        if (spaceRight < popupWidth) {
-            // too close to right edge → shift left more
-            leftPos = rect.right + window.scrollX - popupWidth - LEFT_OFFSET;
-        } else {
-            // normal case → slightly shift left for better centering
-            leftPos = rect.left + window.scrollX - LEFT_OFFSET;
+    clearTimeout(hideTimeout);
+
+    const lat   = parseFloat(trigger.dataset.lat);
+    const lng   = parseFloat(trigger.dataset.lng);
+    const label = trigger.dataset.label;
+    const acc   = trigger.dataset.acc;
+    const dist  = trigger.dataset.dist;
+
+    document.getElementById('open_gmaps_btn').href = `https://www.google.com/maps?q=${lat},${lng}`;
+
+    const rect        = trigger.getBoundingClientRect();
+    const popupHeight = 320;
+    const popupWidth  = 300;
+    const LEFT_OFFSET = 310;
+
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const spaceAbove = rect.top;
+    const spaceRight = window.innerWidth - rect.left;
+
+    const topPos  = (spaceBelow < popupHeight && spaceAbove > spaceBelow)
+        ? rect.top    + window.scrollY - popupHeight - 3
+        : rect.bottom + window.scrollY + 3;
+
+    const leftPos = (spaceRight < popupWidth)
+        ? rect.right + window.scrollX - popupWidth - LEFT_OFFSET
+        : rect.left  + window.scrollX - LEFT_OFFSET;
+
+    mapPopup.style.top     = `${topPos}px`;
+    mapPopup.style.left    = `${leftPos}px`;
+    mapPopup.style.display = 'block';
+
+    document.getElementById('map_pop_up_info').innerHTML = `
+        <b>${label}</b><br>
+        Latitude: ${lat} &nbsp;&nbsp; Longitude: ${lng}<br>
+        Accuracy: ±${acc} m &nbsp; Distance: ${dist} m
+    `;
+
+    setTimeout(() => {
+        if (!popupMap) {
+            popupMap = L.map('map_pop_up', { zoomControl: false, attributionControl: false });
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(popupMap);
+            popupMap._marker = null;
         }
 
-        mapPopup.style.top  = `${topPos}px`;
-        mapPopup.style.left = `${leftPos}px`;
-        mapPopup.style.display = 'block';
+        popupMap.invalidateSize();
+        popupMap.setView([lat, lng], 17);
 
-        document.getElementById('map_pop_up_info').innerHTML = `
-            <b>${label}</b><br>
-            Latitude: ${lat} &nbsp; &nbsp; Longitude: ${lng}<br>
-            Accuracy: ±${acc} m &nbsp; Distance: ${dist} m
-        `;
+        if (popupMap._marker) popupMap.removeLayer(popupMap._marker);
+        popupMap._marker = L.marker([lat, lng]).addTo(popupMap);
+    }, 50);
+});
 
-        setTimeout(() => {
-            const mapContainer = document.getElementById('map_pop_up');
+document.addEventListener('mouseout', e => {
+    const trigger = e.target.closest('.loc-trigger');
+    if (!trigger) return;
 
-            // ✅ Create map only once
-            if (!popupMap) {
-                popupMap = L.map('map_pop_up', {
-                    zoomControl: false,
-                    attributionControl: false
-                });
+    hideTimeout = setTimeout(() => {
+        mapPopup.style.display = 'none';
+        if (popupMap) { popupMap.remove(); popupMap = null; }
+    }, 200);
+});
 
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png')
-                    .addTo(popupMap);
+mapPopup.addEventListener('mouseover', () => clearTimeout(hideTimeout));
+mapPopup.addEventListener('mouseout', () => {
+    hideTimeout = setTimeout(() => {
+        mapPopup.style.display = 'none';
+        if (popupMap) { popupMap.remove(); popupMap = null; }
+    }, 200);
+});
 
-                // store marker reference
-                popupMap._marker = null;
-            }
-
-            // ✅ Fix layout when reused
-            popupMap.invalidateSize();
-
-            // ✅ Move map
-            popupMap.setView([lat, lng], 17);
-
-            // ✅ Remove old marker safely
-            if (popupMap._marker) {
-                popupMap.removeLayer(popupMap._marker);
-            }
-
-            // ✅ Add new marker and store it
-            popupMap._marker = L.marker([lat, lng]).addTo(popupMap);
-
-        }, 50);
-    });
-
-    // Hover out
-    document.addEventListener('mouseout', e => {
-        const trigger = e.target.closest('.loc-trigger');
-        if (!trigger) return;
-
-        hideTimeout = setTimeout(() => {
-            mapPopup.style.display = 'none';
-            if (popupMap) {
-                popupMap.remove();
-                popupMap = null;
-            }
-        }, 200);
-    });
-
-    // Keep popup open when hovering over it
-    mapPopup.addEventListener('mouseover', () => clearTimeout(hideTimeout));
-    mapPopup.addEventListener('mouseout', () => {
-        hideTimeout = setTimeout(() => {
-            mapPopup.style.display = 'none';
-            if (popupMap) {
-                popupMap.remove();
-                popupMap = null;
-            }
-        }, 200);
-    });
-
-    // initial load
+/* =========================
+   INITIAL LOAD
+========================= */
+document.addEventListener('DOMContentLoaded', () => {
     fetchLogs();
-    </script>
+    resizeDateInput();
+});
+</script>
 </body>
 </html>

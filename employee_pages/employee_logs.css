@@ -44,7 +44,7 @@ body::after {
     top: 84px;
     left: var(--sidebar-width);
     width: calc(100% - var(--sidebar-width));
-    height: calc(100vh - 84px);
+    height: calc(100vh - 100px);
 
     padding: 0.5rem 1rem;
 
@@ -76,59 +76,172 @@ body::after {
     display: flex;
     flex-direction: column;
 
-    overflow: hidden;
+    overflow: visible;
+}
+
+/* Filter Wrapper */
+.filterWrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+    padding-bottom: 1rem;
+    flex-wrap: wrap;
+}
+
+/* =========================
+   DATE WRAPPER (ICON INSIDE INPUT)
+========================= */
+.dateWrapper {
+    flex: 0 0 auto;
+    min-width: 12rem;
+    max-width: 22rem;
+
+    position: relative;
+
+    transition: width 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.dateWrapper .recordTitle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    font-size: 0.875rem;
+    font-weight: 400;
+
+    width: 100%;
+    min-width: 7rem;
+    padding: 0.75rem;
+
+    border-radius: 16px;
+
+    color: var(--text-muted);
+
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+
+    transition:
+        background 0.25s ease,
+        border-color 0.25s ease,
+        color 0.25s ease,
+        transform 0.25s cubic-bezier(0.22, 1, 0.36, 1),
+        box-shadow 0.25s ease;
+}
+
+.dateIcon {
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+
+    color: var(--text-muted);
+    pointer-events: none;
+
+    transition: color 0.25s ease, transform 0.25s ease;
+}
+
+.dateWrapper:hover .recordTitle {
+    color: var(--text-lightest);
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.25);
+    transform: translateY(-1px);
+    box-shadow: 
+        inset 0 1px 0 rgba(255, 255, 255, 0.12),
+        0 4px 12px rgba(0, 0, 0, 0.25);
+}
+
+.dateWrapper:hover .dateIcon {
+    color: var(--text-lightest);
+    transform: translateY(-50%) translateX(3px);
 }
 
 /* =========================
    DATE PICKER
 ========================= */
-.dateWrapper {
-    position: relative;
-    display: inline-flex;
-    align-items: center;
-    width: 25rem;
-}
-
 .recordTitle {
-    font-size: 1.125rem;
+    font-size: 1rem;
     font-weight: 400;
     color: var(--text-light);
-
-    width: 25rem;
-
+    width: 100%;
     background: transparent;
     border: none;
     cursor: pointer;
-
     transition: 0.2s ease;
 }
 
 .recordTitle:hover {
     color: var(--text-lightest) !important;
     background: var(--overlay-soft) !important;
-    transform: translateX(3px);
 }
 
 .recordTitle:focus {
     outline: none;
     box-shadow: none;
-    
     background: var(--overlay-soft) !important;
     color: var(--primary-color) !important;
 }
 
-.dateIcon {
-    right: 1rem;
-    position: absolute;
+#logTypeToggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+
+    font-size: 0.875rem;
+    font-weight: 400;
+
+    min-width: 7rem;
+    padding: 0.75rem 1rem;
+
+    border-radius: 16px;
 
     color: var(--text-muted);
-    pointer-events: none;
-    transition: 0.2s ease;
+
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+
+    cursor: pointer;
+
+    transition:
+        background 0.25s ease,
+        border-color 0.25s ease,
+        color 0.25s ease,
+        transform 0.25s cubic-bezier(0.22, 1, 0.36, 1),
+        box-shadow 0.25s ease;
 }
 
-.dateWrapper:hover .dateIcon {
+#logTypeToggle:hover {
     color: var(--text-lightest);
-    transform: translateX(3px);
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.25);
+    transform: translateY(-1px);
+    box-shadow: 
+        inset 0 1px 0 rgba(255, 255, 255, 0.12),
+        0 4px 12px rgba(0, 0, 0, 0.25);
+}
+
+/* Log type arrow */
+.dropdown-toggle::after {
+    display: none !important;
+}
+
+.logArrow {
+    transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+#logTypeToggle:hover .logArrow {
+    transform: rotate(180deg);
 }
 
 /* =========================
@@ -144,6 +257,52 @@ body::after {
     font-weight: 500;
     font-size: 0.9rem;
     border: none !important;
+    transition: color 0.2s ease;
+}
+
+/* =========================
+   SORTABLE HEADERS
+========================= */
+.sortable {
+    cursor: pointer;
+    user-select: none;
+}
+
+.sortable:hover {
+    color: var(--text-lightest);
+}
+
+/* Base icon state — dim, pointing down, smooth transition */
+.sort-icon {
+    display: inline-block; /* transform requires block/inline-block, not inline */
+    margin-left: 6px;
+    font-size: 0.9rem;
+    opacity: 0.4;
+    transform: rotate(0deg);
+    transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+                opacity 0.25s ease,
+                color 0.25s ease;
+}
+
+/* Active column label color */
+.sortable.active {
+    color: var(--primary-color);
+}
+
+/* Active icon — full opacity, green */
+.sortable.active .sort-icon {
+    opacity: 1;
+    color: var(--primary-color);
+}
+
+/* ASC — arrow points up */
+.sortable.asc .sort-icon {
+    transform: rotate(180deg);
+}
+
+/* DESC — arrow points down */
+.sortable.desc .sort-icon {
+    transform: rotate(0deg);
 }
 
 /* =========================
@@ -172,7 +331,7 @@ body::after {
     border: none;
 
     width: 100%;
-    table-layout: fixed; /* 👈 KEY FIX */
+    table-layout: fixed;
     border-collapse: collapse;
 }
 
@@ -212,11 +371,10 @@ body::after {
     border-bottom: none;
 }
 
-/* also kill cell-level visuals */
 .table tbody tr.emptyRow td {
     background: transparent !important;
-    border-bottom: none !important;  /* ← add this */
-    pointer-events: none;            /* ← add this to kill hover entirely */
+    border-bottom: none !important;
+    pointer-events: none;
 }
 
 /* cells */
@@ -238,7 +396,6 @@ body::after {
 
     font-size: 0.875rem;
     font-weight: 400;
-    color: var(--text-light);
 
     width: 7rem;
     padding: 0.25rem 0.75rem;
@@ -246,7 +403,7 @@ body::after {
 
     color: var(--primary-color);
     background: var(--primary-bg);
-    border-color: var(--primary-border);
+    border: 1px solid var(--primary-border);
     box-shadow: inset 0 1px 0 var(--primary-border);
 }
 
@@ -304,30 +461,15 @@ body::after {
     box-shadow: inset 0 1px 0 var(--info-border);
 }
 
-
 .locationIcon {
     margin-right: 0.5rem;
+
+    transition:
+        color 0.25s ease,
+        transform 0.25s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.in-office {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-
-    font-size: 0.875rem;
-    font-weight: 400;
-    color: var(--text-light);
-
-    width: 10rem;
-    padding: 0.25rem 0.75rem;
-    border-radius: 999px;
-
-    color: var(--primary-color);
-    background: var(--primary-bg);
-    border-color: var(--primary-border);
-    box-shadow: inset 0 1px 0 var(--primary-border);
-}
-
+.in-office,
 .out-office {
     display: inline-flex;
     align-items: center;
@@ -340,10 +482,42 @@ body::after {
     padding: 0.25rem 0.75rem;
     border-radius: 999px;
 
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+
+    transition:
+        background 0.25s ease,
+        border-color 0.25s ease,
+        color 0.25s ease,
+        transform 0.25s cubic-bezier(0.22, 1, 0.36, 1),
+        box-shadow 0.25s ease;
+}
+
+/* In Office */
+.in-office {
+    color: var(--primary-color);
+    background: var(--primary-bg);
+    border: 1px solid var(--primary-border);
+}
+
+.in-office:hover {
+    transform: translateY(-1px);
+    box-shadow:
+        inset 0 1px 0 var(--primary-border),
+        0 4px 12px rgba(0, 0, 0, 0.25);
+}
+
+/* Out Office */
+.out-office {
     color: var(--danger-color);
     background: var(--danger-bg);
     border: 1px solid var(--danger-border);
-    box-shadow: inset 0 1px 0 var(--danger-border);
+}
+
+.out-office:hover {
+    transform: translateY(-1px);
+    box-shadow:
+        inset 0 1px 0 var(--danger-border),
+        0 4px 12px rgba(0, 0, 0, 0.25);
 }
 
 /* empty state */
@@ -368,7 +542,6 @@ body::after {
     opacity: 0.4;
 }
 
-
 /* =========================
    FLATPICKR
 ========================= */
@@ -380,9 +553,6 @@ body::after {
     font-family: 'Poppins', sans-serif;
 }
 
-/* ===== FLATPICKR THEME OVERRIDE ===== */
-
-/* Main calendar container */
 .flatpickr-calendar {
     background: var(--glass-bg) !important;
     backdrop-filter: blur(32px) saturate(160%) brightness(0.3) !important;
@@ -394,13 +564,11 @@ body::after {
     color: var(--text-light) !important;
 }
 
-/* Arrow (triangle) on calendar — hide or match */
 .flatpickr-calendar.arrowTop::before,
 .flatpickr-calendar.arrowTop::after {
     border-bottom-color: var(--glass-border) !important;
 }
 
-/* Month/year header */
 .flatpickr-months {
     padding: 0.5rem 0;
 }
@@ -423,7 +591,6 @@ body::after {
     color: #fff !important;
 }
 
-/* Prev/next arrows */
 .flatpickr-prev-month,
 .flatpickr-next-month {
     fill: var(--text-light) !important;
@@ -436,14 +603,12 @@ body::after {
     color: #fff !important;
 }
 
-/* Weekday labels */
 .flatpickr-weekday {
     color: #aaa !important;
     font-weight: 500 !important;
     font-family: 'Poppins', sans-serif !important;
 }
 
-/* Day cells */
 .flatpickr-day {
     color: var(--text-light) !important;
     border-radius: 8px !important;
@@ -455,7 +620,6 @@ body::after {
     border-color: transparent !important;
 }
 
-/* Selected day */
 .flatpickr-day.selected,
 .flatpickr-day.startRange,
 .flatpickr-day.endRange {
@@ -464,16 +628,13 @@ body::after {
     color: var(--bg-light) !important;
 }
 
-/* Range in-between days */
 .flatpickr-day.inRange {
     border-color: transparent !important;
     box-shadow: none !important;
-    
     background: var(--primary-range) !important;
     color: var(--text-lightest) !important;
 }
 
-/* Today */
 .flatpickr-day.today {
     border-color: var(--primary-glow) !important;
     color: var(--text-light) !important;
@@ -483,14 +644,12 @@ body::after {
     background: var(--primary-soft) !important;
 }
 
-/* Disabled / out of range days */
 .flatpickr-day.flatpickr-disabled,
 .flatpickr-day.prevMonthDay,
 .flatpickr-day.nextMonthDay {
     color: var(--overlay-muted) !important;
 }
 
-/* The alt input field itself */
 .flatpickr-input.form-control,
 .flatpickr-input {
     background: transparent !important;
@@ -504,7 +663,9 @@ body::after {
     caret-color: transparent !important;
 }
 
-/* Map tooltip */
+/* =========================
+   MAP POPUP
+========================= */
 .mapPopUpContainer {
     display: none;
     position: fixed;
@@ -529,7 +690,7 @@ body::after {
     width: 100%;
 }
 
-.mapPopUpInfo{
+.mapPopUpInfo {
     padding: 10px 12px;
     font-size: 0.75rem;
     font-weight: 300;
@@ -537,6 +698,7 @@ body::after {
     color: #fff;
     text-shadow: 0 1px 2px rgba(0,0,0,0.4);
 }
+
 .openGoogleMapsBtn {
     display: block;
     text-align: center;

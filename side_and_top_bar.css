@@ -517,21 +517,42 @@ a:focus, img:focus {
     -webkit-user-drag: none;
 }
 
+.userEmail,
+.userProfileIcon {
+    transition:
+        color 0.25s ease,
+        transform 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
 .userDropdownWrapper:hover .userEmail,
 .userDropdownWrapper.show .userEmail {
     color: #97be41;
-    transition: color 0.2s ease;
 }
 
 .userDropdownWrapper:hover .userProfileIcon,
 .userDropdownWrapper.show .userProfileIcon {
     color: #97be41;
-    transition: color 0.2s ease;
+    transform: translateY(-1px);
 }
 
 .userDropdownWrapper {
     position: relative;
+    display: flex;
     align-items: center;
+
+    transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.userArrow {
+    margin-left: 1rem;
+
+    transition:
+        transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.userDropdownWrapper:hover .userArrow,
+.userDropdownWrapper.show .userArrow {
+    transform: rotate(180deg);
 }
 
 .userDropdownMenu {

@@ -120,6 +120,7 @@ $currentStatus = $timedIn ? 'Timed In' : 'Timed Out';
                 <span class="userEmail dropdown-toggle" id="userDropdownToggle">
                     <i class="bi bi-person-fill userProfileIcon"></i>
                     <?= htmlspecialchars($_SESSION['user_name'] ?? $_SESSION['user_email'] ?? 'User') ?>
+                    <i class="bi bi-chevron-down userArrow"></i>
                 </span>
 
                 <div class="userDropdownMenu" id="userDropdownMenu">
