@@ -66,7 +66,7 @@ body::after {
     border-radius: 16px;
     padding: 1.5rem;
 
-    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 12px 35px var(--box-shadow-heavy);
 
     overflow: hidden;
     min-width: 0;
@@ -98,7 +98,7 @@ body::after {
 }
 
 .fc .fc-button {
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--calendar-btn-bg);
     border: 1px solid var(--glass-border);
     color: var(--text-light);
     font-family: 'Poppins', sans-serif;
@@ -111,8 +111,8 @@ body::after {
 }
 
 .fc .fc-button:hover {
-    background: rgba(255, 255, 255, 0.14);
-    border-color: rgba(255, 255, 255, 0.2);
+    background: var(--calendar-btn-hover-bg);
+    border-color: var(--calendar-btn-hover-border);
     color: var(--text-lightest);
     box-shadow: none;
 }
@@ -127,13 +127,13 @@ body::after {
 .fc .fc-button-primary:not(:disabled):active {
     background: var(--primary-color);
     border-color: var(--primary-hover);
-    color: #fff;
+    color: var(--bg-light);
     box-shadow: none;
 }
 
 /* Current month button */
 .fc .fc-today-button {
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--calendar-btn-bg);
     border: 1px solid var(--glass-border);
     color: var(--text-light);
     font-family: 'Poppins', sans-serif;
@@ -146,8 +146,8 @@ body::after {
 }
 
 .fc .fc-today-button:hover {
-    background: rgba(255, 255, 255, 0.14);
-    border-color: rgba(255, 255, 255, 0.2);
+    background: var(--calendar-btn-hover-bg);
+    border-color: var(--calendar-btn-hover-border);
     color: var(--text-lightest);
     box-shadow: none;
 }
@@ -155,20 +155,20 @@ body::after {
 .fc .fc-today-button:active {
     background: var(--primary-hover);
     border-color: var(--primary-hover);
-    color: #ffffff;
+    color: var(--bg-light);
     box-shadow: none;
 }
 
 .fc .fc-today-button:disabled {
-    background-color: #97be41;
-    border-color: #97be41;
-    color: #ffffff;
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+    color: var(--bg-light);
     opacity: 1;
     cursor: default;
 }
 
 .fc .fc-col-header-cell {
-    background: rgba(255, 255, 255, 0.04);
+    background: var(--overlay-soft);
     border-color: var(--glass-border);
     padding: 0.5rem 0;
 }
@@ -188,7 +188,7 @@ body::after {
 }
 
 .fc .fc-daygrid-day:hover {
-    background: rgba(255, 255, 255, 0.03);
+    background: var(--calendar-day-hover);
 }
 
 .fc .fc-daygrid-day-number {
@@ -199,7 +199,7 @@ body::after {
 }
 
 .fc .fc-day-today {
-    background: rgba(151, 190, 65, 0.08) !important;
+    background: var(--calendar-today-bg) !important;
 }
 
 .fc .fc-day-today .fc-daygrid-day-number {
@@ -278,42 +278,42 @@ body::after {
 }
 
 .shiftLegendDot.day {
-    background: #97be41;
+    background: var(--primary-color);
 }
 
 .shiftLegendDot.night {
-    background: #4da3ff;
+    background: var(--shift-night);
 }
 
 .shiftLegendDot.night-cont {
-    background: rgba(77, 163, 255, 0.15);
-    border: 2px dashed #4da3ff;
+    background: var(--shift-night-bg);
+    border: 2px dashed var(--shift-night);
 }
 
 .shiftLegendDot.rest {
-    background: #6c757d;
+    background: var(--shift-rest);
 }
 
 .shiftLegendDot.leave-approved {
-    background: #fd7e14;
+    background: var(--shift-leave-approved);
 }
 
 .shiftLegendDot.leave-pending {
-    background: #f0ad4e;
+    background: var(--shift-leave-pending);
 }
 
 .shiftLegendDot.leave-rejected {
-    background: #dc3545;
+    background: var(--shift-leave-rejected);
 }
 
 .shiftLegendDot.ob-approved {
-    background: #6f42c1;
+    background: var(--shift-ob-approved);
 }
 
 .shiftLegendDot.ob-pending {
-    background: #f0ad4e;
+    background: var(--shift-ob-pending);
 }
 
 .shiftLegendDot.ob-rejected {
-    background: #dc3545;
+    background: var(--shift-ob-rejected);
 }
