@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Apr 22, 2026 at 11:26 AM
+-- Generation Time: Apr 24, 2026 at 02:15 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.0.30
 
@@ -43,6 +43,13 @@ CREATE TABLE `attendances` (
   `overtime_status` enum('none','pending','approved') DEFAULT 'none',
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `attendances`
+--
+
+INSERT INTO `attendances` (`id`, `employee_id`, `work_date`, `scheduled_start_datetime`, `scheduled_end_datetime`, `actual_time_in`, `actual_time_out`, `total_work_hours`, `late_minutes`, `undertime_minutes`, `overtime_minutes`, `status`, `overtime_status`, `updated_at`) VALUES
+(76, 2, '2026-04-24', '2026-04-24 08:30:00', '2026-04-24 17:30:00', NULL, NULL, 0.00, 0, 0, 0, 'absent', 'none', '2026-04-24 00:12:19');
 
 -- --------------------------------------------------------
 
@@ -108,8 +115,14 @@ CREATE TABLE `logs` (
 --
 
 INSERT INTO `logs` (`id`, `employee_id`, `log_type`, `log_time`, `longitude`, `latitude`, `accuracy`, `is_within_office`, `distance_meters`, `created_at`) VALUES
-(69, 2, 'IN', '2026-04-22 17:03:44', 120.9954933, 14.5842660, 55, 1, 21.954, '2026-04-22 09:03:44'),
-(70, 2, 'OUT', '2026-04-22 17:04:07', 139.6917060, 35.6894870, 150, 0, 2996100, '2026-04-22 09:04:07');
+(275, 2, 'IN', '2026-04-23 23:06:53', 120.9954770, 14.5842782, 55, 1, 22.1814, '2026-04-23 15:06:53'),
+(276, 2, 'OUT', '2026-04-23 23:06:59', 120.9954770, 14.5842782, 55, 1, 22.1814, '2026-04-23 15:06:59'),
+(277, 2, 'IN', '2026-04-24 08:07:31', 120.9954888, 14.5842712, 55, 1, 21.8413, '2026-04-24 00:07:31'),
+(278, 2, 'OUT', '2026-04-24 08:07:37', 120.9954888, 14.5842712, 55, 1, 21.8413, '2026-04-24 00:07:37'),
+(279, 2, 'IN', '2026-04-24 08:12:14', 120.9954860, 14.5842708, 55, 1, 22.0824, '2026-04-24 00:12:14'),
+(280, 2, 'OUT', '2026-04-24 08:12:19', 120.9954860, 14.5842708, 55, 1, 22.0824, '2026-04-24 00:12:19'),
+(281, 2, 'IN', '2026-04-24 08:12:44', 120.9954822, 14.5842744, 55, 1, 22.081, '2026-04-24 00:12:44'),
+(282, 2, 'OUT', '2026-04-24 08:12:49', 120.9954822, 14.5842744, 55, 1, 22.081, '2026-04-24 00:12:49');
 
 -- --------------------------------------------------------
 
@@ -148,13 +161,8 @@ CREATE TABLE `schedules` (
 --
 
 INSERT INTO `schedules` (`id`, `employee_id`, `schedule_date`, `scheduled_start_datetime`, `scheduled_end_datetime`, `is_rest_day`) VALUES
-(4, 2, '2026-04-22', '2026-04-22 07:20:00', '2026-04-22 16:22:00', 0),
-(5, 2, '2026-04-23', '2026-04-23 07:20:00', '2026-04-23 16:22:00', 0),
-(6, 2, '2026-04-24', '2026-04-24 07:20:00', '2026-04-24 16:22:00', 0),
-(7, 2, '2026-04-25', NULL, NULL, 1),
-(8, 2, '2026-04-26', NULL, NULL, 1),
-(9, 2, '2026-04-27', '2026-04-27 07:20:00', '2026-04-27 16:22:00', 0),
-(10, 2, '2026-04-28', '2026-04-28 07:20:00', '2026-04-28 16:22:00', 0);
+(35, 2, '2026-04-24', '2026-04-24 08:30:00', '2026-04-24 17:30:00', 0),
+(36, 2, '2026-04-25', '2026-04-25 08:30:00', '2026-04-25 17:30:00', 0);
 
 -- --------------------------------------------------------
 
@@ -236,7 +244,7 @@ ALTER TABLE `system_state`
 -- AUTO_INCREMENT for table `attendances`
 --
 ALTER TABLE `attendances`
-  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=78;
 
 --
 -- AUTO_INCREMENT for table `employees`
@@ -254,7 +262,7 @@ ALTER TABLE `leave_requests`
 -- AUTO_INCREMENT for table `logs`
 --
 ALTER TABLE `logs`
-  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=71;
+  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=283;
 
 --
 -- AUTO_INCREMENT for table `overtime_requests`
@@ -266,7 +274,7 @@ ALTER TABLE `overtime_requests`
 -- AUTO_INCREMENT for table `schedules`
 --
 ALTER TABLE `schedules`
-  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=37;
 
 --
 -- Constraints for dumped tables

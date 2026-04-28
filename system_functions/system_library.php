@@ -62,6 +62,7 @@ function gantt_cursor(): string
             </div>';
 }
 
+// Create scale per row where it takes the scheduled time in and scheduled time out (+2 hours)
 function gantt_scale(int $rangeStart, int $rangeEnd): string
 {
     $html = '<div class="ganttScale">';
@@ -84,42 +85,54 @@ function gantt_scale(int $rangeStart, int $rangeEnd): string
  */
 function computeGanttRow(array $row, ?array $sched): ?array
 {
+    // --- Basic date metadata ---
     $dateKey  = $row['work_date'];
-    $isToday  = ($dateKey === date('Y-m-d'));
-    $isFuture = ($dateKey > date('Y-m-d'));
-    $dayLabel = $isToday ? 'Today' : date('l', strtotime($dateKey));
-    $dateNum  = date('M d', strtotime($dateKey));
+    $isToday  = ($dateKey === date('Y-m-d'));          // True if this row is the current day
+    $isFuture = ($dateKey > date('Y-m-d'));            // True if the date hasn't happened yet
+    $dayLabel = $isToday ? 'Today' : date('l', strtotime($dateKey)); // e.g. "Today" or "Monday"
+    $dateNum  = date('M d', strtotime($dateKey));      // e.g. "Apr 14"
 
+    // --- Attendance metrics from the DB row ---
     $lateMinutes      = (int) $row['late_minutes'];
     $undertimeMinutes = (int) $row['undertime_minutes'];
     $overtimeMinutes  = (int) $row['overtime_minutes'];
-    $overtimeStatus   = $row['overtime_status'];
-    $status           = $row['status'];
+    $overtimeStatus   = $row['overtime_status'];       // 'approved', 'rejected', or 'pending'
+    $status           = $row['status'];                // e.g. 'absent', 'leave', etc.
 
+    // --- Resolve scheduled start/end from the schedule record, falling back to the attendance row ---
     $schedStartDt = ($sched['scheduled_start_datetime'] ?? null) ?: ($row['scheduled_start_datetime'] ?? null);
     $schedEndDt   = ($sched['scheduled_end_datetime']   ?? null) ?: ($row['scheduled_end_datetime']   ?? null);
 
+    // Convert schedule datetimes to Unix timestamps
     $schedIn  = null;
     $schedOut = null;
     if ($schedStartDt && $schedStartDt !== '0000-00-00 00:00:00') {
         $schedIn  = strtotime($schedStartDt);
         $schedOut = strtotime($schedEndDt);
+
+        // If the shift crosses midnight, push schedOut to the next day to keep it after schedIn
         if ($schedOut && $schedOut <= $schedIn) {
             $schedOut = strtotime('+1 day', $schedOut);
         }
     }
 
+    // --- Determine if this row should render as absent or future (no actual check-in recorded) ---
     $isFutureOrAbsent = $isFuture || !$row['actual_time_in'];
 
     if ($isFutureOrAbsent) {
+        // Skip entirely if there's no schedule to show a ghost bar for
         if (!$schedIn || !$schedOut) return null;
 
+        // Pad the visible range 2 hours before/after the scheduled shift
         $rangeStart = strtotime('-2 hours', $schedIn);
         $rangeEnd   = strtotime('+2 hours', $schedOut);
-        $range      = max(1, $rangeEnd - $rangeStart);
-        $barLeft    = (($schedIn  - $rangeStart) / $range) * 100;
-        $barWidth   = (($schedOut - $schedIn)    / $range) * 100;
+        $range      = max(1, $rangeEnd - $rangeStart); // Avoid division by zero
 
+        // Convert schedule timestamps to percentage positions within the range
+        $barLeft  = (($schedIn  - $rangeStart) / $range) * 100;
+        $barWidth = (($schedOut - $schedIn)    / $range) * 100;
+
+        // Choose bar style and label based on whether the date is upcoming or a missed day
         if ($isFuture) {
             $barClass   = 'ganttBarPending';
             $labelClass = 'ganttPendingLabel';
@@ -127,7 +140,7 @@ function computeGanttRow(array $row, ?array $sched): ?array
         } else {
             $barClass   = 'ganttBarAbsent';
             $labelClass = 'ganttAbsentLabel';
-            $labelText  = ucfirst($status);
+            $labelText  = ucfirst($status); // e.g. "Absent", "Leave"
         }
 
         return [
@@ -138,7 +151,7 @@ function computeGanttRow(array $row, ?array $sched): ?array
             'rangeEnd'   => $rangeEnd,
             'barLeft'    => $barLeft,
             'barWidth'   => $barWidth,
-            'midLeft'    => $barLeft + ($barWidth / 2),
+            'midLeft'    => $barLeft + ($barWidth / 2), // Center point for the label overlay
             'barClass'   => $barClass,
             'labelClass' => $labelClass,
             'labelText'  => $labelText,
@@ -149,35 +162,48 @@ function computeGanttRow(array $row, ?array $sched): ?array
     $actualIn  = strtotime($row['actual_time_in']);
     $actualOut = $row['actual_time_out'] ? strtotime($row['actual_time_out']) : null;
 
+    // Handle midnight-crossing shifts for the actual out time as well
     if ($actualOut && $actualOut <= $actualIn) {
         $actualOut = strtotime('+1 day', $actualOut);
     }
 
-    $noTimeOut = ($actualOut === null && !$isToday);
+    // Mark as "No Time Out" only if the employee never clocked out on a past day
+    $noTimeOut = !$isToday && ($actualOut === null || $row['missed_time_out']);
 
+    // Determine the outermost timestamps to fit everything in the visible range
     $rangeMin = $schedIn ? min($schedIn, $actualIn) : $actualIn;
     $rangeMax = $noTimeOut
-        ? ($schedOut ?? $actualIn)
-        : ($schedOut ? max($schedOut, ($actualOut ?? time())) : ($actualOut ?? time()));
+        ? ($schedOut ?? $actualIn)                                          // No time-out: end at scheduled out
+        : ($schedOut ? max($schedOut, ($actualOut ?? time())) : ($actualOut ?? time())); // Normal: end at the later of sched-out or actual-out
 
+    // Pad the range by 2 hours on each side for visual breathing room
     $rangeStart = strtotime('-2 hours', $rangeMin);
     $rangeEnd   = strtotime('+2 hours', $rangeMax);
     $range      = max(1, $rangeEnd - $rangeStart);
 
+    // If still clocked in (today) use current time; for past days with no time-out use end-of-day
     if ($actualOut === null) {
         $actualOut = $isToday ? time() : strtotime($dateKey . ' 23:59:59');
     }
 
+    // Helper closure: converts a timestamp to a % position within the visible range
     $toLeft = fn($ts) => (($ts - $rangeStart) / $range) * 100;
 
+    // --- Status flags ---
     $isTardy     = ($lateMinutes > 0);
+    $isEarly     = ($actualIn < $schedIn && $schedIn !== null);
+    // Undertime only applies to completed past days
     $isUndertime = ($undertimeMinutes > 0 && !$noTimeOut && !$isToday);
 
+    // The main bar starts at schedIn when early (to avoid overlapping the early bar)
+    // and ends at scheduled-out when there's overtime, otherwise at actual-out
+    $onTimeStart = ($isEarly && $schedIn) ? $schedIn : $actualIn;
     $onTimeEnd   = $noTimeOut
         ? ($schedOut ?? $actualOut)
         : (($overtimeMinutes > 0 && $schedOut) ? $schedOut : $actualOut);
-    $onTimeWidth = (($onTimeEnd - $actualIn) / $range) * 100;
+    $onTimeWidth = (($onTimeEnd - $onTimeStart) / $range) * 100;
 
+    // Map overtime approval status to the corresponding CSS class
     $otColorClass = match($overtimeStatus) {
         'approved' => 'ganttBarOvertimeApproved',
         'rejected' => 'ganttBarOvertimeRejected',
@@ -191,30 +217,49 @@ function computeGanttRow(array $row, ?array $sched): ?array
         'rangeStart'         => $rangeStart,
         'rangeEnd'           => $rangeEnd,
         'isToday'            => $isToday,
+
+        // Schedule bar positioning
         'schedIn'            => $schedIn,
         'schedOut'           => $schedOut,
         'schedLeft'          => $schedIn  !== null ? $toLeft($schedIn)  : null,
         'schedWidth'         => ($schedIn && $schedOut) ? (($schedOut - $schedIn) / $range) * 100 : null,
-        'actualLeft'         => $toLeft($actualIn),
-        'actualInPos'        => $toLeft($actualIn),
-        'actualOutPos'       => $toLeft($actualOut),
+
+        // Main bar positioning
+        'actualLeft'         => $toLeft($onTimeStart),
+        'actualInPos'        => $toLeft($actualIn),   // Marker pin for exact time-in moment
+        'actualOutPos'       => $toLeft($actualOut),  // Marker pin for exact time-out moment
         'noTimeOut'          => $noTimeOut,
         'onTimeWidth'        => $onTimeWidth,
+
+        // Early bar (arrived before scheduled start)
+        'isEarly'            => $isEarly,
+        'earlyLeft'          => $isEarly && $schedIn ? $toLeft($actualIn) : null,
+        'earlyWidth'         => ($isEarly && $schedIn) ? (($schedIn - $actualIn) / $range) * 100 : 0,
+        'earlyMinutes'       => ($isEarly && $schedIn) ? (int) floor(($schedIn - $actualIn) / 60) : 0,
+        
+        // Tardiness bar (gap between scheduled in and actual in)
         'isTardy'            => $isTardy,
         'tardyLeft'          => $schedIn  !== null ? $toLeft($schedIn)  : null,
         'tardyWidth'         => ($isTardy && $schedIn) ? (($actualIn - $schedIn) / $range) * 100 : 0,
         'lateMinutes'        => $lateMinutes,
+
+        // Undertime bar (gap between actual out and scheduled out)
         'isUndertime'        => $isUndertime,
         'undertimeMinutes'   => $undertimeMinutes,
         'undertimeLeft'      => $toLeft($actualOut),
         'undertimeWidth'     => ($isUndertime && $schedOut) ? (($schedOut - $actualOut) / $range) * 100 : 0,
+
+        // Overtime bar (extension beyond scheduled out)
         'overtimeMinutes'    => $overtimeMinutes,
         'overtimeStatus'     => $overtimeStatus,
         'otColorClass'       => $otColorClass,
         'overtimeLeft'       => $schedOut !== null ? $toLeft($schedOut) : null,
         'overtimeWidth'      => ($overtimeMinutes > 0 && $schedOut) ? (($actualOut - $schedOut) / $range) * 100 : 0,
+
+        // Human-readable tooltip labels
         'schedInLabel'       => $schedIn  ? date('g:i A', $schedIn)  : '--',
         'schedOutLabel'      => $schedOut ? date('g:i A', $schedOut) : '--',
+        'earlyLabel'         => ($isEarly && $schedIn) ? (int) floor(($schedIn - $actualIn) / 60) . ' min' : '',
         'actualInLabel'      => date('g:i A', $actualIn),
         'actualOutLabel'     => $row['actual_time_out']
                                     ? date('g:i A', $actualOut)
