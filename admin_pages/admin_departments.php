@@ -157,41 +157,49 @@ $current_page = 'departments';
                         onclick='openEditDept(<?= json_encode($dept) ?>)'></i>
                     </div>
 
-                    <div class="deptIcon"
-                        style="background: <?= htmlspecialchars($color) ?>;
-                                color: <?= getContrastColor($color) ?>;">
-                        <?= htmlspecialchars($dept['department_code']) ?>
+                    <div class="deptIdentity">
+                        <div class="deptIcon"
+                            style="background: <?= htmlspecialchars($color) ?>;
+                                    color: <?= getContrastColor($color) ?>;">
+                            <?= htmlspecialchars($dept['department_code']) ?>
+                        </div>
+
+                        <div class="deptName">
+                            <?= htmlspecialchars($dept['department_name']) ?>
+                        </div>
                     </div>
 
-                    <div class="deptName">
-                        <?= htmlspecialchars($dept['department_name']) ?>
-                    </div>
+                    <?php if (!empty($dept['parent_name']) || $dept['child_count'] > 0): ?>
+                        <div class="deptPills">
 
-                    <?php if (!empty($dept['parent_name'])): ?>
-                        <div class="deptParent">
-                            Sub of 
-                            <span 
-                                class="deptParentLink"
-                                onclick="viewParentDepartment(<?= $dept['parent_id'] ?>)">
-                                <?= htmlspecialchars($dept['parent_name']) ?>
-                            </span>
+                            <?php if (!empty($dept['parent_name'])): ?>
+                                <button
+                                    class="deptParentLink"
+                                    onclick="viewParentDepartment(<?= $dept['parent_id'] ?>)">
+                                    <i class="bi bi-diagram-3"></i>
+                                    Under <?= htmlspecialchars($dept['parent_name']) ?>
+                                </button>
+                            <?php endif; ?>
+
+                            <?php if ($dept['child_count'] > 0): ?>
+                                <button
+                                    class="deptSubBtn"
+                                    onclick="viewSubDepartments(
+                                        <?= $dept['id'] ?>,
+                                        '<?= htmlspecialchars($dept['department_name'], ENT_QUOTES) ?>'
+                                    )">
+                                    <i class="bi bi-diagram-2"></i>
+                                    <?= $dept['child_count'] ?> Sub <?= $dept['child_count'] != 1 ? 'Departments' : 'Department' ?>
+                                </button>
+                            <?php endif; ?>
+
                         </div>
                     <?php endif; ?>
 
-                    <?php if ($dept['child_count'] > 0): ?>
-                        <button 
-                            class="deptSubBtn"
-                            onclick="viewSubDepartments(
-                                <?= $dept['id'] ?>,
-                                '<?= htmlspecialchars($dept['department_name'], ENT_QUOTES) ?>'
-                            )">
-                            View Sub Departments (<?= $dept['child_count'] ?>)
-                        </button>
-                    <?php endif; ?>
-
-                    <div class="deptMeta">
-                        👤 <?= $dept['employee_count'] ?> employee<?= $dept['employee_count'] != 1 ? 's' : '' ?>
-                    </div>
+                    <button class="deptMeta">
+                        <i class="bi bi-people"></i>
+                        <?= $dept['employee_count'] ?> <?= $dept['employee_count'] != 1 ? 'Employees' : 'Employee' ?>
+                    </button>
 
                 </div>
             <?php endforeach; ?>
@@ -234,7 +242,7 @@ $current_page = 'departments';
                         <label class="form-label">Parent Department (Optional)</label>
 
                         <select class="form-control" name="parent_id">
-                            <option value="">-- None (Top Level) --</option>
+                            <option value="">None (Parent Department)</option>
 
                             <?php foreach ($departmentList as $row): ?>
                                 <option value="<?= $row['id'] ?>">
@@ -382,21 +390,31 @@ form.addEventListener('submit', function(e) {
             const color = data.color || '#4e73df';
 
             div.innerHTML = `
-                <div class="deptIcon"
-                    style="background: ${color}; color: ${getContrastColor(color)};">
-                    ${data.department_code}
+                <div class="deptActions">
+                    <i class="bi bi-pencil-square editDeptIcon"
+                        onclick='openEditDept(${JSON.stringify(data)})'></i>
                 </div>
 
-                <div class="deptName">${data.department_name}</div>
-
-                ${data.parent_id && data.parent_name
-                    ? `<div class="deptParent">Sub of ${data.parent_name}</div>`
-                    : ''
-                }
-
-                <div class="deptMeta">
-                    👤 0 employees
+                <div class="deptIdentity">
+                    <div class="deptIcon" style="background:${color}; color:${getContrastColor(color)};">
+                        ${data.department_code}
+                    </div>
+                    <div class="deptName">${data.department_name}</div>
                 </div>
+
+                ${data.parent_id && data.parent_name ? `
+                    <div class="deptPills">
+                        <button class="deptParentLink" onclick="viewParentDepartment(${data.parent_id})">
+                            <i class="bi bi-diagram-3"></i>
+                            Under ${data.parent_name}
+                        </button>
+                    </div>
+                ` : ''}
+
+                <button class="deptMeta">
+                    <i class="bi bi-people"></i>
+                    0 Employees
+                </button>
             `;
 
             grid.appendChild(div);
@@ -495,7 +513,6 @@ function applyFilterSort() {
 }
 
 searchInput.addEventListener('input', applyFilterSort);
-sortSelect.addEventListener('change', applyFilterSort);
 form.department_code.addEventListener('input', () => {
     form.department_code.classList.remove('is-invalid');
 });
@@ -520,8 +537,8 @@ function viewParentDepartment(parentId) {
             }
 
             body.innerHTML = `
-                <div class="deptCard">
-                    <div class="deptIcon" style="background:${data.color || '#4e73df'}">
+                <div class="deptListItem">
+                    <div class="deptIcon" style="background:${data.color || '#4e73df'}; color:${getContrastColor(data.color || '#4e73df')};">
                         ${data.department_code}
                     </div>
                     <div class="deptName">${data.department_name}</div>
@@ -551,13 +568,11 @@ function viewSubDepartments(id, name) {
             }
 
             list.innerHTML = data.map(d => `
-                <div class="subDeptItem">
-                    <div class="deptIcon" style="background:${d.color || '#4e73df'}">
+                <div class="deptListItem">
+                    <div class="deptIcon" style="background:${d.color || '#4e73df'}; color:${getContrastColor(d.color || '#4e73df')};">
                         ${d.department_code}
                     </div>
-                    <div>
-                        <strong>${d.department_name}</strong>
-                    </div>
+                    <div class="deptName">${d.department_name}</div>
                 </div>
             `).join('');
         });

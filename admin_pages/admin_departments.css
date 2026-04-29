@@ -53,6 +53,7 @@ body::after {
     align-items: stretch;
 
     z-index: 10;
+    transition: left 0.3s ease, width 0.3s ease;
 }
 
 /* =========================
@@ -306,83 +307,81 @@ body::after {
 
     flex: 1;
     overflow-y: auto;
-
-    /* Scrollbar for Firefox */
-    scrollbar-width: thin;
-    scrollbar-color: var(--glass-border) rgba(255, 255, 255, 0.03);
 }
 
-/* Chrome / Edge / Safari */
-/* Chrome / Edge / Safari */
-.deptGrid::-webkit-scrollbar {
-    width: 8px;
-}
-
-/* track */
-.deptGrid::-webkit-scrollbar-track {
-    background: rgba(255, 255, 255, 0.03);
-    border-radius: 10px;
-}
-
-/* thumb (uses root variables) */
-.deptGrid::-webkit-scrollbar-thumb {
-    background: var(--glass-border);
-    border-radius: 10px;
-
-    border: 1px solid rgba(255, 255, 255, 0.08);
-
-    box-shadow: inset 0 0 4px rgba(255, 255, 255, 0.06);
-
-    transition: background 0.2s ease;
-}
-
-/* hover */
-.deptGrid::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.25);
-}
+.deptGrid::-webkit-scrollbar { width: 4px; }
+.deptGrid::-webkit-scrollbar-track { background: transparent; }
+.deptGrid::-webkit-scrollbar-thumb { background: var(--text-dark); border-radius: 10px; }
+.deptGrid::-webkit-scrollbar-thumb:hover { background: var(--text-dark-muted); }
 
 .deptCard {
-    background: var(--text-darkest);
+    background: var(--glass-bg);
+    backdrop-filter: blur(32px) saturate(160%) brightness(0.3);
+    -webkit-backdrop-filter: blur(32px) saturate(160%) brightness(0.3);
+
     border: 1px solid var(--glass-border);
     border-radius: 16px;
     padding: 20px;
     position: relative;
     aspect-ratio: 4/3;
-    
+
     display: flex;
     flex-direction: column;
-    align-items: center;
+    align-items: flex-start;
     justify-content: flex-start;
     gap: 6px;
 
-    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.4);
-    transition: 0.2s ease;
+    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.5);
     cursor: pointer;
+
+    transition:
+        background 0.25s ease,
+        border-color 0.25s ease,
+        color 0.25s ease,
+        transform 0.25s cubic-bezier(0.22, 1, 0.36, 1),
+        box-shadow 0.25s ease;
 }
 
 .deptCard:hover {
-    transform: translateY(-4px);
+    color: var(--text-lightest);
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.25);
+    transform: translateY(-1px);
+    box-shadow: 
+        inset 0 1px 0 rgba(255, 255, 255, 0.12),
+        0 4px 12px rgba(0, 0, 0, 0.25);
+}
+
+.deptCard:hover .deptName {
+    color: var(--text-lightest);
+}
+
+.deptCard:hover .editDeptIcon {
+    opacity: 1;
+    transform: scale(1.1);
 }
 
 .deptIcon {
     width: 60px;
     height: 60px;
-    border-radius: 50%;
-    position: relative;
-    
+    flex-shrink: 0;
+
     display: flex;
     align-items: center;
     justify-content: center;
 
     color: white;
-    font-weight: bold;
-    border-radius: 12px;
-    padding: 10px;
-    text-align: center;
-
     font-weight: 700;
     font-size: 14px;
+    text-align: center;
+
+    border-radius: 50%; /* TRUE CIRCLE */
+
     margin-bottom: 12px;
+
+    /* optional polish */
+    overflow: hidden;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
 }
 
 .deptActions {
@@ -396,27 +395,33 @@ body::after {
 .editDeptIcon {
     cursor: pointer;
     font-size: 1.1rem;
-    opacity: 0.7;
+    opacity: 0;
     transition: 0.2s;
 }
 
-.editDeptIcon:hover {
-    opacity: 1;
-    transform: scale(1.1);
+.deptIdentity {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
 }
 
 .deptName {
-    font-size: 15px;
+    font-size: 1.25rem;
     font-weight: 500;
-    text-align: center;
-    color: white;
+    color: var(--text-light);
+    text-align: left;
+    align-items: center;
 }
 
 .deptModal {
-    background: var(--text-darkest);
+    background: var(--glass-bg);
+    backdrop-filter: blur(32px) saturate(160%) brightness(0.3);
+    -webkit-backdrop-filter: blur(32px) saturate(160%) brightness(0.3);
+
     border: 1px solid var(--glass-border);
-    color: white;
     border-radius: 14px;
+    color: var(--text-light);
 }
 
 .deptModal .form-control {
@@ -426,50 +431,116 @@ body::after {
 }
 
 .deptModal .form-control:focus {
-    background: rgba(255,255,255,0.08);
+    background: var(--text-dark);
     color: white;
     box-shadow: none;
+}
+
+.deptListItem {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid var(--glass-border);
+
+    background: var(--glass-bg);
+    backdrop-filter: blur(32px) saturate(160%) brightness(0.3);
+    -webkit-backdrop-filter: blur(32px) saturate(160%) brightness(0.3);
+
+    color: white;
+    transition: 0.2s ease;
+}
+
+.deptListItem + .deptListItem {
+    margin-top: 8px;
+}
+
+.deptListItem .deptIcon {
+    width: 36px;
+    height: 36px;
+    font-size: 0.65rem;
+    flex-shrink: 0;
+}
+
+.deptListItem .deptName {
+    font-size: 0.9rem;
+    font-weight: 500;
 }
 
 .deptParent {
     margin-top: 6px;
     font-size: 11px;
     opacity: 0.7;
-    text-align: center;
-    font-style: italic;
+    text-align: left;
+    color: var(--text-muted);
 }
 
 .deptParentLink {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+
+    background: var(--glass-bg);
+    backdrop-filter: blur(32px) saturate(160%) brightness(0.3);
+    -webkit-backdrop-filter: blur(32px) saturate(160%) brightness(0.3);
+
+    border: 1px solid var(--glass-border);
+    border-radius: 999px;
+    padding: 4px 12px 4px 8px;
+
+    font-size: 0.75rem;
+    color: white;
     cursor: pointer;
-    color: #7ab7ff;
-    text-decoration: underline;
     transition: 0.2s ease;
 }
 
 .deptParentLink:hover {
-    color: #a6d0ff;
+    background: var(--glass-border);
+    color: var(--primary-color);
 }
 
+
 .deptSubBtn {
-    margin-top: 8px;
-    padding: 6px 10px;
-    font-size: 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
 
-    border-radius: 8px;
+    background: var(--glass-bg);
+    backdrop-filter: blur(32px) saturate(160%) brightness(0.3);
+    -webkit-backdrop-filter: blur(32px) saturate(160%) brightness(0.3);
+
     border: 1px solid var(--glass-border);
-    background: rgba(255,255,255,0.06);
-    color: white;
+    border-radius: 999px;
+    padding: 4px 12px 4px 8px;
 
+    font-size: 0.75rem;
+    color: white;
     cursor: pointer;
     transition: 0.2s ease;
 }
 
 .deptSubBtn:hover {
-    background: rgba(255,255,255,0.15);
+    background: var(--glass-border);
+    color: var(--primary-color);
 }
 
 .deptMeta {
-    margin-top: 6px;
-    font-size: 12px;
-    opacity: 0.85;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+
+    background: var(--glass-bg);
+    backdrop-filter: blur(32px) saturate(160%) brightness(0.3);
+    -webkit-backdrop-filter: blur(32px) saturate(160%) brightness(0.3);
+
+    border: 1px solid var(--glass-border);
+    border-radius: 999px;
+    padding: 4px 12px 4px 8px;
+
+    font-size: 0.75rem;
+    color: white;
+    cursor: default;
+    transition: 0.2s ease;
 }
