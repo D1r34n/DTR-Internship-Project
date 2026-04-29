@@ -57,6 +57,7 @@ if (isset($_GET['action'], $_GET['type'], $_GET['id'])) {
                 WHERE le.id = ?
             ")->execute([$id]);
         }
+
     }
 
     $success = "Request has been " . ucfirst($status) . "!";
@@ -114,6 +115,7 @@ $logEditRequests = $pdo->query("
     JOIN employees e ON le.employee_id = e.id
     ORDER BY le.created_at DESC
 ")->fetchAll(PDO::FETCH_ASSOC);
+
 ?>
 
 <!doctype html>

@@ -1,6 +1,5 @@
 <?php
 session_start();
-
 if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'admin') {
     http_response_code(401);
     exit();
@@ -9,17 +8,13 @@ if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'admin') {
 require_once '../db.php';
 require_once '../system_functions/system_library.php';
 require_once '../system_functions/system_service.php';
-
 date_default_timezone_set('Asia/Manila');
 
 $employeeId = intval($_GET['employee_id'] ?? 0);
 $startDate  = $_GET['start'] ?? date('Y-m-01');
 $endDate    = $_GET['end']   ?? date('Y-m-t');
 
-if (!$employeeId) {
-    echo '<div class="ganttEmpty"><i class="bi bi-person-x ganttEmptyIcon"></i><div>No employee selected.</div></div>';
-    exit();
-}
+if (!$employeeId) { exit(); }
 
 $records   = getAttendanceRecords($pdo, $employeeId, $startDate, $endDate);
 $schedules = getSchedulesByDateRange($pdo, $employeeId, $startDate, $endDate);
@@ -31,13 +26,12 @@ foreach ($records as $row):
     $ganttBar = computeGanttRow($row, $sched);
     if ($ganttBar === null) continue;
     $hasRows = true;
-?>
 
-<?php if ($ganttBar['type'] === 'absent_or_future'): ?>
+    if ($ganttBar['type'] === 'absent_or_future'): ?>
 <div class="ganttRow">
     <div class="ganttLabel">
         <div><?= $ganttBar['dayLabel'] ?></div>
-        <div style="font-size: 0.75rem; color: #aaa;"><?= $ganttBar['dateNum'] ?></div>
+        <div style="font-size:0.75rem;color:#aaa;"><?= $ganttBar['dateNum'] ?></div>
     </div>
     <div class="ganttBarContainer"
         data-range-start="<?= $ganttBar['rangeStart'] ?>"
@@ -45,14 +39,13 @@ foreach ($records as $row):
         <?= gantt_cursor() ?>
         <?= gantt_scale($ganttBar['rangeStart'], $ganttBar['rangeEnd']) ?>
         <div class="ganttBar <?= $ganttBar['barClass'] ?>"
-            style="left: <?= $ganttBar['barLeft'] ?>%; width: <?= $ganttBar['barWidth'] ?>%;"></div>
-        <div class="<?= $ganttBar['labelClass'] ?>" style="left: <?= $ganttBar['midLeft'] ?>%">
+            style="left:<?= $ganttBar['barLeft'] ?>%;width:<?= $ganttBar['barWidth'] ?>%;"></div>
+        <div class="<?= $ganttBar['labelClass'] ?>" style="left:<?= $ganttBar['midLeft'] ?>%">
             <?= $ganttBar['labelText'] ?>
         </div>
     </div>
 </div>
-
-<?php else: ?>
+    <?php else: ?>
 <div class="ganttRow">
     <div class="ganttLabel">
         <div><?= $ganttBar['dayLabel'] ?></div>
@@ -72,77 +65,68 @@ foreach ($records as $row):
         data-overtime-status="<?= $ganttBar['overtimeStatusLabel'] ?>"
         data-undertime="<?= $ganttBar['undertimeLabel'] ?>"
         data-overbreak="<?= $ganttBar['overbreakLabel'] ?>">
-
         <?= gantt_cursor() ?>
         <?= gantt_scale($ganttBar['rangeStart'], $ganttBar['rangeEnd']) ?>
-
         <?php if ($ganttBar['schedIn'] !== null): ?>
             <div class="ganttBar ganttBarScheduled"
-                style="left: <?= $ganttBar['schedLeft'] ?>%; width: <?= $ganttBar['schedWidth'] ?>%;"></div>
+                style="left:<?= $ganttBar['schedLeft'] ?>%;width:<?= $ganttBar['schedWidth'] ?>%;"></div>
         <?php endif; ?>
-
         <?php if ($ganttBar['isEarly'] && $ganttBar['schedIn']): ?>
             <div class="ganttBar ganttBarEarly"
-                style="left: <?= $ganttBar['earlyLeft'] ?>%; width: <?= $ganttBar['earlyWidth'] ?>%;">
+                style="left:<?= $ganttBar['earlyLeft'] ?>%;width:<?= $ganttBar['earlyWidth'] ?>%;">
                 <span class="ganttBarLabel">Early</span>
             </div>
         <?php endif; ?>
-
         <?php if ($ganttBar['isTardy']): ?>
             <div class="ganttBar ganttBarTardy"
-                style="left: <?= $ganttBar['tardyLeft'] ?>%; width: <?= $ganttBar['tardyWidth'] ?>%;">
+                style="left:<?= $ganttBar['tardyLeft'] ?>%;width:<?= $ganttBar['tardyWidth'] ?>%;">
                 <span class="ganttBarLabel">Late</span>
             </div>
         <?php endif; ?>
-
         <?php if ($ganttBar['hasClockedIn']): ?>
             <?php if ($ganttBar['onTimeSplit']): ?>
                 <div class="ganttBar <?= $ganttBar['noTimeOut'] ? 'ganttBarNoTimeOut' : 'ganttBarOnTime' ?>"
-                    style="left: <?= $ganttBar['actualLeft'] ?>%; width: <?= $ganttBar['onTimeLeftWidth'] ?>%;">
+                    style="left:<?= $ganttBar['actualLeft'] ?>%;width:<?= $ganttBar['onTimeLeftWidth'] ?>%;">
                     <span class="ganttBarLabel"><?= $ganttBar['noTimeOut'] ? 'No Time Out' : 'On Time' ?></span>
                 </div>
                 <div class="ganttBar ganttBarBreak"
-                    style="left: <?= $ganttBar['breakLeft'] ?>%; width: <?= $ganttBar['breakWidth'] ?>%;">
+                    style="left:<?= $ganttBar['breakLeft'] ?>%;width:<?= $ganttBar['breakWidth'] ?>%;">
                     <span class="ganttBarLabel">Break</span>
                 </div>
                 <div class="ganttBar <?= $ganttBar['noTimeOut'] ? 'ganttBarNoTimeOut' : 'ganttBarOnTime' ?>"
-                    style="left: <?= $ganttBar['onTimeRightLeft'] ?>%; width: <?= $ganttBar['onTimeRightWidth'] ?>%;">
+                    style="left:<?= $ganttBar['onTimeRightLeft'] ?>%;width:<?= $ganttBar['onTimeRightWidth'] ?>%;">
                     <?php if ($ganttBar['onTimeRightWidth'] > 5): ?>
                         <span class="ganttBarLabel"><?= $ganttBar['noTimeOut'] ? 'No Time Out' : 'On Time' ?></span>
                     <?php endif; ?>
                 </div>
             <?php else: ?>
                 <div class="ganttBar <?= $ganttBar['noTimeOut'] ? 'ganttBarNoTimeOut' : 'ganttBarOnTime' ?>"
-                    style="left: <?= $ganttBar['actualLeft'] ?>%; width: <?= $ganttBar['onTimeWidth'] ?>%;">
+                    style="left:<?= $ganttBar['actualLeft'] ?>%;width:<?= $ganttBar['onTimeWidth'] ?>%;">
                     <span class="ganttBarLabel"><?= $ganttBar['noTimeOut'] ? 'No Time Out' : 'On Time' ?></span>
                 </div>
             <?php endif; ?>
-
             <?php if ($ganttBar['isUndertime'] && $ganttBar['schedOut']): ?>
                 <div class="ganttBar ganttBarUndertime"
-                    style="left: <?= $ganttBar['undertimeLeft'] ?>%; width: <?= $ganttBar['undertimeWidth'] ?>%;">
+                    style="left:<?= $ganttBar['undertimeLeft'] ?>%;width:<?= $ganttBar['undertimeWidth'] ?>%;">
                     <span class="ganttBarLabel">Undertime</span>
                 </div>
             <?php endif; ?>
         <?php endif; ?>
-
         <?php if ($ganttBar['overtimeMinutes'] > 0 && $ganttBar['schedOut']): ?>
             <div class="ganttBar <?= $ganttBar['otColorClass'] ?>"
-                style="left: <?= $ganttBar['overtimeLeft'] ?>%; width: <?= $ganttBar['overtimeWidth'] ?>%;">
+                style="left:<?= $ganttBar['overtimeLeft'] ?>%;width:<?= $ganttBar['overtimeWidth'] ?>%;">
                 <span class="ganttBarLabel">Overtime</span>
             </div>
         <?php endif; ?>
-
         <?php if ($ganttBar['actualInPos'] !== null): ?>
-            <div class="ganttMarker ganttMarkerActualStart" style="left: <?= $ganttBar['actualInPos'] ?>%"></div>
+            <div class="ganttMarker ganttMarkerActualStart" style="left:<?= $ganttBar['actualInPos'] ?>%"></div>
         <?php endif; ?>
         <?php if ($ganttBar['actualOutPos'] !== null): ?>
-            <div class="ganttMarker ganttMarkerActualEnd" style="left: <?= $ganttBar['actualOutPos'] ?>%"></div>
+            <div class="ganttMarker ganttMarkerActualEnd" style="left:<?= $ganttBar['actualOutPos'] ?>%"></div>
         <?php endif; ?>
-
     </div>
 </div>
-<?php endif; ?>
+    <?php endif; ?>
 <?php endforeach; ?>
 
 <?php if (!$hasRows): ?>

@@ -114,11 +114,27 @@ $dashboardLink = ($role === 'admin')
                 <span class="menuText">Schedules</span>
             </a>
 
-            <a href="admin_requests.php"
-            class="sideBarMenuItem <?= ($current_page === 'requests') ? 'active' : '' ?>">
-                <i class="bi bi-envelope-paper sidebarIcon"></i>
-                <span class="menuText">Requests</span>
-            </a>
+            <?php $requestsOpen = in_array($current_page ?? '', ['requests', 'schedule_requests']); ?>
+            <div class="sideBarDropdown">
+                <button class="sideBarMenuItemDropdown <?= $requestsOpen ? 'active open' : '' ?>"
+                        onclick="toggleSidebarDropdown(this)">
+                    <i class="bi bi-envelope-paper sidebarIcon"></i>
+                    <span class="menuText">Requests</span>
+                    <i class="bi bi-chevron-down sideBarDropdownChevron"></i>
+                </button>
+                <div class="sideBarSubMenu <?= $requestsOpen ? 'open' : '' ?>">
+                    <a href="admin_requests.php"
+                       class="sideBarSubItem <?= ($current_page === 'requests') ? 'active' : '' ?>">
+                        <i class="bi bi-file-earmark-text sidebarSubIcon"></i>
+                        <span class="menuText">Employee Requests</span>
+                    </a>
+                    <a href="admin_schedule_requests.php"
+                       class="sideBarSubItem <?= ($current_page === 'schedule_requests') ? 'active' : '' ?>">
+                        <i class="bi bi-calendar-check sidebarSubIcon"></i>
+                        <span class="menuText">Schedule Requests</span>
+                    </a>
+                </div>
+            </div>
 
             <a href="admin_logs.php"
             class="sideBarMenuItem <?= ($current_page === 'employee_logs') ? 'active' : '' ?>">
@@ -130,22 +146,34 @@ $dashboardLink = ($role === 'admin')
 </div>
 
 <!-- Java Script -->
- <script>
+<script>
     document.addEventListener("DOMContentLoaded", () => {
         const sidebar = document.querySelector(".sideBar");
-        const links = document.querySelectorAll(".sideBarMenuItem");
+        const links   = document.querySelectorAll(".sideBarMenuItem, .sideBarSubItem");
 
         links.forEach(link => {
             link.addEventListener("click", (e) => {
-                e.preventDefault(); // stop immediate navigation
-
-                // trigger collapse animation
+                e.preventDefault();
                 sidebar.classList.add("force-collapse");
-
-                // wait for animation to finish
                 setTimeout(() => {
                     window.location.href = link.href;
-                }, 250); // match CSS transition duration
+                }, 250);
+            });
+        });
+    });
+
+    function toggleSidebarDropdown(btn) {
+        const subMenu = btn.nextElementSibling;
+        btn.classList.toggle('open');
+        subMenu.classList.toggle('open');
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+        const sidebar = document.querySelector(".sideBar");
+        sidebar.addEventListener("mouseleave", () => {
+            document.querySelectorAll(".sideBarMenuItemDropdown.open").forEach(btn => {
+                btn.classList.remove("open");
+                btn.nextElementSibling.classList.remove("open");
             });
         });
     });

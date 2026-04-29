@@ -34,8 +34,8 @@ body {
     min-height: 100vh;
 }
 
-body:has(.sideBar:hover){ 
-    --sidebar-width: 180px;
+body:has(.sideBar:hover){
+    --sidebar-width: 210px;
 }
 
 body:has(.sideBar:hover) .menuText,
@@ -473,6 +473,125 @@ a:focus, img:focus {
     height: 30px;
     background-color: var(--text-muted);
     opacity: 0.5;
+}
+
+/* ============================================================
+   SIDEBAR DROPDOWN
+   ============================================================ */
+.sideBarDropdown {
+    width: 100%;
+}
+
+.sideBarMenuItemDropdown {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    width: 100%;
+    padding: 0.8rem;
+    color: var(--text-light);
+    background: none;
+    border: 1px solid transparent;
+    border-radius: 12px;
+    cursor: pointer;
+    font-family: 'Poppins', sans-serif;
+    font-size: 0.95rem;
+    transition: color 0.2s ease, background-color 0.3s ease, transform 0.2s ease;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.sideBarMenuItemDropdown:hover {
+    color: var(--text-lightest);
+    background: rgba(255, 255, 255, 0.038);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    transform: translateX(3px);
+}
+
+.sideBarMenuItemDropdown.active {
+    color: var(--primary-color);
+    background: rgba(151, 190, 65, 0.1);
+    border-color: rgba(151, 190, 65, 0.2);
+    box-shadow: inset 0 1px 0 rgba(151, 190, 65, 0.1);
+}
+
+.sideBarMenuItemDropdown.active .sidebarIcon {
+    color: var(--primary-color);
+}
+
+.sideBarMenuItemDropdown:hover .sidebarIcon {
+    color: var(--text-lightest);
+}
+
+.sideBarDropdownChevron {
+    margin-left: auto;
+    font-size: 0.65rem;
+    opacity: 0;
+    flex-shrink: 0;
+    transition: transform 0.3s ease, opacity 0.25s ease;
+}
+
+body:has(.sideBar:hover) .sideBarDropdownChevron {
+    opacity: 0.6;
+}
+
+.sideBarMenuItemDropdown.open .sideBarDropdownChevron {
+    transform: rotate(180deg);
+}
+
+.sideBarSubMenu {
+    overflow: hidden;
+    max-height: 0;
+    transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sideBarSubMenu.open {
+    max-height: 160px;
+}
+
+.sideBarSubItem {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    width: 100%;
+    padding: 0.5rem 0.8rem;
+    color: rgba(255, 255, 255, 0.55);
+    text-decoration: none;
+    font-size: 0.875rem;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    transition: color 0.2s ease, background-color 0.3s ease, transform 0.2s ease;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-user-drag: none;
+    margin-top: 2px;
+}
+
+.sideBarSubItem:hover {
+    color: var(--text-lightest);
+    background: rgba(255, 255, 255, 0.038);
+    transform: translateX(3px);
+}
+
+.sideBarSubItem.active {
+    color: var(--primary-color);
+    background: rgba(151, 190, 65, 0.08);
+    border-color: rgba(151, 190, 65, 0.15);
+}
+
+.sidebarSubIcon {
+    font-size: 0.85rem;
+    width: 40px;
+    display: flex;
+    justify-content: flex-start;
+    flex-shrink: 0;
+    margin-left: 0.5rem;
+    color: inherit;
+}
+
+.sideBarSubItem .menuText {
+    font-size: 0.8rem;
 }
 
 .horizontalDivider {
