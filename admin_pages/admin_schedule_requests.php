@@ -62,9 +62,10 @@ $rejectedCount = $pdo->query("SELECT COUNT(*) FROM schedules WHERE status = 'rej
 
 // ---- GET SCHEDULE REQUESTS ----
 $scheduleRequests = $pdo->query("
-    SELECT s.*, e.name AS employee_name, e.department_id
+    SELECT s.*, e.name AS employee_name, d.department_code
     FROM schedules s
     JOIN employees e ON s.employee_id = e.id
+    LEFT JOIN departments d ON e.department_id = d.id
     WHERE s.is_rest_day = 0
     ORDER BY FIELD(s.status, 'pending', 'approved', 'rejected'), s.schedule_date DESC
     LIMIT 300
@@ -161,7 +162,7 @@ $current_page = 'schedule_requests';
                                 ?>
                                 <tr>
                                     <td><?= htmlspecialchars($row['employee_name']) ?></td>
-                                    <td><?= $row['department_id'] ? htmlspecialchars($row['department_id']) : '—' ?></td>
+                                    <td><?= $row['department_code'] ? htmlspecialchars($row['department_code']) : '—' ?></td>
                                     <td><?= date('M d, Y', strtotime($row['schedule_date'])) ?></td>
                                     <td><?= $row['scheduled_start'] ? date('h:i A', strtotime($row['scheduled_start'])) : '—' ?></td>
                                     <td><?= $row['scheduled_end']   ? date('h:i A', strtotime($row['scheduled_end']))   : '—' ?></td>

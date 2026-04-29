@@ -30,21 +30,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!empty($_POST['employee_id'])) {
         if (!empty($password)) {
             $pdo->prepare("UPDATE employees SET name=?, email=?, password=?, role=?, department_id=? WHERE id=?")
-                ->execute([$name, $email, $password, $role, $department_id, $_POST['employee_id']]);
+                ->execute([$name, $email, $password, $role, $department, $_POST['employee_id']]);
         } else {
-            $pdo->prepare("UPDATE employees SET name=?, email=?, role=?, department=? WHERE id=?")
+            $pdo->prepare("UPDATE employees SET name=?, email=?, role=?, department_id=? WHERE id=?")
                 ->execute([$name, $email, $role, $department, $_POST['employee_id']]);
         }
         $success = "Employee updated successfully!";
     } else {
-        $pdo->prepare("INSERT INTO employees (name, email, password, role, department) VALUES (?, ?, ?, ?, ?)")
+        $pdo->prepare("INSERT INTO employees (name, email, password, role, department_id) VALUES (?, ?, ?, ?, ?)")
             ->execute([$name, $email, $password, $role, $department]);
         $success = "Employee added successfully!";
     }
 }
 
 // ---- GET ALL EMPLOYEES ----
-$employees = $pdo->query("SELECT * FROM employees ORDER BY name")->fetchAll(PDO::FETCH_ASSOC);
+$employees = $pdo->query("
+    SELECT e.*, d.department_name, d.department_code
+    FROM employees e
+    LEFT JOIN departments d ON e.department_id = d.id
+    ORDER BY e.name
+")->fetchAll(PDO::FETCH_ASSOC);
 
 $current_page = 'employees';
 ?>
@@ -99,12 +104,13 @@ $current_page = 'employees';
                              data-email="<?= htmlspecialchars($emp['email']) ?>"
                              data-role="<?= $emp['role'] ?>"
                              data-dept="<?= htmlspecialchars($emp['department_id'] ?? '') ?>"
+                             data-dept-name="<?= htmlspecialchars($emp['department_name'] ?? '') ?>"
                              onclick="selectEmployee(<?= $emp['id'] ?>, '<?= htmlspecialchars($emp['name'], ENT_QUOTES) ?>')">
                             <div class="empName"><?= htmlspecialchars($emp['name']) ?></div>
                             <div class="empMeta">
                                 <span class="empRoleBadge empRole-<?= $emp['role'] ?>"><?= ucfirst($emp['role']) ?></span>
                                 <?php if ($emp['department_id']): ?>
-                                    <span class="empDept"><?= htmlspecialchars($emp['department_id']) ?></span>
+                                    <span class="empDept"><?= htmlspecialchars($emp['department_code'] ?? '') ?></span>
                                 <?php endif; ?>
                             </div>
                             <div class="empRowActions" onclick="event.stopPropagation()">
@@ -241,11 +247,12 @@ $current_page = 'employees';
                             <label>Department</label>
                             <div class="customSelectWrapper">
                                 <div class="customSelectToggle" onclick="toggleModalDropdown('deptDropdown')">
-                                    <span id="deptLabel">None</span>
+                                    <span id="deptLabel">Select Department</span>
                                     <i class="bi bi-chevron-down"></i>
                                 </div>
                                 <div class="customSelectMenu" id="deptDropdown">
-                                    <div class="customSelectItem" onclick="selectDept('','None')">None</div>
+                                    <div class="customSelectItem" onclick="selectDept('','Select Department')">None</div>
+                                
                                 </div>
                             </div>
                             <input type="hidden" name="department_id" id="deptInput" value="">
@@ -348,7 +355,7 @@ $current_page = 'employees';
             document.getElementById('modalPassword').required      = true;
             document.getElementById('modalSubmitBtn').innerHTML    = '<i class="bi bi-check-circle-fill"></i> Save Employee';
             selectRole('employee', 'Employee');
-            selectDept('', 'None');
+            selectDept('', 'Select Department');
             document.getElementById('empModalOverlay').style.display = 'flex';
         }
 
@@ -362,7 +369,7 @@ $current_page = 'employees';
             document.getElementById('modalPassword').required      = false;
             document.getElementById('modalSubmitBtn').innerHTML    = '<i class="bi bi-check-circle-fill"></i> Update Employee';
             selectRole(row.dataset.role, row.dataset.role.charAt(0).toUpperCase() + row.dataset.role.slice(1));
-            selectDept(row.dataset.dept, row.dataset.dept || 'None');
+            selectDept(row.dataset.dept, row.dataset.deptName || 'Select Department');
             document.getElementById('empModalOverlay').style.display = 'flex';
         }
 
@@ -391,7 +398,7 @@ $current_page = 'employees';
 
         function selectDept(value, label) {
             document.getElementById('deptInput').value       = value;
-            document.getElementById('deptLabel').textContent = label || 'None';
+            document.getElementById('deptLabel').textContent = label || 'Select Department';
             document.getElementById('deptDropdown').classList.remove('show');
         }
 
@@ -400,6 +407,26 @@ $current_page = 'employees';
                 document.querySelectorAll('.customSelectMenu').forEach(m => m.classList.remove('show'));
             }
         });
+
+        // ---- DEPARTMENTS ----
+        function loadDepartments() {
+            fetch('/DTR-Internship-Project/admin_pages/department_api.php?action=list')
+                .then(r => r.json())
+                .then(depts => {
+                    const menu = document.getElementById('deptDropdown');
+                    menu.innerHTML = '<div class="customSelectItem" onclick="selectDept(\'\',\'Select Department\')">None</div>';
+                    depts.forEach(d => {
+                        const item = document.createElement('div');
+                        item.className = 'customSelectItem';
+                        item.textContent = d.department_name;
+                        item.onclick = () => selectDept(d.id, d.department_name);
+                        menu.appendChild(item);
+                    });
+                })
+                .catch(() => {});
+        }
+
+        loadDepartments();
 
         // Auto-dismiss success alert
         setTimeout(() => {

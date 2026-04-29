@@ -11,7 +11,12 @@ date_default_timezone_set('Asia/Manila');
 
 $current_page = 'employee_logs';
 
-$employees = $pdo->query("SELECT id, name, role, department_id FROM employees ORDER BY name")->fetchAll(PDO::FETCH_ASSOC);
+$employees = $pdo->query("
+    SELECT e.id, e.name, e.role, e.department_id, d.department_code
+    FROM employees e
+    LEFT JOIN departments d ON e.department_id = d.id
+    ORDER BY e.name
+")->fetchAll(PDO::FETCH_ASSOC);
 ?>
 <!doctype html>
 <html lang="en">
@@ -56,7 +61,7 @@ $employees = $pdo->query("SELECT id, name, role, department_id FROM employees OR
                             <div class="empMeta">
                                 <span class="empRoleBadge empRole-<?= $emp['role'] ?>"><?= ucfirst($emp['role']) ?></span>
                                 <?php if ($emp['department_id']): ?>
-                                    <span class="empDept"><?= htmlspecialchars($emp['department_id']) ?></span>
+                                    <span class="empDept"><?= htmlspecialchars($emp['department_code'] ?? '') ?></span>
                                 <?php endif; ?>
                             </div>
                         </div>

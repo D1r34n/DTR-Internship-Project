@@ -109,8 +109,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // ---- GET ALL EMPLOYEES ----
-$employees = $pdo->query("SELECT id, name, role, department_id FROM employees WHERE role IN ('employee','workforce') ORDER BY name")
-    ->fetchAll(PDO::FETCH_ASSOC);
+$employees = $pdo->query("
+    SELECT e.id, e.name, e.role, e.department_id, d.department_code
+    FROM employees e
+    LEFT JOIN departments d ON e.department_id = d.id
+    WHERE e.role IN ('employee','workforce')
+    ORDER BY e.name
+")->fetchAll(PDO::FETCH_ASSOC);
 
 // Resolve selected employee name
 $selectedEmpName = '';
@@ -172,7 +177,7 @@ $current_page = 'schedule';
                             <div class="schedEmpMeta">
                                 <span class="schedEmpRole empRole-<?= $emp['role'] ?>"><?= ucfirst($emp['role']) ?></span>
                                 <?php if ($emp['department_id']): ?>
-                                    <span class="schedEmpDept"><?= htmlspecialchars($emp['department_id']) ?></span>
+                                    <span class="schedEmpDept"><?= htmlspecialchars($emp['department_code'] ?? '') ?></span>
                                 <?php endif; ?>
                             </div>
                         </div>

@@ -95,6 +95,13 @@ if ($action === 'create') {
     exit();
 }
 
+// List all departments
+if ($action === 'list') {
+    $stmt = $pdo->query("SELECT id, department_code, department_name FROM departments ORDER BY department_name ASC");
+    echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));
+    exit();
+}
+
 // Get Parent Departments
 if ($action === 'get_parent') {
 
