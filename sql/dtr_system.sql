@@ -3,9 +3,9 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Apr 28, 2026 at 09:45 AM
+-- Generation Time: Apr 29, 2026 at 05:23 AM
 -- Server version: 10.4.32-MariaDB
--- PHP Version: 8.2.12
+-- PHP Version: 8.0.30
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -64,6 +64,20 @@ INSERT INTO `attendances` (`id`, `employee_id`, `schedule_id`, `work_date`, `sch
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `departments`
+--
+
+CREATE TABLE `departments` (
+  `id` int(10) UNSIGNED NOT NULL,
+  `department_code` varchar(20) NOT NULL,
+  `department_name` varchar(100) NOT NULL,
+  `parent_id` int(10) UNSIGNED DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `employees`
 --
 
@@ -73,22 +87,22 @@ CREATE TABLE `employees` (
   `email` varchar(100) DEFAULT NULL,
   `password` varchar(255) DEFAULT NULL,
   `role` enum('admin','employee','workforce') NOT NULL DEFAULT 'employee',
-  `department` varchar(50) DEFAULT NULL
+  `department_id` int(10) UNSIGNED DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `employees`
 --
 
-INSERT INTO `employees` (`id`, `name`, `email`, `password`, `role`, `department`) VALUES
-(2, 'User', 'user@gmail.com', 'user123', 'employee', 'CSS'),
-(3, 'Admin', 'admin@gmail.com', 'admin123', 'admin', 'HR'),
-(4, 'User1', 'user1@gmail.com', 'user123', 'employee', 'CSS'),
-(5, 'Earl', 'earl@gmail.com', '123', 'employee', 'CSS'),
-(6, 'Edrian', 'edrian@gmail.com', '123', 'workforce', 'CSS'),
-(7, 'Jignesh', 'jigs@gmail.com', '123', 'employee', 'CSS'),
-(8, 'Justine', 'justine@gmail.com', '123', 'employee', 'HR'),
-(9, 'Dirk', 'dirk@gmail.com', '123', 'employee', 'HR');
+INSERT INTO `employees` (`id`, `name`, `email`, `password`, `role`, `department_id`) VALUES
+(2, 'User', 'user@gmail.com', 'user123', 'employee', NULL),
+(3, 'Admin', 'admin@gmail.com', 'admin123', 'admin', NULL),
+(4, 'User1', 'user1@gmail.com', 'user123', 'employee', NULL),
+(5, 'Earl', 'earl@gmail.com', '123', 'employee', NULL),
+(6, 'Edrian', 'edrian@gmail.com', '123', 'workforce', NULL),
+(7, 'Jignesh', 'jigs@gmail.com', '123', 'employee', NULL),
+(8, 'Justine', 'justine@gmail.com', '123', 'employee', NULL),
+(9, 'Dirk', 'dirk@gmail.com', '123', 'employee', NULL);
 
 -- --------------------------------------------------------
 
@@ -126,26 +140,6 @@ CREATE TABLE `logs` (
   `distance_meters` float DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `logs`
---
-
-INSERT INTO `logs` (`id`, `employee_id`, `log_type`, `log_time`, `longitude`, `latitude`, `accuracy`, `is_within_office`, `distance_meters`, `created_at`) VALUES
-(496, 5, 'IN', '2026-04-28 09:21:07', 120.9954844, 14.5842740, 55, 1, 21.9409, '2026-04-28 01:21:07'),
-(497, 5, 'OUT', '2026-04-28 09:22:58', 120.9954844, 14.5842740, 55, 1, 21.9409, '2026-04-28 01:22:58'),
-(498, 5, 'IN', '2026-04-28 09:27:27', 120.9954844, 14.5842740, 55, 1, 21.9409, '2026-04-28 01:27:27'),
-(499, 5, 'OUT', '2026-04-28 09:27:34', 120.9954844, 14.5842740, 55, 1, 21.9409, '2026-04-28 01:27:34'),
-(500, 5, 'IN', '2026-04-28 09:40:09', 120.9954844, 14.5842740, 55, 1, 21.9409, '2026-04-28 01:40:09'),
-(501, 5, 'OUT', '2026-04-28 09:40:22', 120.9954844, 14.5842740, 55, 1, 21.9409, '2026-04-28 01:40:22'),
-(502, 5, 'IN', '2026-04-28 09:57:53', 120.9954844, 14.5842740, 55, 1, 21.9409, '2026-04-28 01:57:53'),
-(503, 5, 'OUT', '2026-04-28 09:58:00', 120.9954844, 14.5842740, 55, 1, 21.9409, '2026-04-28 01:58:00'),
-(504, 5, 'IN', '2026-04-29 10:18:22', 120.9954844, 14.5842740, 55, 1, 21.9409, '2026-04-29 02:18:22'),
-(505, 5, 'OUT', '2026-04-29 10:18:27', 120.9954517, 14.5842952, 55, 1, 23.0766, '2026-04-29 02:18:27'),
-(506, 5, 'IN', '2026-04-30 09:30:13', 120.9954896, 14.5842688, 55, 1, 21.9806, '2026-04-30 01:30:13'),
-(507, 5, 'BREAK_IN', '2026-04-30 12:00:22', 120.9954571, 14.5842904, 55, 1, 22.93, '2026-04-30 04:00:22'),
-(508, 5, 'BREAK_OUT', '2026-04-30 13:00:30', 120.9954571, 14.5842904, 55, 1, 22.93, '2026-04-30 05:00:30'),
-(509, 5, 'OUT', '2026-04-30 18:00:51', 120.9954819, 14.5842749, 55, 1, 22.06, '2026-04-30 10:00:51');
 
 -- --------------------------------------------------------
 
@@ -276,11 +270,20 @@ ALTER TABLE `attendances`
   ADD KEY `idx_schedule_time` (`scheduled_start`,`scheduled_end`);
 
 --
+-- Indexes for table `departments`
+--
+ALTER TABLE `departments`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `department_code` (`department_code`),
+  ADD KEY `parent_id` (`parent_id`);
+
+--
 -- Indexes for table `employees`
 --
 ALTER TABLE `employees`
   ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `email` (`email`);
+  ADD UNIQUE KEY `email` (`email`),
+  ADD KEY `department_id` (`department_id`);
 
 --
 -- Indexes for table `leave_requests`
@@ -341,6 +344,12 @@ ALTER TABLE `attendances`
   MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=39;
 
 --
+-- AUTO_INCREMENT for table `departments`
+--
+ALTER TABLE `departments`
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT for table `employees`
 --
 ALTER TABLE `employees`
@@ -356,7 +365,7 @@ ALTER TABLE `leave_requests`
 -- AUTO_INCREMENT for table `logs`
 --
 ALTER TABLE `logs`
-  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=510;
+  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=513;
 
 --
 -- AUTO_INCREMENT for table `log_edit_requests`
@@ -380,11 +389,23 @@ ALTER TABLE `overtime_requests`
 -- AUTO_INCREMENT for table `schedules`
 --
 ALTER TABLE `schedules`
-  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=82;
+  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=83;
 
 --
 -- Constraints for dumped tables
 --
+
+--
+-- Constraints for table `departments`
+--
+ALTER TABLE `departments`
+  ADD CONSTRAINT `departments_ibfk_1` FOREIGN KEY (`parent_id`) REFERENCES `departments` (`id`) ON DELETE SET NULL;
+
+--
+-- Constraints for table `employees`
+--
+ALTER TABLE `employees`
+  ADD CONSTRAINT `employees_ibfk_1` FOREIGN KEY (`department_id`) REFERENCES `departments` (`id`) ON DELETE SET NULL;
 
 --
 -- Constraints for table `leave_requests`
