@@ -413,15 +413,17 @@ body {
 
 .btnCancel {
     font-family: 'Poppins', sans-serif;
-    color: rgba(255, 255, 255, 0.5);
-    text-decoration: none;
-    font-size: 0.9rem;
+    color: rgba(255,255,255,0.5);
+    background: none;
+    border: none;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: color 0.2s;
 }
-
-.btnCancel:hover {
-    color: #fff;
+.btnCancel:hover 
+{ 
+    color: #dc3545; 
 }
-
 /* ============================================================
    FLATPICKR DARK THEME OVERRIDES
    ============================================================ */
@@ -495,3 +497,428 @@ body {
 .numInput {
     color: #fff !important;
 }
+
+/* ============================================================
+   SPLIT-PANEL LAYOUT  (admin_schedule.php redesign)
+   Workforce_schedule.php still uses .scheduleWrapper / .scheduleBox
+   ============================================================ */
+
+.schedWrapper {
+    position: fixed;
+    top: 60px;
+    left: calc(10px + var(--sidebar-width));
+    width: calc(100% - (10px + var(--sidebar-width)));
+    height: calc(100vh - 60px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10;
+    transition: left 0.38s cubic-bezier(0.4, 0, 0.2, 1),
+                width 0.38s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.schedBox {
+    display: flex;
+    width: 1120px;
+    height: calc(100vh - 100px);
+    background: var(--glass-bg);
+    backdrop-filter: blur(32px) saturate(160%) brightness(0.3);
+    -webkit-backdrop-filter: blur(32px) saturate(160%) brightness(0.3);
+    border: 1px solid var(--glass-border);
+    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.5);
+    border-radius: 16px;
+    overflow: hidden;
+}
+
+/* ---- Left panel ---- */
+.schedLeftPanel {
+    width: 260px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.schedLeftHeader {
+    padding: 1.1rem 1rem 0.75rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+    flex-shrink: 0;
+}
+
+.schedLeftTitle {
+    color: #fff;
+    font-weight: 600;
+    margin: 0 0 0.55rem;
+    font-size: 0.93rem;
+}
+
+.schedEmpSearch {
+    width: 100%;
+    padding: 0.35rem 0.75rem;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 8px;
+    color: #fff;
+    font-family: 'Poppins', sans-serif;
+    font-size: 0.82rem;
+    outline: none;
+    transition: border-color 0.2s;
+}
+.schedEmpSearch:focus { border-color: #97be41; }
+.schedEmpSearch::placeholder { color: rgba(255, 255, 255, 0.3); }
+
+.schedEmpList {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0.4rem 0.5rem;
+}
+.schedEmpList::-webkit-scrollbar { width: 4px; }
+.schedEmpList::-webkit-scrollbar-track { background: transparent; }
+.schedEmpList::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius:4px; }
+
+.schedEmpRow {
+    padding: 0.55rem 0.7rem;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background 0.2s;
+    margin-bottom: 2px;
+    border: 1px solid transparent;
+}
+.schedEmpRow:hover { background: rgba(255, 255, 255, 0.05); }
+.schedEmpRow.active {
+    background: rgba(151, 190, 65, 0.12);
+    border-color: rgba(151, 190, 65, 0.25);
+}
+.schedEmpRow.active .schedEmpName { color: #97be41; }
+
+.schedEmpName {
+    font-size: 0.86rem;
+    color: rgba(255, 255, 255, 0.9);
+    font-weight: 500;
+    margin-bottom: 3px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.schedEmpMeta  { display: flex; gap: 5px; align-items: center; flex-wrap: wrap; }
+.schedEmpRole  {
+    font-size: 0.68rem;
+    padding: 1px 7px;
+    border-radius: 20px;
+    font-weight: 600;
+}
+.empRole-employee  { background: rgba(13, 110, 253, 0.2); color: #6db8ff; }
+.empRole-workforce { background: rgba(255, 193,   7, 0.2); color: #ffc107; }
+.empRole-admin     { background: rgba(220,  53,  69, 0.2); color: #ff8a8a; }
+
+.schedEmpDept  { font-size: 0.68rem; color: rgba(255, 255, 255, 0.4); }
+.schedEmpEmpty { color: rgba(255,255,255,0.3); font-size:0.82rem; padding:0.75rem; }
+
+.schedAlert {
+    margin: 0.5rem;
+    padding: 0.45rem 0.75rem;
+    border-radius: 8px;
+    font-size: 0.78rem;
+    font-family: 'Poppins', sans-serif;
+}
+.schedAlert.success { background: rgba(151,190,65,0.15); border:1px solid rgba(151,190,65,0.3); color:#97be41; }
+.schedAlert.error   { background: rgba(220,53,69,0.12);  border:1px solid rgba(220,53,69,0.3);  color:#ff8a8a; }
+
+/* ---- Divider ---- */
+.schedPanelDivider {
+    width: 1px;
+    background: rgba(255, 255, 255, 0.08);
+    flex-shrink: 0;
+}
+
+/* ---- Right panel ---- */
+.schedRightPanel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-width: 0;
+}
+
+.schedPlaceholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    gap: 0.75rem;
+    color: rgba(255, 255, 255, 0.2);
+    font-size: 0.88rem;
+}
+.schedPlaceholderIcon { font-size: 3rem; opacity: 0.3; }
+
+/* ---- Calendar content ---- */
+.schedCalContent {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    overflow: hidden;
+}
+
+.schedCalHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.9rem 1.1rem 0.75rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+    flex-shrink: 0;
+}
+
+.schedCalTitle {
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 0.88rem;
+    font-weight: 600;
+    margin: 0;
+}
+.schedCalTitle span { color: #97be41; }
+
+.schedNavBtn {
+    background: rgba(255, 255, 255, 0.07);
+    border: none;
+    color: rgba(255, 255, 255, 0.6);
+    width: 26px;
+    height: 26px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.72rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s, color 0.2s;
+}
+.schedNavBtn:hover { background: rgba(255,255,255,0.12); color: #fff; }
+
+.schedMonthLabel {
+    color: #fff;
+    font-size: 0.86rem;
+    font-weight: 600;
+    min-width: 130px;
+    text-align: center;
+}
+
+.schedAddBtn {
+    background: #97be41;
+    color: #fff;
+    border: none;
+    padding: 0.28rem 0.85rem;
+    border-radius: 8px;
+    font-family: 'Poppins', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+.schedAddBtn:hover { background: #7ea832; }
+
+/* ---- Calendar grid container ---- */
+.schedCalContainer {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0.6rem 0.75rem 0.75rem;
+}
+.schedCalContainer::-webkit-scrollbar { width: 5px; }
+.schedCalContainer::-webkit-scrollbar-track { background: transparent; }
+.schedCalContainer::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.15); border-radius:4px; }
+
+/* ---- Calendar grid ---- */
+.schedCalGrid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+}
+
+.schedCalDayHeader {
+    text-align: center;
+    font-size: 0.68rem;
+    color: rgba(255, 255, 255, 0.35);
+    font-weight: 600;
+    padding: 0.2rem 0 0.3rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.schedCalDay {
+    min-height: 88px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 8px;
+    padding: 0.35rem 0.4rem;
+    position: relative;
+    overflow: hidden;
+    transition: background 0.2s, border-color 0.2s;
+}
+
+.schedCalDay.empty {
+    background: transparent;
+    border-color: transparent;
+}
+.schedCalDay.is-past { opacity: 0.55; }
+.schedCalDay.is-today {
+    border-color: rgba(151, 190, 65, 0.45);
+    box-shadow: 0 0 0 1px rgba(151, 190, 65, 0.12);
+}
+.schedCalDay.has-sched {
+    background: rgba(151, 190, 65, 0.07);
+    border-color: rgba(151, 190, 65, 0.22);
+}
+.schedCalDay.has-sched.sched-pending {
+    background: rgba(240, 173, 78, 0.08);
+    border-color: rgba(240, 173, 78, 0.28);
+}
+.schedCalDay.has-sched.sched-rejected {
+    background: rgba(220, 53, 69, 0.07);
+    border-color: rgba(220, 53, 69, 0.2);
+    opacity: 0.55;
+}
+
+.schedCalDayNum {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.45);
+    margin-bottom: 3px;
+}
+.schedCalDayNum.is-today-num { color: #97be41; }
+
+.schedCalShiftBadge {
+    display: inline-block;
+    font-size: 0.58rem;
+    font-weight: 700;
+    padding: 1px 5px;
+    border-radius: 4px;
+    margin-bottom: 3px;
+    letter-spacing: 0.02em;
+}
+.schedCalShiftBadge.day   { background: rgba(151,190,65,0.25); color: #97be41; }
+.schedCalShiftBadge.night { background: rgba(77,163,255,0.25); color: #4da3ff; }
+
+.schedCalTimes {
+    font-size: 0.65rem;
+    color: rgba(255, 255, 255, 0.75);
+    line-height: 1.55;
+    margin-bottom: 3px;
+}
+
+.schedCalStatusBadge {
+    font-size: 0.58rem;
+    font-weight: 600;
+    display: inline-block;
+}
+.schedCalStatusBadge.sched-status-approved { color: #97be41; }
+.schedCalStatusBadge.sched-status-pending  { color: #f0ad4e; }
+.schedCalStatusBadge.sched-status-rejected { color: #ff8a8a; }
+
+.schedCalDayActions {
+    position: absolute;
+    bottom: 4px;
+    right: 4px;
+    display: flex;
+    gap: 3px;
+    opacity: 0;
+    transition: opacity 0.15s;
+}
+.schedCalDay:hover .schedCalDayActions { opacity: 1; }
+
+.schedCalActionBtn {
+    width: 22px;
+    height: 22px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.6rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+}
+.schedCalActionBtn.edit   { background: rgba(13,110,253,0.3); color: #6db8ff; }
+.schedCalActionBtn.edit:hover   { background: rgba(13,110,253,0.5); }
+.schedCalActionBtn.delete { background: rgba(220,53,69,0.3);  color: #ff8a8a; }
+.schedCalActionBtn.delete:hover { background: rgba(220,53,69,0.5); }
+
+.schedCalEmpty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2.5rem 1rem;
+    color: rgba(255, 255, 255, 0.22);
+    font-size: 0.84rem;
+    gap: 0.5rem;
+    text-align: center;
+    margin-top: 1rem;
+}
+.schedCalEmptyIcon { font-size: 2.2rem; }
+
+.schedCalLoading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem;
+    gap: 0.75rem;
+    color: rgba(255, 255, 255, 0.35);
+    font-size: 0.84rem;
+}
+.schedSpinner {
+    width: 20px;
+    height: 20px;
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    border-top-color: #97be41;
+    border-radius: 50%;
+    animation: schedSpin 0.7s linear infinite;
+}
+@keyframes schedSpin { to { transform: rotate(360deg); } }
+
+/* ---- Add/Edit Modal ---- */
+.schedModalOverlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.schedModal {
+    background: var(--glass-bg);
+    backdrop-filter: blur(32px) saturate(160%) brightness(0.3);
+    -webkit-backdrop-filter: blur(32px) saturate(160%) brightness(0.3);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+    width: 520px;
+    max-width: 95vw;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.schedModalHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.2rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.schedModalHeader h6 { color: #fff; font-weight: 600; margin: 0; font-size: 0.97rem; }
+.schedModalHeader button {
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.45);
+    font-size: 1rem;
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+    transition: color 0.2s;
+}
+.schedModalHeader button:hover { color: #fff; }
+.schedModalBody { padding: 1.2rem; }

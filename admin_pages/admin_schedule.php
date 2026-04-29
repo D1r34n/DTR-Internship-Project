@@ -9,90 +9,67 @@ if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'admin') {
 require_once '../db.php';
 date_default_timezone_set('Asia/Manila');
 
-$success = "";
-$error   = "";
+// Flash messages
+$success = '';
+$error   = '';
+if (isset($_SESSION['flash_success'])) { $success = $_SESSION['flash_success']; unset($_SESSION['flash_success']); }
+if (isset($_SESSION['flash_error']))   { $error   = $_SESSION['flash_error'];   unset($_SESSION['flash_error']);   }
 
-// ---- HANDLE DELETE ----
-if (isset($_GET['delete'], $_GET['date'])) {
-    $employeeId = $_GET['delete'];
-    $date       = $_GET['date'];
+$selectedEmpId = intval($_GET['selected'] ?? 0);
 
-    $pdo->prepare("DELETE FROM schedules WHERE employee_id = ? AND schedule_date = ?")
-        ->execute([$employeeId, $date]);
-
-    // Also delete the attendance row for this schedule
-    // Only delete if no actual time-in has been recorded yet
-    // If the employee already timed in, preserve the attendance record
-    $pdo->prepare("
-        DELETE FROM attendances 
-        WHERE employee_id = ? 
-        AND work_date = ?
-        AND actual_time_in IS NULL
-    ")->execute([$employeeId, $date]);
-
-    $success = "Schedule deleted successfully!";
+// ---- HANDLE AJAX DELETE ----
+if (isset($_GET['ajax_delete'])) {
+    $empId = intval($_GET['emp'] ?? 0);
+    $date  = $_GET['date'] ?? '';
+    if ($empId && preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
+        $pdo->prepare("DELETE FROM schedules WHERE employee_id = ? AND schedule_date = ?")
+            ->execute([$empId, $date]);
+        $pdo->prepare("DELETE FROM attendances WHERE employee_id = ? AND work_date = ? AND actual_time_in IS NULL")
+            ->execute([$empId, $date]);
+    }
+    exit('ok');
 }
 
 // ---- HANDLE ADD / EDIT ----
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $employee_id  = $_POST['employee_id'];
-    $dates        = json_decode($_POST['selected_dates'], true);
-    $time_in      = $_POST['time_in'];
-    $time_out     = $_POST['time_out'];
+    $employee_id  = intval($_POST['employee_id'] ?? 0);
+    $selEmpId     = intval($_POST['selected_employee_id'] ?? $employee_id);
+    $dates        = json_decode($_POST['selected_dates'] ?? '[]', true);
+    $time_in      = $_POST['time_in']  ?? '';
+    $time_out     = $_POST['time_out'] ?? '';
     $is_edit      = !empty($_POST['is_edit']) && $_POST['is_edit'] === '1';
     $is_overnight = $time_out < $time_in;
 
     if (empty($dates)) {
-        $error = "Please select at least one date.";
+        $_SESSION['flash_error'] = "Please select at least one date.";
     } elseif ($is_edit) {
-        $existsStmt = $pdo->prepare("SELECT id FROM schedules WHERE employee_id = ? AND schedule_date = ?");
-        $updateStmt = $pdo->prepare("
-            UPDATE schedules
-            SET scheduled_start = ?, scheduled_end = ?
-            WHERE employee_id = ? AND schedule_date = ?
-        ");
-        $updateAttendance = $pdo->prepare("
-            UPDATE attendances
-            SET scheduled_start = ?, scheduled_end = ?
-            WHERE employee_id = ? AND work_date = ? AND actual_time_in IS NULL
-        ");
-        $insertSchedule = $pdo->prepare("
-            INSERT INTO schedules (employee_id, schedule_date, scheduled_start, scheduled_end, is_rest_day)
-            VALUES (?, ?, ?, ?, 0)
-        ");
+        $existsStmt       = $pdo->prepare("SELECT id FROM schedules WHERE employee_id = ? AND schedule_date = ?");
+        $updateStmt       = $pdo->prepare("UPDATE schedules SET scheduled_start = ?, scheduled_end = ? WHERE employee_id = ? AND schedule_date = ?");
+        $updateAttendance = $pdo->prepare("UPDATE attendances SET scheduled_start = ?, scheduled_end = ? WHERE employee_id = ? AND work_date = ? AND actual_time_in IS NULL");
+        $insertSchedule   = $pdo->prepare("INSERT INTO schedules (employee_id, schedule_date, scheduled_start, scheduled_end, is_rest_day) VALUES (?, ?, ?, ?, 0)");
         $insertAttendance = $pdo->prepare("
-            INSERT INTO attendances (
-                employee_id, schedule_id, work_date,
-                scheduled_start, scheduled_end,
-                actual_time_in, actual_time_out,
-                total_work_minutes, late_minutes,
-                undertime_minutes, overtime_minutes,
-                status, missed_time_out
-            )
+            INSERT INTO attendances (employee_id, schedule_id, work_date, scheduled_start, scheduled_end, actual_time_in, actual_time_out, total_work_minutes, late_minutes, undertime_minutes, overtime_minutes, status, missed_time_out)
             VALUES (?, ?, ?, ?, ?, NULL, NULL, 0, 0, 0, 0, 'incomplete', 0)
-            ON DUPLICATE KEY UPDATE
-                scheduled_start = VALUES(scheduled_start),
-                scheduled_end   = VALUES(scheduled_end)
+            ON DUPLICATE KEY UPDATE scheduled_start = VALUES(scheduled_start), scheduled_end = VALUES(scheduled_end)
         ");
+
         foreach ($dates as $date) {
-            $startDatetime = $date . ' ' . $time_in . ':00';
-            $endDatetime   = $is_overnight
+            $startDT = $date . ' ' . $time_in  . ':00';
+            $endDT   = $is_overnight
                 ? date('Y-m-d', strtotime($date . ' +1 day')) . ' ' . $time_out . ':00'
                 : $date . ' ' . $time_out . ':00';
 
             $existsStmt->execute([$employee_id, $date]);
-            $existingRow = $existsStmt->fetch(PDO::FETCH_ASSOC);
-
-            if ($existingRow) {
-                $updateStmt->execute([$startDatetime, $endDatetime, $employee_id, $date]);
-                $updateAttendance->execute([$startDatetime, $endDatetime, $employee_id, $date]);
+            if ($existsStmt->fetch()) {
+                $updateStmt->execute([$startDT, $endDT, $employee_id, $date]);
+                $updateAttendance->execute([$startDT, $endDT, $employee_id, $date]);
             } else {
-                $insertSchedule->execute([$employee_id, $date, $startDatetime, $endDatetime]);
-                $scheduleId = $pdo->lastInsertId() ?: null;
-                $insertAttendance->execute([$employee_id, $scheduleId, $date, $startDatetime, $endDatetime]);
+                $insertSchedule->execute([$employee_id, $date, $startDT, $endDT]);
+                $schedId = $pdo->lastInsertId() ?: null;
+                $insertAttendance->execute([$employee_id, $schedId, $date, $startDT, $endDT]);
             }
         }
-        $success = "Schedule updated successfully!";
+        $_SESSION['flash_success'] = "Schedule updated successfully!";
     } else {
         $checkStmt      = $pdo->prepare("SELECT COUNT(*) FROM schedules WHERE employee_id = ? AND schedule_date = ?");
         $duplicateDates = [];
@@ -104,71 +81,47 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         if (!empty($duplicateDates)) {
-            $error = "Schedule already exist for: " . implode(', ', $duplicateDates) . ".";
+            $_SESSION['flash_error'] = "Schedule already exists for: " . implode(', ', $duplicateDates) . ".";
         } else {
-            $insertSchedule = $pdo->prepare("
-                INSERT INTO schedules (employee_id, schedule_date, scheduled_start, scheduled_end, is_rest_day)
-                VALUES (?, ?, ?, ?, 0)
-            ");
+            $insertSchedule   = $pdo->prepare("INSERT INTO schedules (employee_id, schedule_date, scheduled_start, scheduled_end, is_rest_day) VALUES (?, ?, ?, ?, 0)");
             $insertAttendance = $pdo->prepare("
-                INSERT INTO attendances (
-                    employee_id, schedule_id, work_date,
-                    scheduled_start, scheduled_end,
-                    actual_time_in, actual_time_out,
-                    total_work_minutes, late_minutes,
-                    undertime_minutes, overtime_minutes,
-                    status, missed_time_out
-                )
+                INSERT INTO attendances (employee_id, schedule_id, work_date, scheduled_start, scheduled_end, actual_time_in, actual_time_out, total_work_minutes, late_minutes, undertime_minutes, overtime_minutes, status, missed_time_out)
                 VALUES (?, ?, ?, ?, ?, NULL, NULL, 0, 0, 0, 0, 'incomplete', 0)
-                ON DUPLICATE KEY UPDATE
-                    scheduled_start = VALUES(scheduled_start),
-                    scheduled_end   = VALUES(scheduled_end)
+                ON DUPLICATE KEY UPDATE scheduled_start = VALUES(scheduled_start), scheduled_end = VALUES(scheduled_end)
             ");
 
             foreach ($dates as $date) {
-                $startDatetime = $date . ' ' . $time_in . ':00';
-                $endDatetime   = $is_overnight
+                $startDT = $date . ' ' . $time_in  . ':00';
+                $endDT   = $is_overnight
                     ? date('Y-m-d', strtotime($date . ' +1 day')) . ' ' . $time_out . ':00'
                     : $date . ' ' . $time_out . ':00';
 
-                $insertSchedule->execute([$employee_id, $date, $startDatetime, $endDatetime]);
-                $scheduleId = $pdo->lastInsertId() ?: null;
-
-                $insertAttendance->execute([
-                    $employee_id,
-                    $scheduleId,
-                    $date,
-                    $startDatetime,
-                    $endDatetime,
-                ]);
+                $insertSchedule->execute([$employee_id, $date, $startDT, $endDT]);
+                $schedId = $pdo->lastInsertId() ?: null;
+                $insertAttendance->execute([$employee_id, $schedId, $date, $startDT, $endDT]);
             }
-            $success = "Schedule saved successfully!";
+            $_SESSION['flash_success'] = count($dates) . " schedule" . (count($dates) > 1 ? "s" : "") . " saved successfully!";
         }
+    }
+
+    header("Location: admin_schedule.php?selected=$selEmpId");
+    exit();
+}
+
+// ---- GET ALL EMPLOYEES ----
+$employees = $pdo->query("SELECT id, name, role, department FROM employees WHERE role IN ('employee','workforce') ORDER BY name")
+    ->fetchAll(PDO::FETCH_ASSOC);
+
+// Resolve selected employee name
+$selectedEmpName = '';
+if ($selectedEmpId) {
+    foreach ($employees as $emp) {
+        if ($emp['id'] == $selectedEmpId) { $selectedEmpName = $emp['name']; break; }
     }
 }
 
-// ---- GET ALL APPROVED SCHEDULES ----
-$schedules = $pdo->query("
-    SELECT
-        e.name AS employee_name,
-        s.employee_id,
-        s.schedule_date,
-        s.scheduled_start,
-        s.scheduled_end,
-        s.is_rest_day
-    FROM schedules s
-    JOIN employees e ON s.employee_id = e.id
-    WHERE s.is_rest_day = 0 AND s.status = 'approved'
-    ORDER BY s.schedule_date DESC, e.name
-")->fetchAll(PDO::FETCH_ASSOC);
-
-// ---- GET ALL EMPLOYEES (employee + workforce) ----
-$employees = $pdo->query("SELECT id, name FROM employees WHERE role IN ('employee','workforce') ORDER BY name")
-                 ->fetchAll(PDO::FETCH_ASSOC);
-
 $current_page = 'schedule';
 ?>
-
 <!doctype html>
 <html lang="en">
 <head>
@@ -185,307 +138,326 @@ $current_page = 'schedule';
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 
-    <style>
-        body::before { background-image: url('../images/drt_bg.jpg'); }
-    </style>
+    <style>body::before { background-image: url('../images/drt_bg.jpg'); }</style>
 </head>
 <body>
     <?php include '../sidebar.php'; ?>
     <?php include '../topbar.php'; ?>
 
-    <!-- PAGE WRAPPER -->
-    <div class="scheduleWrapper">
-        <div class="scheduleBox">
+    <div class="schedWrapper">
+        <div class="schedBox">
 
-            <!-- TITLE ROW -->
-            <div class="adminTitleRow">
-                <h5 class="adminTitle">Schedule Management</h5>
-                <input type="text" id="searchInput" class="searchInput" placeholder="Search schedule..." onkeyup="searchTable()">
-            </div>
+            <!-- ===== LEFT PANEL ===== -->
+            <div class="schedLeftPanel">
+                <div class="schedLeftHeader">
+                    <h6 class="schedLeftTitle">Employees</h6>
+                    <input type="text" id="empSearch" class="schedEmpSearch"
+                           placeholder="Search..." oninput="filterEmployees()">
+                </div>
 
-            <!-- ALERTS -->
-            <?php if ($success): ?>
-                <div class="alert alert-success"><?= $success ?></div>
-            <?php endif; ?>
-            <?php if ($error): ?>
-                <div class="alert alert-danger"><?= $error ?></div>
-            <?php endif; ?>
+                <?php if ($success): ?>
+                    <div class="schedAlert success"><?= htmlspecialchars($success) ?></div>
+                <?php endif; ?>
+                <?php if ($error): ?>
+                    <div class="schedAlert error"><?= htmlspecialchars($error) ?></div>
+                <?php endif; ?>
 
-            <!-- SCHEDULE TABLE -->
-            <div class="tableScrollWrapper">
-                <table class="table table-bordered table-hover mt-0">
-                    <thead>
-                        <tr>
-                            <th>Employee</th>
-                            <th>Date</th>
-                            <th>Time In</th>
-                            <th>Time Out</th>
-                            <th>Type</th>
-                            <th>Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php if (count($schedules) > 0): ?>
-                            <?php foreach ($schedules as $row): ?>
-                                <?php
-                                    $startDT      = $row['scheduled_start'];
-                                    $endDT        = $row['scheduled_end'];
-                                    $startHour    = $startDT ? (int)date('H', strtotime($startDT)) : 6;
-                                    $isNightShift = ($startHour >= 18 || $startHour < 6);
-                                ?>
-                                <tr>
-                                    <td><?= htmlspecialchars($row['employee_name']) ?></td>
-                                    <td><?= date('M d, Y', strtotime($row['schedule_date'])) ?></td>
-                                    <td><?= $startDT ? date('h:i A', strtotime($startDT)) : '—' ?></td>
-                                    <td><?= $endDT   ? date('h:i A', strtotime($endDT))   : '—' ?></td>
-                                    <td>
-                                        <?php if ($isNightShift): ?>
-                                            <span class="badge nightShiftBadge">Night Shift</span>
-                                        <?php else: ?>
-                                            <span class="badge dayShiftBadge">Day Shift</span>
-                                        <?php endif; ?>
-                                    </td>
-                                    <td>
-                                        <div class="actionDropdownWrapper">
-                                            <button class="btn btn-sm actionToggle" onclick="toggleActionMenu(this)">
-                                                Actions <i class="bi bi-chevron-down"></i>
-                                            </button>
-                                            <div class="actionMenu">
-                                                <a class="actionItem" style="cursor:pointer;" onclick="loadEdit(
-                                                    '<?= $row['employee_id'] ?>',
-                                                    '<?= htmlspecialchars($row['employee_name'], ENT_QUOTES) ?>',
-                                                    '<?= $row['schedule_date'] ?>',
-                                                    '<?= $startDT ? date('H:i', strtotime($startDT)) : '' ?>',
-                                                    '<?= $endDT   ? date('H:i', strtotime($endDT))   : '' ?>'
-                                                )">
-                                                    <i class="bi bi-pencil-fill"></i> Edit
-                                                </a>
-                                                <a href="admin_schedule.php?delete=<?= $row['employee_id'] ?>&date=<?= $row['schedule_date'] ?>"
-                                                    class="actionItem deleteItem"
-                                                    onclick="return confirm('Are you sure you want to delete this schedule?')">
-                                                    <i class="bi bi-trash-fill"></i> Delete
-                                                </a>
-                                            </div>
-                                        </div>
-                                    </td>
-                                </tr>
-                            <?php endforeach; ?>
-                        <?php else: ?>
-                            <tr><td colspan="6" class="text-center">No schedules found.</td></tr>
-                        <?php endif; ?>
-                    </tbody>
-                </table>
-            </div>
-
-            <!-- ADD / EDIT FORM -->
-            <div class="adminFormWrapper">
-                <h6 class="formTitle" id="formTitle">Add New Schedule</h6>
-                <form method="POST" action="admin_schedule.php" onsubmit="return prepareSubmit()">
-
-                    <input type="hidden" name="employee_id" id="employeeSelect">
-                    <input type="hidden" name="selected_dates" id="selectedDatesInput">
-                    <input type="hidden" name="is_edit" id="isEditMode" value="0">
-
-                    <div class="formGrid">
-
-                        <!-- Employee Search -->
-                        <div class="formGroup" style="position:relative;">
-                            <label>Employee</label>
-                            <input type="text" id="employeeSearch" class="formControl"
-                                placeholder="Type to search employee..." autocomplete="off"
-                                oninput="filterEmployees()">
-                            <div id="employeeDropdown" class="employeeDropdown">
-                                <?php foreach ($employees as $emp): ?>
-                                    <div class="employeeOption"
-                                        data-id="<?= $emp['id'] ?>"
-                                        data-name="<?= htmlspecialchars($emp['name']) ?>"
-                                        onclick="selectEmployee(this)">
-                                        <?= htmlspecialchars($emp['name']) ?>
-                                    </div>
-                                <?php endforeach; ?>
+                <div class="schedEmpList" id="schedEmpList">
+                    <?php foreach ($employees as $emp): ?>
+                        <div class="schedEmpRow <?= ($emp['id'] == $selectedEmpId) ? 'active' : '' ?>"
+                             data-id="<?= $emp['id'] ?>"
+                             data-name="<?= htmlspecialchars($emp['name'], ENT_QUOTES) ?>"
+                             onclick="selectEmployee(<?= $emp['id'] ?>, '<?= htmlspecialchars($emp['name'], ENT_QUOTES) ?>')">
+                            <div class="schedEmpName"><?= htmlspecialchars($emp['name']) ?></div>
+                            <div class="schedEmpMeta">
+                                <span class="schedEmpRole empRole-<?= $emp['role'] ?>"><?= ucfirst($emp['role']) ?></span>
+                                <?php if ($emp['department']): ?>
+                                    <span class="schedEmpDept"><?= htmlspecialchars($emp['department']) ?></span>
+                                <?php endif; ?>
                             </div>
                         </div>
+                    <?php endforeach; ?>
+                    <?php if (empty($employees)): ?>
+                        <div class="schedEmpEmpty">No employees found.</div>
+                    <?php endif; ?>
+                </div>
+            </div>
 
-                        <!-- Time In -->
-                        <div class="formGroup">
-                            <label>Time In</label>
-                            <input type="time" name="time_in" id="timeIn" class="formControl" required>
+            <!-- ===== DIVIDER ===== -->
+            <div class="schedPanelDivider"></div>
+
+            <!-- ===== RIGHT PANEL ===== -->
+            <div class="schedRightPanel">
+
+                <!-- Placeholder -->
+                <div class="schedPlaceholder" id="schedPlaceholder">
+                    <i class="bi bi-calendar2-week schedPlaceholderIcon"></i>
+                    <p>Select an employee to view their schedule</p>
+                </div>
+
+                <!-- Calendar content -->
+                <div class="schedCalContent" id="schedCalContent" style="display:none;">
+
+                    <div class="schedCalHeader">
+                        <h6 class="schedCalTitle">Schedule for <span id="selectedEmpName"><?= htmlspecialchars($selectedEmpName) ?></span></h6>
+                        <div style="display:flex;align-items:center;gap:0.5rem;">
+                            <button class="schedNavBtn" onclick="changeMonth(-1)"><i class="bi bi-chevron-left"></i></button>
+                            <span class="schedMonthLabel" id="schedMonthLabel"></span>
+                            <button class="schedNavBtn" onclick="changeMonth(1)"><i class="bi bi-chevron-right"></i></button>
+                            <button class="schedAddBtn" onclick="openAddModal()">
+                                <i class="bi bi-plus-lg"></i> Add Schedule
+                            </button>
                         </div>
-
-                        <!-- Time Out -->
-                        <div class="formGroup">
-                            <label>Time Out <small class="nightShiftHint">(next day if night shift)</small></label>
-                            <input type="time" name="time_out" id="timeOut" class="formControl" required>
-                        </div>
-
                     </div>
 
-                    <!-- Date Picker -->
+                    <div class="schedCalContainer" id="schedCalContainer">
+                        <!-- AJAX loaded -->
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Add / Edit Modal -->
+    <div class="schedModalOverlay" id="schedModalOverlay" style="display:none;" onclick="closeModal(event)">
+        <div class="schedModal">
+            <div class="schedModalHeader">
+                <h6 id="schedModalTitle">Add Schedule</h6>
+                <button onclick="closeModalBtn()"><i class="bi bi-x-lg"></i></button>
+            </div>
+            <div class="schedModalBody">
+                <form method="POST" action="admin_schedule.php" onsubmit="return prepareSubmit()">
+                    <input type="hidden" name="employee_id"          id="modalEmpId">
+                    <input type="hidden" name="selected_employee_id" id="modalSelEmpId">
+                    <input type="hidden" name="selected_dates"       id="selectedDatesInput">
+                    <input type="hidden" name="is_edit"              id="isEditMode" value="0">
+
+                    <div class="formGroup" style="margin-bottom:1rem;">
+                        <label>Employee</label>
+                        <input type="text" id="modalEmpName" class="formControl" readonly
+                               style="opacity:0.6;cursor:default;">
+                    </div>
+
+                    <div class="formGrid">
+                        <div class="formGroup">
+                            <label>Time In</label>
+                            <input type="time" name="time_in" id="modalTimeIn" class="formControl" required>
+                        </div>
+                        <div class="formGroup">
+                            <label>Time Out <small class="nightShiftHint">(next day if night shift)</small></label>
+                            <input type="time" name="time_out" id="modalTimeOut" class="formControl" required>
+                        </div>
+                    </div>
+
                     <div class="formGroup" style="margin-top:1rem;">
                         <label>Select Dates</label>
                         <p class="formHint">Click dates to select work days. Click again to deselect.</p>
-                        <input type="text" id="scheduleDatePicker" class="formControl" placeholder="Click to select dates..." readonly>
+                        <input type="text" id="schedDatePicker" class="formControl"
+                               placeholder="Click to select dates..." readonly>
                         <div id="selectedDatesList" class="selectedDatesList"></div>
                     </div>
 
-                    <!-- Form Actions -->
                     <div class="formActions">
                         <button type="submit" class="btnSave">
                             <i class="bi bi-check-circle-fill"></i>
-                            <span id="submitLabel">Save Schedule</span>
+                            <span id="schedSubmitLabel">Save Schedule</span>
                         </button>
-                        <a href="admin_schedule.php" class="btnCancel" id="cancelBtn" style="display:none;">Cancel</a>
+                        <button type="button" class="btnCancel" onclick="closeModalBtn()">Cancel</button>
                     </div>
-
                 </form>
             </div>
-
         </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
     <script>
 
-        // ---- FLATPICKR MULTI-SELECT DATE PICKER ----
-        let selectedDates = [];
+        let currentEmpId   = <?= $selectedEmpId ?: 'null' ?>;
+        let currentEmpName = <?= json_encode($selectedEmpName) ?>;
+        let currentYear    = <?= date('Y') ?>;
+        let currentMonth   = <?= date('n') ?>;
+        let schedDatePicker = null;
+        let selectedDates   = [];
 
-        const fp = flatpickr('#scheduleDatePicker', {
-            mode:        'multiple',
-            dateFormat:  'Y-m-d',
-            altInput:    true,
-            altFormat:   'M j, Y',
-            conjunction: ', ',
+        // Auto-select on page load (e.g. after form submit redirect)
+        if (currentEmpId) {
+            showCalendarPanel();
+            updateMonthLabel();
+            loadCalendar();
+        }
 
-            onChange: function(dates) {
-                selectedDates = dates.map(d => {
-                    const y   = d.getFullYear();
-                    const m   = String(d.getMonth() + 1).padStart(2, '0');
-                    const day = String(d.getDate()).padStart(2, '0');
-                    return `${y}-${m}-${day}`;
-                });
+        // ---- EMPLOYEE FILTER ----
+        function filterEmployees() {
+            const q = document.getElementById('empSearch').value.toLowerCase();
+            document.querySelectorAll('#schedEmpList .schedEmpRow').forEach(row => {
+                row.style.display = row.dataset.name.toLowerCase().includes(q) ? '' : 'none';
+            });
+        }
+
+        // ---- SELECT EMPLOYEE ----
+        function selectEmployee(id, name) {
+            currentEmpId   = id;
+            currentEmpName = name;
+            currentYear    = new Date().getFullYear();
+            currentMonth   = new Date().getMonth() + 1;
+
+            document.querySelectorAll('#schedEmpList .schedEmpRow').forEach(r => r.classList.remove('active'));
+            document.querySelector(`#schedEmpList .schedEmpRow[data-id="${id}"]`).classList.add('active');
+            document.getElementById('selectedEmpName').textContent = name;
+
+            showCalendarPanel();
+            updateMonthLabel();
+            loadCalendar();
+        }
+
+        function showCalendarPanel() {
+            document.getElementById('schedPlaceholder').style.display  = 'none';
+            document.getElementById('schedCalContent').style.display   = 'flex';
+        }
+
+        // ---- MONTH NAVIGATION ----
+        function changeMonth(dir) {
+            currentMonth += dir;
+            if (currentMonth < 1)  { currentMonth = 12; currentYear--; }
+            if (currentMonth > 12) { currentMonth = 1;  currentYear++; }
+            updateMonthLabel();
+            loadCalendar();
+        }
+
+        function updateMonthLabel() {
+            const months = ['January','February','March','April','May','June',
+                            'July','August','September','October','November','December'];
+            document.getElementById('schedMonthLabel').textContent = months[currentMonth - 1] + ' ' + currentYear;
+        }
+
+        // ---- LOAD CALENDAR (AJAX) ----
+        function loadCalendar() {
+            if (!currentEmpId) return;
+            const c = document.getElementById('schedCalContainer');
+            c.innerHTML = '<div class="schedCalLoading"><div class="schedSpinner"></div> Loading...</div>';
+
+            fetch(`get_admin_schedule_calendar.php?employee_id=${currentEmpId}&year=${currentYear}&month=${currentMonth}`)
+                .then(r => r.text())
+                .then(html => { c.innerHTML = html; })
+                .catch(() => { c.innerHTML = '<div class="schedCalEmpty" style="color:#ff8a8a;">Failed to load.</div>'; });
+        }
+
+        // ---- MODAL: ADD ----
+        function openAddModal() {
+            document.getElementById('schedModalTitle').textContent  = 'Add Schedule';
+            document.getElementById('modalEmpId').value             = currentEmpId;
+            document.getElementById('modalSelEmpId').value          = currentEmpId;
+            document.getElementById('modalEmpName').value           = currentEmpName;
+            document.getElementById('modalTimeIn').value            = '';
+            document.getElementById('modalTimeOut').value           = '';
+            document.getElementById('isEditMode').value             = '0';
+            document.getElementById('schedSubmitLabel').textContent = 'Save Schedule';
+
+            selectedDates = [];
+            document.getElementById('schedModalOverlay').style.display = 'flex';
+            setTimeout(() => { initDatePicker(); updateSelectedDatesList(); }, 30);
+        }
+
+        // ---- MODAL: EDIT (called from calendar HTML) ----
+        function openEditModal(empId, date, timeIn, timeOut) {
+            document.getElementById('schedModalTitle').textContent  = 'Edit Schedule';
+            document.getElementById('modalEmpId').value             = empId;
+            document.getElementById('modalSelEmpId').value          = currentEmpId;
+            document.getElementById('modalEmpName').value           = currentEmpName;
+            document.getElementById('modalTimeIn').value            = timeIn;
+            document.getElementById('modalTimeOut').value           = timeOut;
+            document.getElementById('isEditMode').value             = '1';
+            document.getElementById('schedSubmitLabel').textContent = 'Update Schedule';
+
+            selectedDates = [date];
+            document.getElementById('schedModalOverlay').style.display = 'flex';
+            setTimeout(() => {
+                initDatePicker();
+                if (schedDatePicker) schedDatePicker.setDate([date]);
                 updateSelectedDatesList();
-            }
-        });
+            }, 30);
+        }
 
-        // ---- UPDATE SELECTED DATES TAGS ----
+        // ---- DELETE (AJAX, called from calendar HTML) ----
+        async function deleteScheduleDay(empId, date) {
+            if (!confirm('Delete schedule for ' + date + '?')) return;
+            await fetch(`admin_schedule.php?ajax_delete=1&emp=${empId}&date=${date}`);
+            loadCalendar();
+        }
+
+        // ---- DATE PICKER ----
+        function initDatePicker() {
+            if (schedDatePicker) { schedDatePicker.destroy(); schedDatePicker = null; }
+            schedDatePicker = flatpickr('#schedDatePicker', {
+                mode:        'multiple',
+                dateFormat:  'Y-m-d',
+                altInput:    true,
+                altFormat:   'M j, Y',
+                conjunction: ', ',
+                onChange(dates) {
+                    selectedDates = dates.map(d => {
+                        const y   = d.getFullYear();
+                        const m   = String(d.getMonth() + 1).padStart(2, '0');
+                        const day = String(d.getDate()).padStart(2, '0');
+                        return `${y}-${m}-${day}`;
+                    });
+                    updateSelectedDatesList();
+                }
+            });
+        }
+
         function updateSelectedDatesList() {
             const list = document.getElementById('selectedDatesList');
             if (selectedDates.length === 0) {
                 list.innerHTML = '<p class="noDateSelected">No dates selected.</p>';
                 return;
             }
-
-            const fmtDate = d => new Date(d + 'T00:00:00').toLocaleDateString('en-US', {
+            const fmt = d => new Date(d + 'T00:00:00').toLocaleDateString('en-US', {
                 weekday: 'short', month: 'short', day: 'numeric', year: 'numeric'
             });
-
             list.innerHTML = selectedDates.map(d => `
                 <span class="selectedDateTag">
-                    ${fmtDate(d)}
+                    ${fmt(d)}
                     <span onclick="removeDate('${d}')" class="selectedDateRemove">✕</span>
                 </span>
             `).join('');
         }
 
-        // ---- REMOVE A DATE TAG ----
         function removeDate(dateStr) {
             selectedDates = selectedDates.filter(d => d !== dateStr);
-            fp.setDate(selectedDates);
+            if (schedDatePicker) schedDatePicker.setDate(selectedDates);
             updateSelectedDatesList();
         }
 
-        // ---- PREPARE SUBMIT ----
         function prepareSubmit() {
-            if (!document.getElementById('employeeSelect').value) {
-                alert('Please select an employee.');
-                return false;
+            if (!document.getElementById('modalEmpId').value) {
+                alert('No employee selected.'); return false;
             }
             if (selectedDates.length === 0) {
-                alert('Please select at least one date.');
-                return false;
+                alert('Please select at least one date.'); return false;
             }
-            if (!document.getElementById('timeIn').value) {
-                alert('Please enter a time in.');
-                return false;
-            }
-            if (!document.getElementById('timeOut').value) {
-                alert('Please enter a time out.');
-                return false;
+            if (!document.getElementById('modalTimeIn').value || !document.getElementById('modalTimeOut').value) {
+                alert('Please enter time in and time out.'); return false;
             }
             document.getElementById('selectedDatesInput').value = JSON.stringify(selectedDates);
             return true;
         }
 
-        // ---- LOAD EDIT INTO FORM ----
-        function loadEdit(employeeId, employeeName, date, timeIn, timeOut) {
-            document.getElementById('employeeSearch').value      = employeeName;
-            document.getElementById('employeeSelect').value      = employeeId;
-            document.getElementById('timeIn').value              = timeIn;
-            document.getElementById('timeOut').value             = timeOut;
-            document.getElementById('formTitle').textContent     = 'Edit Schedule';
-            document.getElementById('submitLabel').textContent   = 'Update Schedule';
-            document.getElementById('cancelBtn').style.display   = 'inline-block';
-            document.getElementById('isEditMode').value          = '1';
-
-            selectedDates = [date];
-            fp.setDate(selectedDates);
-            updateSelectedDatesList();
-
-            document.querySelector('.adminFormWrapper').scrollIntoView({ behavior: 'smooth' });
+        function closeModal(e) {
+            if (e.target === document.getElementById('schedModalOverlay')) closeModalBtn();
+        }
+        function closeModalBtn() {
+            document.getElementById('schedModalOverlay').style.display = 'none';
         }
 
-        // ---- ACTION DROPDOWN ----
-        function toggleActionMenu(btn) {
-            const menu = btn.nextElementSibling;
-            document.querySelectorAll('.actionMenu').forEach(m => {
-                if (m !== menu) m.classList.remove('show');
-            });
-            menu.classList.toggle('show');
-        }
-
-        // ---- SEARCH TABLE ----
-        function searchTable() {
-            const input = document.getElementById('searchInput').value.toLowerCase();
-            document.querySelectorAll('.tableScrollWrapper tbody tr').forEach(row => {
-                row.style.display = row.textContent.toLowerCase().includes(input) ? '' : 'none';
-            });
-        }
-
-        // ---- EMPLOYEE SEARCH FILTER ----
-        function filterEmployees() {
-            const input    = document.getElementById('employeeSearch').value.toLowerCase();
-            const dropdown = document.getElementById('employeeDropdown');
-            const options  = document.querySelectorAll('.employeeOption');
-
-            dropdown.style.display = input === '' ? 'none' : 'block';
-            options.forEach(opt => {
-                opt.style.display = opt.getAttribute('data-name').toLowerCase().includes(input) ? 'block' : 'none';
-            });
-            document.getElementById('employeeSelect').value = '';
-        }
-
-        function selectEmployee(el) {
-            document.getElementById('employeeSearch').value        = el.getAttribute('data-name');
-            document.getElementById('employeeSelect').value        = el.getAttribute('data-id');
-            document.getElementById('employeeDropdown').style.display = 'none';
-        }
-
-        // ---- CLOSE DROPDOWNS ON OUTSIDE CLICK ----
-        document.addEventListener('click', (e) => {
-            if (!e.target.closest('.actionDropdownWrapper')) {
-                document.querySelectorAll('.actionMenu').forEach(m => m.classList.remove('show'));
-            }
-            if (!e.target.closest('#employeeSearch') && !e.target.closest('#employeeDropdown')) {
-                document.getElementById('employeeDropdown').style.display = 'none';
-            }
-        });
-
-        // ---- AUTO DISMISS ALERTS ----
+        // Auto-dismiss flash alerts
         setTimeout(() => {
-            document.querySelectorAll('.alert').forEach(alert => {
-                alert.style.transition = 'opacity 0.5s ease';
-                alert.style.opacity    = '0';
-                setTimeout(() => alert.remove(), 500);
+            document.querySelectorAll('.schedAlert').forEach(a => {
+                a.style.transition = 'opacity 0.5s';
+                a.style.opacity    = '0';
+                setTimeout(() => a.remove(), 500);
             });
         }, 3000);
 
