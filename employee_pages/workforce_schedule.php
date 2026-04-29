@@ -14,10 +14,16 @@ $success    = "";
 $error      = "";
 
 // Get this workforce user's department
-$selfStmt = $pdo->prepare("SELECT department_id FROM employees WHERE id = ?");
+$selfStmt = $pdo->prepare("
+    SELECT e.department_id, d.department_name
+    FROM employees e
+    LEFT JOIN departments d ON e.department_id = d.id
+    WHERE e.id = ?
+");
 $selfStmt->execute([$employeeId]);
-$selfData   = $selfStmt->fetch(PDO::FETCH_ASSOC);
-$department = $selfData['department_id'] ?? null;
+$selfData       = $selfStmt->fetch(PDO::FETCH_ASSOC);
+$department     = $selfData['department_id']   ?? null;
+$departmentName = $selfData['department_name'] ?? null;
 
 // ---- HANDLE SUBMIT ----
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -33,7 +39,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = "Your account has no department assigned. Contact an admin.";
     } else {
         // Verify target employee is in same department
-        $deptCheck = $pdo->prepare("SELECT id FROM employees WHERE id = ? AND department = ?");
+        $deptCheck = $pdo->prepare("SELECT id FROM employees WHERE id = ? AND department_id = ?");
         $deptCheck->execute([$targetId, $department]);
 
         if (!$deptCheck->fetch()) {
@@ -76,7 +82,7 @@ $deptEmployees = [];
 if ($department) {
     $empStmt = $pdo->prepare("
         SELECT id, name FROM employees
-        WHERE department = ? AND id != ?
+        WHERE department_id = ? AND id != ?
         ORDER BY name
     ");
     $empStmt->execute([$department, $employeeId]);
@@ -96,9 +102,9 @@ if ($department) {
             s.status
         FROM schedules s
         JOIN employees e ON s.employee_id = e.id
-        WHERE e.department = ?
+        WHERE e.department_id = ?
           AND s.is_rest_day = 0
-          AND (s.status = 'pending' OR (s.status = 'approved' AND s.schedule_date >= CURDATE() - INTERVAL 7 DAY))
+          AND (s.status = 'pending' OR (s.status IN ('approved','rejected') AND s.schedule_date >= CURDATE() - INTERVAL 7 DAY))
         ORDER BY s.status ASC, s.schedule_date ASC, e.name
     ");
     $schedStmt->execute([$department]);
@@ -137,6 +143,7 @@ $current_page = 'workforce_schedule';
 
         .status-pending  { color: #f0ad4e; font-weight: 600; font-size: 0.8rem; }
         .status-approved { color: #97be41; font-weight: 600; font-size: 0.8rem; }
+        .status-rejected { color: #ff8a8a; font-weight: 600; font-size: 0.8rem; }
 
         .no-dept-warning {
             background: rgba(220, 53, 69, 0.12);
@@ -160,7 +167,7 @@ $current_page = 'workforce_schedule';
                 <div style="display:flex;align-items:center;gap:0.75rem;">
                     <h5 class="adminTitle">Manage Schedules</h5>
                     <?php if ($department): ?>
-                        <span class="wf-dept-badge"><?= htmlspecialchars($department) ?> Department</span>
+                        <span class="wf-dept-badge"><?= htmlspecialchars($departmentName ?? $department) ?> Department</span>
                     <?php endif; ?>
                 </div>
                 <input type="text" id="searchInput" class="searchInput" placeholder="Search schedules..." onkeyup="searchTable()">
@@ -218,6 +225,8 @@ $current_page = 'workforce_schedule';
                                     <td>
                                         <?php if ($row['status'] === 'pending'): ?>
                                             <span class="status-pending"><i class="bi bi-hourglass-split"></i> Pending</span>
+                                        <?php elseif ($row['status'] === 'rejected'): ?>
+                                            <span class="status-rejected"><i class="bi bi-x-circle-fill"></i> Rejected</span>
                                         <?php else: ?>
                                             <span class="status-approved"><i class="bi bi-check-circle-fill"></i> Approved</span>
                                         <?php endif; ?>
@@ -246,7 +255,7 @@ $current_page = 'workforce_schedule';
 
                         <!-- Employee Search -->
                         <div class="formGroup" style="position:relative;">
-                            <label>Employee (<?= htmlspecialchars($department) ?> Dept.)</label>
+                            <label>Employee (<?= htmlspecialchars($departmentName ?? $department) ?> Dept.)</label>
                             <input type="text" id="employeeSearch" class="formControl"
                                 placeholder="Type to search..." autocomplete="off"
                                 oninput="filterEmployees()">
