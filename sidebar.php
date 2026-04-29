@@ -116,7 +116,7 @@ $dashboardLink = ($role === 'admin')
 
             <?php $requestsOpen = in_array($current_page ?? '', ['requests', 'schedule_requests']); ?>
             <div class="sideBarDropdown">
-                <button class="sideBarMenuItemDropdown <?= $requestsOpen ? 'active open' : '' ?>"
+                <button class="sideBarMenuItemDropdown <?= $requestsOpen ? 'active open locked' : '' ?>"
                         onclick="toggleSidebarDropdown(this)">
                     <i class="bi bi-envelope-paper sidebarIcon"></i>
                     <span class="menuText">Requests</span>
@@ -148,33 +148,56 @@ $dashboardLink = ($role === 'admin')
 <!-- Java Script -->
 <script>
     document.addEventListener("DOMContentLoaded", () => {
-        const sidebar = document.querySelector(".sideBar");
-        const links   = document.querySelectorAll(".sideBarMenuItem, .sideBarSubItem");
+        const sidebar         = document.querySelector(".sideBar");
+        const links           = document.querySelectorAll(".sideBarMenuItem, .sideBarSubItem");
+        const dropdownWrapper = document.querySelector(".sideBarDropdown");
 
+        // Page-change click animation
         links.forEach(link => {
             link.addEventListener("click", (e) => {
                 e.preventDefault();
                 sidebar.classList.add("force-collapse");
-                setTimeout(() => {
-                    window.location.href = link.href;
-                }, 250);
+                setTimeout(() => { window.location.href = link.href; }, 250);
             });
         });
-    });
 
-    function toggleSidebarDropdown(btn) {
-        const subMenu = btn.nextElementSibling;
-        btn.classList.toggle('open');
-        subMenu.classList.toggle('open');
-    }
+        if (dropdownWrapper) {
+            const btn     = dropdownWrapper.querySelector(".sideBarMenuItemDropdown");
+            const subMenu = btn.nextElementSibling;
 
-    document.addEventListener("DOMContentLoaded", () => {
-        const sidebar = document.querySelector(".sideBar");
+            // Hover open
+            dropdownWrapper.addEventListener("mouseenter", () => {
+                btn.classList.add("open");
+                subMenu.classList.add("open");
+            });
+
+            // Hover close (only if not locked)
+            dropdownWrapper.addEventListener("mouseleave", () => {
+                if (!btn.classList.contains("locked")) {
+                    btn.classList.remove("open");
+                    subMenu.classList.remove("open");
+                }
+            });
+        }
+
+        // Sidebar collapse also closes unlocked dropdown
         sidebar.addEventListener("mouseleave", () => {
-            document.querySelectorAll(".sideBarMenuItemDropdown.open").forEach(btn => {
+            document.querySelectorAll(".sideBarMenuItemDropdown:not(.locked)").forEach(btn => {
                 btn.classList.remove("open");
                 btn.nextElementSibling.classList.remove("open");
             });
         });
     });
+
+    // Click = toggle lock
+    function toggleSidebarDropdown(btn) {
+        const subMenu = btn.nextElementSibling;
+        if (btn.classList.contains("locked")) {
+            btn.classList.remove("locked", "open");
+            subMenu.classList.remove("open");
+        } else {
+            btn.classList.add("locked", "open");
+            subMenu.classList.add("open");
+        }
+    }
 </script>

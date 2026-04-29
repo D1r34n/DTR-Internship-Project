@@ -500,7 +500,10 @@ body::after {
     cursor: pointer;
     transition: color 0.2s;
 }
-.btnCancel:hover { color: #dc3545; }
+.btnCancel:hover 
+{ 
+    color: #dc3545; 
+}
 
 /* ============================================================
    GANTT CONTAINER
