@@ -109,7 +109,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // ---- GET ALL EMPLOYEES ----
-$employees = $pdo->query("SELECT id, name, role, department FROM employees WHERE role IN ('employee','workforce') ORDER BY name")
+$employees = $pdo->query("SELECT id, name, role, department_id FROM employees WHERE role IN ('employee','workforce') ORDER BY name")
     ->fetchAll(PDO::FETCH_ASSOC);
 
 // Resolve selected employee name
@@ -171,8 +171,8 @@ $current_page = 'schedule';
                             <div class="schedEmpName"><?= htmlspecialchars($emp['name']) ?></div>
                             <div class="schedEmpMeta">
                                 <span class="schedEmpRole empRole-<?= $emp['role'] ?>"><?= ucfirst($emp['role']) ?></span>
-                                <?php if ($emp['department']): ?>
-                                    <span class="schedEmpDept"><?= htmlspecialchars($emp['department']) ?></span>
+                                <?php if ($emp['department_id']): ?>
+                                    <span class="schedEmpDept"><?= htmlspecialchars($emp['department_id']) ?></span>
                                 <?php endif; ?>
                             </div>
                         </div>
