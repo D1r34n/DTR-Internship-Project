@@ -16,8 +16,8 @@ $employeeId = $_SESSION['user_id'];
 $stmt = $pdo->prepare("
     SELECT 
         work_date                AS date,
-        scheduled_start_datetime AS scheduled_time_in,
-        scheduled_end_datetime   AS scheduled_time_out,
+        scheduled_start AS scheduled_time_in,
+        scheduled_end   AS scheduled_time_out,
         actual_time_in,
         actual_time_out,
         overtime_minutes,

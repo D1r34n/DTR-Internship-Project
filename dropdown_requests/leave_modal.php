@@ -64,6 +64,7 @@
     // ===== LEAVE MODAL =====
     let leaveCalendarInstance = null;
     let leaveScheduledDates   = [];
+    let leaveExistingDates    = [];
     let leaveSelectedDates    = [];
     let currentLeaveType      = '';
 
@@ -97,6 +98,7 @@
 
     // ---- CHECK IF DATE IS SELECTABLE ----
     function isDateSelectable(dateStr, rules) {
+        if (leaveExistingDates.includes(dateStr)) return false;
         const today = todayStr();
         if (rules.direction === 'past')   return dateStr < today;
         if (rules.direction === 'future') return dateStr > today;
@@ -136,8 +138,9 @@
         // Reload schedule dates for this leave type then re-render
         fetch(`/DTR-Internship-Project/employee_pages/get_schedule_dates.php?leave_type=${encodeURIComponent(value)}`)
             .then(res => res.json())
-            .then(dates => {
-                leaveScheduledDates = dates;
+            .then(data => {
+                leaveScheduledDates = data.scheduledDates ?? [];
+                leaveExistingDates  = data.leaveDates     ?? [];
                 renderLeaveCalendar();
             })
             .catch(() => {
@@ -168,6 +171,7 @@
         document.getElementById('leaveInstruction').textContent       = 'Select a leave type first to load the calendar.';
         currentLeaveType   = '';
         leaveSelectedDates = [];
+        leaveExistingDates = [];
 
         // Render empty calendar on open
         renderLeaveCalendar();
@@ -181,6 +185,7 @@
             leaveCalendarInstance = null;
         }
         leaveSelectedDates = [];
+        leaveExistingDates = [];
         currentLeaveType   = '';
     }
 
@@ -214,9 +219,13 @@
 
             dayCellDidMount: function(info) {
                 const dateStr    = localDateStr(info.date);
+                const isOnLeave  = leaveExistingDates.includes(dateStr);
                 const selectable = currentLeaveType && isDateSelectable(dateStr, rules);
 
-                if (!selectable) {
+                if (isOnLeave) {
+                    info.el.classList.add('fc-day-on-leave');
+                    info.el.classList.add('fc-day-dimmed');
+                } else if (!selectable) {
                     info.el.classList.add('fc-day-dimmed');
                 }
 
@@ -244,7 +253,14 @@
                     return;
                 }
 
-                // Check if date is selectable
+                // Check if date already has a leave request
+                if (leaveExistingDates.includes(dateStr)) {
+                    errEl.style.display = 'block';
+                    errEl.textContent   = 'This date already has an existing leave request.';
+                    return;
+                }
+
+                // Check if date is selectable by direction rules
                 if (!isDateSelectable(dateStr, rules)) {
                     errEl.style.display = 'block';
                     if (rules.direction === 'past') {

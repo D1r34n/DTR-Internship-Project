@@ -33,74 +33,88 @@ if (isset($_GET['delete'], $_GET['date'])) {
     $success = "Schedule deleted successfully!";
 }
 
-// // Hard delete — removes attendance even if employee already timed in
-// $pdo->prepare("
-//     DELETE FROM attendances 
-//     WHERE employee_id = ? 
-//     AND work_date = ?
-// ")->execute([$employeeId, $date]);
-
-// ---- HANDLE ADD / OVERWRITE ----
+// ---- HANDLE ADD / EDIT ----
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $employee_id  = $_POST['employee_id'];
     $dates        = json_decode($_POST['selected_dates'], true);
     $time_in      = $_POST['time_in'];
     $time_out     = $_POST['time_out'];
+    $is_edit      = !empty($_POST['is_edit']) && $_POST['is_edit'] === '1';
     $is_overnight = $time_out < $time_in;
 
     if (empty($dates)) {
         $error = "Please select at least one date.";
-    } else {
-        $insertSchedule = $pdo->prepare("
-            INSERT INTO schedules (employee_id, schedule_date, scheduled_start, scheduled_end, is_rest_day)
-            VALUES (?, ?, ?, ?, 0)
-            ON DUPLICATE KEY UPDATE
-                scheduled_start = VALUES(scheduled_start),
-                scheduled_end   = VALUES(scheduled_end)
+    } elseif ($is_edit) {
+        $updateStmt = $pdo->prepare("
+            UPDATE schedules
+            SET scheduled_start = ?, scheduled_end = ?
+            WHERE employee_id = ? AND schedule_date = ?
         ");
-
-        // Upsert attendance row when a schedule is created or updated
-        // Preserves existing actual_time_in/out if already recorded
-        $insertAttendance = $pdo->prepare("
-            INSERT INTO attendances (
-                employee_id, schedule_id, work_date,
-                scheduled_start, scheduled_end,
-                actual_time_in, actual_time_out,
-                total_work_minutes, late_minutes,
-                undertime_minutes, overtime_minutes,
-                status, missed_time_out
-            )
-            VALUES (?, ?, ?, ?, ?, NULL, NULL, 0, 0, 0, 0, 'incomplete', 0)
-            ON DUPLICATE KEY UPDATE
-                scheduled_start = VALUES(scheduled_start),
-                scheduled_end   = VALUES(scheduled_end)
-                -- Intentionally NOT updating actual times, status, or minutes
-                -- so existing attendance data is preserved on schedule edit
+        $updateAttendance = $pdo->prepare("
+            UPDATE attendances
+            SET scheduled_start = ?, scheduled_end = ?
+            WHERE employee_id = ? AND work_date = ? AND actual_time_in IS NULL
         ");
-
         foreach ($dates as $date) {
             $startDatetime = $date . ' ' . $time_in . ':00';
             $endDatetime   = $is_overnight
                 ? date('Y-m-d', strtotime($date . ' +1 day')) . ' ' . $time_out . ':00'
                 : $date . ' ' . $time_out . ':00';
-
-            // Save schedule
-            $insertSchedule->execute([$employee_id, $date, $startDatetime, $endDatetime]);
-
-            // Get the schedule_id that was just inserted or already existed
-            $scheduleId = $pdo->lastInsertId() ?: null;
-
-            // Create attendance placeholder — skips if already has real data
-            $insertAttendance->execute([
-                $employee_id,
-                $scheduleId,
-                $date,
-                $startDatetime,
-                $endDatetime,
-            ]);
+            $updateStmt->execute([$startDatetime, $endDatetime, $employee_id, $date]);
+            $updateAttendance->execute([$startDatetime, $endDatetime, $employee_id, $date]);
+        }
+        $success = "Schedule updated successfully!";
+    } else {
+        $checkStmt      = $pdo->prepare("SELECT COUNT(*) FROM schedules WHERE employee_id = ? AND schedule_date = ?");
+        $duplicateDates = [];
+        foreach ($dates as $date) {
+            $checkStmt->execute([$employee_id, $date]);
+            if ($checkStmt->fetchColumn() > 0) {
+                $duplicateDates[] = date('M d, Y', strtotime($date));
+            }
         }
 
-        $success = "Schedule saved successfully!";
+        if (!empty($duplicateDates)) {
+            $error = "Schedule already exist for: " . implode(', ', $duplicateDates) . ".";
+        } else {
+            $insertSchedule = $pdo->prepare("
+                INSERT INTO schedules (employee_id, schedule_date, scheduled_start, scheduled_end, is_rest_day)
+                VALUES (?, ?, ?, ?, 0)
+            ");
+            $insertAttendance = $pdo->prepare("
+                INSERT INTO attendances (
+                    employee_id, schedule_id, work_date,
+                    scheduled_start, scheduled_end,
+                    actual_time_in, actual_time_out,
+                    total_work_minutes, late_minutes,
+                    undertime_minutes, overtime_minutes,
+                    status, missed_time_out
+                )
+                VALUES (?, ?, ?, ?, ?, NULL, NULL, 0, 0, 0, 0, 'incomplete', 0)
+                ON DUPLICATE KEY UPDATE
+                    scheduled_start = VALUES(scheduled_start),
+                    scheduled_end   = VALUES(scheduled_end)
+            ");
+
+            foreach ($dates as $date) {
+                $startDatetime = $date . ' ' . $time_in . ':00';
+                $endDatetime   = $is_overnight
+                    ? date('Y-m-d', strtotime($date . ' +1 day')) . ' ' . $time_out . ':00'
+                    : $date . ' ' . $time_out . ':00';
+
+                $insertSchedule->execute([$employee_id, $date, $startDatetime, $endDatetime]);
+                $scheduleId = $pdo->lastInsertId() ?: null;
+
+                $insertAttendance->execute([
+                    $employee_id,
+                    $scheduleId,
+                    $date,
+                    $startDatetime,
+                    $endDatetime,
+                ]);
+            }
+            $success = "Schedule saved successfully!";
+        }
     }
 }
 
@@ -241,6 +255,7 @@ $current_page = 'schedule';
 
                     <input type="hidden" name="employee_id" id="employeeSelect">
                     <input type="hidden" name="selected_dates" id="selectedDatesInput">
+                    <input type="hidden" name="is_edit" id="isEditMode" value="0">
 
                     <div class="formGrid">
 
@@ -381,6 +396,7 @@ $current_page = 'schedule';
             document.getElementById('formTitle').textContent     = 'Edit Schedule';
             document.getElementById('submitLabel').textContent   = 'Update Schedule';
             document.getElementById('cancelBtn').style.display   = 'inline-block';
+            document.getElementById('isEditMode').value          = '1';
 
             selectedDates = [date];
             fp.setDate(selectedDates);

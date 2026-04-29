@@ -1,3 +1,4 @@
+
 <?php
 session_start();
 
@@ -33,6 +34,10 @@ if (isset($_GET['action'], $_GET['type'], $_GET['id'])) {
             SET a.overtime_status = ?
             WHERE o.id = ?
         ")->execute([$status, $id]);
+
+    } elseif ($type === 'ob') {
+        $pdo->prepare("UPDATE ob_requests SET status = ? WHERE id = ?")
+            ->execute([$status, $id]);
     }
 
     $success = "Request has been " . ucfirst($status) . "!";
@@ -45,11 +50,15 @@ $rejectedLeave    = $pdo->query("SELECT COUNT(*) FROM leave_requests    WHERE st
 $pendingOvertime  = $pdo->query("SELECT COUNT(*) FROM overtime_requests WHERE status = 'pending'")->fetchColumn();
 $approvedOvertime = $pdo->query("SELECT COUNT(*) FROM overtime_requests WHERE status = 'approved'")->fetchColumn();
 $rejectedOvertime = $pdo->query("SELECT COUNT(*) FROM overtime_requests WHERE status = 'rejected'")->fetchColumn();
+$pendingOB        = $pdo->query("SELECT COUNT(*) FROM ob_requests       WHERE status = 'pending'")->fetchColumn();
+$approvedOB       = $pdo->query("SELECT COUNT(*) FROM ob_requests       WHERE status = 'approved'")->fetchColumn();
+$rejectedOB       = $pdo->query("SELECT COUNT(*) FROM ob_requests       WHERE status = 'rejected'")->fetchColumn();
 
-$totalPending  = $pendingLeave  + $pendingOvertime;
-$totalApproved = $approvedLeave + $approvedOvertime;
-$totalRejected = $rejectedLeave + $rejectedOvertime;
+$totalPending  = $pendingLeave  + $pendingOvertime  + $pendingOB;
+$totalApproved = $approvedLeave + $approvedOvertime + $approvedOB;
+$totalRejected = $rejectedLeave + $rejectedOvertime + $rejectedOB;
 $totalOvertime = $pendingOvertime + $approvedOvertime + $rejectedOvertime;
+$totalOB       = $pendingOB + $approvedOB + $rejectedOB;
 
 // ---- GET LEAVE REQUESTS ----
 $leaveRequests = $pdo->query("
@@ -65,6 +74,14 @@ $overtimeRequests = $pdo->query("
     FROM overtime_requests or2
     JOIN employees e ON or2.employee_id = e.id
     ORDER BY or2.created_at DESC
+")->fetchAll(PDO::FETCH_ASSOC);
+
+// ---- GET OB REQUESTS ----
+$obRequests = $pdo->query("
+    SELECT ob.*, e.name AS employee_name
+    FROM ob_requests ob
+    JOIN employees e ON ob.employee_id = e.id
+    ORDER BY ob.created_at DESC
 ")->fetchAll(PDO::FETCH_ASSOC);
 ?>
 
@@ -142,6 +159,13 @@ $overtimeRequests = $pdo->query("
                         <h5><?= $totalOvertime ?></h5>
                     </div>
                 </div>
+                <div class="reqCard ob">
+                    <i class="bi bi-briefcase-fill"></i>
+                    <div>
+                        <p>Official Business</p>
+                        <h5><?= $totalOB ?></h5>
+                    </div>
+                </div>
             </div>
 
             <!-- TABS -->
@@ -149,6 +173,7 @@ $overtimeRequests = $pdo->query("
                 <button class="reqTabBtn active" onclick="switchReqTab('all', this)">All</button>
                 <button class="reqTabBtn" onclick="switchReqTab('leave', this)">Leave</button>
                 <button class="reqTabBtn" onclick="switchReqTab('overtime', this)">Overtime</button>
+                <button class="reqTabBtn" onclick="switchReqTab('ob', this)">Official Business</button>
             </div>
 
             <!-- ALL TAB -->
@@ -186,7 +211,17 @@ $overtimeRequests = $pdo->query("
                                     <td class="actionsCol"><?= getActionButtons('overtime', $row['id'], $row['status']) ?></td>
                                 </tr>
                             <?php endforeach; ?>
-                            <?php if (empty($leaveRequests) && empty($overtimeRequests)): ?>
+                            <?php foreach ($obRequests as $row): ?>
+                                <tr>
+                                    <td><?= htmlspecialchars($row['employee_name']) ?></td>
+                                    <td><span class="badge obBadge">Official Business</span></td>
+                                    <td><?= date('M d, Y', strtotime($row['ob_date'])) ?> | <?= htmlspecialchars($row['client_name']) ?></td>
+                                    <td class="reasonCol"><?= htmlspecialchars($row['reason']) ?></td>
+                                    <td><?= getStatusBadge($row['status']) ?></td>
+                                    <td class="actionsCol"><?= getActionButtons('ob', $row['id'], $row['status']) ?></td>
+                                </tr>
+                            <?php endforeach; ?>
+                            <?php if (empty($leaveRequests) && empty($overtimeRequests) && empty($obRequests)): ?>
                                 <tr><td colspan="6" class="text-center">No requests found.</td></tr>
                             <?php endif; ?>
                         </tbody>

@@ -42,6 +42,27 @@ $stmt = $pdo->prepare("
 $stmt->execute([$employeeId, $dateParam]);
 $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-$dates = array_column($rows, 'schedule_date');
+$scheduledDates = array_column($rows, 'schedule_date');
 
-echo json_encode($dates);
+// Collect all dates already covered by approved or pending leave requests
+$leaveStmt = $pdo->prepare("
+    SELECT selected_dates
+    FROM leave_requests
+    WHERE employee_id = ?
+    AND status IN ('approved', 'pending')
+");
+$leaveStmt->execute([$employeeId]);
+
+$leaveDates = [];
+foreach ($leaveStmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+    $decoded = json_decode($row['selected_dates'], true);
+    if (is_array($decoded)) {
+        $leaveDates = array_merge($leaveDates, $decoded);
+    }
+}
+$leaveDates = array_values(array_unique($leaveDates));
+
+echo json_encode([
+    'scheduledDates' => $scheduledDates,
+    'leaveDates'     => $leaveDates,
+]);
