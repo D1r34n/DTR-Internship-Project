@@ -44,6 +44,7 @@ $titles = [
         'schedule_requests' => 'Schedule Requests',
         'logs'              => 'Logs',
         'employee_logs'     => 'Employee Logs',
+        'departments'       => 'Departments',
     ]
 ];
 

@@ -1,0 +1,594 @@
+<?php
+session_start();
+
+if (!isset($_SESSION['user_id'])) {
+    header("Location: ../index.php");
+    exit();
+}
+
+require_once '../db.php';
+
+date_default_timezone_set('Asia/Manila');
+
+function getContrastColor($hex) {
+    $hex = str_replace('#', '', $hex);
+
+    $r = hexdec(substr($hex, 0, 2));
+    $g = hexdec(substr($hex, 2, 2));
+    $b = hexdec(substr($hex, 4, 2));
+
+    $luminance = (0.299 * $r + 0.587 * $g + 0.114 * $b);
+
+    return $luminance > 186 ? '#000000' : '#ffffff';
+}
+/*
+-----------------------------------------
+FETCH DEPARTMENTS (OPTIMIZED)
+- includes parent name
+- includes child count (NO N+1 QUERY)
+-----------------------------------------
+*/
+$stmt = $pdo->prepare("
+    SELECT 
+        d.id,
+        d.department_code,
+        d.department_name,
+        d.parent_id,
+        d.color,
+        p.department_name AS parent_name,
+
+        COUNT(DISTINCT c.id) AS child_count,
+        COUNT(DISTINCT e.id) AS employee_count
+
+    FROM departments d
+    LEFT JOIN departments p ON d.parent_id = p.id
+    LEFT JOIN departments c ON c.parent_id = d.id
+    LEFT JOIN employees e ON e.department_id = d.id
+
+    GROUP BY 
+        d.id,
+        d.department_code,
+        d.department_name,
+        d.parent_id,
+        d.color,
+        p.department_name
+
+    ORDER BY d.department_name ASC
+");
+$stmt->execute();
+$departments = $stmt->fetchAll(PDO::FETCH_ASSOC);
+/*
+-----------------------------------------
+DROPDOWN DATA (clean & separate)
+-----------------------------------------
+*/
+$stmt2 = $pdo->query("
+    SELECT id, department_name 
+    FROM departments 
+    ORDER BY department_name ASC
+");
+$departmentList = $stmt2->fetchAll(PDO::FETCH_ASSOC);
+
+$current_page = 'departments';
+?>
+
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Admin Departments</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="../root.css">
+    <link rel="stylesheet" href="../side_and_top_bar.css">
+    <link rel="stylesheet" href="admin_departments.css">
+</head>
+
+<body>
+
+<?php include '../sidebar.php'; ?>
+<?php include '../topbar.php'; ?>
+
+<div class="recordBoxWrapper">
+    <div class="recordBox">
+
+        <!-- HEADER -->
+        <div class="deptHeader">
+
+            <!-- SEARCH -->
+            <div class="deptSearchWrapper">
+                <input type="text" id="deptSearch" class="deptSearchInput" placeholder="Search departments...">
+                <i class="bi bi-search searchIcon"></i>
+            </div>
+
+            <!-- SORT -->
+            <div class="deptSortWrapper">
+                <select id="deptSort" class="form-control deptSortSelect">
+                    <option value="name_asc">Name (A → Z)</option>
+                    <option value="name_desc">Name (Z → A)</option>
+                    <option value="code_asc">Code (A → Z)</option>
+                    <option value="code_desc">Code (Z → A)</option>
+                </select>
+            </div>
+
+            <!-- CREATE -->
+            <button class="createDeptBtn" data-bs-toggle="modal" data-bs-target="#createDeptModal">
+                <i class="bi bi-plus-lg"></i>
+                Create Department
+            </button>
+
+        </div>
+
+        <!-- GRID -->
+        <div class="deptGrid">
+
+            <?php foreach ($departments as $dept): ?>
+                <div class="deptCard">
+
+                    <?php $color = $dept['color'] ?? '#4e73df'; ?>
+
+                    <div class="deptActions">
+                        <i class="bi bi-pencil-square editDeptIcon"
+                        onclick='openEditDept(<?= json_encode($dept) ?>)'></i>
+                    </div>
+
+                    <div class="deptIcon"
+                        style="background: <?= htmlspecialchars($color) ?>;
+                                color: <?= getContrastColor($color) ?>;">
+                        <?= htmlspecialchars($dept['department_code']) ?>
+                    </div>
+
+                    <div class="deptName">
+                        <?= htmlspecialchars($dept['department_name']) ?>
+                    </div>
+
+                    <?php if (!empty($dept['parent_name'])): ?>
+                        <div class="deptParent">
+                            Sub of 
+                            <span 
+                                class="deptParentLink"
+                                onclick="viewParentDepartment(<?= $dept['parent_id'] ?>)">
+                                <?= htmlspecialchars($dept['parent_name']) ?>
+                            </span>
+                        </div>
+                    <?php endif; ?>
+
+                    <?php if ($dept['child_count'] > 0): ?>
+                        <button 
+                            class="deptSubBtn"
+                            onclick="viewSubDepartments(
+                                <?= $dept['id'] ?>,
+                                '<?= htmlspecialchars($dept['department_name'], ENT_QUOTES) ?>'
+                            )">
+                            View Sub Departments (<?= $dept['child_count'] ?>)
+                        </button>
+                    <?php endif; ?>
+
+                    <div class="deptMeta">
+                        👤 <?= $dept['employee_count'] ?> employee<?= $dept['employee_count'] != 1 ? 's' : '' ?>
+                    </div>
+
+                </div>
+            <?php endforeach; ?>
+
+        </div>
+
+    </div>
+</div>
+
+<!-- CREATE MODAL -->
+<div class="modal fade" id="createDeptModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content deptModal">
+
+            <div class="modal-header">
+                <h5 class="modal-title">Create Department</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body">
+
+                <form id="createDeptForm">
+
+                    <div class="mb-3">
+                        <label class="form-label">Department Code</label>
+                        <input type="text" class="form-control" name="department_code" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Department Name</label>
+                        <input type="text" class="form-control" name="department_name" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Department Color</label>
+                        <input type="color" class="form-control form-control-color" name="color" value="#4e73df">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Parent Department (Optional)</label>
+
+                        <select class="form-control" name="parent_id">
+                            <option value="">-- None (Top Level) --</option>
+
+                            <?php foreach ($departmentList as $row): ?>
+                                <option value="<?= $row['id'] ?>">
+                                    <?= htmlspecialchars($row['department_name']) ?>
+                                </option>
+                            <?php endforeach; ?>
+
+                        </select>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100">
+                        Create
+                    </button>
+
+                </form>
+
+                <div id="deptMsg" class="mt-2 text-center"></div>
+
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="editDeptModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content deptModal">
+
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Department</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body">
+
+                <form id="editDeptForm">
+
+                    <input type="hidden" name="id">
+
+                    <div class="mb-3">
+                        <label class="form-label">Department Code</label>
+                        <input type="text" class="form-control" name="department_code" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Department Name</label>
+                        <input type="text" class="form-control" name="department_name" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Department Color</label>
+                        <input type="color" class="form-control form-control-color" name="color">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Parent Department</label>
+                        <select class="form-control" name="parent_id">
+                            <option value="">-- None --</option>
+                            <?php foreach ($departmentList as $row): ?>
+                                <option value="<?= $row['id'] ?>">
+                                    <?= htmlspecialchars($row['department_name']) ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100">
+                        Save Changes
+                    </button>
+
+                    <button type="button" class="btn btn-danger w-100 mt-2" onclick="deleteDept()">
+                        Delete Department
+                    </button>
+
+                </form>
+
+                <div id="editMsg" class="mt-2 text-center"></div>
+
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- PARENT DEPT MODAL -->
+ <div class="modal fade" id="parentDeptModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content deptModal">
+
+            <div class="modal-header">
+                <h5 class="modal-title">Parent Department</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body" id="parentDeptBody">
+                Loading...
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- SUB DEPT MODAL -->
+<div class="modal fade" id="subDeptModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content deptModal">
+
+            <div class="modal-header">
+                <h5 class="modal-title" id="subDeptTitle">Sub Departments</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body">
+                <div id="subDeptList" class="subDeptList"></div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- JS -->
+<script>
+const form = document.getElementById('createDeptForm');
+const msg  = document.getElementById('deptMsg');
+const grid = document.querySelector('.deptGrid');
+
+form.addEventListener('submit', function(e) {
+    e.preventDefault();
+
+    fetch('department_api.php?action=create', {
+        method: 'POST',
+        body: new FormData(form)
+    })
+    .then(res => res.json())
+    .then(data => {
+
+        if (data.success) {
+
+            msg.innerHTML = `<span class="text-success">${data.message}</span>`;
+            form.reset();
+
+            const div = document.createElement('div');
+            div.className = 'deptCard';
+
+            const color = data.color || '#4e73df';
+
+            div.innerHTML = `
+                <div class="deptIcon"
+                    style="background: ${color}; color: ${getContrastColor(color)};">
+                    ${data.department_code}
+                </div>
+
+                <div class="deptName">${data.department_name}</div>
+
+                ${data.parent_id && data.parent_name
+                    ? `<div class="deptParent">Sub of ${data.parent_name}</div>`
+                    : ''
+                }
+
+                <div class="deptMeta">
+                    👤 0 employees
+                </div>
+            `;
+
+            grid.appendChild(div);
+
+            setTimeout(() => {
+                bootstrap.Modal.getInstance(document.getElementById('createDeptModal')).hide();
+                msg.innerHTML = '';
+            }, 800);
+
+        } else {
+            msg.innerHTML = `<span class="text-danger">${data.message}</span>`;
+
+            // reset validation first
+            form.department_code.classList.remove('is-invalid');
+            form.department_name.classList.remove('is-invalid');
+
+            // highlight based on message
+            if (data.message.toLowerCase().includes('code')) {
+                form.department_code.classList.add('is-invalid');
+            }
+
+            if (data.message.toLowerCase().includes('name')) {
+                form.department_name.classList.add('is-invalid');
+            }
+        }
+    });
+});
+
+/* SEARCH + SORT (FIXED dynamic DOM usage) */
+const searchInput = document.getElementById('deptSearch');
+const sortSelect  = document.getElementById('deptSort');
+
+function applyFilterSort() {
+
+    let cards = Array.from(document.querySelectorAll('.deptCard'));
+
+    const query = searchInput.value.toLowerCase().trim();
+
+    cards.forEach(card => {
+        const name = card.querySelector('.deptName')?.textContent.toLowerCase() || '';
+        const code = card.querySelector('.deptIcon')?.textContent.toLowerCase() || '';
+
+        card.style.display = (name.includes(query) || code.includes(query)) ? '' : 'none';
+    });
+
+    const container = document.querySelector('.deptGrid');
+
+    cards.sort((a, b) => {
+
+        const aName = a.querySelector('.deptName').textContent.toLowerCase();
+        const bName = b.querySelector('.deptName').textContent.toLowerCase();
+
+        const aCode = a.querySelector('.deptIcon').textContent.toLowerCase();
+        const bCode = b.querySelector('.deptIcon').textContent.toLowerCase();
+
+        switch (sortSelect.value) {
+            case 'name_asc': return aName.localeCompare(bName);
+            case 'name_desc': return bName.localeCompare(aName);
+            case 'code_asc': return aCode.localeCompare(bCode);
+            case 'code_desc': return bCode.localeCompare(aCode);
+        }
+    });
+
+    cards.forEach(c => container.appendChild(c));
+}
+
+searchInput.addEventListener('input', applyFilterSort);
+sortSelect.addEventListener('change', applyFilterSort);
+form.department_code.addEventListener('input', () => {
+    form.department_code.classList.remove('is-invalid');
+});
+
+form.department_name.addEventListener('input', () => {
+    form.department_name.classList.remove('is-invalid');
+});
+
+// PARENT DEPARTMENT
+function viewParentDepartment(parentId) {
+
+    const body = document.getElementById('parentDeptBody');
+    body.innerHTML = 'Loading...';
+
+    fetch(`department_api.php?action=get_parent&id=${parentId}`)
+        .then(res => res.json())
+        .then(data => {
+
+            if (!data) {
+                body.innerHTML = '<div class="text-muted">No parent department found</div>';
+                return;
+            }
+
+            body.innerHTML = `
+                <div class="deptCard">
+                    <div class="deptIcon" style="background:${data.color || '#4e73df'}">
+                        ${data.department_code}
+                    </div>
+                    <div class="deptName">${data.department_name}</div>
+                </div>
+            `;
+        });
+
+    new bootstrap.Modal(document.getElementById('parentDeptModal')).show();
+}
+
+/* SUB DEPARTMENTS */
+function viewSubDepartments(id, name) {
+
+    document.getElementById('subDeptTitle').innerText =
+        `Sub Departments of ${name}`;
+
+    const list = document.getElementById('subDeptList');
+    list.innerHTML = 'Loading...';
+
+    fetch(`department_api.php?action=get_sub&id=${id}`)
+        .then(res => res.json())
+        .then(data => {
+
+            if (!data.length) {
+                list.innerHTML = '<div class="text-muted">No sub departments</div>';
+                return;
+            }
+
+            list.innerHTML = data.map(d => `
+                <div class="subDeptItem">
+                    <div class="deptIcon" style="background:${d.color || '#4e73df'}">
+                        ${d.department_code}
+                    </div>
+                    <div>
+                        <strong>${d.department_name}</strong>
+                    </div>
+                </div>
+            `).join('');
+        });
+
+    new bootstrap.Modal(document.getElementById('subDeptModal')).show();
+}
+
+let currentEditId = null;
+
+function openEditDept(dept) {
+
+    currentEditId = dept.id;
+
+    const form = document.getElementById('editDeptForm');
+
+    form.id.value = dept.id;
+    form.department_code.value = dept.department_code;
+    form.department_name.value = dept.department_name;
+    form.color.value = dept.color || '#4e73df';
+    form.parent_id.value = dept.parent_id || '';
+
+    new bootstrap.Modal(document.getElementById('editDeptModal')).show();
+}
+
+document.getElementById('editDeptForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+
+    fetch('department_api.php?action=update', {
+        method: 'POST',
+        body: new FormData(this)
+    })
+    .then(res => res.json())
+    .then(data => {
+
+        const msg = document.getElementById('editMsg');
+
+        if (data.success) {
+            msg.innerHTML = `<span class="text-success">${data.message}</span>`;
+            setTimeout(() => location.reload(), 600);
+        } else {
+            msg.innerHTML = `<span class="text-danger">${data.message}</span>`;
+        }
+    });
+});
+
+function deleteDept() {
+
+    if (!confirm('Are you sure you want to delete this department? This cannot be undone.')) {
+        return;
+    }
+
+    fetch('department_api.php?action=delete', {
+        method: 'POST',
+        body: new URLSearchParams({ id: currentEditId })
+    })
+    .then(res => res.json())
+    .then(data => {
+
+        if (data.success) {
+            alert('Department deleted');
+            location.reload();
+        } else {
+            alert(data.message);
+        }
+    });
+}
+
+function getContrastColor(hex) {
+    hex = hex.replace('#', '');
+
+    const r = parseInt(hex.substr(0, 2), 16);
+    const g = parseInt(hex.substr(2, 2), 16);
+    const b = parseInt(hex.substr(4, 2), 16);
+
+    // luminance formula
+    const luminance = (0.299 * r + 0.587 * g + 0.114 * b);
+
+    return luminance > 186 ? '#000000' : '#ffffff';
+}
+</script>
+
+</body>
+</html>
