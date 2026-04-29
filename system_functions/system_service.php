@@ -132,6 +132,18 @@ function processAttendanceTap($pdo, $employee_id, $lat, $lng, $accuracy, $now = 
     if ($nextType === 'IN' && $schedule && $isFirstLogOfShift && $now > $schedule['scheduled_end']) {
         $debug[] = "Late first time-in after shift end → blocking tap";
 
+        // Directly finalize this shift as absent — can't use finalizeExpiredShifts
+        // because the 6hr buffer may not have passed yet
+        try {
+            finalizeEmployeeAttendance($pdo, $employee_id, $schedule, $now);
+            $debug[] = "Shift marked absent: {$schedule['schedule_date']}";
+        } catch (Throwable $e) {
+            $debug[] = "Finalize error: {$e->getMessage()}";
+        }
+
+        // Still run finalizeExpiredShifts to catch any other old unfinalized shifts
+        finalizeExpiredShifts($pdo, $employee_id, $now, $debug);
+
         return [
             'tap'    => 'error',
             'error'  => 'shift_ended',
@@ -358,6 +370,46 @@ function processBreakTap(PDO $pdo, int $employeeId, ?float $lat, ?float $lng, ?f
         round($distance, 2),
     ]);
     $debug[] = "Break log inserted: {$logType} at {$now}";
+
+    // Finalize attendance so break_minutes is updated immediately after BREAK_OUT
+    if ($logType === 'BREAK_OUT') {
+        // Find the schedule anchored to the last IN log date
+        $stmt = $pdo->prepare("
+            SELECT log_type, log_time
+            FROM logs
+            WHERE employee_id = ?
+              AND log_type = 'IN'
+              AND log_time <= ?
+            ORDER BY log_time DESC
+            LIMIT 1
+        ");
+        $stmt->execute([$employeeId, $now]);
+        $lastIn = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if ($lastIn) {
+            $lastInDate = date('Y-m-d', strtotime($lastIn['log_time']));
+
+            $stmt = $pdo->prepare("
+                SELECT schedule_date, scheduled_start, scheduled_end
+                FROM schedules
+                WHERE employee_id = ?
+                  AND schedule_date = ?
+                LIMIT 1
+            ");
+            $stmt->execute([$employeeId, $lastInDate]);
+            $schedule = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if ($schedule) {
+                try {
+                    finalizeEmployeeAttendance($pdo, $employeeId, $schedule, $now);
+                    $debug[] = "Attendance finalized after BREAK_OUT for: {$lastInDate}";
+                } catch (Throwable $e) {
+                    $debug[] = "Finalize error after BREAK_OUT: {$e->getMessage()}";
+                    error_log("processBreakTap finalize error: " . $e->getMessage());
+                }
+            }
+        }
+    }
 
     return [
         'tap'      => $response,
@@ -604,10 +656,27 @@ function getAttendanceRecords(PDO $pdo, int $employeeId, string $startDate, stri
             late_minutes,
             undertime_minutes,
             overtime_minutes,
+            break_minutes,
             overtime_status,
             missed_time_out,
-            DATE(actual_time_out) != work_date AS timeout_next_day
-        FROM attendances
+            DATE(actual_time_out) != work_date AS timeout_next_day,
+            (
+                SELECT MIN(l.log_time)
+                FROM logs l
+                WHERE l.employee_id = a.employee_id
+                AND l.log_type = 'BREAK_IN'
+                AND l.log_time BETWEEN DATE_SUB(a.scheduled_start, INTERVAL 2 HOUR)
+                                    AND DATE_ADD(a.scheduled_end, INTERVAL 6 HOUR)
+            ) AS first_break_in,
+            (
+                SELECT MAX(l.log_time)
+                FROM logs l
+                WHERE l.employee_id = a.employee_id
+                AND l.log_type = 'BREAK_OUT'
+                AND l.log_time BETWEEN DATE_SUB(a.scheduled_start, INTERVAL 2 HOUR)
+                                    AND DATE_ADD(a.scheduled_end, INTERVAL 6 HOUR)
+            ) AS last_break_out
+        FROM attendances a
         WHERE employee_id = ?
         AND work_date BETWEEN ? AND ?
         ORDER BY work_date DESC

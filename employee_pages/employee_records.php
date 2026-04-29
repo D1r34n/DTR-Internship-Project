@@ -170,7 +170,8 @@ $schedules = getSchedulesByDateRange($pdo, $employeeId, $startDate, $endDate);
                     data-late="<?= $ganttBar['lateLabel'] ?>"
                     data-overtime="<?= $ganttBar['overtimeLabel'] ?>"
                     data-overtime-status="<?= $ganttBar['overtimeStatusLabel'] ?>"
-                    data-undertime="<?= $ganttBar['undertimeLabel'] ?>">
+                    data-undertime="<?= $ganttBar['undertimeLabel'] ?>"
+                    data-overbreak="<?= $ganttBar['overbreakLabel'] ?>">
 
                     <!-- Animated cursor line showing the current time of day -->
                     <?= gantt_cursor() ?>
@@ -200,20 +201,46 @@ $schedules = getSchedulesByDateRange($pdo, $employeeId, $startDate, $endDate);
                         </div>
                     <?php endif; ?>
 
-                    <!-- Main bar — green when clocked out normally, purple when no time-out is recorded -->
-                    <div class="ganttBar <?= $ganttBar['noTimeOut'] ? 'ganttBarNoTimeOut' : 'ganttBarOnTime' ?>"
-                        style="left: <?= $ganttBar['actualLeft'] ?>%; width: <?= $ganttBar['onTimeWidth'] ?>%;">
-                        <span class="ganttBarLabel"><?= $ganttBar['noTimeOut'] ? 'No Time Out' : 'On Time' ?></span>
-                    </div>
+                    <!-- Main bar — only render if employee has actually clocked in -->
+                    <?php if ($ganttBar['hasClockedIn']): ?>
+                        <?php if ($ganttBar['onTimeSplit']): ?>
+                            <!-- Left segment: time-in to break-in -->
+                            <div class="ganttBar <?= $ganttBar['noTimeOut'] ? 'ganttBarNoTimeOut' : 'ganttBarOnTime' ?>"
+                                style="left: <?= $ganttBar['actualLeft'] ?>%; width: <?= $ganttBar['onTimeLeftWidth'] ?>%;">
+                                <span class="ganttBarLabel"><?= $ganttBar['noTimeOut'] ? 'No Time Out' : 'On Time' ?></span>
+                            </div>
 
-                    <!-- Undertime bar — fills the gap between actual check-out and scheduled end time -->
-                    <?php if ($ganttBar['isUndertime'] && $ganttBar['schedOut']): ?>
-                        <div class="ganttBar ganttBarUndertime"
-                            style="left: <?= $ganttBar['undertimeLeft'] ?>%; width: <?= $ganttBar['undertimeWidth'] ?>%;">
-                            <span class="ganttBarLabel">Undertime</span>
-                        </div>
-                    <?php endif; ?>
+                            <!-- Break gap -->
+                            <div class="ganttBar ganttBarBreak"
+                                style="left: <?= $ganttBar['breakLeft'] ?>%; width: <?= $ganttBar['breakWidth'] ?>%;">
+                                <span class="ganttBarLabel">Break</span>
+                            </div>
 
+                            <!-- Right segment: break-out to time-out -->
+                            <div class="ganttBar <?= $ganttBar['noTimeOut'] ? 'ganttBarNoTimeOut' : 'ganttBarOnTime' ?>"
+                                style="left: <?= $ganttBar['onTimeRightLeft'] ?>%; width: <?= $ganttBar['onTimeRightWidth'] ?>%;">
+                                <?php if ($ganttBar['onTimeRightWidth'] > 5): ?>
+                                    <span class="ganttBarLabel"><?= $ganttBar['noTimeOut'] ? 'No Time Out' : 'On Time' ?></span>
+                                <?php endif; ?>
+                            </div>
+
+                        <?php else: ?>
+                            <!-- No break — single bar as before -->
+                            <div class="ganttBar <?= $ganttBar['noTimeOut'] ? 'ganttBarNoTimeOut' : 'ganttBarOnTime' ?>"
+                                style="left: <?= $ganttBar['actualLeft'] ?>%; width: <?= $ganttBar['onTimeWidth'] ?>%;">
+                                <span class="ganttBarLabel"><?= $ganttBar['noTimeOut'] ? 'No Time Out' : 'On Time' ?></span>
+                            </div>
+                        <?php endif; ?>
+
+                        <!-- Undertime bar — fills the gap between actual check-out and scheduled end time -->
+                        <?php if ($ganttBar['isUndertime'] && $ganttBar['schedOut']): ?>
+                            <div class="ganttBar ganttBarUndertime"
+                                style="left: <?= $ganttBar['undertimeLeft'] ?>%; width: <?= $ganttBar['undertimeWidth'] ?>%;">
+                                <span class="ganttBarLabel">Undertime</span>
+                            </div>
+                        <?php endif; ?>
+                    <?php endif; ?>      
+                    
                     <!-- Overtime bar — extends beyond the scheduled end; color reflects approval status -->
                     <?php if ($ganttBar['overtimeMinutes'] > 0 && $ganttBar['schedOut']): ?>
                         <div class="ganttBar <?= $ganttBar['otColorClass'] ?>"
@@ -223,8 +250,14 @@ $schedules = getSchedulesByDateRange($pdo, $employeeId, $startDate, $endDate);
                     <?php endif; ?>
 
                     <!-- Marker lines — thin vertical lines pinpointing exact time-in and time-out moments -->
-                    <div class="ganttMarker ganttMarkerActualStart" style="left: <?= $ganttBar['actualInPos'] ?>%"></div>
-                    <div class="ganttMarker ganttMarkerActualEnd"   style="left: <?= $ganttBar['actualOutPos'] ?>%"></div>
+                    <?php if ($ganttBar['actualInPos'] !== null): ?>
+                        <div class="ganttMarker ganttMarkerActualStart" style="left: <?= $ganttBar['actualInPos'] ?>%"></div>
+                    <?php endif; ?>
+
+                    <?php if ($ganttBar['actualOutPos'] !== null): ?>
+                        <div class="ganttMarker ganttMarkerActualEnd" style="left: <?= $ganttBar['actualOutPos'] ?>%"></div>
+                    <?php endif; ?>
+
                 </div>
             </div>
 
@@ -261,12 +294,24 @@ $schedules = getSchedulesByDateRange($pdo, $employeeId, $startDate, $endDate);
         <span class="ganttToolTipValue" id="gt-actual-out"></span>
     </div>
     
+    <!-- Early row — hidden by default, shown only when employee arrived early -->
+    <div class="ganttToolTipRow ganttToolTipEarly" id="gt-early-row">
+        <span class="ganttToolTipLabel">Early</span>
+        <span class="ganttToolTipValue" id="gt-early"></span>
+    </div>
+
     <!-- Late row — hidden by default, shown only when the employee was tardy -->
     <div class="ganttToolTipRow ganttToolTipLate" id="gt-late-row">
         <span class="ganttToolTipLabel">Late</span>
         <span class="ganttToolTipValue" id="gt-late"></span>
     </div>
     
+    <!-- Overbreak row — hidden by default, shown only when the employee exceeded breaktime -->
+    <div class="ganttToolTipRow ganttToolTipOverBreak" id="gt-ob-row">
+        <span class="ganttToolTipLabel">Overbreak</span>
+        <span class="ganttToolTipValue" id="gt-ob"></span>
+    </div>
+
     <!-- Overtime row — hidden by default, shown only when overtime exists -->
     <div class="ganttToolTipRow ganttToolTipOverTime" id="gt-ot-row">
         <span class="ganttToolTipLabel">Overtime</span>
@@ -277,12 +322,6 @@ $schedules = getSchedulesByDateRange($pdo, $employeeId, $startDate, $endDate);
     <div class="ganttToolTipRow ganttToolTipUnderTime" id="gt-ut-row">
         <span class="ganttToolTipLabel">Undertime</span>
         <span class="ganttToolTipValue" id="gt-ut"></span>
-    </div>
-    
-    <!-- Early row — hidden by default, shown only when employee arrived early -->
-    <div class="ganttToolTipRow ganttToolTipEarly" id="gt-early-row">
-        <span class="ganttToolTipLabel">Early</span>
-        <span class="ganttToolTipValue" id="gt-early"></span>
     </div>
 </div>
 

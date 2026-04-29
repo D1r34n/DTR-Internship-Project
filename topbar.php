@@ -487,7 +487,6 @@ $currentStatus = $timedIn ? 'Timed In' : 'Timed Out';
                         localStorage.setItem('attendance_tap_result', response.tap);
                         localStorage.setItem('attendance_update', Date.now());
                         if (document.getElementById('attendanceTimeline')) refreshChart();
-                        if (document.querySelector('.ganttContainer')) refreshGantt();
                     }
 
                     if (typeof getTotalWorkedHours === 'function') getTotalWorkedHours();
@@ -498,6 +497,9 @@ $currentStatus = $timedIn ? 'Timed In' : 'Timed Out';
                     console.error(err);
                 } finally {
                     isProcessing = false;
+                    
+                    // Refresh Gantt no matter the response
+                    if (document.querySelector('.ganttContainer')) refreshGantt();
                 }
             };
 

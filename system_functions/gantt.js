@@ -5,15 +5,16 @@ function initGanttCursors() {
     const gtSched     = document.getElementById('gt-sched');
     const gtActualIn  = document.getElementById('gt-actual-in');
     const gtActualOut = document.getElementById('gt-actual-out');
-    const gtEarlyRow = document.getElementById('gt-early-row');
-    const gtEarly    = document.getElementById('gt-early');
+    const gtEarlyRow  = document.getElementById('gt-early-row');
+    const gtEarly     = document.getElementById('gt-early');
     const gtLateRow   = document.getElementById('gt-late-row');
     const gtLate      = document.getElementById('gt-late');
     const gtOtRow     = document.getElementById('gt-ot-row');
     const gtOt        = document.getElementById('gt-ot');
-    const gtUtRow = document.getElementById('gt-ut-row');
-    const gtUt    = document.getElementById('gt-ut');
-
+    const gtUtRow     = document.getElementById('gt-ut-row');
+    const gtUt        = document.getElementById('gt-ut');
+    const gtOb        = document.getElementById('gt-ob');
+    const gtObRow     = document.getElementById('gt-ob-row');
     document.querySelectorAll('.ganttBarContainer').forEach(container => {
         const line  = container.querySelector('.ganttCursorLine');
         const label = container.querySelector('.ganttCursorLabel');
@@ -72,16 +73,21 @@ function initGanttCursors() {
                     gtOtRow.style.display = 'none';
                 }
                 
-                // Show undertime only when it is the next day (day is finished)
-                const isToday = container.dataset.isToday === '1';
-
-                if (container.dataset.undertime && !isToday) {
+                // Show undertime as soon as shift has ended
+                if (container.dataset.undertime) {
                     gtUt.textContent = container.dataset.undertime;
                     gtUtRow.style.display = 'flex';
                 } else {
                     gtUtRow.style.display = 'none';
                 }
-
+                
+                // Show overbreak only when the employee exceeded the breaktime
+                if (container.dataset.overbreak) {
+                    gtOb.textContent = container.dataset.overbreak;
+                    gtObRow.style.display = 'flex';
+                } else {
+                    gtObRow.style.display = 'none';
+                }
                 tooltip.style.left = e.clientX + 'px';
                 tooltip.style.top  = e.clientY  + 'px';
                 tooltip.classList.add('visible');
@@ -95,6 +101,7 @@ function initGanttCursors() {
 }
 
 function refreshGantt() {
+    console.log('Gantt chart being refreshed');
     const container = document.querySelector('.ganttContainer');
     if (!container) return;
 

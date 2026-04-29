@@ -45,11 +45,6 @@ function distanceMeters($lat1, $lon1, $lat2, $lon2)
     return 2 * $earthRadius * atan2(sqrt($a), sqrt(1 - $a));
 }
 
-// Check if dayshift or nightsift
-CONST isNightShift = '9:00 AM';
-CONST isDayShift = '7:00 AM';
-
-
 /* =========================
    GANTT CHART HELPERS
 ========================= */
@@ -148,6 +143,7 @@ function computeGanttRow(array $row, ?array $sched): ?array
     // --- Attendance metrics from the DB row ---
     $lateMinutes      = (int) $row['late_minutes'];
     $undertimeMinutes = (int) $row['undertime_minutes'];
+    $breakMinutes     = (int) $row['break_minutes'];
     $overtimeMinutes  = (int) $row['overtime_minutes'];
     $overtimeStatus   = $row['overtime_status'];       // 'approved', 'rejected', or 'pending'
     $status           = $row['status'];                // e.g. 'absent', 'leave', etc.
@@ -228,10 +224,13 @@ function computeGanttRow(array $row, ?array $sched): ?array
         ? ($schedOut ?? $actualIn)
         : ($schedOut ? max($schedOut, ($actualOut ?? time())) : ($actualOut ?? time()));
 
-    // Pad the range by 2 hours on each side for visual breathing room
-    $rangeStart = strtotime('-2 hours', $rangeMin);
-    $rangeEnd   = strtotime('+2 hours', $rangeMax);
-    $range      = max(1, $rangeEnd - $rangeStart);
+        // Pad the range by 2 hours on each side for visual breathing room
+        $rangeStart = strtotime('-2 hours', $rangeMin);
+        $rangeEnd   = strtotime('+2 hours', $rangeMax);
+        $range      = max(1, $rangeEnd - $rangeStart);
+
+    // Save raw time-out before applying fallback
+    $rawActualOut = $row['actual_time_out'] ? strtotime($row['actual_time_out']) : null;
 
     // If still clocked in use current time; for past days with no time-out use end-of-day
     if ($actualOut === null) {
@@ -241,10 +240,19 @@ function computeGanttRow(array $row, ?array $sched): ?array
     // Helper closure: converts a timestamp to a % position within the visible range
     $toLeft = fn($ts) => (($ts - $rangeStart) / $range) * 100;
 
+    // Break bar positioning
+    $breakIn  = isset($row['first_break_in']) ? strtotime($row['first_break_in']) : null;
+    $breakOut = isset($row['last_break_out']) ? strtotime($row['last_break_out']) : null;
+
+    // Optional fallback ONLY if break_out is missing AND shift is done
+    if ($breakIn && !$breakOut && $rawActualOut) {
+        $breakOut = $rawActualOut; // fallback, but only if truly missing
+    }
+
     // --- Status flags ---
     $isTardy     = ($lateMinutes > 0);
     $isEarly     = ($actualIn < $schedIn && $schedIn !== null);
-
+    $isOverBreak = $breakMinutes > 60;
     // Undertime only applies to fully completed past shifts
     $isUndertime = ($undertimeMinutes > 0);
 
@@ -263,6 +271,7 @@ function computeGanttRow(array $row, ?array $sched): ?array
         default    => 'ganttBarOvertimePending'
     };
 
+    // Return array
     return [
         'type'               => 'present',
         'dayLabel'           => $dayLabel,
@@ -270,6 +279,7 @@ function computeGanttRow(array $row, ?array $sched): ?array
         'rangeStart'         => $rangeStart,
         'rangeEnd'           => $rangeEnd,
         'isToday'            => $isToday,
+        'hasClockedIn'       => $hasClockedIn,
 
         // Schedule bar positioning
         'schedIn'            => $schedIn,
@@ -279,10 +289,16 @@ function computeGanttRow(array $row, ?array $sched): ?array
 
         // Main bar positioning
         'actualLeft'         => $toLeft($onTimeStart),
-        'actualInPos'        => $toLeft($actualIn),   // Marker pin for exact time-in moment
-        'actualOutPos'       => $toLeft($actualOut),  // Marker pin for exact time-out moment
+        'actualInPos'        => $hasClockedIn ? $toLeft($actualIn) : null,   // Marker pin for exact time-in moment
+        'actualOutPos'       => ($hasClockedIn && $row['actual_time_out']) ? $toLeft($actualOut) : null,  // Marker pin for exact time-out moment
         'noTimeOut'          => $noTimeOut,
         'onTimeWidth'        => $onTimeWidth,
+
+        // Main bar split around break
+        'onTimeSplit'        => $breakIn && $breakOut,
+        'onTimeLeftWidth'    => ($breakIn && $breakOut) ? (($breakIn - $onTimeStart) / $range) * 100 : 0,
+        'onTimeRightLeft'    => ($breakIn && $breakOut) ? $toLeft($breakOut) : null,
+        'onTimeRightWidth'   => ($breakIn && $breakOut) ? (($onTimeEnd - $breakOut) / $range) * 100 : 0,
 
         // Early bar (arrived before scheduled start)
         'isEarly'            => $isEarly,
@@ -295,6 +311,11 @@ function computeGanttRow(array $row, ?array $sched): ?array
         'tardyLeft'          => $schedIn  !== null ? $toLeft($schedIn)  : null,
         'tardyWidth'         => ($isTardy && $schedIn) ? (($actualIn - $schedIn) / $range) * 100 : 0,
         'lateMinutes'        => $lateMinutes,
+
+        // Breaktime bar 
+        'breakMinutes' => $breakMinutes,
+        'breakLeft'    => $breakIn  ? $toLeft($breakIn)  : null,
+        'breakWidth'   => ($breakIn && $breakOut) ? (($breakOut - $breakIn) / $range) * 100 : 0,
 
         // Undertime bar (gap between actual out and scheduled out)
         'isUndertime'        => $isUndertime,
@@ -313,13 +334,17 @@ function computeGanttRow(array $row, ?array $sched): ?array
         'schedInLabel'       => $schedIn  ? date('g:i A', $schedIn)  : '--',
         'schedOutLabel'      => $schedOut ? date('g:i A', $schedOut) : '--',
         'earlyLabel'         => ($isEarly && $schedIn) ? (int) floor(($schedIn - $actualIn) / 60) . ' min' : '',
-        'actualInLabel'      => date('g:i A', $actualIn),
-        'actualOutLabel' => $row['actual_time_out']
-            ? date('g:i A', $actualOut)
-            : ($noTimeOut ? 'No Time Out' : 'In Progress'),
+        'actualInLabel'      => $hasClockedIn ? date('g:i A', $actualIn) : '--',
+        'actualOutLabel'     => $hasClockedIn
+            ? ($row['actual_time_out']
+                ? date('g:i A', $actualOut)
+                : ($noTimeOut ? 'No Time Out' : 'In Progress'))
+            : '--',
         'lateLabel'          => $lateMinutes     > 0 ? $lateMinutes     . ' min' : '',
         'overtimeLabel'      => $overtimeMinutes > 0 ? $overtimeMinutes . ' min' : '',
         'overtimeStatusLabel'=> $overtimeMinutes > 0 ? $overtimeStatus  : '',
         'undertimeLabel'     => $isUndertime ? $undertimeMinutes . ' min' : '',
+        'isOverBreak'        => $isOverBreak,
+        'overbreakLabel'     => $isOverBreak ? $breakMinutes . ' min' : '',
     ];
 }

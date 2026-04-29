@@ -66,7 +66,7 @@ body::after {
     border-radius: 16px;
     padding: 1.5rem;
 
-    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 12px 35px var(--box-shadow-heavy);
 
     overflow: hidden;
     min-width: 0;
@@ -117,12 +117,12 @@ body::after {
 .recordTitle:hover {
     color: var(--text-lightest);
 
-    background: rgba(255, 255, 255, 0.038);
+    background: var(--glass-bg);
 
     backdrop-filter: blur(6px);
     -webkit-backdrop-filter: blur(6px);
 
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 4px 20px var(--shadow);
 
     transform: translateX(3px);
 }
@@ -131,9 +131,9 @@ body::after {
 .recordTitle:active,
 .recordTitle:focus {
     color: var(--primary-color);
-    background: rgba(151, 190, 65, 0.1);
-    border-color: rgba(151, 190, 65, 0.2);
-    box-shadow: inset 0 1px 0 rgba(151, 190, 65, 0.1);
+    background: var(--primary-bg);
+    border-color: var(--primary-border);
+    box-shadow: inset 0 1px 0 var(--primary-border);
 }
 
 /* DROPDOWN ICON */
@@ -141,7 +141,7 @@ body::after {
     position: absolute;
     right: 8px;
     pointer-events: none;
-    color: rgba(255,255,255,0.7);
+    color: var(--text-muted);
     font-size: 0.9rem;
 
     transition: 
@@ -163,13 +163,13 @@ body::after {
 .datePickerForm input {
     padding: 6px 10px;
     border-radius: 6px;
-    border: 1px solid rgba(255,255,255,0.2);
-    background: rgba(0,0,0,0.3);
-    color: white;
+    border: 1px solid var(--datepicker-input-border);
+    background: var(--datepicker-input-bg);
+    color: var(--text-lightest);
 }
 
 .datePickerForm button {
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--calendar-btn-bg);
     border: 1px solid var(--glass-border);
     color: var(--text-light);
     font-family: 'Poppins', sans-serif;
@@ -184,21 +184,21 @@ body::after {
 .datePickerForm button:active {
     background: var(--primary-hover);
     border-color: var(--primary-hover);
-    color: #ffffff;
+    color: var(--bg-light);
     box-shadow: none;
 }
 
 .datePickerForm button:hover {
-    background: rgba(255, 255, 255, 0.14);
-    border-color: rgba(255, 255, 255, 0.2);
+    background: var(--calendar-btn-hover-bg);
+    border-color: var(--calendar-btn-hover-border);
     color: var(--text-lightest);
     box-shadow: none;
 }
 
 /* Month dropdown */
 .flatpickr-monthDropdown-months {
-    background: rgba(0,0,0,0.6) !important;
-    color: #fff !important;
+    background: var(--flatpickr-month-bg) !important;
+    color: var(--text-lightest) !important;
     border: 1px solid var(--glass-border) !important;
     border-radius: 6px;
     padding: 4px 6px;
@@ -207,8 +207,8 @@ body::after {
 
 /* Options (works in some browsers only) */
 .flatpickr-monthDropdown-months option {
-    background: #c41818;
-    color: #fff;
+    background: var(--flatpickr-option-bg);
+    color: var(--text-lightest);
 }
 
 .ganttContainer {
@@ -275,7 +275,7 @@ body::after {
     top: 0;
     width: 2px;
     height: 100%;
-    background: rgba(255,255,255,0.7);
+    background: var(--gantt-cursor-line);
     transform: translateX(-1px);
 }
 
@@ -284,8 +284,8 @@ body::after {
     top: -18px;
     transform: translateX(-50%);
     font-size: 0.7rem;
-    color: #fff;
-    background: rgba(0,0,0,0.5);
+    color: var(--text-lightest);
+    background: var(--gantt-cursor-bg);
     padding: 2px 6px;
     border-radius: 4px;
     white-space: nowrap;
@@ -309,12 +309,12 @@ body::after {
     position: relative;
     flex: 1;
     height: 30px;
-    background: rgba(255,255,255,0.05);
+    background: var(--gantt-bar-bg);
 
     background-image: repeating-linear-gradient(
         to right,
-        rgba(255, 255, 255, 0.08) 0px,
-        rgba(255, 255, 255, 0.08) 1px,
+        var(--gantt-grid-line) 0px,
+        var(--gantt-grid-line) 1px,
         transparent 1px,
         transparent calc(100% / 24)
     );
@@ -342,7 +342,7 @@ body::after {
     position: absolute;
     transform: translateX(-50%);
     font-size: 0.7rem;
-    color: #aaa;
+    color: var(--gantt-scale-color);
     white-space: nowrap;
 }
 
@@ -366,47 +366,58 @@ body::after {
 
 /* Scheduled ghost bar */
 .ganttBarScheduled {
-    background: rgba(150, 150, 255, 0.25);
-    border: 1px dashed #7b7bff;
+    background: var(--gantt-scheduled);
+    border: 1px dashed var(--gantt-scheduled-border);
 }
 
 /* Early (blue) segment*/
 .ganttBarEarly {
-    background: rgba(59, 130, 246, 0.6); /* blue */
-    border: 1px solid rgba(59, 130, 246, 0.8);
+    background: var(--gantt-early);
+    border: 1px solid var(--gantt-early-border);
 }
 
 .ganttToolTipEarly {
-    color: #3b82f6;
+    color: var(--gantt-early-color);
 }
 
 /* Tardiness (red) segment */
 .ganttBarTardy {
-    background: rgba(255, 170, 0, 0.75);
+    background: var(--gantt-tardy);
     border: none;
 }
 
 /* On-time (green) segment */
 .ganttBarOnTime {
-    background: rgba(25, 135, 84, 0.75);
+    background: var(--gantt-ontime);
     border: none;
+}
+
+.ganttBarUndertime {
+    background: var(--gantt-early);
+}
+
+/* Breaktime */
+.ganttBarBreak {
+    background: var(--gantt-break);
+    opacity: 0.85;
+    z-index: 5; /* above the main bar so it's visible */
 }
 
 /* Pending full bar */
 .ganttBarPending{
-    background: rgba(95, 95, 95, 0.5);
-    border: 1px dashed #303030;
+    background: var(--gantt-pending);
+    border: 1px dashed var(--gantt-pending-border);
 }
 
 /* Absent / incomplete full bar */
 .ganttBarAbsent {
-    background: rgba(220, 53, 69, 0.5);
-    border: 1px dashed #dc3545;
+    background: var(--gantt-absent);
+    border: 1px dashed var(--danger);
 }
 
 /* Employee forgot to time out */
 .ganttBarNoTimeOut {
-    background: #7c3aed; /* purple */
+    background: var(--gantt-no-timeout);
     opacity: 0.85;
 }
 
@@ -444,7 +455,7 @@ body::after {
     transform: translate(-50%, -50%);
     font-size: 10px;
     font-weight: 600;
-    color: #ff8a8a;
+    color: var(--gantt-absent-color);
     text-transform: uppercase;
     pointer-events: none;
     white-space: nowrap;
@@ -458,7 +469,7 @@ body::after {
     transform: translate(-50%, -50%);
     font-size: 10px;
     font-weight: 600;
-    color: #ffffff;
+    color: var(--text-lightest);
     text-transform: uppercase;
     pointer-events: none;
     white-space: nowrap;
@@ -480,21 +491,21 @@ body::after {
 
 /* Actual time in and out markers */
 .ganttMarkerActualStart {
-    border-left: 2px solid #22c55e; /* neon green */
-    filter: drop-shadow(0 0 6px rgba(34,197,94,0.8));
+    border-left: 2px solid var(--gantt-marker-in);
+    filter: drop-shadow(0 0 6px var(--gantt-marker-in-glow));
 }
 
 .ganttMarkerActualEnd {
-    border-left: 2px solid #dc3545; /* neon red */
-    filter: drop-shadow(0 0 6px rgba(249,115,22,0.8));
+    border-left: 2px solid var(--gantt-marker-out);
+    filter: drop-shadow(0 0 6px var(--gantt-marker-out-glow));
 }
 
 .ganttBarOvertimePending {
-    background: #4da3ff; /* blue */
+    background: var(--gantt-ot-pending);
 }
 
 .ganttBarOvertimeApproved {
-    background: #2ecc71; /* green */
+    background: var(--gantt-ot-approved);
 }
 
 .gantt-bar--ot-rejected {
@@ -507,8 +518,8 @@ body::after {
     backdrop-filter: blur(32px) saturate(160%) brightness(0.3);
     -webkit-backdrop-filter: blur(32px) saturate(160%) brightness(0.3);
     border: 1px solid var(--glass-border);
-    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.5);
-    color: #fff;
+    box-shadow: 0 12px 35px var(--box-shadow-heavy);
+    color: var(--text-lightest);
     padding: 10px 14px;
     border-radius: 8px;
     font-size: 0.75rem;
@@ -533,19 +544,19 @@ body::after {
 }
 
 .ganttToolTipLabel {
-    color: #aaa;
+    color: var(--text-muted);
 }
 
 .ganttToolTipValue {
     font-weight: 500;
 }
 
-.ganttToolTipLate .ganttToolTipValue  { color: #f87171; }
-.ganttToolTipOverTime   .ganttToolTipValue  { color: #4da3ff; }
-.ganttToolTipUnderTime   .ganttToolTipValue  { color: #ed6809; }
-.ganttToolTipOverTime.approved .gt-value { color: #4ade80; }
-.ganttToolTipOverTime.rejected .gt-value { color: #f87171; }
-
+.ganttToolTipLate .ganttToolTipValue      { color: var(--tooltip-late); }
+.ganttToolTipOverTime .ganttToolTipValue  { color: var(--tooltip-overtime); }
+.ganttToolTipUnderTime .ganttToolTipValue { color: var(--tooltip-undertime); }
+.ganttToolTipOverBreak .ganttToolTipValue { color: var(--tooltip-overbreak); }
+.ganttToolTipOverTime.approved .gt-value  { color: var(--tooltip-ot-approved); }
+.ganttToolTipOverTime.rejected .gt-value  { color: var(--tooltip-late); }
 /* ===== FLATPICKR THEME OVERRIDE ===== */
 
 /* Main calendar container */
@@ -555,7 +566,7 @@ body::after {
     -webkit-backdrop-filter: blur(32px) saturate(160%) brightness(0.3) !important;
     border: 1px solid var(--glass-border) !important;
     border-radius: 16px !important;
-    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.5) !important;
+    box-shadow: 0 12px 35px var(--box-shadow-heavy) !important;
     font-family: 'Poppins', sans-serif !important;
     color: var(--text-light) !important;
 }
@@ -572,21 +583,21 @@ body::after {
 }
 
 .flatpickr-month {
-    color: #fff !important;
-    fill: #fff !important;
+    color: var(--text-lightest) !important;
+    fill: var(--text-lightest) !important;
 }
 
 .flatpickr-current-month input.cur-year,
 .flatpickr-current-month .flatpickr-monthDropdown-months {
     background: transparent !important;
-    color: #fff !important;
+    color: var(--text-lightest) !important;
     font-family: 'Poppins', sans-serif !important;
     font-weight: 400 !important;
 }
 
 .flatpickr-monthDropdown-months option {
-    background: #1a1a1a !important;
-    color: #fff !important;
+    background: var(--flatpickr-option-bg) !important;
+    color: var(--text-lightest) !important;
 }
 
 /* Prev/next arrows */
@@ -598,13 +609,13 @@ body::after {
 
 .flatpickr-prev-month:hover,
 .flatpickr-next-month:hover {
-    fill: #fff !important;
-    color: #fff !important;
+    fill: var(--text-lightest) !important;
+    color: var(--text-lightest) !important;
 }
 
 /* Weekday labels */
 .flatpickr-weekday {
-    color: #aaa !important;
+    color: var(--gantt-scale-color) !important;
     font-weight: 500 !important;
     font-family: 'Poppins', sans-serif !important;
 }
@@ -617,7 +628,7 @@ body::after {
 }
 
 .flatpickr-day:hover {
-    background: rgba(255, 255, 255, 0.1) !important;
+    background: var(--overlay-hover) !important;
     border-color: transparent !important;
 }
 
@@ -625,34 +636,34 @@ body::after {
 .flatpickr-day.selected,
 .flatpickr-day.startRange,
 .flatpickr-day.endRange {
-    background: var(--primary, #97be41) !important;
-    border-color: var(--primary, #97be41) !important;
-    color: #fff !important;
+    background: var(--primary-color) !important;
+    border-color: var(--primary-color) !important;
+    color: var(--bg-light) !important;
 }
 
 /* Range in-between days */
 .flatpickr-day.inRange {
-    background: rgba(151, 190, 65, 0.2) !important;
+    background: var(--primary-range) !important;
     border-color: transparent !important;
     box-shadow: none !important;
-    color: #fff !important;
+    color: var(--text-lightest) !important;
 }
 
 /* Today */
 .flatpickr-day.today {
-    border-color: rgba(151, 190, 65, 0.5) !important;
+    border-color: var(--primary-glow) !important;
     color: var(--text-light) !important;
 }
 
 .flatpickr-day.today:hover {
-    background: rgba(151, 190, 65, 0.15) !important;
+    background: var(--primary-soft) !important;
 }
 
 /* Disabled / out of range days */
 .flatpickr-day.flatpickr-disabled,
 .flatpickr-day.prevMonthDay,
 .flatpickr-day.nextMonthDay {
-    color: rgba(255, 255, 255, 0.2) !important;
+    color: var(--overlay-muted) !important;
 }
 
 /* The alt input field itself */
