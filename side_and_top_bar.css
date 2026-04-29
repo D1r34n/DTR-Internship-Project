@@ -238,11 +238,13 @@ a:focus, img:focus {
     margin-left: 0.3rem;
 }
 
-.sideBarMenuItem:hover .sidebarIcon {
+.sideBarMenuItem:hover .sidebarIcon,
+.sideBarMenuItemDropdown:hover .sidebarIcon {
     color: var(--text-lightest);
 }
 
-.sideBarMenuItem.active .sidebarIcon {
+.sideBarMenuItem.active .sidebarIcon,
+.sideBarMenuItemDropdown.active .sidebarIcon {
     color: var(--primary-color);
 }
 
@@ -516,13 +518,6 @@ a:focus, img:focus {
     box-shadow: inset 0 1px 0 rgba(151, 190, 65, 0.1);
 }
 
-.sideBarMenuItemDropdown.active .sidebarIcon {
-    color: var(--primary-color);
-}
-
-.sideBarMenuItemDropdown:hover .sidebarIcon {
-    color: var(--text-lightest);
-}
 
 .sideBarDropdownChevron {
     margin-left: auto;

@@ -102,27 +102,45 @@ $current_page = 'departments';
         <!-- HEADER -->
         <div class="deptHeader">
 
-            <!-- SEARCH -->
-            <div class="deptSearchWrapper">
-                <input type="text" id="deptSearch" class="deptSearchInput" placeholder="Search departments...">
-                <i class="bi bi-search searchIcon"></i>
+            <!-- LEFT SIDE -->
+            <div class="deptHeaderLeft">
+
+                <!-- SEARCH -->
+                <div class="deptSearchWrapper">
+                    <input type="text" id="deptSearch" class="deptSearchInput" placeholder="Search departments...">
+                    <i class="bi bi-search searchIcon"></i>
+                </div>
+
+                <!-- SORT -->
+                <div class="userDropdownWrapper deptSortDropdown">
+                    <span class="userEmail dropdown-toggle" id="deptSortToggle">
+                        Name (A → Z)
+                        <i class="bi bi-chevron-down logArrow"></i>
+                    </span>
+
+                    <div class="userDropdownMenu" id="deptSortMenu">
+                        <div class="logTypeSection">
+                            <a href="#" class="userDropdownItem" data-value="name_asc">Name (A → Z)</a>
+                            <a href="#" class="userDropdownItem" data-value="name_desc">Name (Z → A)</a>
+                            <a href="#" class="userDropdownItem" data-value="code_asc">Code (A → Z)</a>
+                            <a href="#" class="userDropdownItem" data-value="code_desc">Code (Z → A)</a>
+                        </div>
+                    </div>
+                </div>
+
+                <input type="hidden" id="deptSortValue" value="name_asc">
+
             </div>
 
-            <!-- SORT -->
-            <div class="deptSortWrapper">
-                <select id="deptSort" class="form-control deptSortSelect">
-                    <option value="name_asc">Name (A → Z)</option>
-                    <option value="name_desc">Name (Z → A)</option>
-                    <option value="code_asc">Code (A → Z)</option>
-                    <option value="code_desc">Code (Z → A)</option>
-                </select>
-            </div>
+            <!-- RIGHT SIDE -->
+            <div class="deptHeaderRight">
 
-            <!-- CREATE -->
-            <button class="createDeptBtn" data-bs-toggle="modal" data-bs-target="#createDeptModal">
-                <i class="bi bi-plus-lg"></i>
-                Create Department
-            </button>
+                <!-- CREATE -->
+                <button class="createDeptBtn" data-bs-toggle="modal" data-bs-target="#createDeptModal">
+                    <i class="bi bi-plus-lg"></i>
+                </button>
+
+            </div>
 
         </div>
 
@@ -407,37 +425,68 @@ form.addEventListener('submit', function(e) {
     });
 });
 
-/* SEARCH + SORT (FIXED dynamic DOM usage) */
+/* SORT DROPDOWN (log-type style) */
+const deptSortWrapper = document.querySelector('.deptSortDropdown');
+const deptSortToggle  = document.getElementById('deptSortToggle');
+const deptSortMenu    = document.getElementById('deptSortMenu');
+const deptSortHidden  = document.getElementById('deptSortValue');
+
+let deptSortOpen = false;
+
+deptSortToggle.addEventListener('mouseenter', () => deptSortMenu.classList.add('show'));
+deptSortToggle.addEventListener('mouseleave', () => { if (!deptSortOpen) deptSortMenu.classList.remove('show'); });
+deptSortMenu.addEventListener('mouseenter',   () => deptSortMenu.classList.add('show'));
+deptSortMenu.addEventListener('mouseleave',   () => { if (!deptSortOpen) deptSortMenu.classList.remove('show'); });
+
+deptSortToggle.addEventListener('click', e => {
+    e.stopPropagation();
+    deptSortOpen = !deptSortOpen;
+    deptSortMenu.classList.toggle('show', deptSortOpen);
+});
+
+document.addEventListener('click', e => {
+    if (!deptSortWrapper.contains(e.target)) {
+        deptSortMenu.classList.remove('show');
+        deptSortOpen = false;
+    }
+});
+
+document.querySelectorAll('#deptSortMenu .userDropdownItem').forEach(item => {
+    item.addEventListener('click', e => {
+        e.preventDefault();
+        deptSortToggle.innerHTML = `${item.textContent} <i class="bi bi-chevron-down logArrow"></i>`;
+        deptSortHidden.value = item.dataset.value;
+        deptSortMenu.classList.remove('show');
+        deptSortOpen = false;
+        applyFilterSort();
+    });
+});
+
+/* SEARCH + SORT */
 const searchInput = document.getElementById('deptSearch');
-const sortSelect  = document.getElementById('deptSort');
 
 function applyFilterSort() {
-
     let cards = Array.from(document.querySelectorAll('.deptCard'));
-
     const query = searchInput.value.toLowerCase().trim();
 
     cards.forEach(card => {
         const name = card.querySelector('.deptName')?.textContent.toLowerCase() || '';
         const code = card.querySelector('.deptIcon')?.textContent.toLowerCase() || '';
-
         card.style.display = (name.includes(query) || code.includes(query)) ? '' : 'none';
     });
 
     const container = document.querySelector('.deptGrid');
 
     cards.sort((a, b) => {
+        const aName = a.querySelector('.deptName').textContent.trim().toLowerCase();
+        const bName = b.querySelector('.deptName').textContent.trim().toLowerCase();
+        const aCode = a.querySelector('.deptIcon').textContent.trim().toLowerCase();
+        const bCode = b.querySelector('.deptIcon').textContent.trim().toLowerCase();
 
-        const aName = a.querySelector('.deptName').textContent.toLowerCase();
-        const bName = b.querySelector('.deptName').textContent.toLowerCase();
-
-        const aCode = a.querySelector('.deptIcon').textContent.toLowerCase();
-        const bCode = b.querySelector('.deptIcon').textContent.toLowerCase();
-
-        switch (sortSelect.value) {
-            case 'name_asc': return aName.localeCompare(bName);
+        switch (deptSortHidden.value) {
+            case 'name_asc':  return aName.localeCompare(bName);
             case 'name_desc': return bName.localeCompare(aName);
-            case 'code_asc': return aCode.localeCompare(bCode);
+            case 'code_asc':  return aCode.localeCompare(bCode);
             case 'code_desc': return bCode.localeCompare(aCode);
         }
     });

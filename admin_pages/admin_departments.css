@@ -81,13 +81,30 @@ body::after {
 }
 
 /* Department container */
+
 .deptHeader {
     display: flex;
-    gap: 10px;
     align-items: center;
     justify-content: space-between;
+    gap: 10px;
     flex-wrap: wrap;
-    
+    margin-bottom: 1rem;
+}
+
+/* LEFT GROUP */
+.deptHeaderLeft {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 1;
+    flex-wrap: wrap;
+}
+
+/* RIGHT GROUP */
+.deptHeaderRight {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
 }
 
 .deptSearchWrapper {
@@ -102,7 +119,7 @@ body::after {
     justify-content: center;
 
     font-size: 0.875rem;
-    font-weight: 400;
+    font-weight: 300;
 
     width: 100%;
     min-width: 7rem;
@@ -110,7 +127,7 @@ body::after {
 
     border-radius: 16px;
 
-    color: var(--text-muted);
+    color: var(--text-light);
 
     background: rgba(255, 255, 255, 0.08);
     border: 1px solid rgba(255, 255, 255, 0.15);
@@ -128,6 +145,9 @@ body::after {
         box-shadow 0.25s ease;
 }
 
+.deptSearchInput::placeholder {
+    color: var(--text-muted);
+}
 .searchIcon {
     position: absolute;
     right: 1rem;
@@ -167,39 +187,115 @@ body::after {
     outline: none;
 }
 
-.deptSortSelect {
-    max-width: 180px;
-    background: rgba(255,255,255,0.06);
-    border: 1px solid var(--glass-border);
-    color: white;
-    border-radius: 10px;
+/* Department sort */
+#deptSortToggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+
+    font-size: 0.875rem;
+    font-weight: 300;
+
+    min-width: 7rem;
+    padding: 0.75rem 1rem;
+
+    border-radius: 16px;
+
+    color: var(--text-muted);
+
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+
+    cursor: pointer;
+
+    transition:
+        background 0.25s ease,
+        border-color 0.25s ease,
+        color 0.25s ease,
+        transform 0.25s cubic-bezier(0.22, 1, 0.36, 1),
+        box-shadow 0.25s ease;
 }
 
-.deptSortSelect option {
-    color: black;
+#deptSortToggle:hover {
+    color: var(--text-lightest);
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.25);
+    transform: translateY(-1px);
+    box-shadow: 
+        inset 0 1px 0 rgba(255, 255, 255, 0.12),
+        0 4px 12px rgba(0, 0, 0, 0.25);
+}
+
+.logArrow {
+    transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+#deptSortToggle:hover .logArrow {
+    transform: rotate(180deg);
+}
+
+.logTypeSection {
+    padding: 0.5rem;
+
+    /* semi-transparent base (required for glass effect) */
+    background: rgba(0, 0, 0, 0.95);
+
+    /* real glass blur */
+    backdrop-filter: blur(32px);
+    -webkit-backdrop-filter: blur(32px);
+
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 12px;
+
+    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.5);
+
+    clip-path: inset(0 0 100% 0 round 12px);
+    transition: clip-path 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.userDropdownMenu.show .logTypeSection {
+    clip-path: inset(0 0 0% 0 round 12px);
 }
 
 .createDeptBtn {
-    display: inline-flex;
+    display: flex;
     align-items: center;
+    justify-content: flex-start;
     gap: 8px;
 
-    padding: 10px 14px;
-    border-radius: 10px;
+    width: auto;
+    padding: 0.8rem 1rem;
 
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid var(--glass-border);
+    font-family: 'Poppins', sans-serif;
+    font-size: 0.95rem;
 
-    color: white;
-    text-decoration: none;
-    font-weight: 500;
+    color: var(--primary-color);
 
-    transition: 0.2s ease;
+    background: rgba(151, 190, 65, 0.1);
+    border: 1px solid rgba(151, 190, 65, 0.2);
+    border-radius: 12px;
+
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+
+    transition: 
+        color 0.2s ease,
+        background-color 0.3s ease,
+        transform 0.2s ease,
+        box-shadow 0.2s ease;
 }
 
 .createDeptBtn:hover {
-    background: rgba(255, 255, 255, 0.15);
+    background: rgba(151, 190, 65, 0.18);
     transform: translateY(-2px);
+    box-shadow: inset 0 1px 0 rgba(151, 190, 65, 0.15);
 }
 
 .deptGrid {
@@ -210,6 +306,39 @@ body::after {
 
     flex: 1;
     overflow-y: auto;
+
+    /* Scrollbar for Firefox */
+    scrollbar-width: thin;
+    scrollbar-color: var(--glass-border) rgba(255, 255, 255, 0.03);
+}
+
+/* Chrome / Edge / Safari */
+/* Chrome / Edge / Safari */
+.deptGrid::-webkit-scrollbar {
+    width: 8px;
+}
+
+/* track */
+.deptGrid::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 10px;
+}
+
+/* thumb (uses root variables) */
+.deptGrid::-webkit-scrollbar-thumb {
+    background: var(--glass-border);
+    border-radius: 10px;
+
+    border: 1px solid rgba(255, 255, 255, 0.08);
+
+    box-shadow: inset 0 0 4px rgba(255, 255, 255, 0.06);
+
+    transition: background 0.2s ease;
+}
+
+/* hover */
+.deptGrid::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.25);
 }
 
 .deptCard {

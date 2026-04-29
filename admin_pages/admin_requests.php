@@ -12,7 +12,7 @@ date_default_timezone_set('Asia/Manila');
 
 $success = "";
 $error   = "";
-
+$current_page = 'employee_requests';
 // ---- HANDLE APPROVE / REJECT ----
 if (isset($_GET['action'], $_GET['type'], $_GET['id'])) {
     $action = $_GET['action'];
@@ -190,10 +190,7 @@ $logEditRequests = $pdo->query("
     <?php include '../sidebar.php'; ?>
 
     <!-- TOPBAR -->
-    <?php
-    $current_page = 'requests';
-    include '../topbar.php';
-    ?>
+    <?php include '../topbar.php'; ?>
 
     <!-- PAGE WRAPPER -->
     <div class="requestsWrapper">
