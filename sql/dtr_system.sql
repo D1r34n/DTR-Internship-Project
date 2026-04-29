@@ -3,9 +3,9 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Apr 29, 2026 at 05:23 AM
+-- Generation Time: Apr 29, 2026 at 08:25 AM
 -- Server version: 10.4.32-MariaDB
--- PHP Version: 8.0.30
+-- PHP Version: 8.2.12
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -59,7 +59,10 @@ INSERT INTO `attendances` (`id`, `employee_id`, `schedule_id`, `work_date`, `sch
 (27, 5, NULL, '2026-04-28', '2026-04-28 09:30:00', '2026-04-28 17:30:00', '2026-04-28 09:21:07', '2026-04-28 18:30:00', 548, 0, 0, 60, 0, 'present', 'approved', 0, '2026-04-28 01:40:10', '2026-04-28 01:57:10'),
 (33, 9, 77, '2026-04-30', '2026-04-30 08:30:00', '2026-04-30 17:30:00', NULL, NULL, 0, 0, 0, 0, 0, 'incomplete', 'none', 0, '2026-04-29 06:08:15', '2026-04-29 06:08:15'),
 (34, 8, 78, '2026-04-30', '2026-04-30 08:30:00', '2026-04-30 17:30:00', NULL, NULL, 0, 0, 0, 0, 0, 'incomplete', 'none', 0, '2026-04-29 06:08:30', '2026-04-29 06:08:30'),
-(38, 7, 81, '2026-04-29', '2026-04-29 08:30:00', '2026-04-29 17:30:00', NULL, NULL, 0, 0, 0, 0, 0, 'incomplete', 'none', 0, '2026-04-28 07:35:08', '2026-04-28 07:35:08');
+(38, 7, 81, '2026-04-29', '2026-04-29 08:30:00', '2026-04-29 17:30:00', NULL, NULL, 0, 0, 0, 0, 0, 'incomplete', 'none', 0, '2026-04-28 07:35:08', '2026-04-28 07:35:08'),
+(39, 6, 83, '2026-04-30', '2026-04-30 08:30:00', '2026-04-30 17:30:00', '2026-04-30 10:00:58', '2026-04-30 17:30:23', 7, 90, 0, 0, 60, 'present', 'none', 0, '2026-04-29 05:31:24', '2026-04-30 09:30:23'),
+(40, 6, 84, '2026-05-01', '2026-05-01 08:30:00', '2026-05-01 17:30:00', NULL, NULL, 0, 0, 0, 0, 0, 'incomplete', 'none', 0, '2026-04-29 05:31:24', '2026-04-29 05:31:24'),
+(41, 6, 85, '2026-04-29', '2026-04-29 08:30:00', '2026-04-29 17:30:00', '2026-04-29 13:18:59', '2026-04-29 13:19:07', 0, 288, 251, 0, 0, 'present', 'none', 0, '2026-04-29 05:32:14', '2026-04-29 05:33:02');
 
 -- --------------------------------------------------------
 
@@ -141,6 +144,22 @@ CREATE TABLE `logs` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Dumping data for table `logs`
+--
+
+INSERT INTO `logs` (`id`, `employee_id`, `log_type`, `log_time`, `longitude`, `latitude`, `accuracy`, `is_within_office`, `distance_meters`, `created_at`) VALUES
+(513, 6, 'IN', '2026-04-29 13:18:59', 120.9954744, 14.5842803, 55, 1, 22.2173, '2026-04-29 05:18:59'),
+(514, 6, 'OUT', '2026-04-29 13:19:07', 120.9954744, 14.5842803, 55, 1, 22.2173, '2026-04-29 05:19:07'),
+(515, 6, 'IN', '2026-04-29 13:33:02', 120.9954907, 14.5842691, 55, 1, 21.8787, '2026-04-29 05:33:02'),
+(516, 6, 'BREAK_IN', '2026-04-29 13:33:13', 120.9954907, 14.5842691, 55, 1, 21.88, '2026-04-29 05:33:13'),
+(517, 6, 'BREAK_OUT', '2026-04-29 13:33:19', 120.9954907, 14.5842691, 55, 1, 21.88, '2026-04-29 05:33:19'),
+(518, 6, 'OUT', '2026-04-29 13:33:29', 120.9954907, 14.5842691, 55, 1, 21.8787, '2026-04-29 05:33:29'),
+(519, 6, 'IN', '2026-04-30 10:00:58', 120.9954947, 14.5842654, 55, 1, 21.9055, '2026-04-30 02:00:58'),
+(520, 6, 'BREAK_IN', '2026-04-30 12:00:05', 120.9954947, 14.5842654, 55, 1, 21.91, '2026-04-30 04:00:05'),
+(521, 6, 'BREAK_OUT', '2026-04-30 13:00:13', 120.9954589, 14.5842890, 55, 1, 22.87, '2026-04-30 05:00:13'),
+(522, 6, 'OUT', '2026-04-30 17:30:23', 120.9954589, 14.5842890, 55, 1, 22.8724, '2026-04-30 09:30:23');
+
 -- --------------------------------------------------------
 
 --
@@ -153,7 +172,9 @@ CREATE TABLE `log_edit_requests` (
   `attendance_id` bigint(20) UNSIGNED NOT NULL,
   `work_date` date NOT NULL,
   `actual_time_in` datetime NOT NULL,
-  `requested_time_out` datetime NOT NULL,
+  `request_type` enum('time_in','time_out','both') NOT NULL DEFAULT 'time_out',
+  `requested_time_in` datetime DEFAULT NULL,
+  `requested_time_out` datetime DEFAULT NULL,
   `reason` text NOT NULL,
   `status` enum('pending','approved','rejected') NOT NULL DEFAULT 'pending',
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
@@ -164,8 +185,9 @@ CREATE TABLE `log_edit_requests` (
 -- Dumping data for table `log_edit_requests`
 --
 
-INSERT INTO `log_edit_requests` (`id`, `employee_id`, `attendance_id`, `work_date`, `actual_time_in`, `requested_time_out`, `reason`, `status`, `created_at`, `updated_at`) VALUES
-(3, 5, 27, '2026-04-28', '2026-04-28 09:21:07', '2026-04-28 18:30:00', 'accidentally clicked time out', 'approved', '2026-04-28 01:43:57', '2026-04-28 01:44:05');
+INSERT INTO `log_edit_requests` (`id`, `employee_id`, `attendance_id`, `work_date`, `actual_time_in`, `request_type`, `requested_time_in`, `requested_time_out`, `reason`, `status`, `created_at`, `updated_at`) VALUES
+(3, 5, 27, '2026-04-28', '2026-04-28 09:21:07', 'time_out', NULL, '2026-04-28 18:30:00', 'accidentally clicked time out', 'approved', '2026-04-28 01:43:57', '2026-04-28 01:44:05'),
+(4, 6, 41, '2026-04-29', '2026-04-29 13:18:59', 'both', '2026-04-29 08:30:00', '2026-04-29 18:00:00', 'Forgot to time in early and accidentally time out', 'pending', '2026-04-29 06:23:49', '2026-04-29 06:23:49');
 
 -- --------------------------------------------------------
 
@@ -234,7 +256,10 @@ INSERT INTO `schedules` (`id`, `employee_id`, `schedule_date`, `scheduled_start`
 (76, 5, '2026-05-01', '2026-05-01 09:30:00', '2026-05-01 17:30:00', 0, 'approved'),
 (77, 9, '2026-04-30', '2026-04-30 08:30:00', '2026-04-30 17:30:00', 0, 'approved'),
 (78, 8, '2026-04-30', '2026-04-30 08:30:00', '2026-04-30 17:30:00', 0, 'approved'),
-(81, 7, '2026-04-29', '2026-04-29 08:30:00', '2026-04-29 17:30:00', 0, 'approved');
+(81, 7, '2026-04-29', '2026-04-29 08:30:00', '2026-04-29 17:30:00', 0, 'approved'),
+(83, 6, '2026-04-30', '2026-04-30 08:30:00', '2026-04-30 17:30:00', 0, 'approved'),
+(84, 6, '2026-05-01', '2026-05-01 08:30:00', '2026-05-01 17:30:00', 0, 'approved'),
+(85, 6, '2026-04-29', '2026-04-29 08:30:00', '2026-04-29 17:30:00', 0, 'approved');
 
 -- --------------------------------------------------------
 
@@ -341,7 +366,7 @@ ALTER TABLE `system_state`
 -- AUTO_INCREMENT for table `attendances`
 --
 ALTER TABLE `attendances`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=39;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=48;
 
 --
 -- AUTO_INCREMENT for table `departments`
@@ -365,13 +390,13 @@ ALTER TABLE `leave_requests`
 -- AUTO_INCREMENT for table `logs`
 --
 ALTER TABLE `logs`
-  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=513;
+  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=523;
 
 --
 -- AUTO_INCREMENT for table `log_edit_requests`
 --
 ALTER TABLE `log_edit_requests`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT for table `ob_requests`
@@ -389,7 +414,7 @@ ALTER TABLE `overtime_requests`
 -- AUTO_INCREMENT for table `schedules`
 --
 ALTER TABLE `schedules`
-  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=83;
+  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=86;
 
 --
 -- Constraints for dumped tables

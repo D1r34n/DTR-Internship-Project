@@ -19,13 +19,15 @@ $stmt = $pdo->prepare("
         a.scheduled_end,
         a.actual_time_in,
         a.actual_time_out,
-        a.undertime_minutes
+        a.undertime_minutes,
+        a.late_minutes
     FROM attendances a
     WHERE a.employee_id = ?
     AND a.actual_time_in IS NOT NULL
     AND (
         (a.actual_time_out IS NULL AND a.scheduled_end < NOW())
         OR (a.actual_time_out IS NOT NULL AND a.actual_time_out < a.scheduled_end)
+        OR (a.actual_time_in > a.scheduled_start)
     )
     AND NOT EXISTS (
         SELECT 1 FROM log_edit_requests le
@@ -39,7 +41,17 @@ $stmt->execute([$employeeId]);
 $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 foreach ($rows as &$row) {
-    $row['record_type'] = is_null($row['actual_time_out']) ? 'no_timeout' : 'undertime';
+    $types = [];
+    if (is_null($row['actual_time_out']) && strtotime($row['scheduled_end']) < time()) {
+        $types[] = 'no_timeout';
+    } elseif (!is_null($row['actual_time_out']) && $row['actual_time_out'] < $row['scheduled_end']) {
+        $types[] = 'undertime';
+    }
+    if ($row['actual_time_in'] > $row['scheduled_start']) {
+        $types[] = 'late';
+    }
+    $row['applicable_types'] = $types;
+    $row['record_type']      = $types[0] ?? 'late';
 }
 
 echo json_encode($rows);
