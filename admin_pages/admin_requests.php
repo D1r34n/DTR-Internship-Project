@@ -44,18 +44,66 @@ if (isset($_GET['action'], $_GET['type'], $_GET['id'])) {
             ->execute([$status, $id]);
 
         if ($status === 'approved') {
-            $pdo->prepare("
-                UPDATE attendances a
-                JOIN log_edit_requests le ON le.attendance_id = a.id
-                SET
-                    a.actual_time_out    = le.requested_time_out,
-                    a.missed_time_out    = 0,
-                    a.status             = 'present',
-                    a.total_work_minutes = GREATEST(0, TIMESTAMPDIFF(MINUTE, a.actual_time_in, le.requested_time_out) - COALESCE(a.break_minutes, 0)),
-                    a.undertime_minutes  = GREATEST(0, TIMESTAMPDIFF(MINUTE, le.requested_time_out, a.scheduled_end)),
-                    a.overtime_minutes   = GREATEST(0, TIMESTAMPDIFF(MINUTE, a.scheduled_end, le.requested_time_out))
-                WHERE le.id = ?
-            ")->execute([$id]);
+            $leStmt = $pdo->prepare("SELECT * FROM log_edit_requests WHERE id = ?");
+            $leStmt->execute([$id]);
+            $le = $leStmt->fetch(PDO::FETCH_ASSOC);
+
+            if ($le['request_type'] === 'time_in') {
+                $pdo->prepare("
+                    UPDATE attendances SET
+                        actual_time_in     = ?,
+                        late_minutes       = GREATEST(0, TIMESTAMPDIFF(MINUTE, scheduled_start, ?)),
+                        total_work_minutes = GREATEST(0, TIMESTAMPDIFF(MINUTE, ?, COALESCE(actual_time_out, scheduled_end)) - COALESCE(break_minutes, 0)),
+                        status             = 'present'
+                    WHERE id = ?
+                ")->execute([
+                    $le['requested_time_in'],
+                    $le['requested_time_in'],
+                    $le['requested_time_in'],
+                    $le['attendance_id'],
+                ]);
+
+            } elseif ($le['request_type'] === 'time_out') {
+                $pdo->prepare("
+                    UPDATE attendances SET
+                        actual_time_out    = ?,
+                        missed_time_out    = 0,
+                        status             = 'present',
+                        total_work_minutes = GREATEST(0, TIMESTAMPDIFF(MINUTE, actual_time_in, ?) - COALESCE(break_minutes, 0)),
+                        undertime_minutes  = GREATEST(0, TIMESTAMPDIFF(MINUTE, ?, scheduled_end)),
+                        overtime_minutes   = GREATEST(0, TIMESTAMPDIFF(MINUTE, scheduled_end, ?))
+                    WHERE id = ?
+                ")->execute([
+                    $le['requested_time_out'],
+                    $le['requested_time_out'],
+                    $le['requested_time_out'],
+                    $le['requested_time_out'],
+                    $le['attendance_id'],
+                ]);
+
+            } else { // both
+                $pdo->prepare("
+                    UPDATE attendances SET
+                        actual_time_in     = ?,
+                        actual_time_out    = ?,
+                        missed_time_out    = 0,
+                        status             = 'present',
+                        late_minutes       = GREATEST(0, TIMESTAMPDIFF(MINUTE, scheduled_start, ?)),
+                        total_work_minutes = GREATEST(0, TIMESTAMPDIFF(MINUTE, ?, ?) - COALESCE(break_minutes, 0)),
+                        undertime_minutes  = GREATEST(0, TIMESTAMPDIFF(MINUTE, ?, scheduled_end)),
+                        overtime_minutes   = GREATEST(0, TIMESTAMPDIFF(MINUTE, scheduled_end, ?))
+                    WHERE id = ?
+                ")->execute([
+                    $le['requested_time_in'],
+                    $le['requested_time_out'],
+                    $le['requested_time_in'],
+                    $le['requested_time_in'],
+                    $le['requested_time_out'],
+                    $le['requested_time_out'],
+                    $le['requested_time_out'],
+                    $le['attendance_id'],
+                ]);
+            }
         }
 
     }
@@ -266,7 +314,15 @@ $logEditRequests = $pdo->query("
                                 <tr>
                                     <td><?= htmlspecialchars($row['employee_name']) ?></td>
                                     <td><span class="badge logEditBadge">Log Edit</span></td>
-                                    <td><?= date('M d, Y', strtotime($row['work_date'])) ?> | In: <?= date('h:i A', strtotime($row['actual_time_in'])) ?> → Out: <?= date('h:i A', strtotime($row['requested_time_out'])) ?></td>
+                                    <td><?= date('M d, Y', strtotime($row['work_date'])) ?> |
+                                        <?php if ($row['request_type'] === 'time_in'): ?>
+                                            In: <?= date('h:i A', strtotime($row['actual_time_in'])) ?> &rarr; <?= date('h:i A', strtotime($row['requested_time_in'])) ?>
+                                        <?php elseif ($row['request_type'] === 'time_out'): ?>
+                                            In: <?= date('h:i A', strtotime($row['actual_time_in'])) ?> &rarr; Out: <?= date('h:i A', strtotime($row['requested_time_out'])) ?>
+                                        <?php else: ?>
+                                            In: <?= date('h:i A', strtotime($row['actual_time_in'])) ?> &rarr; <?= date('h:i A', strtotime($row['requested_time_in'])) ?> | Out: <?= date('h:i A', strtotime($row['requested_time_out'])) ?>
+                                        <?php endif; ?>
+                                    </td>
                                     <td class="reasonCol"><?= htmlspecialchars($row['reason']) ?></td>
                                     <td><?= getStatusBadge($row['status']) ?></td>
                                     <td class="actionsCol"><?= getActionButtons('log_edit', $row['id'], $row['status']) ?></td>
@@ -360,8 +416,9 @@ $logEditRequests = $pdo->query("
                             <tr>
                                 <th>Employee</th>
                                 <th>Date</th>
-                                <th>Time In</th>
-                                <th>Requested Time Out</th>
+                                <th>Type</th>
+                                <th>Current Log</th>
+                                <th>Correction</th>
                                 <th>Reason</th>
                                 <th>Status</th>
                                 <th>Actions</th>
@@ -373,8 +430,22 @@ $logEditRequests = $pdo->query("
                                     <tr>
                                         <td><?= htmlspecialchars($row['employee_name']) ?></td>
                                         <td><?= date('M d, Y', strtotime($row['work_date'])) ?></td>
+                                        <td>
+                                            <?php
+                                            $typeLabels = ['time_in' => 'Time In', 'time_out' => 'Time Out', 'both' => 'Both'];
+                                            echo htmlspecialchars($typeLabels[$row['request_type']] ?? $row['request_type']);
+                                            ?>
+                                        </td>
                                         <td><?= date('h:i A', strtotime($row['actual_time_in'])) ?></td>
-                                        <td><?= date('h:i A', strtotime($row['requested_time_out'])) ?></td>
+                                        <td>
+                                            <?php if ($row['request_type'] === 'time_in'): ?>
+                                                In: <?= date('h:i A', strtotime($row['requested_time_in'])) ?>
+                                            <?php elseif ($row['request_type'] === 'time_out'): ?>
+                                                Out: <?= date('h:i A', strtotime($row['requested_time_out'])) ?>
+                                            <?php else: ?>
+                                                In: <?= date('h:i A', strtotime($row['requested_time_in'])) ?> &rarr; Out: <?= date('h:i A', strtotime($row['requested_time_out'])) ?>
+                                            <?php endif; ?>
+                                        </td>
                                         <td class="reasonCol"><?= htmlspecialchars($row['reason']) ?></td>
                                         <td><?= getStatusBadge($row['status']) ?></td>
                                         <td class="actionsCol"><?= getActionButtons('log_edit', $row['id'], $row['status']) ?></td>

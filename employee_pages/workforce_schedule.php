@@ -14,10 +14,10 @@ $success    = "";
 $error      = "";
 
 // Get this workforce user's department
-$selfStmt = $pdo->prepare("SELECT department FROM employees WHERE id = ?");
+$selfStmt = $pdo->prepare("SELECT department_id FROM employees WHERE id = ?");
 $selfStmt->execute([$employeeId]);
 $selfData   = $selfStmt->fetch(PDO::FETCH_ASSOC);
-$department = $selfData['department'] ?? null;
+$department = $selfData['department_id'] ?? null;
 
 // ---- HANDLE SUBMIT ----
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {

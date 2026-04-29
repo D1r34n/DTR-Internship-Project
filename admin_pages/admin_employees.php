@@ -25,12 +25,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email      = trim($_POST['email']);
     $password   = trim($_POST['password']);
     $role       = $_POST['role'];
-    $department = !empty($_POST['department']) ? $_POST['department'] : null;
+    $department = !empty($_POST['department_id']) ? $_POST['department_id'] : null;
 
     if (!empty($_POST['employee_id'])) {
         if (!empty($password)) {
-            $pdo->prepare("UPDATE employees SET name=?, email=?, password=?, role=?, department=? WHERE id=?")
-                ->execute([$name, $email, $password, $role, $department, $_POST['employee_id']]);
+            $pdo->prepare("UPDATE employees SET name=?, email=?, password=?, role=?, department_id=? WHERE id=?")
+                ->execute([$name, $email, $password, $role, $department_id, $_POST['employee_id']]);
         } else {
             $pdo->prepare("UPDATE employees SET name=?, email=?, role=?, department=? WHERE id=?")
                 ->execute([$name, $email, $role, $department, $_POST['employee_id']]);
@@ -98,13 +98,13 @@ $current_page = 'employees';
                              data-name="<?= htmlspecialchars($emp['name']) ?>"
                              data-email="<?= htmlspecialchars($emp['email']) ?>"
                              data-role="<?= $emp['role'] ?>"
-                             data-dept="<?= htmlspecialchars($emp['department'] ?? '') ?>"
+                             data-dept="<?= htmlspecialchars($emp['department_id'] ?? '') ?>"
                              onclick="selectEmployee(<?= $emp['id'] ?>, '<?= htmlspecialchars($emp['name'], ENT_QUOTES) ?>')">
                             <div class="empName"><?= htmlspecialchars($emp['name']) ?></div>
                             <div class="empMeta">
                                 <span class="empRoleBadge empRole-<?= $emp['role'] ?>"><?= ucfirst($emp['role']) ?></span>
-                                <?php if ($emp['department']): ?>
-                                    <span class="empDept"><?= htmlspecialchars($emp['department']) ?></span>
+                                <?php if ($emp['department_id']): ?>
+                                    <span class="empDept"><?= htmlspecialchars($emp['department_id']) ?></span>
                                 <?php endif; ?>
                             </div>
                             <div class="empRowActions" onclick="event.stopPropagation()">
@@ -246,11 +246,9 @@ $current_page = 'employees';
                                 </div>
                                 <div class="customSelectMenu" id="deptDropdown">
                                     <div class="customSelectItem" onclick="selectDept('','None')">None</div>
-                                    <div class="customSelectItem" onclick="selectDept('CSS','CSS')">CSS</div>
-                                    <div class="customSelectItem" onclick="selectDept('HR','HR')">HR</div>
                                 </div>
                             </div>
-                            <input type="hidden" name="department" id="deptInput" value="">
+                            <input type="hidden" name="department_id" id="deptInput" value="">
                         </div>
                     </div>
 

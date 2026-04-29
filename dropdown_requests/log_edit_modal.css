@@ -271,3 +271,156 @@
     color: #97be41;
     font-size: 0.875rem;
 }
+
+/* ---------- Late gantt row ---------- */
+.le-gantt-row.le-gantt-late {
+    border-color: rgba(79, 195, 247, 0.3);
+}
+.le-gantt-row.le-gantt-late:hover {
+    background: rgba(79, 195, 247, 0.06);
+}
+
+/* Late arrival gap bar */
+.le-late-bar {
+    position: absolute;
+    top: 0;
+    height: 100%;
+    background: repeating-linear-gradient(
+        90deg,
+        rgba(79, 195, 247, 0.6) 0px,
+        rgba(79, 195, 247, 0.6) 8px,
+        rgba(79, 195, 247, 0.15) 8px,
+        rgba(79, 195, 247, 0.15) 14px
+    );
+    border-radius: 10px;
+    border-right: 2px dashed #4fc3f7;
+}
+
+.le-late-label {
+    font-size: 0.72rem;
+    color: #4fc3f7;
+    white-space: nowrap;
+    flex-shrink: 0;
+    font-weight: 600;
+}
+
+/* ---------- Status badges (Step 2 summary) ---------- */
+.le-status-badge {
+    display: inline-block;
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 0.2rem 0.6rem;
+    border-radius: 20px;
+    margin-right: 0.3rem;
+    margin-top: 0.25rem;
+}
+.le-badge-no-timeout {
+    background: rgba(220, 53, 69, 0.2);
+    color: #ff8a8a;
+    border: 1px solid rgba(220, 53, 69, 0.3);
+}
+.le-badge-undertime {
+    background: rgba(240, 173, 78, 0.2);
+    color: #f0ad4e;
+    border: 1px solid rgba(240, 173, 78, 0.3);
+}
+.le-badge-late {
+    background: rgba(79, 195, 247, 0.2);
+    color: #4fc3f7;
+    border: 1px solid rgba(79, 195, 247, 0.3);
+}
+
+/* ---------- Custom Edit Type dropdown ---------- */
+.le-custom-select {
+    position: relative;
+    width: 100%;
+    user-select: none;
+}
+
+.le-custom-select-trigger {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 8px;
+    color: #fff;
+    padding: 0.6rem 0.8rem;
+    font-family: 'Poppins', sans-serif;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: border-color 0.2s;
+}
+
+.le-custom-select.open .le-custom-select-trigger {
+    border-color: #97be41;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+.le-select-chevron {
+    font-size: 0.75rem;
+    color: #aaa;
+    transition: transform 0.2s;
+}
+.le-custom-select.open .le-select-chevron {
+    transform: rotate(180deg);
+}
+
+.le-custom-select-options {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: #1a1a1a;
+    border: 1px solid #97be41;
+    border-top: none;
+    border-bottom-left-radius: 8px;
+    border-bottom-right-radius: 8px;
+    overflow: hidden;
+    z-index: 999;
+}
+.le-custom-select.open .le-custom-select-options {
+    display: block;
+}
+
+.le-custom-select-option {
+    padding: 0.6rem 0.8rem;
+    color: rgba(255, 255, 255, 0.75);
+    font-family: 'Poppins', sans-serif;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+.le-custom-select-option:hover {
+    background: rgba(151, 190, 65, 0.15);
+    color: #fff;
+}
+.le-custom-select-option.selected {
+    color: #97be41;
+    background: rgba(151, 190, 65, 0.08);
+}
+
+/* ---------- Preview box ---------- */
+.le-preview-box {
+    margin-top: 1rem;
+    background: rgba(151, 190, 65, 0.08);
+    border: 1px solid rgba(151, 190, 65, 0.25);
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+}
+.le-preview-label {
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 0.72rem;
+    font-weight: 600;
+    margin: 0 0 0.25rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+.le-preview-text {
+    color: #97be41;
+    font-weight: 600;
+    font-size: 0.9rem;
+    margin: 0;
+}
