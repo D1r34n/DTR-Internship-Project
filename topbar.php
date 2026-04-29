@@ -37,12 +37,13 @@ $titles = [
         'workforce_schedule' => 'Manage Schedules',
     ],
     'admin' => [
-        'dashboard'    => 'Admin Dashboard',
-        'employees'    => 'Employees',
-        'schedule'     => 'Schedules',
-        'requests'     => 'Requests',
-        'logs'         => 'Logs',
-        'employee_logs' => 'Employee Logs',
+        'dashboard'         => 'Admin Dashboard',
+        'employees'         => 'Employees',
+        'schedule'          => 'Schedules',
+        'requests'          => 'Employee Requests',
+        'schedule_requests' => 'Schedule Requests',
+        'logs'              => 'Logs',
+        'employee_logs'     => 'Employee Logs',
     ]
 ];
 
