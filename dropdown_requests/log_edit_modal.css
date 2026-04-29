@@ -24,11 +24,18 @@
     border: 1px solid var(--glass-border);
     border-radius: 16px;
     padding: 2rem;
-    width: 500px;
-    max-height: 85vh;
+    width: 700px;
+    max-height: 80vh;
     overflow-y: auto;
     box-shadow: 0 12px 35px rgba(0, 0, 0, 0.5);
+    position: relative;
 }
+
+/* ---------- Scrollbar ---------- */
+.log-edit-modal-box::-webkit-scrollbar { width: 6px; }
+.log-edit-modal-box::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); border-radius: 10px; }
+.log-edit-modal-box::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 10px; }
+.log-edit-modal-box::-webkit-scrollbar-thumb:hover { background: #97be41; }
 
 /* ---------- Modal Header ---------- */
 .log-edit-modal-header {
@@ -52,29 +59,215 @@
     cursor: pointer;
 }
 
-/* ---------- Placeholder ---------- */
-.log-edit-coming-soon {
-    color: rgba(255, 255, 255, 0.5);
-    font-size: 0.875rem;
+/* ---------- Step 1 ---------- */
+.le-step-hint {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.85rem;
+    margin-bottom: 1rem;
+}
+
+#leGanttList {
+    display: flex;
+    flex-direction: column;
+    gap: 2.5rem;
+}
+
+.le-gantt-loading {
+    color: #aaa;
     text-align: center;
-    margin-top: 2rem;
 }
 
-/* ---------- Scrollbar ---------- */
-.log-edit-modal-box::-webkit-scrollbar {
-    width: 6px;
+/* ---------- Gantt Row ---------- */
+.le-gantt-row {
+    padding: 0.5rem;
+    border-radius: 10px;
+    cursor: pointer;
+    border: 1px solid rgba(220, 53, 69, 0.2);
+    transition: background 0.2s;
 }
 
-.log-edit-modal-box::-webkit-scrollbar-track {
+.le-gantt-row:hover {
+    background: rgba(220, 53, 69, 0.06);
+}
+
+/* "No Time Out" bar — red dashed, extends to range end */
+.le-no-out-bar {
+    position: absolute;
+    top: 0;
+    height: 100%;
+    background: repeating-linear-gradient(
+        90deg,
+        rgba(220, 53, 69, 0.55) 0px,
+        rgba(220, 53, 69, 0.55) 8px,
+        rgba(220, 53, 69, 0.15) 8px,
+        rgba(220, 53, 69, 0.15) 14px
+    );
+    border-radius: 10px;
+    border-right: 2px dashed #dc3545;
+}
+
+/* "No Time Out" label on right */
+.le-no-out-label {
+    font-size: 0.72rem;
+    color: #ff8a8a;
+    white-space: nowrap;
+    flex-shrink: 0;
+    font-weight: 600;
+}
+
+/* Undertime row border tint */
+.le-gantt-row.le-gantt-undertime {
+    border-color: rgba(240, 173, 78, 0.3);
+}
+
+.le-gantt-row.le-gantt-undertime:hover {
+    background: rgba(240, 173, 78, 0.06);
+}
+
+/* Undertime gap bar */
+.le-undertime-bar {
+    position: absolute;
+    top: 0;
+    height: 100%;
+    background: repeating-linear-gradient(
+        90deg,
+        rgba(240, 173, 78, 0.6) 0px,
+        rgba(240, 173, 78, 0.6) 8px,
+        rgba(240, 173, 78, 0.15) 8px,
+        rgba(240, 173, 78, 0.15) 14px
+    );
+    border-radius: 10px;
+    border-right: 2px dashed #f0ad4e;
+}
+
+/* "Undertime" label on right */
+.le-undertime-label {
+    font-size: 0.72rem;
+    color: #f0ad4e;
+    white-space: nowrap;
+    flex-shrink: 0;
+    font-weight: 600;
+}
+
+/* ---------- Step 2 ---------- */
+.le-back-btn {
+    background: none;
+    border: none;
+    color: #aaa;
+    font-size: 0.85rem;
+    cursor: pointer;
+    margin-bottom: 1rem;
+}
+
+.le-summary-card {
     background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 10px;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
 }
 
-.log-edit-modal-box::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.2);
-    border-radius: 10px;
+.le-summary-row {
+    display: flex;
+    gap: 2rem;
 }
 
-.log-edit-modal-box::-webkit-scrollbar-thumb:hover {
+.le-summary-label {
+    color: #aaa;
+    font-size: 0.8rem;
+    margin: 0 0 0.3rem;
+}
+
+.le-summary-value {
+    color: #fff;
+    font-weight: 600;
+    margin: 0;
+}
+
+.le-summary-value.highlight {
+    color: #97be41;
+}
+
+/* ---------- Inputs ---------- */
+.le-input-label {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.85rem;
+    font-weight: 600;
+    display: block;
+    margin-bottom: 0.5rem;
+}
+
+.le-time-input {
+    width: 100%;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 8px;
+    color: #fff;
+    padding: 0.6rem 0.8rem;
+    font-family: 'Poppins', sans-serif;
+    font-size: 0.875rem;
+    outline: none;
+    color-scheme: dark;
+}
+
+.le-time-input:focus {
+    border-color: #97be41;
+}
+
+#leReason {
+    width: 100%;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 8px;
+    color: #fff;
+    padding: 0.6rem 0.8rem;
+    font-family: 'Poppins', sans-serif;
+    font-size: 0.875rem;
+    outline: none;
+    resize: none;
+}
+
+#leReason:focus {
+    border-color: #97be41;
+}
+
+/* ---------- Submit Button ---------- */
+.le-submit-btn {
+    margin-top: 1rem;
     background: #97be41;
+    color: #fff;
+    border: none;
+    padding: 0.5rem 1.5rem;
+    border-radius: 8px;
+    font-family: 'Poppins', sans-serif;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.le-submit-btn:hover {
+    background: #82a835;
+}
+
+/* ---------- Feedback Messages ---------- */
+#leErrorMsg {
+    display: none;
+    margin-top: 1rem;
+    background: rgba(220, 53, 69, 0.15);
+    border: 1px solid rgba(220, 53, 69, 0.3);
+    border-radius: 8px;
+    padding: 0.8rem 1rem;
+    color: #ff8a8a;
+    font-size: 0.875rem;
+}
+
+#leSuccessMsg {
+    display: none;
+    margin-top: 1rem;
+    background: rgba(151, 190, 65, 0.15);
+    border: 1px solid rgba(151, 190, 65, 0.3);
+    border-radius: 8px;
+    padding: 0.8rem 1rem;
+    color: #97be41;
+    font-size: 0.875rem;
 }

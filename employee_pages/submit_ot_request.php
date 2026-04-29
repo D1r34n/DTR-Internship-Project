@@ -34,13 +34,13 @@ try {
 
     // 2. Update attendances overtime_status to 'pending'
     $stmt2 = $pdo->prepare("
-        UPDATE attendances 
+        UPDATE attendances
         SET overtime_status = 'pending'
-        WHERE employee_id = ? AND date = ?
+        WHERE employee_id = ? AND work_date = ?
     ");
     $stmt2->execute([$employeeId, $date]);
 
-    echo json_encode(['success' => true, 'message' => 'OT request submitted successfully!']);
+    echo json_encode(['success' => true, 'message' => 'OT request submitted!']);
 
 } catch (Exception $e) {
     echo json_encode(['success' => false, 'message' => 'Something went wrong. Please try again.']);
