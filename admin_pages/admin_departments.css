@@ -1,0 +1,475 @@
+/* =========================
+   BACKGROUND
+========================= */
+body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+
+    background: url('../images/drt_bg.jpg') center/cover no-repeat;
+    filter: blur(2px);
+    transform: scale(1.1);
+
+    z-index: -2;
+}
+
+body {
+    font-family: 'Poppins', sans-serif;
+    min-height: 100vh;
+    margin: 0;
+    overflow-x: hidden;
+}
+
+body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+
+    background: linear-gradient(
+        to bottom,
+        rgba(0, 0, 0, 0.15),
+        rgba(0, 0, 0, 0.55),
+        rgba(0, 0, 0, 0.85)
+    );
+
+    z-index: -1;
+    pointer-events: none;
+}
+
+/* =========================
+   LAYOUT
+========================= */
+.recordBoxWrapper {
+    position: fixed;
+    top: 84px;
+    left: var(--sidebar-width);
+    width: calc(100% - var(--sidebar-width));
+    height: calc(100vh - 100px);
+
+    padding: 0.5rem 1rem;
+
+    display: flex;
+    justify-content: center;
+    align-items: stretch;
+
+    z-index: 10;
+}
+
+/* =========================
+   GLASS CONTAINER
+========================= */
+.recordBox {
+    background: var(--glass-bg);
+    backdrop-filter: blur(32px) saturate(160%) brightness(0.3);
+    -webkit-backdrop-filter: blur(32px) saturate(160%) brightness(0.3);
+
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+
+    padding: 1.5rem;
+    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.5);
+
+    width: 100%;
+    height: 100%;
+
+    display: flex;
+    flex-direction: column;
+
+    overflow-y: auto;
+    overflow-x: hidden;
+    height: 100%;
+}
+
+/* Department container */
+
+.deptHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+}
+
+/* LEFT GROUP */
+.deptHeaderLeft {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 1;
+    flex-wrap: wrap;
+}
+
+/* RIGHT GROUP */
+.deptHeaderRight {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+}
+
+.deptSearchWrapper {
+    position: relative;
+    flex: 1;
+    max-width: 250px;
+}
+
+.deptSearchInput {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    font-size: 0.875rem;
+    font-weight: 300;
+
+    width: 100%;
+    min-width: 7rem;
+    padding: 0.75rem;
+
+    border-radius: 16px;
+
+    color: var(--text-light);
+
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+
+    transition:
+        background 0.25s ease,
+        border-color 0.25s ease,
+        color 0.25s ease,
+        transform 0.25s cubic-bezier(0.22, 1, 0.36, 1),
+        box-shadow 0.25s ease;
+}
+
+.deptSearchInput::placeholder {
+    color: var(--text-muted);
+}
+.searchIcon {
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+
+    color: var(--text-muted);
+    pointer-events: none;
+
+    transition: color 0.25s ease, transform 0.25s ease;
+}
+
+.deptSearchWrapper:hover .deptSearchInput{
+    color: var(--text-lightest);
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.25);
+    transform: translateY(-1px);
+    box-shadow: 
+        inset 0 1px 0 rgba(255, 255, 255, 0.12),
+        0 4px 12px rgba(0, 0, 0, 0.25);
+}
+
+.deptSearchWrapper:hover .searchIcon {
+    color: var(--text-lightest);
+    transform: translateY(-50%) translateX(3px);
+}
+
+.deptSearchInput:focus,
+.deptSearchInput:active {
+    color: var(--text-lightest);
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.25);
+    transform: translateY(-1px);
+    box-shadow: 
+        inset 0 1px 0 rgba(255, 255, 255, 0.12),
+        0 4px 12px rgba(0, 0, 0, 0.25);
+    outline: none;
+}
+
+/* Department sort */
+#deptSortToggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+
+    font-size: 0.875rem;
+    font-weight: 300;
+
+    min-width: 7rem;
+    padding: 0.75rem 1rem;
+
+    border-radius: 16px;
+
+    color: var(--text-muted);
+
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+
+    cursor: pointer;
+
+    transition:
+        background 0.25s ease,
+        border-color 0.25s ease,
+        color 0.25s ease,
+        transform 0.25s cubic-bezier(0.22, 1, 0.36, 1),
+        box-shadow 0.25s ease;
+}
+
+#deptSortToggle:hover {
+    color: var(--text-lightest);
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.25);
+    transform: translateY(-1px);
+    box-shadow: 
+        inset 0 1px 0 rgba(255, 255, 255, 0.12),
+        0 4px 12px rgba(0, 0, 0, 0.25);
+}
+
+.logArrow {
+    transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+#deptSortToggle:hover .logArrow {
+    transform: rotate(180deg);
+}
+
+.logTypeSection {
+    padding: 0.5rem;
+
+    /* semi-transparent base (required for glass effect) */
+    background: rgba(0, 0, 0, 0.95);
+
+    /* real glass blur */
+    backdrop-filter: blur(32px);
+    -webkit-backdrop-filter: blur(32px);
+
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 12px;
+
+    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.5);
+
+    clip-path: inset(0 0 100% 0 round 12px);
+    transition: clip-path 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.userDropdownMenu.show .logTypeSection {
+    clip-path: inset(0 0 0% 0 round 12px);
+}
+
+.createDeptBtn {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 8px;
+
+    width: auto;
+    padding: 0.8rem 1rem;
+
+    font-family: 'Poppins', sans-serif;
+    font-size: 0.95rem;
+
+    color: var(--primary-color);
+
+    background: rgba(151, 190, 65, 0.1);
+    border: 1px solid rgba(151, 190, 65, 0.2);
+    border-radius: 12px;
+
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+
+    transition: 
+        color 0.2s ease,
+        background-color 0.3s ease,
+        transform 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+.createDeptBtn:hover {
+    background: rgba(151, 190, 65, 0.18);
+    transform: translateY(-2px);
+    box-shadow: inset 0 1px 0 rgba(151, 190, 65, 0.15);
+}
+
+.deptGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 20px;
+    padding: 10px;
+
+    flex: 1;
+    overflow-y: auto;
+
+    /* Scrollbar for Firefox */
+    scrollbar-width: thin;
+    scrollbar-color: var(--glass-border) rgba(255, 255, 255, 0.03);
+}
+
+/* Chrome / Edge / Safari */
+/* Chrome / Edge / Safari */
+.deptGrid::-webkit-scrollbar {
+    width: 8px;
+}
+
+/* track */
+.deptGrid::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 10px;
+}
+
+/* thumb (uses root variables) */
+.deptGrid::-webkit-scrollbar-thumb {
+    background: var(--glass-border);
+    border-radius: 10px;
+
+    border: 1px solid rgba(255, 255, 255, 0.08);
+
+    box-shadow: inset 0 0 4px rgba(255, 255, 255, 0.06);
+
+    transition: background 0.2s ease;
+}
+
+/* hover */
+.deptGrid::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.25);
+}
+
+.deptCard {
+    background: var(--text-darkest);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    padding: 20px;
+    position: relative;
+    aspect-ratio: 4/3;
+    
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 6px;
+
+    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.4);
+    transition: 0.2s ease;
+    cursor: pointer;
+}
+
+.deptCard:hover {
+    transform: translateY(-4px);
+}
+
+.deptIcon {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    position: relative;
+    
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    color: white;
+    font-weight: bold;
+    border-radius: 12px;
+    padding: 10px;
+    text-align: center;
+
+    font-weight: 700;
+    font-size: 14px;
+    margin-bottom: 12px;
+}
+
+.deptActions {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    display: flex;
+    gap: 6px;
+}
+
+.editDeptIcon {
+    cursor: pointer;
+    font-size: 1.1rem;
+    opacity: 0.7;
+    transition: 0.2s;
+}
+
+.editDeptIcon:hover {
+    opacity: 1;
+    transform: scale(1.1);
+}
+
+.deptName {
+    font-size: 15px;
+    font-weight: 500;
+    text-align: center;
+    color: white;
+}
+
+.deptModal {
+    background: var(--text-darkest);
+    border: 1px solid var(--glass-border);
+    color: white;
+    border-radius: 14px;
+}
+
+.deptModal .form-control {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid var(--glass-border);
+    color: white;
+}
+
+.deptModal .form-control:focus {
+    background: rgba(255,255,255,0.08);
+    color: white;
+    box-shadow: none;
+}
+
+.deptParent {
+    margin-top: 6px;
+    font-size: 11px;
+    opacity: 0.7;
+    text-align: center;
+    font-style: italic;
+}
+
+.deptParentLink {
+    cursor: pointer;
+    color: #7ab7ff;
+    text-decoration: underline;
+    transition: 0.2s ease;
+}
+
+.deptParentLink:hover {
+    color: #a6d0ff;
+}
+
+.deptSubBtn {
+    margin-top: 8px;
+    padding: 6px 10px;
+    font-size: 12px;
+
+    border-radius: 8px;
+    border: 1px solid var(--glass-border);
+    background: rgba(255,255,255,0.06);
+    color: white;
+
+    cursor: pointer;
+    transition: 0.2s ease;
+}
+
+.deptSubBtn:hover {
+    background: rgba(255,255,255,0.15);
+}
+
+.deptMeta {
+    margin-top: 6px;
+    font-size: 12px;
+    opacity: 0.85;
+}

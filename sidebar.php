@@ -5,7 +5,7 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 $role = $_SESSION['user_role'] ?? null;
-
+$current_page = $current_page ?? '';
 if (!$role) {
     header("Location: ../index.php");
     exit();
@@ -114,7 +114,7 @@ $dashboardLink = ($role === 'admin')
                 <span class="menuText">Schedules</span>
             </a>
 
-            <?php $requestsOpen = in_array($current_page ?? '', ['requests', 'schedule_requests']); ?>
+            <?php $requestsOpen = in_array($current_page ?? '', ['employee_requests', 'schedule_requests']); ?>
             <div class="sideBarDropdown">
                 <button class="sideBarMenuItemDropdown <?= $requestsOpen ? 'active open locked' : '' ?>"
                         onclick="toggleSidebarDropdown(this)">
@@ -124,7 +124,7 @@ $dashboardLink = ($role === 'admin')
                 </button>
                 <div class="sideBarSubMenu <?= $requestsOpen ? 'open' : '' ?>">
                     <a href="admin_requests.php"
-                       class="sideBarSubItem <?= ($current_page === 'requests') ? 'active' : '' ?>">
+                       class="sideBarSubItem <?= ($current_page === 'employee_requests') ? 'active' : '' ?>">
                         <i class="bi bi-file-earmark-text sidebarSubIcon"></i>
                         <span class="menuText">Employee Requests</span>
                     </a>
@@ -140,6 +140,12 @@ $dashboardLink = ($role === 'admin')
             class="sideBarMenuItem <?= ($current_page === 'employee_logs') ? 'active' : '' ?>">
                 <i class="bi bi-journal-text sidebarIcon"></i>
                 <span class="menuText">Logs</span>
+            </a>
+
+            <a href="admin_departments.php"
+            class="sideBarMenuItem <?= ($current_page === 'departments') ? 'active' : '' ?>">
+                <i class="bi bi-building-gear sidebarIcon"></i>
+                <span class="menuText">Departments</span>
             </a>
         </div>
     <?php endif; ?>

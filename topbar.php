@@ -40,10 +40,11 @@ $titles = [
         'dashboard'         => 'Admin Dashboard',
         'employees'         => 'Employees',
         'schedule'          => 'Schedules',
-        'requests'          => 'Employee Requests',
+        'employee_requests' => 'Employee Requests',
         'schedule_requests' => 'Schedule Requests',
         'logs'              => 'Logs',
         'employee_logs'     => 'Employee Logs',
+        'departments'       => 'Departments',
     ]
 ];
 
