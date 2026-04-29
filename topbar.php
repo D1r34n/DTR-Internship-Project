@@ -677,4 +677,25 @@ $currentStatus = $timedIn ? 'Timed In' : 'Timed Out';
         }
     });
 
+    let _allowUnload = false;
+
+    document.addEventListener('click', (e) => {
+        const link = e.target.closest('a[href]');
+        if (!link) return;
+        const href = link.getAttribute('href');
+        if (!href || href === '#' || href.startsWith('javascript:') || href.startsWith('#')) return;
+        try {
+            const url = new URL(link.href, window.location.href);
+            if (url.origin === window.location.origin) _allowUnload = true;
+        } catch (_) {}
+    });
+
+    document.addEventListener('submit', () => { _allowUnload = true; });
+
+    window.addEventListener('beforeunload', (e) => {
+        if (_allowUnload) return;
+        e.preventDefault();
+        e.returnValue = '';
+    });
+
 </script>
