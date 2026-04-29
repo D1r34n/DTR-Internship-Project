@@ -517,6 +517,11 @@ a:focus, img:focus {
     -webkit-user-drag: none;
 }
 
+/* Log type arrow */
+.dropdown-toggle::after {
+    display: none !important;
+}
+
 .userEmail,
 .userProfileIcon {
     transition:

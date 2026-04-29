@@ -2,48 +2,75 @@
 session_start();
 require_once 'db.php';
 
-$bg_image = "images/drt_bg.jpg";
 $page_title = "HSN DRT System";
-$logo = "images/HSN.png";
-$error = "";
 
-if (isset($_SESSION['error'])) {
-    $error = $_SESSION['error'];
-    unset($_SESSION['error']);
-}
+$error_email    = $_SESSION['error_email']    ?? "";
+$error_password = $_SESSION['error_password'] ?? "";
+unset($_SESSION['error_email'], $_SESSION['error_password']);
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
-    $email = trim($_POST['email']);
-    $password = trim($_POST['password']);
 
-    if (empty($email) || empty($password)) {
-        $_SESSION['error'] = "Email and password are required.";
-    } else {
-        // Check employee in database
-        $stmt = $pdo->prepare("SELECT * FROM employees WHERE email = ?");
-        $stmt->execute([$email]);
-        $employee = $stmt->fetch(PDO::FETCH_ASSOC);
+    $email    = trim($_POST['email']    ?? '');
+    $password = trim($_POST['password'] ?? '');
 
-        if ($employee && $password === $employee['password']) {
-            $_SESSION['user_email'] = $employee['email'];
-            $_SESSION['user_name'] = $employee['name'];
-            $_SESSION['user_id'] = $employee['id'];
-            $_SESSION['user_role'] = $employee['role'];
-
-    if ($employee['role'] === 'admin') {
-        header("Location: admin_pages/admin_dashboard.php");
-    } else {
-        header("Location: employee_pages/employee_dashboard.php");
+    if (!$email && !$password) {
+        $_SESSION['error_email']    = "Email is required.";
+        $_SESSION['error_password'] = "Password is required.";
+        header("Location: index.php");
+        exit();
     }
-    exit();
-}
-        else {
-            $_SESSION['error'] = "Wrong Email/Password";
+
+    if (!$email) {
+        $_SESSION['error_email'] = "Email is required.";
+        header("Location: index.php");
+        exit();
+    }
+
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $_SESSION['error_email'] = "Please enter a valid email address.";
+        header("Location: index.php");
+        exit();
+    }
+
+    if (!$password) {
+        $_SESSION['error_password'] = "Password is required.";
+        header("Location: index.php");
+        exit();
+    }
+
+    $stmt = $pdo->prepare("SELECT id, name, email, password, role FROM employees WHERE email = ?");
+    $stmt->execute([$email]);
+    $employee = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if (!$employee) {
+        $_SESSION['error_email'] = "No account found with that email.";
+        header("Location: index.php");
+        exit();
+    }
+
+    // Password Check if hashed
+    // if (password_verify($password, $employee['password'])) {
+    if ($password === $employee['password']) {
+
+        session_regenerate_id(true);
+
+        $_SESSION['user_email'] = $employee['email'];
+        $_SESSION['user_name']  = $employee['name'];
+        $_SESSION['user_id']    = $employee['id'];
+        $_SESSION['user_role']  = $employee['role'];
+
+        if ($employee['role'] === 'admin') {
+            header("Location: admin_pages/admin_dashboard.php");
+        } else {
+            header("Location: employee_pages/employee_dashboard.php");
         }
-    }
+        exit();
 
-    header("Location: index.php");
-    exit();
+    } else {
+        $_SESSION['error_password'] = "Incorrect password.";
+        header("Location: index.php");
+        exit();
+    }
 }
 ?>
 
@@ -54,37 +81,54 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo $page_title; ?></title>
+    <link rel="stylesheet" href="root.css">
     <link rel="stylesheet" href="index.css">
-    <style>
-        body::before {
-            background-image: url('<?php echo $bg_image; ?>');
-        }
-    </style>
 </head>
 <body>
     <div class="container">
-        <img src="<?php echo $logo; ?>" alt="HSN Logo" class="logo">
+        <div class="shine"></div>
+        <img src="images/hsn_logo_white.png" alt="HSN Logo" class="logo">
         <h2>Sign In</h2>
-        <?php if (!empty($error)): ?>
-            <div class="error-msg"><?php echo $error; ?></div>
-        <?php endif; ?>
 
         <form action="index.php" method="POST">
             <div class="field-group">
                 <label>Email</label>
-                <input type="email" name="email" placeholder="Enter your email">
+                <input
+                    type="text"
+                    name="email"
+                    placeholder="Enter your email"
+                    class="<?= $error_email ? 'input-error' : '' ?>"
+                    value="<?= htmlspecialchars($_POST['email'] ?? '') ?>"
+                >
+                <?php if ($error_email): ?>
+                    <span class="field-error">
+                        <i class="bi bi-exclamation-circle"></i>
+                        <?= htmlspecialchars($error_email) ?>
+                    </span>
+                <?php endif; ?>
             </div>
 
             <div class="field-group">
                 <label>Password</label>
-                <input type="password" name="password" placeholder="Enter your password">
+                <input
+                    type="password"
+                    name="password"
+                    placeholder="Enter your password"
+                    class="<?= $error_password ? 'input-error' : '' ?>"
+                >
+                <?php if ($error_password): ?>
+                    <span class="field-error">
+                        <i class="bi bi-exclamation-circle"></i>
+                        <?= htmlspecialchars($error_password) ?>
+                    </span>
+                <?php endif; ?>
             </div>
 
             <div class="remember-row">
                 <label class="remember-me">
                     <input type="checkbox"> Remember me
                 </label>
-                <a href="https://www.hsnservice.com/" target="_blank" class="forgot-password"><u>Forgot password?</u></a>
+                <a href="https://www.hsnservice.com/" target="_blank" class="forgot-password">Forgot password?</a>
             </div>
 
             <button type="submit" class="btn-signin">Sign In</button>
@@ -92,8 +136,28 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
         <div class="no-account-group">
             <label>Don't have an HSN ID? </label>
-            <a href="mailto:Service.Hsnc@hsnservice.com" target="_blank" style="color: #97be41; text-decoration: none;"><u>Contact your HR admin</u></a>
+            <a href="mailto:Service.Hsnc@hsnservice.com" target="_blank" class="no-id">Contact your HR admin</a>
         </div>
     </div>
+
+<script>
+const container = document.querySelector('.container');
+const shine = document.querySelector('.shine');
+
+container.addEventListener('mousemove', (e) => {
+    const rect = container.getBoundingClientRect();
+
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    container.style.setProperty('--x', `${x}px`);
+    container.style.setProperty('--y', `${y}px`);
+});
+
+container.addEventListener('mouseleave', () => {
+    container.style.setProperty('--x', `50%`);
+    container.style.setProperty('--y', `50%`);
+});
+</script>
 </body>
 </html>
