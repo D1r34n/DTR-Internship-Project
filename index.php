@@ -43,7 +43,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $employee = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$employee) {
-        $_SESSION['error_email'] = "No account found with that email.";
+        $_SESSION['error_email'] = "Invalid email or password.";
         header("Location: index.php");
         exit();
     }
@@ -83,6 +83,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     <title><?php echo $page_title; ?></title>
     <link rel="stylesheet" href="root.css">
     <link rel="stylesheet" href="index.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 </head>
 <body>
     <div class="container">
@@ -94,9 +95,10 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             <div class="field-group">
                 <label>Email</label>
                 <input
-                    type="text"
+                    type="email"
                     name="email"
                     placeholder="Enter your email"
+                    autocomplete="username"
                     class="<?= $error_email ? 'input-error' : '' ?>"
                     value="<?= htmlspecialchars($_POST['email'] ?? '') ?>"
                 >
@@ -108,14 +110,23 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 <?php endif; ?>
             </div>
 
-            <div class="field-group">
+            <div class="field-group password-group">
                 <label>Password</label>
-                <input
-                    type="password"
-                    name="password"
-                    placeholder="Enter your password"
-                    class="<?= $error_password ? 'input-error' : '' ?>"
-                >
+
+                <div class="password-wrapper">
+                    <input
+                        type="password"
+                        name="password"
+                        id="password"
+                        placeholder="Enter your password"
+                        class="<?= $error_password ? 'input-error' : '' ?>"
+                    >
+
+                    <button type="button" class="toggle-password" id="togglePassword" aria-label="Toggle password visibility">
+                        <i class="bi bi-eye-fill"></i>
+                    </button>
+                </div>
+
                 <?php if ($error_password): ?>
                     <span class="field-error">
                         <i class="bi bi-exclamation-circle"></i>
@@ -157,6 +168,22 @@ container.addEventListener('mousemove', (e) => {
 container.addEventListener('mouseleave', () => {
     container.style.setProperty('--x', `50%`);
     container.style.setProperty('--y', `50%`);
+});
+
+// Password toggle
+const togglePassword = document.getElementById('togglePassword');
+const passwordInput = document.getElementById('password');
+
+togglePassword.addEventListener('click', () => {
+    const isHidden = passwordInput.type === 'password';
+
+    // toggle input type
+    passwordInput.type = isHidden ? 'text' : 'password';
+
+    // toggle icon
+    togglePassword.innerHTML = isHidden
+        ? '<i class="bi bi-eye-slash-fill"></i>'
+        : '<i class="bi bi-eye-fill"></i>';
 });
 </script>
 </body>

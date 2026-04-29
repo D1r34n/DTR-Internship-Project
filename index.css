@@ -111,8 +111,8 @@ body::before {
 /* ===== HOVER LIFT — desktop only ===== */
 @media (hover: hover) {
     .container:hover {
-        backdrop-filter: blur(38px) saturate(180%) brightness(0.4);
-        -webkit-backdrop-filter: blur(38px) saturate(180%) brightness(0.4);
+        backdrop-filter: blur(38px) saturate(180%) brightness(0.35);
+        -webkit-backdrop-filter: blur(38px) saturate(180%) brightness(0.35);
 
         box-shadow:
             0 30px 80px rgba(0, 0, 0, 0.6),
@@ -223,6 +223,39 @@ h2 {
     text-align: left;
 }
 
+.password-wrapper {
+    position: relative;
+    width: 100%;
+}
+
+.password-wrapper input {
+    padding-right: 42px; /* space for icon button */
+}
+
+.toggle-password {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+
+    background: transparent;
+    border: none;
+    cursor: pointer;
+
+    color: rgba(255,255,255,0.6);
+    font-size: 14px;
+
+    transition: 0.2s ease;
+}
+
+.toggle-password:hover {
+    color: rgba(255,255,255,0.9);
+}
+
+.toggle-password:hover {
+    color: rgba(255, 255, 255, 0.9);
+}
+
 /* ===== REMEMBER ROW ===== */
 .remember-row {
     display: flex;
@@ -260,7 +293,7 @@ h2 {
 
 .forgot-password:hover,
 .no-id:hover {
-    color: var(--primary-hover);
+    color: var(--text-light);
     transform: translateY(-1px);
 }
 
@@ -288,7 +321,8 @@ h2 {
 
 @media (hover: hover) {
     .btn-signin:hover {
-        background: var(--primary-hover);
+        background: var(--text-lightest);
+        color: var(--primary-color);
         transform: translateY(-1px);
     }
 }
