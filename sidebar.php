@@ -1,11 +1,12 @@
-<!-- PHP -->
 <?php
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-$role = $_SESSION['user_role'] ?? null;
-$current_page = $current_page ?? '';
+// Authentication check
+$role         = $_SESSION['user_role'] ?? null;
+$currentPage  = $currentPage ?? '';
+
 if (!$role) {
     header("Location: ../index.php");
     exit();
@@ -22,175 +23,190 @@ $dashboardLink = ($role === 'admin')
     : 'employee_dashboard.php';
 ?>
 
-<div class="sideBar">
-    <div class="topSideBar">
-        <a href="<?= $dashboardLink ?>" class="topSideBarItem">
-            <img src="../images/hsn_logo_white.png" class="sideBarLogo">
-            <span class="topSideBarText">DTR System</span>
+<div class="side-bar">
+
+    <!-- TOP SECTION -->
+    <div class="top-side-bar">
+        <a href="<?= $dashboardLink ?>" class="top-side-bar-item">
+            <img src="../assets/images/hsn_logo_white.png" class="side-bar-logo" alt="HSN Logo">
+            <span class="top-side-bar-text">DTR System</span>
         </a>
     </div>
 
-    <a class="horizontalDivider"></a>
+    <div class="horizontal-divider"></div>
 
+    <!-- EMPLOYEE MENU -->
     <?php if ($role === 'employee'): ?>
-        <div id="employeeMenu" class="sideBarMenu">
+        <div id="employee-menu" class="side-bar-menu">
+
             <a href="employee_dashboard.php"
-            class="sideBarMenuItem <?= ($current_page === 'dashboard') ? 'active' : '' ?>">
-                <i class="bi bi-columns-gap sidebarIcon"></i>
-                <span class="menuText">Dashboard</span>
+               class="side-bar-menu-item <?= ($currentPage === 'dashboard') ? 'active' : '' ?>">
+                <i class="bi bi-columns-gap sidebar-icon"></i>
+                <span class="menu-text">Dashboard</span>
             </a>
 
             <a href="employee_records.php"
-            class="sideBarMenuItem <?= ($current_page === 'records') ? 'active' : '' ?>">
-                <i class="bi bi-bar-chart-steps sidebarIcon"></i>
-                <span class="menuText">Records</span>
+               class="side-bar-menu-item <?= ($currentPage === 'records') ? 'active' : '' ?>">
+                <i class="bi bi-bar-chart-steps sidebar-icon"></i>
+                <span class="menu-text">Records</span>
             </a>
 
             <a href="employee_schedule.php"
-            class="sideBarMenuItem <?= ($current_page === 'schedule') ? 'active' : '' ?>">
-                <i class="bi bi-calendar-week sidebarIcon"></i>
-                <span class="menuText">Schedules</span>
+               class="side-bar-menu-item <?= ($currentPage === 'schedule') ? 'active' : '' ?>">
+                <i class="bi bi-calendar-week sidebar-icon"></i>
+                <span class="menu-text">Schedules</span>
             </a>
 
             <a href="employee_logs.php"
-            class="sideBarMenuItem <?= ($current_page === 'logs') ? 'active' : '' ?>">
-                <i class="bi bi-clipboard-minus sidebarIcon"></i>
-                <span class="menuText">Logs</span>
+               class="side-bar-menu-item <?= ($currentPage === 'logs') ? 'active' : '' ?>">
+                <i class="bi bi-clipboard-minus sidebar-icon"></i>
+                <span class="menu-text">Logs</span>
             </a>
+
         </div>
     <?php endif; ?>
 
+    <!-- WORKFORCE MENU -->
     <?php if ($role === 'workforce'): ?>
-        <div id="workforceMenu" class="sideBarMenu">
+        <div id="workforce-menu" class="side-bar-menu">
+
             <a href="employee_dashboard.php"
-            class="sideBarMenuItem <?= ($current_page === 'dashboard') ? 'active' : '' ?>">
-                <i class="bi bi-columns-gap sidebarIcon"></i>
-                <span class="menuText">Dashboard</span>
+               class="side-bar-menu-item <?= ($currentPage === 'dashboard') ? 'active' : '' ?>">
+                <i class="bi bi-columns-gap sidebar-icon"></i>
+                <span class="menu-text">Dashboard</span>
             </a>
 
             <a href="employee_records.php"
-            class="sideBarMenuItem <?= ($current_page === 'records') ? 'active' : '' ?>">
-                <i class="bi bi-bar-chart-steps sidebarIcon"></i>
-                <span class="menuText">Records</span>
+               class="side-bar-menu-item <?= ($currentPage === 'records') ? 'active' : '' ?>">
+                <i class="bi bi-bar-chart-steps sidebar-icon"></i>
+                <span class="menu-text">Records</span>
             </a>
 
             <a href="employee_schedule.php"
-            class="sideBarMenuItem <?= ($current_page === 'schedule') ? 'active' : '' ?>">
-                <i class="bi bi-calendar-week sidebarIcon"></i>
-                <span class="menuText">Schedules</span>
+               class="side-bar-menu-item <?= ($currentPage === 'schedule') ? 'active' : '' ?>">
+                <i class="bi bi-calendar-week sidebar-icon"></i>
+                <span class="menu-text">Schedules</span>
             </a>
 
             <a href="employee_logs.php"
-            class="sideBarMenuItem <?= ($current_page === 'logs') ? 'active' : '' ?>">
-                <i class="bi bi-clipboard-minus sidebarIcon"></i>
-                <span class="menuText">Logs</span>
+               class="side-bar-menu-item <?= ($currentPage === 'logs') ? 'active' : '' ?>">
+                <i class="bi bi-clipboard-minus sidebar-icon"></i>
+                <span class="menu-text">Logs</span>
             </a>
 
             <a href="workforce_schedule.php"
-            class="sideBarMenuItem <?= ($current_page === 'workforce_schedule') ? 'active' : '' ?>">
-                <i class="bi bi-calendar-plus sidebarIcon"></i>
-                <span class="menuText">Manage Schedules</span>
+               class="side-bar-menu-item <?= ($currentPage === 'workforce_schedule') ? 'active' : '' ?>">
+                <i class="bi bi-calendar-plus sidebar-icon"></i>
+                <span class="menu-text">Manage Schedules</span>
             </a>
+
         </div>
     <?php endif; ?>
 
+    <!-- ADMIN MENU -->
     <?php if ($role === 'admin'): ?>
-        <div id="adminMenu" class="sideBarMenu">
+        <div id="admin-menu" class="side-bar-menu">
+
             <a href="admin_dashboard.php"
-            class="sideBarMenuItem <?= ($current_page === 'dashboard') ? 'active' : '' ?>">
-                <i class="bi bi-columns-gap sidebarIcon"></i>
-                <span class="menuText">Dashboard</span>
+               class="side-bar-menu-item <?= ($currentPage === 'dashboard') ? 'active' : '' ?>">
+                <i class="bi bi-columns-gap sidebar-icon"></i>
+                <span class="menu-text">Dashboard</span>
             </a>
 
             <a href="admin_employees.php"
-            class="sideBarMenuItem <?= ($current_page === 'employees') ? 'active' : '' ?>">
-                <i class="bi bi-people-fill sidebarIcon"></i>
-                <span class="menuText">Employees</span>
+               class="side-bar-menu-item <?= ($currentPage === 'employees') ? 'active' : '' ?>">
+                <i class="bi bi-people-fill sidebar-icon"></i>
+                <span class="menu-text">Employees</span>
             </a>
 
             <a href="admin_schedule.php"
-            class="sideBarMenuItem <?= ($current_page === 'schedule') ? 'active' : '' ?>">
-                <i class="bi bi-calendar-week sidebarIcon"></i>
-                <span class="menuText">Schedules</span>
+               class="side-bar-menu-item <?= ($currentPage === 'schedule') ? 'active' : '' ?>">
+                <i class="bi bi-calendar-week sidebar-icon"></i>
+                <span class="menu-text">Schedules</span>
             </a>
 
-            <?php $requestsOpen = in_array($current_page ?? '', ['employee_requests', 'schedule_requests']); ?>
-            <div class="sideBarDropdown">
-                <button class="sideBarMenuItemDropdown <?= $requestsOpen ? 'active open locked' : '' ?>"
-                        onclick="toggleSidebarDropdown(this)">
-                    <i class="bi bi-envelope-paper sidebarIcon"></i>
-                    <span class="menuText">Requests</span>
-                    <i class="bi bi-chevron-down sideBarDropdownChevron"></i>
+            <?php $requestsOpen = in_array($currentPage, ['employee_requests', 'schedule_requests']); ?>
+            <div class="side-bar-dropdown">
+                <button
+                    class="side-bar-menu-item-dropdown <?= $requestsOpen ? 'active open locked' : '' ?>"
+                    onclick="toggleSidebarDropdown(this)"
+                >
+                    <i class="bi bi-envelope-paper sidebar-icon"></i>
+                    <span class="menu-text">Requests</span>
+                    <i class="bi bi-chevron-down side-bar-dropdown-chevron"></i>
                 </button>
-                <div class="sideBarSubMenu <?= $requestsOpen ? 'open' : '' ?>">
+
+                <div class="side-bar-sub-menu <?= $requestsOpen ? 'open' : '' ?>">
                     <a href="admin_requests.php"
-                       class="sideBarSubItem <?= ($current_page === 'employee_requests') ? 'active' : '' ?>">
-                        <i class="bi bi-file-earmark-text sidebarSubIcon"></i>
-                        <span class="menuText">Employee Requests</span>
+                       class="side-bar-sub-item <?= ($currentPage === 'employee_requests') ? 'active' : '' ?>">
+                        <i class="bi bi-file-earmark-text sidebar-sub-icon"></i>
+                        <span class="menu-text">Employee Requests</span>
                     </a>
                     <a href="admin_schedule_requests.php"
-                       class="sideBarSubItem <?= ($current_page === 'schedule_requests') ? 'active' : '' ?>">
-                        <i class="bi bi-calendar-check sidebarSubIcon"></i>
-                        <span class="menuText">Schedule Requests</span>
+                       class="side-bar-sub-item <?= ($currentPage === 'schedule_requests') ? 'active' : '' ?>">
+                        <i class="bi bi-calendar-check sidebar-sub-icon"></i>
+                        <span class="menu-text">Schedule Requests</span>
                     </a>
                 </div>
             </div>
 
             <a href="admin_logs.php"
-            class="sideBarMenuItem <?= ($current_page === 'employee_logs') ? 'active' : '' ?>">
-                <i class="bi bi-journal-text sidebarIcon"></i>
-                <span class="menuText">Logs</span>
+               class="side-bar-menu-item <?= ($currentPage === 'employee_logs') ? 'active' : '' ?>">
+                <i class="bi bi-journal-text sidebar-icon"></i>
+                <span class="menu-text">Logs</span>
             </a>
 
             <a href="admin_departments.php"
-            class="sideBarMenuItem <?= ($current_page === 'departments') ? 'active' : '' ?>">
-                <i class="bi bi-building-gear sidebarIcon"></i>
-                <span class="menuText">Departments</span>
+               class="side-bar-menu-item <?= ($currentPage === 'departments') ? 'active' : '' ?>">
+                <i class="bi bi-building-gear sidebar-icon"></i>
+                <span class="menu-text">Departments</span>
             </a>
+
         </div>
     <?php endif; ?>
+
 </div>
 
-<!-- Java Script -->
+<!-- JAVASCRIPT -->
 <script>
-    document.addEventListener("DOMContentLoaded", () => {
-        const sidebar         = document.querySelector(".sideBar");
-        const links           = document.querySelectorAll(".sideBarMenuItem, .sideBarSubItem");
-        const dropdownWrapper = document.querySelector(".sideBarDropdown");
+    document.addEventListener('DOMContentLoaded', () => {
+        const sidebar         = document.querySelector('.side-bar');
+        const links           = document.querySelectorAll('.side-bar-menu-item, .side-bar-sub-item');
+        const dropdownWrapper = document.querySelector('.side-bar-dropdown');
 
         // Page-change click animation
         links.forEach(link => {
-            link.addEventListener("click", (e) => {
+            link.addEventListener('click', (e) => {
                 e.preventDefault();
-                sidebar.classList.add("force-collapse");
+                sidebar.classList.add('force-collapse');
                 setTimeout(() => { window.location.href = link.href; }, 250);
             });
         });
 
         if (dropdownWrapper) {
-            const btn     = dropdownWrapper.querySelector(".sideBarMenuItemDropdown");
+            const btn     = dropdownWrapper.querySelector('.side-bar-menu-item-dropdown');
             const subMenu = btn.nextElementSibling;
 
             // Hover open
-            dropdownWrapper.addEventListener("mouseenter", () => {
-                btn.classList.add("open");
-                subMenu.classList.add("open");
+            dropdownWrapper.addEventListener('mouseenter', () => {
+                btn.classList.add('open');
+                subMenu.classList.add('open');
             });
 
-            // Hover close (only if not locked)
-            dropdownWrapper.addEventListener("mouseleave", () => {
-                if (!btn.classList.contains("locked")) {
-                    btn.classList.remove("open");
-                    subMenu.classList.remove("open");
+            // Hover close — only if not locked
+            dropdownWrapper.addEventListener('mouseleave', () => {
+                if (!btn.classList.contains('locked')) {
+                    btn.classList.remove('open');
+                    subMenu.classList.remove('open');
                 }
             });
         }
 
-        // Sidebar collapse also closes unlocked dropdown
-        sidebar.addEventListener("mouseleave", () => {
-            document.querySelectorAll(".sideBarMenuItemDropdown:not(.locked)").forEach(btn => {
-                btn.classList.remove("open");
-                btn.nextElementSibling.classList.remove("open");
+        // Sidebar collapse also closes unlocked dropdowns
+        sidebar.addEventListener('mouseleave', () => {
+            document.querySelectorAll('.side-bar-menu-item-dropdown:not(.locked)').forEach(btn => {
+                btn.classList.remove('open');
+                btn.nextElementSibling.classList.remove('open');
             });
         });
     });
@@ -198,12 +214,12 @@ $dashboardLink = ($role === 'admin')
     // Click = toggle lock
     function toggleSidebarDropdown(btn) {
         const subMenu = btn.nextElementSibling;
-        if (btn.classList.contains("locked")) {
-            btn.classList.remove("locked", "open");
-            subMenu.classList.remove("open");
+        if (btn.classList.contains('locked')) {
+            btn.classList.remove('locked', 'open');
+            subMenu.classList.remove('open');
         } else {
-            btn.classList.add("locked", "open");
-            subMenu.classList.add("open");
+            btn.classList.add('locked', 'open');
+            subMenu.classList.add('open');
         }
     }
 </script>

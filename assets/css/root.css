@@ -1,12 +1,32 @@
 :root {
-    /* PRIMARY */
-    --primary-color:  #97be41;
-    --primary-hover:  #7fae2f;
-    --primary-bg:     rgba(151, 190, 65, 0.1);
-    --primary-border: rgba(151, 190, 65, 0.2);
-    --primary-range:  rgba(151, 190, 65, 0.2);
-    --primary-soft:   rgba(151, 190, 65, 0.15);
-    --primary-glow:   rgba(151, 190, 65, 0.5);
+    /* BREADCRUMB */
+    --breadcrumb-divider-color: rgba(255, 255, 255, 0.4);
+
+    /* DEFAULT / NEUTRAL (TRUE GLASS BASE) */
+    --neutral-color:        #cfcfcf;
+    --neutral-hover:        #b8b8b8;
+
+    --neutral-glass:        rgba(255, 255, 255, 0.06);
+    --neutral-glass-hover:  rgba(255, 255, 255, 0.10);
+
+    --neutral-border:       rgba(255, 255, 255, 0.12);
+    --neutral-range:        rgba(255, 255, 255, 0.12);
+    --neutral-soft:         rgba(255, 255, 255, 0.08);
+
+    --neutral-glow:         rgba(0, 0, 0, 0.35);
+
+    /* PRIMARY (ALIGNED TO NEUTRAL GLASS SYSTEM) */
+    --primary-color:        #97be41;
+    --primary-hover:        #7fae2f;
+
+    --primary-glass:        rgba(151, 190, 65, 0.10);
+    --primary-glass-hover:  rgba(151, 190, 65, 0.16);
+
+    --primary-border:       rgba(151, 190, 65, 0.22);
+    --primary-range:        rgba(151, 190, 65, 0.18);
+    --primary-soft:         rgba(151, 190, 65, 0.12);
+
+    --primary-glow:         rgba(151, 190, 65, 0.45);
 
     /* TEXT */
     --text-darkest:    #000000;
@@ -21,13 +41,18 @@
     --bg-soft:  #f5f5f5;
     --bg-dark:  #1e1e1e;
 
-    /* DANGER */
-    --danger:        #dc3545;
-    --danger-hover:  #b52b3a;
-    --danger-soft:   #f8d7da;
-    --danger-color:  #ef4444;
-    --danger-bg:     rgba(239, 68, 68, 0.1);
-    --danger-border: rgba(239, 68, 68, 0.2);
+    /* DANGER (ALIGNED TO NEUTRAL GLASS SYSTEM) */
+    --danger-color:        #ef4444;
+    --danger-hover:        #dc3545;
+
+    --danger-glass:        rgba(239, 68, 68, 0.10);
+    --danger-glass-hover:  rgba(239, 68, 68, 0.16);
+
+    --danger-border:       rgba(239, 68, 68, 0.22);
+    --danger-range:        rgba(239, 68, 68, 0.18);
+    --danger-soft:         rgba(239, 68, 68, 0.12);
+
+    --danger-glow:         rgba(239, 68, 68, 0.45);
 
     /* WARNING */
     --warning:        #fbbf24;
@@ -45,10 +70,15 @@
     /* SHADOW */
     --shadow: rgba(0, 0, 0, 0.3);
 
-    /* OVERLAY */
-    --overlay-hover: rgba(255, 255, 255, 0.1);
-    --overlay-soft:  rgba(255, 255, 255, 0.04);
-    --overlay-muted: rgba(255, 255, 255, 0.2);
+    /* OVERLAY — PRIMARY-BASED GREEN SYSTEM */
+
+    --overlay-hover-light: rgba(151, 190, 65, 0.06);
+    --overlay-hover:       rgba(151, 190, 65, 0.10);
+    --overlay-soft:        rgba(151, 190, 65, 0.04);
+    --overlay-muted:       rgba(151, 190, 65, 0.18);
+
+    --danger-overlay: rgba(255, 80, 80, 0.08);
+    --disabled-bg:    #9ca3af;
 
     /* MAP */
     --map-bg:     rgba(255, 255, 255, 0.15);
@@ -58,6 +88,7 @@
 
     /* GLASS / SIDEBAR */
     --glass-bg:     rgba(255, 255, 255, 0.038);
+    --glass-bg-dark: rgba(15, 15, 18, 0.5);
     --glass-border: rgba(255, 255, 255, 0.085);
     --glass-top:    rgba(255, 255, 255, 0.16);
     --glass-hover:  rgba(255, 255, 255, 0.06);

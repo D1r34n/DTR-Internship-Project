@@ -1,32 +1,72 @@
-/* BACKGROUND IMAGE (with blur only) */
+/* ================================================
+   EMPLOYEE DASHBOARD
+   ================================================
+   Page-specific styles for the employee dashboard.
+   Depends on: root.css, typography.css,
+               components.css, navbars.css
+   ================================================ */
+
+/* ================================================
+   BACKGROUND SYSTEM
+   ================================================ */
+
+/* ------------------------------------------------
+   BASE IMAGE LAYER
+   ------------------------------------------------ */
+
 body::before {
     content: '';
     position: fixed;
     inset: 0;
 
-    background-image: url('../images/drt_bg.jpg');
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
+    background: url('../assets/images/drt_bg.jpg') center / cover no-repeat;
 
-    /* blur directly on image */
-    filter: blur(6px);
-    transform: scale(1.1); /* prevents edge cut-off from blur */
+    filter: blur(var(--bg-blur, 6px));
+    transform: scale(1.1);
 
     z-index: -2;
 }
 
+/* ------------------------------------------------
+   GLASS OVERLAY
+   ------------------------------------------------ */
+
 body::after {
-    content: none;
+    content: '';
+    position: fixed;
+    inset: 0;
+
+    background: var(--glass-bg);
+
+    backdrop-filter: blur(32px) saturate(160%) brightness(0.3);
+    -webkit-backdrop-filter: blur(32px) saturate(160%) brightness(0.3);
+
+    z-index: -1;
 }
+
+/* ------------------------------------------------
+   BODY BASE
+   ------------------------------------------------ */
 
 body {
-    font-family: 'Poppins', sans-serif;
     min-height: 100vh;
     margin: 0;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    padding: 1rem;
+
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
-.dashboardWrapper {
+/* ------------------------------------------------
+   LAYOUT
+   ------------------------------------------------ */
+
+.dashboard-wrapper {
     position: fixed;
     top: 60px;
     left: calc(5px + var(--sidebar-width));
@@ -38,72 +78,92 @@ body {
     z-index: 10;
     transition: left 0.3s ease, width 0.3s ease;
 }
-.dashboardContent {
+
+/* ------------------------------------------------
+   DASHBOARD CONTENT — DATE & TIME
+   ------------------------------------------------ */
+
+.dashboard-content {
     display: flex;
     flex-direction: column;
-    color: white;
+    color: var(--text-lightest);
     margin: 1rem;
 }
 
-#currentDate {
+#current-date {
     font-size: 3rem;
     margin-bottom: 5px;
-    text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.5);
+    color: var(--text-lightest);
+    text-shadow: 2px 2px 5px var(--shadow);
 }
 
-#currentTime {
+#current-time {
     font-size: 6rem;
-    text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.5);
+    color: var(--text-lightest);
+    text-shadow: 2px 2px 5px var(--shadow);
 }
 
-.dashboardSummary {
+/* ------------------------------------------------
+   SUMMARY CARDS
+   ------------------------------------------------ */
+
+.dashboard-summary {
     display: flex;
     flex-direction: row;
     gap: 2rem;
     margin-top: 5rem;
 }
 
-.summaryCard {
+.summary-card {
     background-color: rgba(0, 0, 0, 0.5);
     padding: 20px;
     border-radius: 12px;
     width: 220px;
     text-align: left;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 4px 20px var(--shadow);
 }
 
-.logsForTheDay {
-    font-family: 'Poppins', sans-serif;
-    background-color: #ffffff;
+.summary-card .text-secondary {
+    color: var(--text-light);
+    margin-bottom: 0.25rem;
+}
+
+.summary-card .stats-number {
+    color: var(--text-lightest);
+    margin: 0;
+}
+
+/* ------------------------------------------------
+   LOGS TABLE
+   ------------------------------------------------ */
+
+.logs-for-the-day {
+    background-color: var(--bg-light);
     padding: 30px;
     border-radius: 12px;
     width: 1150px;
     height: 500px;
-
     display: flex;
     flex-direction: column;
-
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 4px 20px var(--shadow);
     position: relative;
     z-index: 10;
 }
 
-.recordBox {
-    font-family: 'Poppins', sans-serif;
-
+.record-box {
     display: flex;
     flex-direction: column;
     position: relative;
     z-index: 10;
 }
 
-.tableTitle {
+.table-title {
     text-align: left;
-    font-weight: 600;
     margin-bottom: 0;
+    color: var(--text-darkest);
 }
 
-.tableScroll {
+.table-scroll {
     width: 100%;
     max-height: 400px;
     overflow-y: auto;
@@ -111,28 +171,65 @@ body {
     position: relative;
 }
 
-.tableScroll thead th {
+/* ------------------------------------------------
+   LOG TABLE STYLES
+   ------------------------------------------------ */
+
+.log-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.log-table th {
     position: sticky;
     top: -0.5px;
-    background-color: #fff;
+    background-color: var(--bg-light);
+    color: var(--text-dark);
+    padding: 0.65rem 1rem;
+    text-align: left;
+    font-size: 0.8rem;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
     z-index: 10;
+    border-bottom: 1px solid var(--border);
 }
 
-.tableScroll::-webkit-scrollbar {
-    width: 6px;
+.log-table td {
+    padding: 0.65rem 1rem;
+    color: var(--text-dark);
+    font-size: 0.875rem;
+    font-weight: 300;
+    border-top: 1px solid var(--border);
 }
 
-.tableScroll::-webkit-scrollbar-thumb {
-    background: #ccc;
-    border-radius: 10px;
+.log-table tbody tr:hover {
+    background: var(--bg-soft);
 }
+
+/* ------------------------------------------------
+   LOG TYPE INDICATORS
+   ------------------------------------------------ */
 
 .log-in {
-    color: #198754 !important; /* green */
-    font-weight: 600;
+    color: #198754;
+    font-weight: 500;
 }
 
 .log-out {
-    color: #dc3545 !important; /* red */
-    font-weight: 600;
+    color: var(--danger);
+    font-weight: 500;
+}
+
+/* ------------------------------------------------
+   SCROLLBAR
+   ------------------------------------------------ */
+
+.table-scroll::-webkit-scrollbar {
+    width: 6px;
+}
+
+.table-scroll::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 10px;
 }

@@ -1,0 +1,200 @@
+/* ================================================
+   BOOTSTRAP BUTTON FULL OVERRIDE LAYER (SUBTLE GLASS)
+   ================================================ */
+
+
+/* FORCE BASE BUTTON RESET */
+.btn,
+button.btn {
+    all: unset !important;
+
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 0.4rem !important;
+
+    padding: 0.45rem 1rem !important;
+
+    color: var(--text-light) !important;
+    background: var(--neutral-glass) !important;
+
+    /* ✨ SUBTLE GLASS FADE (VERY LIGHT) */
+    background-image: linear-gradient(
+        to bottom,
+        rgba(255, 255, 255, 0.10),
+        rgba(255, 255, 255, 0.04),
+        rgba(255, 255, 255, 0)
+    ) !important;
+
+    border: 1px solid var(--neutral-border) !important;
+    border-radius: 12px !important;
+
+    font-size: 0.9rem !important;
+    font-weight: 400 !important;
+
+    cursor: pointer !important;
+    user-select: none !important;
+
+    backdrop-filter: blur(10px) !important;
+    -webkit-backdrop-filter: blur(10px) !important;
+
+    box-shadow: var(--glass-inset) !important;
+
+    position: relative !important;
+    overflow: hidden !important;
+
+    transition:
+        color 0.2s ease,
+        background 0.25s ease,
+        box-shadow 0.2s ease,
+        transform 0.2s ease !important;
+}
+
+
+/* ================================================
+   VERY SUBTLE TOP HIGHLIGHT (NO SHARP SHINE)
+   ================================================ */
+
+.btn::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+
+    background: linear-gradient(
+        to bottom,
+        rgba(255, 255, 255, 0.08),
+        transparent 65%
+    );
+
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+
+/* ================================================
+   HOVER / FOCUS / ACTIVE (SOFT)
+   ================================================ */
+
+.btn:hover,
+.btn:focus,
+.btn:focus-visible {
+    color: var(--text-lightest) !important;
+    background: var(--neutral-glass-hover) !important;
+    border-color: var(--neutral-border) !important;
+
+    box-shadow: var(--glass-shadow) !important;
+    transform: var(--lift-sm) !important;
+
+    outline: none !important;
+}
+
+.btn:active {
+    transform: translateY(0) !important;
+    background: var(--neutral-glass) !important;
+    box-shadow: var(--glass-inset) !important;
+}
+
+
+/* Bootstrap open state */
+.btn.show,
+.show > .btn {
+    background: var(--neutral-glass-hover) !important;
+    box-shadow: var(--glass-shadow) !important;
+}
+
+
+/* ================================================
+   DISABLED
+   ================================================ */
+
+.btn:disabled,
+.btn.disabled,
+.btn-disabled {
+    opacity: 0.5 !important;
+    cursor: not-allowed !important;
+    pointer-events: none !important;
+
+    box-shadow: none !important;
+    transform: none !important;
+}
+
+
+/* ================================================
+   PRIMARY (SUBTLE MATCHED STYLE)
+   ================================================ */
+
+.btn-primary,
+.btn.btn-primary {
+    color: var(--primary-color) !important;
+    background: var(--primary-glass) !important;
+
+    background-image: linear-gradient(
+        to bottom,
+        rgba(255, 255, 255, 0.10),
+        rgba(255, 255, 255, 0.03),
+        transparent
+    ) !important;
+
+    border: 1px solid var(--primary-border) !important;
+
+    box-shadow: var(--primary-soft) !important;
+}
+
+.btn-primary:hover,
+.btn-primary:focus,
+.btn-primary:focus-visible {
+    box-shadow: 0 4px 16px var(--primary-glow) !important;
+}
+
+
+/* ================================================
+   DANGER (SUBTLE MATCHED STYLE)
+   ================================================ */
+
+.btn-danger,
+.btn.btn-danger {
+    color: var(--danger-color) !important;
+    background: var(--danger-glass) !important;
+
+    background-image: linear-gradient(
+        to bottom,
+        rgba(255, 255, 255, 0.10),
+        rgba(255, 255, 255, 0.03),
+        transparent
+    ) !important;
+
+    border: 1px solid var(--danger-border) !important;
+
+    box-shadow: var(--danger-soft) !important;
+}
+
+.btn-danger:hover,
+.btn-danger:focus,
+.btn-danger:focus-visible {
+    box-shadow: 0 4px 16px var(--danger-glow) !important;
+}
+
+
+/* ================================================
+   BOOTSTRAP EDGE CASE FIXES
+   ================================================ */
+
+.btn-check:checked + .btn {
+    background: var(--primary-glass-hover) !important;
+    border-color: var(--primary-border) !important;
+    color: var(--text-lightest) !important;
+}
+
+.dropdown-toggle.btn:focus {
+    outline: none !important;
+    box-shadow: var(--glass-shadow) !important;
+}
+
+.btn-group .btn {
+    border-radius: 12px !important;
+}
+
+.btn:focus {
+    box-shadow: none !important;
+}
