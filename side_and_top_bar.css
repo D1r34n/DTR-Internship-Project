@@ -546,47 +546,79 @@ body:has(.sideBar:hover) .sideBarDropdownChevron {
 .sideBarSubMenu {
     overflow: hidden;
     max-height: 0;
+    position: relative;
     transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .sideBarSubMenu.open {
-    max-height: 160px;
+    max-height: 200px;
+}
+
+/* Single continuous vertical trunk */
+.sideBarSubMenu::before {
+    content: '';
+    position: absolute;
+    left: 9px;
+    top: 0;
+    bottom: 15px;
+    width: 1.5px;
+    background: linear-gradient(
+        to bottom,
+        var(--primary-color) var(--active-px, 0px),
+        rgba(255, 255, 255, 0.2) var(--active-px, 0px)
+    );
+    pointer-events: none;
+    z-index: 0;
 }
 
 .sideBarSubItem {
     display: flex;
     align-items: center;
     justify-content: flex-start;
-    width: calc(100% - 10px);
-    margin-left: 10px;
+    position: relative;
+    width: calc(100% - 20px);
+    margin-left: 20px;
     padding: 0.45rem 0.8rem;
     color: rgba(255, 255, 255, 0.5);
     text-decoration: none;
     font-size: 0.875rem;
-    border: 1px solid transparent;
-    border-left: 2px solid rgba(255, 255, 255, 0.08);
     border-radius: 0 8px 8px 0;
-    transition: color 0.2s ease, background-color 0.3s ease, border-color 0.2s ease, transform 0.2s ease;
+    transition: color 0.2s ease, background-color 0.3s ease;
     user-select: none;
     -webkit-user-select: none;
     -webkit-user-drag: none;
     margin-top: 2px;
 }
 
+/* Horizontal connector */
+.sideBarSubItem::after {
+    content: '';
+    position: absolute;
+    left: -11px;
+    top: 50%;
+    width: 11px;
+    height: 1.5px;
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateY(-50%);
+    z-index: 1;
+}
+
 .sideBarSubItem:hover {
     color: var(--text-lightest);
     background: rgba(255, 255, 255, 0.04);
-    border-left-color: rgba(255, 255, 255, 0.2);
-    transform: translateX(3px);
+}
+
+.sideBarSubItem:hover::after {
+    background: rgba(255, 255, 255, 0.4);
 }
 
 .sideBarSubItem.active {
     color: var(--primary-color);
     background: rgba(151, 190, 65, 0.08);
-    border-left-color: rgba(151, 190, 65, 0.7);
-    border-right-color: transparent;
-    border-top-color: transparent;
-    border-bottom-color: transparent;
+}
+
+.sideBarSubItem.active::after {
+    background: var(--primary-color);
 }
 
 .sidebarSubIcon {

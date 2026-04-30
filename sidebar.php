@@ -209,6 +209,14 @@ $dashboardLink = ($role === 'admin')
                 btn.nextElementSibling.classList.remove("open");
             });
         });
+
+        // Trunk gradient: green from top → active item midpoint
+        document.querySelectorAll(".sideBarSubMenu").forEach(menu => {
+            const activeItem = menu.querySelector(".sideBarSubItem.active");
+            if (!activeItem) return;
+            const midpoint = activeItem.offsetTop + activeItem.offsetHeight / 2;
+            menu.style.setProperty("--active-px", `${midpoint.toFixed(1)}px`);
+        });
     });
 
     // Click = toggle lock
