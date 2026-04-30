@@ -158,7 +158,19 @@ $obRequests = $pdo->query("
 
 // ---- GET LOG EDIT REQUESTS ----
 $logEditRequests = $pdo->query("
-    SELECT le.*, e.name AS employee_name, a.work_date
+    SELECT
+        le.id,
+        le.employee_id,
+        le.attendance_id,
+        le.request_type,
+        le.actual_time_in,
+        le.requested_time_in,
+        le.requested_time_out,
+        le.reason,
+        le.status,
+        le.created_at,
+        e.name AS employee_name,
+        COALESCE(a.work_date, le.work_date) AS work_date
     FROM log_edit_requests le
     JOIN employees e ON le.employee_id = e.id
     LEFT JOIN attendances a ON le.attendance_id = a.id
@@ -321,7 +333,7 @@ $logEditRequests = $pdo->query("
                                             In: <?= date('h:i A', strtotime($row['actual_time_in'])) ?> &rarr; <?= date('h:i A', strtotime($row['requested_time_in'])) ?> | Out: <?= date('h:i A', strtotime($row['requested_time_out'])) ?>
                                         <?php endif; ?>
                                     </td>
-                                    <td class="reasonCol"><?= htmlspecialchars($row['reason']) ?></td>
+                                    <td class="reasonCol"><?= htmlspecialchars($row['reason'] ?: 'No reason provided') ?></td>
                                     <td><?= getStatusBadge($row['status']) ?></td>
                                     <td class="actionsCol"><?= getActionButtons('log_edit', $row['id'], $row['status']) ?></td>
                                 </tr>

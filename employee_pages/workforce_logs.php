@@ -309,7 +309,7 @@ $current_page = 'workforce_logs';
                 <label style="color:rgba(255,255,255,0.6);font-size:0.8rem;margin-top:0.85rem;display:block;font-weight:600;">
                     Reason <span style="color:rgba(255,255,255,0.3);font-weight:400;">(optional)</span>
                 </label>
-                <textarea id="leReason" class="wfModalInput" rows="2"
+                <textarea id="wfLeReason" class="wfModalInput" rows="2"
                     placeholder="Briefly explain the reason for this correction..."
                     style="resize:none;"></textarea>
                 <p style="font-size:0.75rem;color:rgba(255,255,255,0.3);margin-top:0.4rem;">
@@ -331,270 +331,219 @@ $current_page = 'workforce_logs';
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+    let currentEmployeeId   = null;
+    let currentEmployeeName = '';
 
-        let currentEmployeeId   = null;
-        let currentEmployeeName = '';
+    // ---- EMPLOYEE SEARCH ----
+    function filterEmployees() {
+        const q = document.getElementById('empSearch').value.toLowerCase();
+        document.querySelectorAll('#empList .empRow').forEach(row => {
+            row.style.display = row.dataset.name.toLowerCase().includes(q) ? '' : 'none';
+        });
+    }
 
-        // ---- EMPLOYEE SEARCH ----
-        function filterEmployees() {
-            const q = document.getElementById('empSearch').value.toLowerCase();
-            document.querySelectorAll('#empList .empRow').forEach(row => {
-                row.style.display = row.dataset.name.toLowerCase().includes(q) ? '' : 'none';
-            });
-        }
+    // ---- SELECT EMPLOYEE ----
+    function selectEmployee(id, name) {
+        currentEmployeeId   = id;
+        currentEmployeeName = name;
 
-        // ---- SELECT EMPLOYEE ----
-        function selectEmployee(id, name) {
-            currentEmployeeId   = id;
-            currentEmployeeName = name;
-            document.querySelectorAll('#empList .empRow').forEach(r => r.classList.remove('active'));
-            document.querySelector(`#empList .empRow[data-id="${id}"]`).classList.add('active');
-            document.getElementById('logsPlaceholder').style.display = 'none';
-            document.getElementById('logsContent').style.display     = 'flex';
-            document.getElementById('selectedEmpName').textContent   = name;
-            loadLogs();
-        }
+        document.querySelectorAll('#empList .empRow').forEach(r => r.classList.remove('active'));
+        document.querySelector(`#empList .empRow[data-id="${id}"]`).classList.add('active');
 
-        // ---- LOAD LOGS ----
-        function loadLogs() {
-            if (!currentEmployeeId) return;
+        document.getElementById('logsPlaceholder').style.display = 'none';
+        document.getElementById('logsContent').style.display     = 'flex';
+        document.getElementById('selectedEmpName').textContent   = name;
 
-            const logType  = document.getElementById('filterLogType').value;
-            const dateFrom = document.getElementById('filterDateFrom').value;
-            const dateTo   = document.getElementById('filterDateTo').value;
+        loadLogs();
+    }
 
-            const params = new URLSearchParams({ employee_id: currentEmployeeId });
-            if (logType)  params.append('log_type',  logType);
-            if (dateFrom) params.append('date_from', dateFrom);
-            if (dateTo)   params.append('date_to',   dateTo);
+    // ---- LOAD LOGS ----
+    function loadLogs() {
+        if (!currentEmployeeId) return;
 
-            document.getElementById('logsTableBody').innerHTML = `
-                <tr class="logsEmptyRow"><td colspan="7" class="logsLoadingCell">
+        const logType  = document.getElementById('filterLogType').value;
+        const dateFrom = document.getElementById('filterDateFrom').value;
+        const dateTo   = document.getElementById('filterDateTo').value;
+
+        const params = new URLSearchParams({ employee_id: currentEmployeeId });
+        if (logType)  params.append('log_type', logType);
+        if (dateFrom) params.append('date_from', dateFrom);
+        if (dateTo)   params.append('date_to', dateTo);
+
+        document.getElementById('logsTableBody').innerHTML = `
+            <tr class="logsEmptyRow">
+                <td colspan="7" class="logsLoadingCell">
                     <span class="logsSpinner"></span> Loading...
-                </td></tr>`;
+                </td>
+            </tr>`;
 
-            fetch('get_workforce_logs.php?' + params.toString())
-                .then(r => r.json())
-                .then(renderLogs)
-                .catch(() => {
-                    document.getElementById('logsTableBody').innerHTML =
-                        '<tr class="logsEmptyRow"><td colspan="7"><div class="logsEmpty" style="color:#ff8a8a;">Failed to load logs.</div></td></tr>';
-                });
+        fetch('get_workforce_logs.php?' + params.toString())
+            .then(r => r.json())
+            .then(renderLogs)
+            .catch(() => {
+                document.getElementById('logsTableBody').innerHTML =
+                    '<tr class="logsEmptyRow"><td colspan="7"><div class="logsEmpty" style="color:#ff8a8a;">Failed to load logs.</div></td></tr>';
+            });
+    }
+
+    // ---- RENDER LOGS ----
+    function renderLogs(logs) {
+        const tbody = document.getElementById('logsTableBody');
+
+        if (!logs.length) {
+            tbody.innerHTML = '<tr class="logsEmptyRow"><td colspan="7"><div class="logsEmpty">No logs found for this employee.</div></td></tr>';
+            return;
         }
 
-        // ---- RENDER LOGS ----
-        function renderLogs(logs) {
-            const tbody = document.getElementById('logsTableBody');
+        const logClass = { IN: 'log-in', OUT: 'log-out', BREAK_IN: 'log-break-in', BREAK_OUT: 'log-break-out' };
+        const logLabel = { IN: 'Time In', OUT: 'Time Out', BREAK_IN: 'Break In', BREAK_OUT: 'Break Out' };
 
-            if (!logs.length) {
-                tbody.innerHTML = '<tr class="logsEmptyRow"><td colspan="7"><div class="logsEmpty">No logs found for this employee.</div></td></tr>';
-                return;
+        tbody.innerHTML = logs.map((log, i) => {
+            const cls = logClass[log.log_type] || 'log-out';
+            const lbl = logLabel[log.log_type] || log.log_type;
+
+            const dt      = new Date(log.log_time);
+            const dateStr = dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+            const timeStr = dt.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+            const isInside    = parseInt(log.is_within_office);
+            const officeClass = isInside ? 'in-office' : 'out-office';
+            const officeLabel = isInside ? 'Within Office' : 'Outside Office';
+
+            const distRaw = log.distance_meters != null ? parseFloat(log.distance_meters).toFixed(1) : null;
+            const accRaw  = log.accuracy        != null ? parseFloat(log.accuracy).toFixed(0)        : null;
+
+            const dist = distRaw !== null ? distRaw + ' m' : '—';
+            const acc  = accRaw  !== null ? accRaw  + ' m' : '—';
+
+            const lat = log.latitude;
+            const lng = log.longitude;
+
+            const locCell = (lat && lng)
+                ? `<a href="https://www.google.com/maps?q=${lat},${lng}" target="_blank"
+                       class="${officeClass} loc-trigger"
+                       data-lat="${lat}" data-lng="${lng}"
+                       data-label="${officeLabel}" data-acc="${accRaw ?? 'N/A'}" data-dist="${distRaw ?? 'N/A'}">
+                       <i class="bi bi-geo-alt-fill locationIcon"></i>${officeLabel}
+                   </a>`
+                : `<span class="${officeClass}">
+                       <i class="bi bi-geo-alt-fill locationIcon"></i>${officeLabel}
+                   </span>`;
+
+            const canEdit = (log.log_type === 'IN' || log.log_type === 'OUT');
+
+            const actionCell = canEdit
+                ? `<button class="wfLogEditBtn" title="Edit Log"
+                           onclick="openLeModal(${log.id}, '${log.log_type}', '${log.log_time}')">
+                       <i class="bi bi-pencil-fill"></i>
+                   </button>`
+                : '<span style="color:rgba(255,255,255,0.2);">—</span>';
+
+            return `
+                <tr>
+                    <td>${i + 1}</td>
+                    <td>
+                        <div>
+                            <div>${dateStr}</div>
+                            <div>${timeStr}</div>
+                        </div>
+                    </td>
+                    <td><span class="${cls}">${lbl}</span></td>
+                    <td>${dist}</td>
+                    <td>${acc}</td>
+                    <td>${locCell}</td>
+                    <td>${actionCell}</td>
+                </tr>`;
+        }).join('');
+    }
+
+    // ---- CLEAR FILTERS ----
+    function clearFilters() {
+        document.getElementById('filterLogType').value  = '';
+        document.getElementById('filterDateFrom').value = '';
+        document.getElementById('filterDateTo').value   = '';
+        if (currentEmployeeId) loadLogs();
+    }
+
+    // ---- LOG EDIT MODAL ----
+    let leLogId   = null;
+    let leLogType = null;
+
+    function openLeModal(logId, logType, logTime) {
+        leLogId   = logId;
+        leLogType = logType;
+
+        const logLabel = { IN: 'Time In', OUT: 'Time Out' };
+        const logClass = { IN: 'log-in',  OUT: 'log-out'  };
+
+        document.getElementById('leEmpName').textContent = currentEmployeeName;
+        document.getElementById('leLogTypeBadge').innerHTML =
+            `<span class="${logClass[logType]}">${logLabel[logType]}</span>`;
+
+        const dt = new Date(logTime);
+
+        document.getElementById('leCurrentTime').textContent =
+            dt.toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' }) + ' ' +
+            dt.toLocaleTimeString('en-US', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+
+        const pad = n => String(n).padStart(2, '0');
+        document.getElementById('leNewTime').value =
+            `${dt.getFullYear()}-${pad(dt.getMonth()+1)}-${pad(dt.getDate())}T${pad(dt.getHours())}:${pad(dt.getMinutes())}`;
+
+        document.getElementById('wfLeReason').value = '';
+
+        document.getElementById('leModalOverlay').style.display = 'flex';
+    }
+
+    function closeLeModal() {
+        document.getElementById('leModalOverlay').style.display = 'none';
+    }
+
+    function closeLeModalOverlay(e) {
+        if (e.target.id === 'leModalOverlay') closeLeModal();
+    }
+
+    function submitLogEdit() {
+        const newDatetime = document.getElementById('leNewTime').value;
+        if (!newDatetime) {
+            showToast('Please enter a new date and time.', 'error');
+            return;
+        }
+
+        const reasonVal = document.getElementById('wfLeReason').value.trim();
+
+        const body = new URLSearchParams({
+            log_id:       leLogId,
+            employee_id:  currentEmployeeId,
+            log_type:     leLogType,
+            new_datetime: newDatetime.replace('T', ' ') + ':00',
+            reason:       reasonVal
+        });
+
+        fetch('submit_workforce_log_edit.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body
+        })
+        .then(r => r.json())
+        .then(res => {
+            if (res.success) {
+                closeLeModal();
+                showToast(res.message, 'success');
+            } else {
+                showToast(res.message, 'error');
             }
+        })
+        .catch(() => showToast('Something went wrong. Please try again.', 'error'));
+    }
 
-            const logClass = { IN: 'log-in', OUT: 'log-out', BREAK_IN: 'log-break-in', BREAK_OUT: 'log-break-out' };
-            const logLabel = { IN: 'Time In', OUT: 'Time Out', BREAK_IN: 'Break In', BREAK_OUT: 'Break Out' };
-
-            tbody.innerHTML = logs.map((log, i) => {
-                const cls     = logClass[log.log_type] || 'log-out';
-                const lbl     = logLabel[log.log_type] || log.log_type;
-                const dt      = new Date(log.log_time);
-                const dateStr = dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-                const timeStr = dt.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-
-                const isInside    = parseInt(log.is_within_office);
-                const officeClass = isInside ? 'in-office' : 'out-office';
-                const officeLabel = isInside ? 'Within Office' : 'Outside Office';
-
-                const distRaw = log.distance_meters != null ? parseFloat(log.distance_meters).toFixed(1) : null;
-                const accRaw  = log.accuracy        != null ? parseFloat(log.accuracy).toFixed(0)        : null;
-                const dist    = distRaw !== null ? distRaw + ' m' : '—';
-                const acc     = accRaw  !== null ? accRaw  + ' m' : '—';
-                const lat     = log.latitude;
-                const lng     = log.longitude;
-
-                const locCell = (lat && lng)
-                    ? `<a href="https://www.google.com/maps?q=${lat},${lng}" target="_blank"
-                           class="${officeClass} loc-trigger" style="text-decoration:none;"
-                           data-lat="${lat}" data-lng="${lng}"
-                           data-label="${officeLabel}" data-acc="${accRaw ?? 'N/A'}" data-dist="${distRaw ?? 'N/A'}">
-                           <i class="bi bi-geo-alt-fill locationIcon"></i>${officeLabel}
-                       </a>`
-                    : `<span class="${officeClass}"><i class="bi bi-geo-alt-fill locationIcon"></i>${officeLabel}</span>`;
-
-                const canEdit = (log.log_type === 'IN' || log.log_type === 'OUT');
-                const actionCell = canEdit
-                    ? `<button class="wfLogEditBtn" title="Edit Log"
-                               onclick="openLeModal(${log.id}, '${log.log_type}', '${log.log_time}')">
-                           <i class="bi bi-pencil-fill"></i>
-                       </button>`
-                    : '<span style="color:rgba(255,255,255,0.2);font-size:0.78rem;">—</span>';
-
-                return `
-                    <tr>
-                        <td class="logNum">${i + 1}</td>
-                        <td>
-                            <div class="logDateTime">
-                                <span class="logDate">${dateStr}</span>
-                                <span class="logTime">${timeStr}</span>
-                            </div>
-                        </td>
-                        <td><span class="${cls}">${lbl}</span></td>
-                        <td>${dist}</td>
-                        <td>${acc}</td>
-                        <td>${locCell}</td>
-                        <td>${actionCell}</td>
-                    </tr>`;
-            }).join('');
-        }
-
-        // ---- CLEAR FILTERS ----
-        function clearFilters() {
-            document.getElementById('filterLogType').value  = '';
-            document.getElementById('filterDateFrom').value = '';
-            document.getElementById('filterDateTo').value   = '';
-            if (currentEmployeeId) loadLogs();
-        }
-
-        // ---- LOG EDIT MODAL ----
-        let leLogId   = null;
-        let leLogType = null;
-
-        function openLeModal(logId, logType, logTime) {
-            leLogId   = logId;
-            leLogType = logType;
-
-            const logLabel = { IN: 'Time In', OUT: 'Time Out' };
-            const logClass = { IN: 'log-in',  OUT: 'log-out'  };
-
-            document.getElementById('leEmpName').textContent = currentEmployeeName;
-            document.getElementById('leLogTypeBadge').innerHTML =
-                `<span class="${logClass[logType]}">${logLabel[logType]}</span>`;
-
-            const dt = new Date(logTime);
-            document.getElementById('leCurrentTime').textContent =
-                dt.toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' }) + ' ' +
-                dt.toLocaleTimeString('en-US', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
-
-            // Pre-fill datetime-local input (format: YYYY-MM-DDTHH:mm)
-            const pad = n => String(n).padStart(2, '0');
-            const localDT = `${dt.getFullYear()}-${pad(dt.getMonth()+1)}-${pad(dt.getDate())}T${pad(dt.getHours())}:${pad(dt.getMinutes())}`;
-            document.getElementById('leNewTime').value = localDT;
-            document.getElementById('leReason').value  = '';
-
-            document.getElementById('leModalOverlay').style.display = 'flex';
-        }
-
-        function closeLeModal() {
-            document.getElementById('leModalOverlay').style.display = 'none';
-        }
-
-        function closeLeModalOverlay(e) {
-            if (e.target === document.getElementById('leModalOverlay')) closeLeModal();
-        }
-
-        function submitLogEdit() {
-            const newDatetime = document.getElementById('leNewTime').value;
-            if (!newDatetime) { showToast('Please enter a new date and time.', 'error'); return; }
-
-            const reason = document.getElementById('leReason').value.trim();
-
-            const body = new FormData();
-            body.append('log_id',       leLogId);
-            body.append('employee_id',  currentEmployeeId);
-            body.append('log_type',     leLogType);
-            body.append('new_datetime', newDatetime.replace('T', ' ') + ':00');
-            body.append('reason',       reason);
-
-            fetch('submit_workforce_log_edit.php', { method: 'POST', body })
-                .then(r => r.json())
-                .then(res => {
-                    if (res.success) {
-                        closeLeModal();
-                        showToast(res.message, 'success');
-                    } else {
-                        showToast(res.message, 'error');
-                    }
-                })
-                .catch(() => showToast('Something went wrong. Please try again.', 'error'));
-        }
-
-        // ---- TOAST ----
-        function showToast(msg, type) {
-            const toast = document.getElementById('wfToast');
-            toast.textContent = msg;
-            toast.className   = `wfToast ${type} show`;
-            setTimeout(() => { toast.classList.remove('show'); }, 3500);
-        }
-
-        // ---- MAP HOVER POPUP ----
-        let popupMap    = null;
-        let hideTimeout = null;
-        const mapPopup  = document.getElementById('map_pop_up_container');
-
-        document.addEventListener('mouseover', e => {
-            const trigger = e.target.closest('.loc-trigger');
-            if (!trigger) return;
-            clearTimeout(hideTimeout);
-
-            const lat   = parseFloat(trigger.dataset.lat);
-            const lng   = parseFloat(trigger.dataset.lng);
-            const label = trigger.dataset.label;
-            const acc   = trigger.dataset.acc;
-            const dist  = trigger.dataset.dist;
-
-            document.getElementById('open_gmaps_btn').href = `https://www.google.com/maps?q=${lat},${lng}`;
-
-            const rect        = trigger.getBoundingClientRect();
-            const popupHeight = 320;
-            const popupWidth  = 300;
-            const spaceBelow  = window.innerHeight - rect.bottom;
-            const spaceAbove  = rect.top;
-            const spaceRight  = window.innerWidth  - rect.left;
-
-            const topPos  = (spaceBelow < popupHeight && spaceAbove > spaceBelow)
-                ? rect.top    + window.scrollY - popupHeight - 3
-                : rect.bottom + window.scrollY + 3;
-            const leftPos = spaceRight < popupWidth
-                ? rect.right + window.scrollX - popupWidth - 310
-                : rect.left  + window.scrollX - 310;
-
-            mapPopup.style.top     = `${topPos}px`;
-            mapPopup.style.left    = `${leftPos}px`;
-            mapPopup.style.display = 'block';
-
-            document.getElementById('map_pop_up_info').innerHTML =
-                `<b>${label}</b><br>Latitude: ${lat} &nbsp;&nbsp; Longitude: ${lng}<br>Accuracy: ±${acc} m &nbsp; Distance: ${dist} m`;
-
-            setTimeout(() => {
-                if (!popupMap) {
-                    popupMap = L.map('map_pop_up', { zoomControl: false, attributionControl: false });
-                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(popupMap);
-                    popupMap._marker = null;
-                }
-                popupMap.invalidateSize();
-                popupMap.setView([lat, lng], 17);
-                if (popupMap._marker) popupMap.removeLayer(popupMap._marker);
-                popupMap._marker = L.marker([lat, lng]).addTo(popupMap);
-            }, 50);
-        });
-
-        document.addEventListener('mouseout', e => {
-            const trigger = e.target.closest('.loc-trigger');
-            if (!trigger) return;
-            hideTimeout = setTimeout(() => {
-                mapPopup.style.display = 'none';
-                if (popupMap) { popupMap.remove(); popupMap = null; }
-            }, 200);
-        });
-
-        mapPopup.addEventListener('mouseover', () => clearTimeout(hideTimeout));
-        mapPopup.addEventListener('mouseout',  () => {
-            hideTimeout = setTimeout(() => {
-                mapPopup.style.display = 'none';
-                if (popupMap) { popupMap.remove(); popupMap = null; }
-            }, 200);
-        });
-
-    </script>
+    // ---- TOAST ----
+    function showToast(msg, type) {
+        const toast = document.getElementById('wfToast');
+        toast.textContent = msg;
+        toast.className   = `wfToast ${type} show`;
+        setTimeout(() => toast.classList.remove('show'), 3500);
+    }
+</script>
 </body>
 </html>
