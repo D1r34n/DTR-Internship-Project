@@ -99,6 +99,7 @@ $current_page = 'logs';
                             <th class="sortable" data-sort="location">
                                 Location <i class="bi bi-chevron-down sort-icon"></i>
                             </th>
+                            <th>Edit Status</th>
                         </tr>
                     </thead>
                 </table>

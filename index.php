@@ -151,8 +151,16 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         </div>
     </div>
 
+    <div class="copyright-bar">
+    <p class="copyright">
+        &copy; 2026 &nbsp;|&nbsp; Designed by Edrian R. Evangelista &amp;<br>
+        Earl David A. Jordan
+    </p>
+</div>
+
 <script>
 const container = document.querySelector('.container');
+
 const shine = document.querySelector('.shine');
 
 container.addEventListener('mousemove', (e) => {

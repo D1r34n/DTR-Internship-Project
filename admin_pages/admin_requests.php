@@ -158,9 +158,10 @@ $obRequests = $pdo->query("
 
 // ---- GET LOG EDIT REQUESTS ----
 $logEditRequests = $pdo->query("
-    SELECT le.*, e.name AS employee_name
+    SELECT le.*, e.name AS employee_name, a.work_date
     FROM log_edit_requests le
     JOIN employees e ON le.employee_id = e.id
+    LEFT JOIN attendances a ON le.attendance_id = a.id
     ORDER BY le.created_at DESC
 ")->fetchAll(PDO::FETCH_ASSOC);
 

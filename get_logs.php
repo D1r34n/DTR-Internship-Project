@@ -76,12 +76,34 @@ $stmt->execute($params);
 $records = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 /* =========================
+   LOG EDIT REQUEST STATUS MAP
+   work_date → request_type → status (most recent)
+========================= */
+$editMap = [];
+$erStmt = $pdo->prepare("
+    SELECT a.work_date, ler.request_type, ler.status
+    FROM log_edit_requests ler
+    JOIN attendances a ON ler.attendance_id = a.id
+    WHERE ler.employee_id = ?
+      AND a.work_date BETWEEN ? AND ?
+    ORDER BY ler.created_at DESC
+");
+$erStmt->execute([$employeeId, $startDate, $endDate]);
+foreach ($erStmt->fetchAll(PDO::FETCH_ASSOC) as $er) {
+    $d = $er['work_date'];
+    $t = $er['request_type'];
+    if (!isset($editMap[$d][$t])) {
+        $editMap[$d][$t] = $er['status'];
+    }
+}
+
+/* =========================
    EMPTY STATE
 ========================= */
 if (!$records) {
     echo '
     <tr class="emptyRow">
-        <td colspan="4">
+        <td colspan="5">
             <div class="logsEmpty">
                 <i class="bi bi-calendar-x logsEmptyIcon"></i>
                 <div>No logs found for this period.</div>
@@ -95,6 +117,13 @@ if (!$records) {
    OUTPUT ROWS
 ========================= */
 foreach ($records as $row):
+    $workDate   = date('Y-m-d', strtotime($row['log_time']));
+    $editStatus = null;
+    if ($row['log_type'] === 'IN') {
+        $editStatus = $editMap[$workDate]['time_in'] ?? $editMap[$workDate]['both'] ?? null;
+    } elseif ($row['log_type'] === 'OUT') {
+        $editStatus = $editMap[$workDate]['time_out'] ?? $editMap[$workDate]['both'] ?? null;
+    }
 
     $isInside = $row['is_within_office'];
     $label    = $isInside ? 'Within Office' : 'Outside Office';
@@ -150,6 +179,24 @@ foreach ($records as $row):
             <i class="bi bi-geo-alt-fill locationIcon"></i>
             <?= $label ?>
         </a>
+    </td>
+
+    <td>
+        <?php if ($editStatus === 'pending'): ?>
+            <span class="leEditStatus le-status-pending">
+                <i class="bi bi-hourglass-split"></i> Edit Pending
+            </span>
+        <?php elseif ($editStatus === 'approved'): ?>
+            <span class="leEditStatus le-status-approved">
+                <i class="bi bi-check-circle-fill"></i> Edit Approved
+            </span>
+        <?php elseif ($editStatus === 'rejected'): ?>
+            <span class="leEditStatus le-status-rejected">
+                <i class="bi bi-x-circle-fill"></i> Edit Rejected
+            </span>
+        <?php else: ?>
+            <span style="color:rgba(255,255,255,0.2);font-size:0.75rem;">—</span>
+        <?php endif; ?>
     </td>
 </tr>
 <?php endforeach; ?>

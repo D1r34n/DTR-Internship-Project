@@ -86,11 +86,27 @@ $dashboardLink = ($role === 'admin')
                 <span class="menuText">Logs</span>
             </a>
 
-            <a href="workforce_schedule.php"
-            class="sideBarMenuItem <?= ($current_page === 'workforce_schedule') ? 'active' : '' ?>">
-                <i class="bi bi-calendar-plus sidebarIcon"></i>
-                <span class="menuText">Manage Schedules</span>
-            </a>
+            <?php $manageEmpOpen = in_array($current_page ?? '', ['workforce_schedule', 'workforce_logs']); ?>
+            <div class="sideBarDropdown">
+                <button class="sideBarMenuItemDropdown <?= $manageEmpOpen ? 'active open locked' : '' ?>"
+                        onclick="toggleSidebarDropdown(this)">
+                    <i class="bi bi-people-fill sidebarIcon"></i>
+                    <span class="menuText">Manage Employees </span>
+                    <i class="bi bi-chevron-down sideBarDropdownChevron ms-2"></i>
+                </button>
+                <div class="sideBarSubMenu <?= $manageEmpOpen ? 'open' : '' ?>">
+                    <a href="workforce_schedule.php"
+                       class="sideBarSubItem <?= ($current_page === 'workforce_schedule') ? 'active' : '' ?>">
+                        <i class="bi bi-calendar-plus sidebarSubIcon"></i>
+                        <span class="menuText">Employee Schedules</span>
+                    </a>
+                    <a href="workforce_logs.php"
+                       class="sideBarSubItem <?= ($current_page === 'workforce_logs') ? 'active' : '' ?>">
+                        <i class="bi bi-journal-text sidebarSubIcon"></i>
+                        <span class="menuText">Employee Logs</span>
+                    </a>
+                </div>
+            </div>
         </div>
     <?php endif; ?>
 
@@ -167,7 +183,7 @@ $dashboardLink = ($role === 'admin')
             });
         });
 
-        if (dropdownWrapper) {
+        document.querySelectorAll(".sideBarDropdown").forEach(dropdownWrapper => {
             const btn     = dropdownWrapper.querySelector(".sideBarMenuItemDropdown");
             const subMenu = btn.nextElementSibling;
 
@@ -184,7 +200,7 @@ $dashboardLink = ($role === 'admin')
                     subMenu.classList.remove("open");
                 }
             });
-        }
+        });
 
         // Sidebar collapse also closes unlocked dropdown
         sidebar.addEventListener("mouseleave", () => {
