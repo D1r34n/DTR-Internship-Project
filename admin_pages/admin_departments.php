@@ -223,39 +223,59 @@ $current_page = 'departments';
 
                 <form id="createDeptForm">
 
-                    <div class="mb-3">
-                        <label class="form-label">Department Code</label>
-                        <input type="text" class="form-control" name="department_code" required>
+                    <div class="createDeptLayout">
+
+                        <!-- LEFT: PREVIEW CARD -->
+                        <div class="createDeptPreview">
+                            <div class="createDeptPreviewIcon" id="previewIcon">
+                            </div>
+                            <div class="createDeptPreviewName" id="previewName">
+                                Department Name
+                            </div>
+                            
+                            <label class="colorPickWrapper">
+                                <input type="color" class="colorPickInput" name="color" id="colorPicker" value="#4e73df">
+                                Color
+                            </label>
+                        </div>
+
+                        <!-- RIGHT: FIELDS -->
+                        <div class="createDeptFields">
+
+                            <div class="mb-3">
+                                <label class="form-label">Department Code</label>
+                                <input type="text" class="form-control" name="department_code" id="inputCode" required>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Department Name</label>
+                                <input type="text" class="form-control" name="department_name" id="inputName" required>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Parent Department (Optional)</label>
+
+                                <div class="selectWrapper">
+                                    <select class="form-control customSelect" name="parent_id">
+                                        <option value="">None</option>
+                                        <?php foreach ($departmentList as $row): ?>
+                                            <option value="<?= $row['id'] ?>">
+                                                <?= htmlspecialchars($row['department_name']) ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+
+                                    <i class="bi bi-chevron-down selectArrow"></i>
+                                </div>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-primary w-100 createDeptBtn">
+                                Create Department
+                            </button>
+
+                        </div>
+
                     </div>
-
-                    <div class="mb-3">
-                        <label class="form-label">Department Name</label>
-                        <input type="text" class="form-control" name="department_name" required>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label class="form-label">Department Color</label>
-                        <input type="color" class="form-control form-control-color" name="color" value="#4e73df">
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label">Parent Department (Optional)</label>
-
-                        <select class="form-control" name="parent_id">
-                            <option value="">None (Parent Department)</option>
-
-                            <?php foreach ($departmentList as $row): ?>
-                                <option value="<?= $row['id'] ?>">
-                                    <?= htmlspecialchars($row['department_name']) ?>
-                                </option>
-                            <?php endforeach; ?>
-
-                        </select>
-                    </div>
-
-                    <button type="submit" class="btn btn-primary w-100">
-                        Create
-                    </button>
 
                 </form>
 
@@ -300,7 +320,7 @@ $current_page = 'departments';
                     <div class="mb-3">
                         <label class="form-label">Parent Department</label>
                         <select class="form-control" name="parent_id">
-                            <option value="">-- None --</option>
+                            <option value="">None</option>
                             <?php foreach ($departmentList as $row): ?>
                                 <option value="<?= $row['id'] ?>">
                                     <?= htmlspecialchars($row['department_name']) ?>
@@ -368,6 +388,46 @@ $current_page = 'departments';
 const form = document.getElementById('createDeptForm');
 const msg  = document.getElementById('deptMsg');
 const grid = document.querySelector('.deptGrid');
+
+document.addEventListener('DOMContentLoaded', () => {
+
+    const inputCode   = document.getElementById('inputCode');
+    const inputName   = document.getElementById('inputName');
+    const colorPicker = document.getElementById('colorPicker');
+    const previewIcon = document.getElementById('previewIcon');
+    const previewName = document.getElementById('previewName');
+
+    function updatePreview() {
+        const code  = inputCode.value.trim()  || '';
+        const name  = inputName.value.trim()  || 'Department Name';
+        const color = colorPicker.value       || '#4e73df';
+
+        previewIcon.textContent      = code;
+        previewIcon.style.background = color;
+        previewIcon.style.color      = getContrastColor(color);
+        previewName.textContent      = name;
+    }
+
+    inputCode.addEventListener('input',   updatePreview);
+    inputName.addEventListener('input',   updatePreview);
+    colorPicker.addEventListener('input', updatePreview);
+
+    updatePreview();
+});
+
+const wrapper = document.querySelector('.selectWrapper');
+
+wrapper.addEventListener('click', function (e) {
+    this.classList.toggle('active');
+});
+
+document.addEventListener('click', function (e) {
+    const wrapper = document.querySelector('.selectWrapper');
+
+    if (!wrapper.contains(e.target)) {
+        wrapper.classList.remove('active');
+    }
+});
 
 form.addEventListener('submit', function(e) {
     e.preventDefault();
