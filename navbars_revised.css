@@ -130,3 +130,25 @@
 
     box-shadow: 0 4px 16px var(--break-out-glow) !important;
 }
+
+/* ================================================
+   LOGOUT BUTTON STYLE
+   ================================================ */
+
+/* Dropdown items */
+.logout-item {
+    color: var(--danger-color) !important;
+}
+
+.logout-item:hover,
+.logout-item:focus {
+    background: var(--danger-glass-hover) !important;
+    color: var(--danger-hover) !important;
+}
+
+.logout-item:active {
+    transform: scale(0.98) !important;
+
+    background: var(--neutral-glass) !important;
+    box-shadow: var(--glass-inset) !important;
+}

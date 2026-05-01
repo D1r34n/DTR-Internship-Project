@@ -59,68 +59,6 @@ $records = $stmt->fetchAll(PDO::FETCH_ASSOC);
     <!-- DASHBOARD -->
     <div class="dashboard-wrapper">
         <div class="dashboard-content">
-
-            <p id="current-date" class="text-primary"></p>
-            <h1 id="current-time"></h1>
-            <!-- TO BE UPDATED -->
-            <!-- <div class="dashboard-summary">
-
-                <div class="summary-card">
-                    <p class="text-secondary">Status</p>
-                    <h5 class="stats-number" id="dashboard-status">
-                        <?= ($timedIn ?? false) ? 'Timed In' : 'Timed Out' ?>
-                    </h5>
-                </div>
-
-                <div class="summary-card">
-                    <p class="text-secondary">Total Time Worked</p>
-                    <h5 class="stats-number" id="dashboard-week-hours">0 hours</h5>
-                </div>
-
-                <div class="summary-card">
-                    <p class="text-secondary">Total Hours This Month</p>
-                    <h5 class="stats-number" id="dashboard-month-hours">0 hours</h5>
-                </div>
-
-            </div> -->
-        </div>
-
-        <!-- TODAY'S LOGS -->
-        <div class="logs-for-the-day">
-            <div class="record-box">
-
-                <h5 class="table-title section-title">Time Log</h5>
-
-                <div class="table-scroll">
-                    <table class="log-table">
-                        <thead>
-                            <tr>
-                                <th>Date</th>
-                                <th>Time</th>
-                                <th>Log Type</th>
-                            </tr>
-                        </thead>
-                        <tbody id="logs-table-body">
-                            <?php if (count($records) > 0): ?>
-                                <?php foreach ($records as $row): ?>
-                                    <tr>
-                                        <td><?= date('F d, Y', strtotime($row['log_time'])) ?></td>
-                                        <td><?= date('h:i A', strtotime($row['log_time'])) ?></td>
-                                        <td class="<?= $row['log_type'] === 'IN' ? 'log-in' : 'log-out' ?>">
-                                            <?= $row['log_type'] === 'IN' ? 'Time In' : 'Time Out' ?>
-                                        </td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            <?php else: ?>
-                                <tr>
-                                    <td colspan="3" class="text-center text-meta">No records found.</td>
-                                </tr>
-                            <?php endif; ?>
-                        </tbody>
-                    </table>
-                </div>
-
-            </div>
         </div>
     </div>
 

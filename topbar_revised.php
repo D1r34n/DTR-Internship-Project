@@ -163,19 +163,19 @@ $currentStatus = $timedIn ? 'Timed In' : 'Timed Out';
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb text-breadcrumb">
 
-                <?php foreach ($breadcrumbPath as $index => $crumb): ?>
-                    <?php $isLast = $index === array_key_last($breadcrumbPath); ?>
+                    <?php foreach ($breadcrumbPath as $index => $crumb): ?>
+                        <?php $isLast = $index === array_key_last($breadcrumbPath); ?>
 
-                    <?php if ($isLast): ?>
-                        <li class="breadcrumb-item active" aria-current="page">
-                            <?= htmlspecialchars($crumb['label']) ?>
-                        </li>
-                    <?php else: ?>
-                        <li class="breadcrumb-item">
-                            <?= htmlspecialchars($crumb['label']) ?>
-                        </li>
-                    <?php endif; ?>
-                <?php endforeach; ?>
+                        <?php if ($isLast): ?>
+                            <li class="breadcrumb-item active" aria-current="page">
+                                <?= htmlspecialchars($crumb['label']) ?>
+                            </li>
+                        <?php else: ?>
+                            <li class="breadcrumb-item">
+                                <?= htmlspecialchars($crumb['label']) ?>
+                            </li>
+                        <?php endif; ?>
+                    <?php endforeach; ?>
 
                 </ol>
             </nav>
@@ -188,7 +188,7 @@ $currentStatus = $timedIn ? 'Timed In' : 'Timed Out';
         </div>
 
         <!-- RIGHT: Actions -->
-        <div class="d-flex align-items-center gap-2">
+        <div class="d-flex align-items-center gap-3">
 
             <!-- Time In/Out Button -->
             <div class="btn-group">
@@ -209,10 +209,10 @@ $currentStatus = $timedIn ? 'Timed In' : 'Timed Out';
                     </button>
 
                     <button type="button"
-                            class="btn btn-danger btn-sm dropdown-toggle dropdown-toggle-split"
-                            data-bs-toggle="dropdown"
-                            data-bs-auto-close="outside"
-                            aria-expanded="false">
+                        class="btn btn-danger btn-sm dropdown-toggle dropdown-toggle-split"
+                        data-bs-toggle="dropdown"
+                        data-bs-auto-close="outside"
+                        aria-expanded="false">
                         <span class="visually-hidden">Toggle Dropdown</span>
                     </button>
 
@@ -223,8 +223,7 @@ $currentStatus = $timedIn ? 'Timed In' : 'Timed Out';
                                 id="break-action-btn"
                                 data-state="<?= $isOnBreak ? 'out' : 'in' ?>"
                                 onclick="handleBreak()"
-                                <?= $isBreakOut ? 'disabled' : '' ?>
-                            >
+                                <?= $isBreakOut ? 'disabled' : '' ?>>
                                 <?php if ($isOnBreak): ?>
                                     <i class="bi bi-arrow-return-right"></i> Resume Work
                                 <?php else: ?>
@@ -239,35 +238,54 @@ $currentStatus = $timedIn ? 'Timed In' : 'Timed Out';
             </div>
 
             <!-- Divider -->
-            <div class="vr mx-1 opacity-25"></div>
+            <div class="vr"></div>
 
-            <!-- Actions Dropdown -->
+            <!-- User Dropdown -->
             <div class="dropdown">
-                <button class="btn btn-sm dropdown-toggle"
-                        type="button"
-                        data-bs-toggle="dropdown"
-                        aria-expanded="false">
-                    <i class="bi bi-person-fill"></i>
+                <button class="btn dropdown-toggle"
+                    type="button"
+                    data-bs-toggle="dropdown"
+                    aria-expanded="false">
+                    <i class="bi bi-person-circle"></i>
                     <?= htmlspecialchars($_SESSION['user_name'] ?? $_SESSION['user_email'] ?? 'User') ?>
                 </button>
 
                 <ul class="dropdown-menu dropdown-menu-end">
-                    <li><a class="dropdown-item" href="#" onclick="openOTModal(); return false;">
-                        <i class="bi bi-clock-history"></i> Request OT
-                    </a></li>
-                    <li><a class="dropdown-item" href="#" onclick="openLeaveModal(); return false;">
-                        <i class="bi bi-calendar-x"></i> Request Leave
-                    </a></li>
-                    <li><a class="dropdown-item" href="#" onclick="openOBModal(); return false;">
-                        <i class="bi bi-briefcase"></i> Request OB
-                    </a></li>
-                    <li><a class="dropdown-item" href="#" onclick="openLogEditModal(); return false;">
-                        <i class="bi bi-pencil-square"></i> Request Log Edit
-                    </a></li>
-                    <li><hr class="dropdown-divider"></li>
-                    <li><a class="dropdown-item text-danger" href="../logout.php">
-                        <i class="bi bi-box-arrow-right"></i> Logout
-                    </a></li>
+                    <!-- Request Overtime -->
+                    <li>
+                        <a class="dropdown-item" href="#" onclick="openOTModal()" data-bs-target="#otModal" data-bs-toggle="modal">
+                            <i class="bi bi-clock-history"></i> Request OT
+                        </a>
+                    </li>
+
+                    <!-- Request Leave -->
+                    <li>
+                        <a class="dropdown-item" href="#" onclick="openLeaveModal()" data-bs-target="#leaveModal" data-bs-toggle="modal">
+                            <i class="bi bi-calendar-x"></i> Request Leave
+                        </a>
+                    </li>
+
+                    <!-- Request OB -->
+                    <li>
+                        <a class="dropdown-item" href="#" onclick="openOBModal()" data-bs-target="#obModal" data-bs-toggle="modal">
+                            <i class="bi bi-calendar-x"></i> Request OB
+                        </a>
+                    </li>
+                    
+                    <!-- Request Log Edit -->
+                    <li>
+                        <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#logEditModal">
+                            <i class="bi bi-pencil-square"></i> Request Log Edit
+                        </a>
+                    </li>
+
+                    <li>
+                        <hr class="dropdown-divider">
+                    </li>
+
+                    <li><a class="dropdown-item logout-item" href="../authentication_pages/logout.php">
+                            <i class="bi bi-box-arrow-right"></i> Logout
+                        </a></li>
                 </ul>
             </div>
 
@@ -276,156 +294,161 @@ $currentStatus = $timedIn ? 'Timed In' : 'Timed Out';
 </nav>
 
 <!-- MODALS -->
-<?php include '../dropdown_requests/ot_modal.php'; ?>
+<?php include '../dropdown_requests/modal_request.php'; ?>
 <?php include '../dropdown_requests/leave_modal.php'; ?>
 <?php include '../dropdown_requests/ob_modal.php'; ?>
 <?php include '../dropdown_requests/log_edit_modal.php'; ?>
 
 <script defer>
-// ===============================
-// GLOBAL STATES
-// ===============================
-let isProcessing = false;
-let isBreakProcessing = false;
-let cachedPosition = null;
+    // ===============================
+    // GLOBAL STATES
+    // ===============================
+    let isProcessing = false;
+    let isBreakProcessing = false;
+    let cachedPosition = null;
 
-document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener('DOMContentLoaded', () => {
 
-    // CROSS TAB SYNC
-    window.addEventListener('storage', (event) => {
-        if (event.key !== 'attendance_update') return;
+        // CROSS TAB SYNC
+        window.addEventListener('storage', (event) => {
+            if (event.key !== 'attendance_update') return;
 
-        const status = localStorage.getItem('attendance_tap_result');
-        const statusEl = document.getElementById('dashboard-status');
+            const status = localStorage.getItem('attendance_tap_result');
+            const statusEl = document.getElementById('dashboard-status');
 
-        if (!statusEl) return;
+            if (!statusEl) return;
 
-        if (status === 'timed_in') statusEl.textContent = 'Timed In';
-        else if (status === 'timed_out') statusEl.textContent = 'Timed Out';
+            if (status === 'timed_in') statusEl.textContent = 'Timed In';
+            else if (status === 'timed_out') statusEl.textContent = 'Timed Out';
+        });
+
+        // GPS CACHE
+        navigator.geolocation.watchPosition(
+            (pos) => cachedPosition = pos,
+            (err) => console.warn('GPS watch error:', err), {
+                enableHighAccuracy: false,
+                maximumAge: 60000,
+                timeout: 10000
+            }
+        );
+
     });
 
-    // GPS CACHE
-    navigator.geolocation.watchPosition(
-        (pos) => cachedPosition = pos,
-        (err) => console.warn('GPS watch error:', err),
-        { enableHighAccuracy: false, maximumAge: 60000, timeout: 10000 }
-    );
 
-});
+    // ===============================
+    // UI HELPERS
+    // ===============================
+    const setLoading = (btn) => {
+        if (!btn) return;
 
+        btn.disabled = true;
+        btn.dataset.originalHtml = btn.innerHTML;
 
-// ===============================
-// UI HELPERS
-// ===============================
-const setLoading = (btn) => {
-    if (!btn) return;
-
-    btn.disabled = true;
-    btn.dataset.originalHtml = btn.innerHTML;
-
-    btn.innerHTML = `
+        btn.innerHTML = `
         <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
         Loading...
     `;
-};
+    };
 
-const restoreButton = (btn) => {
-    if (!btn) return;
+    const restoreButton = (btn) => {
+        if (!btn) return;
 
-    btn.disabled = false;
+        btn.disabled = false;
 
-    if (btn.dataset.originalHtml) {
-        btn.innerHTML = btn.dataset.originalHtml;
-    }
-};
+        if (btn.dataset.originalHtml) {
+            btn.innerHTML = btn.dataset.originalHtml;
+        }
+    };
 
-// Button group animation — retriggers on every call
-const setBtnGroup = (btnGroup, newHTML) => {
-    btnGroup.innerHTML = newHTML;
-    btnGroup.classList.remove('btn-group-animate');
-    void btnGroup.offsetWidth; // force reflow
-    btnGroup.classList.add('btn-group-animate');
-};
+    // Button group animation — retriggers on every call
+    const setBtnGroup = (btnGroup, newHTML) => {
+        btnGroup.innerHTML = newHTML;
+        btnGroup.classList.remove('btn-group-animate');
+        void btnGroup.offsetWidth; // force reflow
+        btnGroup.classList.add('btn-group-animate');
+    };
 
 
-// ===============================
-// TIME IN / OUT
-// ===============================
-const handleTimeIn = async () => {
-    if (isProcessing) return;
+    // ===============================
+    // TIME IN / OUT
+    // ===============================
+    const handleTimeIn = async () => {
+        if (isProcessing) return;
 
-    const btnGroup = document.querySelector('.btn-group');
-    const statusEl = document.getElementById('dashboard-status');
+        const btnGroup = document.querySelector('.btn-group');
+        const statusEl = document.getElementById('dashboard-status');
 
-    if (!btnGroup) return;
+        if (!btnGroup) return;
 
-    const originalGroupHTML = btnGroup.innerHTML;
-    isProcessing = true;
+        const originalGroupHTML = btnGroup.innerHTML;
+        isProcessing = true;
 
-    // Spinner on the whole group
-    setBtnGroup(btnGroup, `
+        // Spinner on the whole group
+        setBtnGroup(btnGroup, `
         <button class="btn btn-sm" disabled>
             <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
         </button>
     `);
 
-    const reset = () => {
-        setBtnGroup(btnGroup, originalGroupHTML);
-        isProcessing = false;
-    };
+        const reset = () => {
+            setBtnGroup(btnGroup, originalGroupHTML);
+            isProcessing = false;
+        };
 
-    const onError = () => {
-        alert('Location permission required.');
-        reset();
-    };
+        const onError = () => {
+            alert('Location permission required.');
+            reset();
+        };
 
-    const submit = async (pos) => {
-        try {
-            const res = await fetch('../system_functions/attendance_tap.php', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    lat: pos.coords.latitude,
-                    lng: pos.coords.longitude,
-                    accuracy: pos.coords.accuracy
-                })
-            });
+        const submit = async (pos) => {
+            try {
+                const res = await fetch('../system_functions/attendance_tap.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        lat: pos.coords.latitude,
+                        lng: pos.coords.longitude,
+                        accuracy: pos.coords.accuracy
+                    })
+                });
 
-            const response = await res.json();
+                const response = await res.json();
 
-            if (response.error === 'too_fast') {
-                let remaining = response.seconds_remaining;
+                if (response.error === 'too_fast') {
+                    let remaining = response.seconds_remaining;
 
-                const tick = () => {
-                    setBtnGroup(btnGroup, `
+                    const tick = () => {
+                        setBtnGroup(btnGroup, `
                         <button class="btn btn-sm" disabled>
                             <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
                             Wait ${remaining}s...
                         </button>
                     `);
 
-                    if (remaining <= 0) {
-                        setBtnGroup(btnGroup, originalGroupHTML);
-                        isProcessing = false;
-                        return;
-                    }
+                        if (remaining <= 0) {
+                            setBtnGroup(btnGroup, originalGroupHTML);
+                            isProcessing = false;
+                            return;
+                        }
 
-                    remaining--;
-                    setTimeout(tick, 1000);
-                };
+                        remaining--;
+                        setTimeout(tick, 1000);
+                    };
 
-                tick();
-                return;
-            }
+                    tick();
+                    return;
+                }
 
-            if (response.error === 'shift_ended') {
-                alert('Shift ended. You are marked absent.');
-                reset();
-                return;
-            }
+                if (response.error === 'shift_ended') {
+                    alert('Shift ended. You are marked absent.');
+                    reset();
+                    return;
+                }
 
-            if (response.tap === 'timed_in') {
-                setBtnGroup(btnGroup, `
+                if (response.tap === 'timed_in') {
+                    setBtnGroup(btnGroup, `
                     <button class="btn btn-danger btn-sm" onclick="handleTimeIn()">
                         <i class="bi bi-stopwatch-fill"></i> Time Out
                     </button>
@@ -447,133 +470,134 @@ const handleTimeIn = async () => {
                         </li>
                     </ul>
                 `);
-                if (statusEl) statusEl.textContent = 'Timed In';
+                    if (statusEl) statusEl.textContent = 'Timed In';
 
-            } else if (response.tap === 'timed_out') {
-                setBtnGroup(btnGroup, `
+                } else if (response.tap === 'timed_out') {
+                    setBtnGroup(btnGroup, `
                     <button class="btn btn-success btn-sm" onclick="handleTimeIn()">
                         <i class="bi bi-stopwatch-fill"></i> Time In
                     </button>
                 `);
-                if (statusEl) statusEl.textContent = 'Timed Out';
+                    if (statusEl) statusEl.textContent = 'Timed Out';
+                }
+
+                localStorage.setItem('attendance_tap_result', response.tap);
+                localStorage.setItem('attendance_update', Date.now());
+
+            } catch (err) {
+                console.error(err);
+                reset();
+            } finally {
+                isProcessing = false;
             }
+        };
 
-            localStorage.setItem('attendance_tap_result', response.tap);
-            localStorage.setItem('attendance_update', Date.now());
-
-        } catch (err) {
-            console.error(err);
-            reset();
-        } finally {
-            isProcessing = false;
+        if (cachedPosition) {
+            submit(cachedPosition);
+        } else {
+            navigator.geolocation.getCurrentPosition(submit, onError);
         }
     };
 
-    if (cachedPosition) {
-        submit(cachedPosition);
-    } else {
-        navigator.geolocation.getCurrentPosition(submit, onError);
-    }
-};
+    // ===============================
+    // BREAK HANDLER
+    // ===============================
+    const handleBreak = async () => {
+        if (isBreakProcessing) return;
 
+        const btn = document.getElementById('break-action-btn');
+        if (!btn) return;
 
-// ===============================
-// BREAK HANDLER
-// ===============================
-const handleBreak = async () => {
-    if (isBreakProcessing) return;
+        isBreakProcessing = true;
+        setLoading(btn);
 
-    const btn = document.getElementById('break-action-btn');
-    if (!btn) return;
+        const reset = () => {
+            restoreButton(btn);
+            isBreakProcessing = false;
+        };
 
-    isBreakProcessing = true;
-    setLoading(btn);
+        const submit = async (pos) => {
+            try {
+                const res = await fetch('../system_functions/attendance_tap.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        lat: pos.coords.latitude,
+                        lng: pos.coords.longitude,
+                        accuracy: pos.coords.accuracy,
+                        break_tap: true
+                    })
+                });
 
-    const reset = () => {
-        restoreButton(btn);
-        isBreakProcessing = false;
-    };
+                const response = await res.json();
 
-    const submit = async (pos) => {
-        try {
-            const res = await fetch('../system_functions/attendance_tap.php', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    lat: pos.coords.latitude,
-                    lng: pos.coords.longitude,
-                    accuracy: pos.coords.accuracy,
-                    break_tap: true
-                })
-            });
+                if (response.error === 'too_fast') {
+                    let remaining = response.seconds_remaining;
 
-            const response = await res.json();
-
-            if (response.error === 'too_fast') {
-                let remaining = response.seconds_remaining;
-
-                // Animate once into cooldown state
-                setBtnGroup(btnGroup, `
+                    // Animate once into cooldown state
+                    setBtnGroup(btnGroup, `
                     <button class="btn btn-sm" disabled>
                         <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
                         <span id="cooldown-text">Wait ${remaining}s...</span>
                     </button>
                 `);
 
-                const tick = () => {
-                    if (remaining <= 0) {
-                        setBtnGroup(btnGroup, originalGroupHTML);
-                        isProcessing = false;
-                        return;
-                    }
+                    const tick = () => {
+                        if (remaining <= 0) {
+                            setBtnGroup(btnGroup, originalGroupHTML);
+                            isProcessing = false;
+                            return;
+                        }
 
-                    remaining--;
+                        remaining--;
 
-                    // Just update the text, no animation
-                    const countEl = btnGroup.querySelector('#cooldown-text');
-                    if (countEl) countEl.textContent = `Wait ${remaining}s...`;
+                        // Just update the text, no animation
+                        const countEl = btnGroup.querySelector('#cooldown-text');
+                        if (countEl) countEl.textContent = `Wait ${remaining}s...`;
+
+                        setTimeout(tick, 1000);
+                    };
 
                     setTimeout(tick, 1000);
-                };
+                    return;
+                }
 
-                setTimeout(tick, 1000);
-                return;
+                if (response.tap === 'break_in') {
+                    btn.disabled = false;
+                    btn.dataset.state = 'out'; // ← add this
+                    btn.innerHTML = `<i class="bi bi-arrow-return-right"></i> Resume Work`;
+                }
+
+                if (response.tap === 'break_out') {
+                    btn.disabled = true;
+                    btn.dataset.state = 'in'; // ← add this
+                    btn.innerHTML = `<i class="bi bi-cup-hot-fill"></i> Take Break`;
+                }
+
+            } catch (err) {
+                console.error(err);
+                reset();
+            } finally {
+                isBreakProcessing = false;
             }
+        };
 
-            if (response.tap === 'break_in') {
-                btn.disabled = false;
-                btn.dataset.state = 'out'; // ← add this
-                btn.innerHTML = `<i class="bi bi-arrow-return-right"></i> Resume Work`;
-            }
-
-            if (response.tap === 'break_out') {
-                btn.disabled = true;
-                btn.dataset.state = 'in'; // ← add this
-                btn.innerHTML = `<i class="bi bi-cup-hot-fill"></i> Take Break`;
-            }
-
-        } catch (err) {
-            console.error(err);
+        const onError = () => {
+            alert('Location permission required.');
             reset();
-        } finally {
-            isBreakProcessing = false;
+        };
+
+        if (cachedPosition) {
+            submit(cachedPosition);
+        } else {
+            navigator.geolocation.getCurrentPosition(submit, onError);
         }
     };
 
-    const onError = () => {
-        alert('Location permission required.');
-        reset();
-    };
 
-    if (cachedPosition) {
-        submit(cachedPosition);
-    } else {
-        navigator.geolocation.getCurrentPosition(submit, onError);
-    }
-};
-
-
-// expose globally
-window.handleTimeIn = handleTimeIn;
-window.handleBreak = handleBreak;
+    // expose globally
+    window.handleTimeIn = handleTimeIn;
+    window.handleBreak = handleBreak;
 </script>

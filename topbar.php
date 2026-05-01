@@ -77,6 +77,7 @@ $currentStatus = $timedIn ? 'Timed In' : 'Timed Out';
 
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.css" rel="stylesheet">
+<link rel="stylesheet" href="../dropdown_requests/navbars.css">
 <link rel="stylesheet" href="../dropdown_requests/ot_modal.css">
 <link rel="stylesheet" href="../dropdown_requests/leave_modal.css">
 <link rel="stylesheet" href="../dropdown_requests/ob_modal.css">
@@ -114,49 +115,42 @@ $currentStatus = $timedIn ? 'Timed In' : 'Timed Out';
         <div class="verticalDivider"></div>
 
         <!-- USER DROPDOWN -->
-        <div class="navUserProfile">
-            <div class="userDropdownWrapper">
+        <div class="dropdown">
+            <span class="userEmail dropdown-toggle"
+                data-bs-toggle="dropdown"
+                aria-expanded="false">
+                <i class="bi bi-person-fill"></i>
+                <?= htmlspecialchars($_SESSION['user_name'] ?? $_SESSION['user_email'] ?? 'User') ?>
+            </span>
 
-                <span class="userEmail dropdown-toggle" id="userDropdownToggle">
-                    <i class="bi bi-person-fill userProfileIcon"></i>
-                    <?= htmlspecialchars($_SESSION['user_name'] ?? $_SESSION['user_email'] ?? 'User') ?>
-                </span>
+            <ul class="dropdown-menu">
+                <li>
+                    <a class="dropdown-item" href="#" onclick="openOTModal(); return false;">
+                        <i class="bi bi-clock-history"></i> Request OT
+                    </a>
+                </li>
+                <li>
+                    <a class="dropdown-item" href="#" onclick="openLeaveModal(); return false;">
+                        Request Leave
+                    </a>
+                </li>
 
-                <div class="userDropdownMenu" id="userDropdownMenu">
-                    <div class="dropdownSection">
+                <li><hr class="dropdown-divider"></li>
 
-                        <a href="#" class="userDropdownItem" onclick="openOTModal(); return false;">
-                            <i class="bi bi-clock-history"></i> Request OT
-                        </a>
-                        <a href="#" class="userDropdownItem" onclick="openLeaveModal(); return false;">
-                            <i class="bi bi-calendar-x"></i> Request Leave
-                        </a>
-                        <a href="#" class="userDropdownItem" onclick="openOBModal(); return false;">
-                            <i class="bi bi-briefcase"></i> Request OB
-                        </a>
-                        <a href="#" class="userDropdownItem" onclick="openLogEditModal(); return false;">
-                            <i class="bi bi-pencil-square"></i> Request Log Edit
-                        </a>
-
-                        <div class="horizontalDivider"></div>
-
-                        <a href="../logout.php" class="logoutText">
-                            <i class="bi bi-box-arrow-right logoutIcon"></i> Logout
-                        </a>
-
-                    </div>
-                </div>
-            </div>
+                <li>
+                    <a class="dropdown-item logout-item" href="../logout.php">
+                        <i class="bi bi-box-arrow-right"></i> Logout
+                    </a>
+                </li>
+            </ul>
         </div>
 
     </div>
 </div>
 
 <!-- MODALS -->
-<?php include '../dropdown_requests/ot_modal.php'; ?>
-<?php include '../dropdown_requests/leave_modal.php'; ?>
-<?php include '../dropdown_requests/ob_modal.php'; ?>
-<?php include '../dropdown_requests/log_edit_modal.php'; ?>
+<?php include '../dropdown_requests/modal_request.php'; ?>
+
 
 <!-- JAVASCRIPT -->
 <script defer>

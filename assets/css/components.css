@@ -1,4 +1,10 @@
 /* ================================================
+   DIVIDER
+   ================================================ */
+.vr {
+    color: var(--text-light);
+}
+/* ================================================
    BOOTSTRAP BUTTON FULL OVERRIDE LAYER (SUBTLE GLASS)
    ================================================ */
 
@@ -87,16 +93,20 @@ button.btn {
    HOVER / FOCUS / ACTIVE
    ================================================ */
 
-.btn:hover,
-.btn:focus,
-.btn:focus-visible {
+/* Hover ONLY */
+.btn:hover {
     color: var(--text-lightest) !important;
     background: var(--neutral-glass-hover) !important;
-    border-color: var(--neutral-border) !important;
-
     box-shadow: var(--glass-shadow) !important;
-
     transform: scale(1.04) !important;
+}
+
+/* Focus (no visual exaggeration) */
+.btn:focus,
+.btn:focus-visible {
+    outline: none !important;
+    box-shadow: none !important;
+    transform: none !important;
 }
 
 .btn:active {
@@ -318,18 +328,26 @@ button.btn {
     font-size: 0.9rem !important;
     padding: 0.45rem 0.75rem !important;
     transition:
-        background 0.2s ease,
-        color 0.2s ease !important;
+        transform 0.25s ease-out,
+        opacity 0.25s ease-out,
+        box-shadow 0.25s ease-out,
+        background 0.25s ease-out,
+        color 0.25s ease-out !important;
 }
 
 .dropdown-item:hover,
 .dropdown-item:focus {
-    background: var(--neutral-glass-hover) !important;
-    color: var(--text-lightest) !important;
+    background: var(--primary-glass-hover) !important;
+    color: var(--primary-color) !important;
+    box-shadow: var(--glass-shadow) !important;
+    transform: scale(1.04) !important;
 }
 
 .dropdown-item:active {
-    background: var(--neutral-glass) !important;
+    transform: scale(0.98) !important;
+
+    background: var(--primary-glass) !important;
+    box-shadow: var(--glass-inset) !important;
 }
 
 .dropdown-divider {
@@ -355,3 +373,4 @@ button.btn {
 .dropdown-toggle[aria-expanded="true"]::after {
     transform: rotate(180deg) !important;
 }
+
