@@ -53,7 +53,7 @@ $records = $stmt->fetchAll(PDO::FETCH_ASSOC);
     <!-- TOPBAR -->
     <?php
     $currentPage = 'dashboard';
-    include '../topbar.php';
+    include '../topbar_revised.php';
     ?>
 
     <!-- DASHBOARD -->

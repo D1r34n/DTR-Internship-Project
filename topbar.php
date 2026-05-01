@@ -15,7 +15,7 @@ $employeeId = $_SESSION['user_id'];
 $role       = $_SESSION['user_role'];
 
 // Validate role
-if (!in_array($role, ['admin', 'employee', 'workforce'])) {
+if (!in_array($role, ['admin', 'employee'])) {
     session_destroy();
     header("Location: ../index.php");
     exit();
@@ -29,34 +29,24 @@ $titles = [
         'schedule'  => 'Employee Schedule',
         'logs'      => 'Employee Activity Logs',
     ],
-    'workforce' => [
-        'dashboard'          => 'Employee Dashboard',
-        'records'            => 'Employee Records',
-        'schedule'           => 'Employee Schedule',
-        'logs'               => 'Employee Activity Logs',
-        'workforce_schedule' => 'Manage Schedules',
-    ],
     'admin' => [
-        'dashboard'         => 'Admin Dashboard',
-        'employees'         => 'Employees',
-        'schedule'          => 'Schedules',
-        'employee_requests' => 'Employee Requests',
-        'schedule_requests' => 'Schedule Requests',
-        'logs'              => 'Logs',
-        'employee_logs'     => 'Employee Logs',
-        'departments'       => 'Departments',
+        'dashboard' => 'Admin Dashboard',
+        'employees' => 'Employees',
+        'schedule'  => 'Schedules',
+        'requests'  => 'Requests',
+        'logs'      => 'Logs',
     ]
 ];
 
 // Set current page title
-$currentPage = $currentPage ?? 'dashboard';
-$title       = $titles[$role][$currentPage] ?? 'Dashboard';
+$current_page = $current_page ?? 'dashboard';
+$title = $titles[$role][$current_page] ?? 'Dashboard';
 
 // Set date timezone (Philippines)
 date_default_timezone_set('Asia/Manila');
 $today = date('Y-m-d');
 
-// Get last log entry — also check for active break
+// Get last log entry
 $stmt = $pdo->prepare("
     SELECT log_type
     FROM logs
@@ -64,132 +54,99 @@ $stmt = $pdo->prepare("
     ORDER BY log_time DESC
     LIMIT 1
 ");
+
 $stmt->execute([$employeeId]);
+
 $lastLog = $stmt->fetch(PDO::FETCH_ASSOC);
 
-$hasTimeIn  = $lastLog && $lastLog['log_type'] === 'IN';
-$isOnBreak  = $lastLog && $lastLog['log_type'] === 'BREAK_IN';
-$isBreakOut = $lastLog && $lastLog['log_type'] === 'BREAK_OUT';
-$timedIn    = $hasTimeIn || $isOnBreak || $isBreakOut;
+// Determine the attendance state based on logs
 
+// TRUE if last action is IN and not yet followed by OUT
+$hasTimeIn  = $lastLog && $lastLog['log_type'] === 'IN';
+
+// TRUE if last action is OUT
+$hasTimeOut = $lastLog && $lastLog['log_type'] === 'OUT';
+
+// FINAL UI STATE:
+// Employee is considered "Timed In" only if last action is IN
+$timedIn = $hasTimeIn && !$hasTimeOut;
+
+// Display text for UI
 $currentStatus = $timedIn ? 'Timed In' : 'Timed Out';
 ?>
 
-<!-- Shared CSS — loaded once via topbar for all pages -->
-<link rel="stylesheet" href="../assets/css/root.css">
-<link rel="stylesheet" href="../assets/css/typography.css">
-<link rel="stylesheet" href="../assets/css/components.css">
-<link rel="stylesheet" href="../navbars.css">
-
-<!-- Topbar external libs -->
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.css" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
-
-<!-- Bootstrap -->
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-
-<!-- Modal CSS -->
 <link rel="stylesheet" href="../dropdown_requests/ot_modal.css">
 <link rel="stylesheet" href="../dropdown_requests/leave_modal.css">
 <link rel="stylesheet" href="../dropdown_requests/ob_modal.css">
 <link rel="stylesheet" href="../dropdown_requests/log_edit_modal.css">
 
 <!-- TOP BAR -->
-<div class="top-bar">
-    <h4 class="dashboard-title section-title"><?= htmlspecialchars($title) ?></h4>
+<div class="topBar">
+    <h4 class="dashboardTitle"><?= htmlspecialchars($title) ?></h4>
 
-    <div class="top-bar-right">
+    <div class="topBarRight">
 
-        <!-- TIME IN / OUT BUTTON GROUP -->
-        <div class="time-in-wrapper" id="time-in-wrapper">
+        <!-- TIME IN / OUT BUTTON (with break dropdown) -->
+        <div class="timeInWrapper" id="timeInWrapper"
+            onmouseenter="if(!document.getElementById('timeInBtn').disabled && document.getElementById('timeInBtn').classList.contains('btn-out')) document.getElementById('breakDropdown').style.display='block'"
+            onmouseleave="document.getElementById('breakDropdown').style.display='none'">
 
             <button
-                class="time-in-button <?= $timedIn ? 'btn-out' : 'btn-in' ?>"
-                id="time-in-btn"
+                class="timeInButton <?= $timedIn ? 'btn-out' : 'btn-in' ?>"
+                id="timeInBtn"
                 onclick="handleTimeIn()"
             >
-                <i class="bi bi-stopwatch-fill time-in-icon"></i>
-                <span id="time-in-label">
+                <i class="bi bi-stopwatch-fill timeInIcon"></i>
+                <span id="timeInLabel">
                     <?= $timedIn ? 'Time Out' : 'Time In' ?>
                 </span>
             </button>
 
-            <?php if ($timedIn): ?>
-            <div class="break-menu" id="break-menu">
-                <div class="break-menu-section">
-                    <button
-                        class="break-menu-item <?= $isOnBreak ? 'break-out-btn' : 'break-in-btn' ?>"
-                        id="break-action-btn"
-                        onclick="handleBreak()"
-                    >
-                        <?php if ($isOnBreak): ?>
-                            <i class="bi bi-play-fill"></i>
-                            <span id="break-label">Break Out</span>
-                        <?php else: ?>
-                            <i class="bi bi-pause-fill"></i>
-                            <span id="break-label">Break In</span>
-                        <?php endif; ?>
-                    </button>
+            <div class="breakDropdown" id="breakDropdown" style="display:none;">
+                <div class="breakDropdownItem" onclick="handleTakeBreak()">
+                    <i class="bi bi-cup-hot"></i> Take a Break
                 </div>
             </div>
-            <?php endif; ?>
-
         </div>
 
-        <div class="vertical-divider"></div>
+        <div class="verticalDivider"></div>
 
-        <!-- USER DROPDOWN (BOOTSTRAP VERSION) -->
-        <div class="dropdown">
-            <a
-                class="d-flex align-items-center gap-2 text-decoration-none dropdown-toggle user-dropdown-toggle"
-                href="#"
-                role="button"
-                data-bs-toggle="dropdown"
-                aria-expanded="false"
-            >
-                <i class="bi bi-person-fill"></i>
+        <!-- USER DROPDOWN -->
+        <div class="navUserProfile">
+            <div class="userDropdownWrapper">
 
-                <?= htmlspecialchars($_SESSION['user_name'] ?? $_SESSION['user_email'] ?? 'User') ?>
+                <span class="userEmail dropdown-toggle" id="userDropdownToggle">
+                    <i class="bi bi-person-fill userProfileIcon"></i>
+                    <?= htmlspecialchars($_SESSION['user_name'] ?? $_SESSION['user_email'] ?? 'User') ?>
+                </span>
 
-                <i class="bi bi-chevron-down"></i>
-            </a>
+                <div class="userDropdownMenu" id="userDropdownMenu">
+                    <div class="dropdownSection">
 
-            <ul class="dropdown-menu dropdown-menu-end glass-dropdown">
+                        <a href="#" class="userDropdownItem" onclick="openOTModal(); return false;">
+                            <i class="bi bi-clock-history"></i> Request OT
+                        </a>
+                        <a href="#" class="userDropdownItem" onclick="openLeaveModal(); return false;">
+                            <i class="bi bi-calendar-x"></i> Request Leave
+                        </a>
+                        <a href="#" class="userDropdownItem" onclick="openOBModal(); return false;">
+                            <i class="bi bi-briefcase"></i> Request OB
+                        </a>
+                        <a href="#" class="userDropdownItem" onclick="openLogEditModal(); return false;">
+                            <i class="bi bi-pencil-square"></i> Request Log Edit
+                        </a>
 
-                <li>
-                    <a class="dropdown-item" href="#" onclick="openOTModal(); return false;">
-                        <i class="bi bi-clock-history me-2"></i> Request OT
-                    </a>
-                </li>
+                        <div class="horizontalDivider"></div>
 
-                <li>
-                    <a class="dropdown-item" href="#" onclick="openLeaveModal(); return false;">
-                        <i class="bi bi-calendar-x me-2"></i> Request Leave
-                    </a>
-                </li>
+                        <a href="../logout.php" class="logoutText">
+                            <i class="bi bi-box-arrow-right logoutIcon"></i> Logout
+                        </a>
 
-                <li>
-                    <a class="dropdown-item" href="#" onclick="openOBModal(); return false;">
-                        <i class="bi bi-briefcase me-2"></i> Request OB
-                    </a>
-                </li>
-
-                <li>
-                    <a class="dropdown-item" href="#" onclick="openLogEditModal(); return false;">
-                        <i class="bi bi-pencil-square me-2"></i> Request Log Edit
-                    </a>
-                </li>
-
-                <li><hr class="dropdown-divider"></li>
-
-                <li>
-                    <a class="dropdown-item text-danger" href="../authentication_pages/logout.php">
-                        <i class="bi bi-box-arrow-right me-2"></i> Logout
-                    </a>
-                </li>
-
-            </ul>
+                    </div>
+                </div>
+            </div>
         </div>
 
     </div>
@@ -204,76 +161,74 @@ $currentStatus = $timedIn ? 'Timed In' : 'Timed Out';
 <!-- JAVASCRIPT -->
 <script defer>
     document.addEventListener('DOMContentLoaded', () => {
-
-        // Sync time-in state across tabs
         window.addEventListener('storage', (event) => {
             if (event.key !== 'attendance_update') return;
 
-            const tap   = localStorage.getItem('attendance_tap_result');
-            const btn   = document.getElementById('time-in-btn');
-            const label = document.getElementById('time-in-label');
+            const tap        = localStorage.getItem('attendance_tap_result');
+            const breakState = localStorage.getItem('attendance_break_state'); // NEW
+            const btn        = document.getElementById('timeInBtn');
+            const label      = document.getElementById('timeInLabel');
 
-            if (tap === 'timed_in') {
-                btn.classList.remove('btn-in');
+            // NEW: handle break state sync across tabs
+            if (breakState === 'on_break') {
+                btn.classList.remove('btn-in', 'btn-out');
+                btn.classList.add('btn-break');
+                label.textContent = 'End Break';
+                btn.onclick = handleEndBreak;
+            } else if (tap === 'timed_in') {
+                btn.classList.remove('btn-in', 'btn-break');
                 btn.classList.add('btn-out');
                 label.textContent = 'Time Out';
+                btn.onclick = handleTimeIn;
             } else if (tap === 'timed_out') {
-                btn.classList.remove('btn-out');
+                btn.classList.remove('btn-out', 'btn-break');
                 btn.classList.add('btn-in');
                 label.textContent = 'Time In';
+                btn.onclick = handleTimeIn;
             }
         });
-
-        // ===== BREAK MENU HOVER =====
-        const timeInWrapper = document.getElementById('time-in-wrapper');
-        const breakMenu     = document.getElementById('break-menu');
-
-        if (timeInWrapper && breakMenu) {
-            let breakMenuTimeout = null;
-
-            const showBreakMenu = () => {
-                const btn       = document.getElementById('time-in-btn');
-                const breakMenu = document.getElementById('break-menu');
-                if (!btn || !breakMenu) return;
-                if (!btn.classList.contains('btn-out')) return;
-                clearTimeout(breakMenuTimeout);
-                breakMenu.classList.add('show');
-            };
-
-            const hideBreakMenu = () => {
-                breakMenuTimeout = setTimeout(() => {
-                    breakMenu.classList.remove('show');
-                }, 150);
-            };
-
-            timeInWrapper.addEventListener('mouseenter', showBreakMenu);
-            timeInWrapper.addEventListener('mouseleave', hideBreakMenu);
-            breakMenu.addEventListener('mouseenter', () => clearTimeout(breakMenuTimeout));
-            breakMenu.addEventListener('mouseleave', hideBreakMenu);
-        }
-
     });
 
-    // ===== COOLDOWN =====
+    // Cooldown function for debounce (UI feedback)
     const startCooldown = (btn, seconds, originalText) => {
-        const label = btn.querySelector('#time-in-label');
+        const label = btn.querySelector('#timeInLabel');
 
         btn.disabled = true;
-        btn.classList.add('btn-cooldown');
+        btn.style.position = 'relative';
+        btn.style.overflow = 'hidden';
+        btn.style.pointerEvents = 'none';
+        btn.style.backgroundColor = '#9ca3af';
 
         const fill = document.createElement('div');
-        fill.classList.add('btn-cooldown-fill');
-        fill.style.transition = `width ${seconds}s linear`;
+        fill.style.cssText = `
+            position: absolute;
+            top: 0; left: 0;
+            height: 100%;
+            width: 0%;
+            background: rgba(255,255,255,0.2);
+            transition: width ${seconds}s linear;
+            pointer-events: none;
+            z-index: 0;
+        `;
         btn.appendChild(fill);
 
         label.style.position = 'relative';
-        label.style.zIndex   = '1';
+        label.style.zIndex = '1';
 
         let remaining = seconds;
 
         label.innerHTML = `
-            <span class="btn-cooldown-label">
-                <span class="btn-spinner"></span>
+            <span style="display:flex;align-items:center;justify-content:center;gap:6px;">
+                <span style="
+                    display: inline-block;
+                    width: 14px;
+                    height: 14px;
+                    border: 2px solid rgba(255,255,255,0.3);
+                    border-top-color: white;
+                    border-radius: 50%;
+                    animation: btn-spin 0.7s linear infinite;
+                    flex-shrink: 0;
+                "></span>
                 <span class="cooldown-text">(${remaining}s)</span>
             </span>
         `;
@@ -287,29 +242,62 @@ $currentStatus = $timedIn ? 'Timed In' : 'Timed Out';
         }, 1000);
 
         requestAnimationFrame(() => {
-            requestAnimationFrame(() => { fill.style.width = '100%'; });
+            requestAnimationFrame(() => {
+                fill.style.width = '100%';
+            });
         });
 
         setTimeout(() => {
             clearInterval(interval);
             if (btn.contains(fill)) btn.removeChild(fill);
 
-            label.innerHTML      = originalText;
+            label.innerHTML = originalText;
             label.style.position = '';
-            label.style.zIndex   = '';
+            label.style.zIndex = '';
 
-            btn.classList.remove('btn-cooldown');
-            btn.disabled  = false;
-            isProcessing  = false;
+            btn.style.overflow = '';
+            btn.style.pointerEvents = '';
+            btn.style.backgroundColor = '';
+            btn.disabled = false;
+            isProcessing = false;
+
         }, seconds * 1000);
     };
 
-    // ===== SPINNER =====
+    // Spinner helpers
     const showSpinner = (btn) => {
-        const label = btn.querySelector('#time-in-label');
-        btn.classList.add('btn-loading');
-        label.innerHTML = `<span class="btn-spinner btn-spinner--lg"></span>`;
+        const label = btn.querySelector('#timeInLabel');
+
+        btn.style.pointerEvents = 'none';
+        btn.style.backgroundColor = '#9ca3af';
+
+        label.innerHTML = `
+            <span style="
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                width: 100%;
+            ">
+                <span style="
+                    display: inline-block;
+                    width: 18px;
+                    height: 18px;
+                    border: 3px solid rgba(255,255,255,0.3);
+                    border-top-color: white;
+                    border-radius: 50%;
+                    animation: btn-spin 0.7s linear infinite;
+                "></span>
+            </span>
+        `;
     };
+
+    // Inject keyframes once
+    if (!document.getElementById('btn-spin-style')) {
+        const style = document.createElement('style');
+        style.id = 'btn-spin-style';
+        style.textContent = `@keyframes btn-spin { to { transform: rotate(360deg); } }`;
+        document.head.appendChild(style);
+    }
 
     // ===== PRE-CACHE GPS ON PAGE LOAD =====
     let cachedPosition = null;
@@ -325,24 +313,24 @@ $currentStatus = $timedIn ? 'Timed In' : 'Timed Out';
 
     const handleTimeIn = async () => {
         if (isProcessing) return;
-        if (document.getElementById('time-in-btn').disabled) return;
+        if (document.getElementById('timeInBtn').disabled) return;
 
-        const btn          = document.getElementById('time-in-btn');
-        const label        = btn.querySelector('#time-in-label');
-        const status       = document.getElementById('dashboard-status');
-        const originalText = label.textContent;
+        const btn    = document.getElementById('timeInBtn');
+        const label  = btn.querySelector('#timeInLabel');
+        const status = document.getElementById('dashboard_status');
 
         isProcessing = true;
         btn.disabled = true;
 
+        const originalText = label.textContent;
         showSpinner(btn);
 
         const submitTap = async (pos) => {
             try {
                 const res = await fetch('../system_functions/attendance_tap.php', {
-                    method:  'POST',
+                    method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body:    JSON.stringify({
+                    body: JSON.stringify({
                         lat:      pos.coords.latitude,
                         lng:      pos.coords.longitude,
                         accuracy: pos.coords.accuracy
@@ -352,7 +340,6 @@ $currentStatus = $timedIn ? 'Timed In' : 'Timed Out';
                 const response = await res.json();
                 console.log(response);
 
-                // Clicked too fast
                 if (response.error === 'too_fast') {
                     const wait = response.seconds_remaining || 5;
                     startCooldown(btn, wait, originalText);
@@ -360,19 +347,38 @@ $currentStatus = $timedIn ? 'Timed In' : 'Timed Out';
                     return;
                 }
 
-                // Log corrupted
                 if (response.error === 'log_corrupted') {
-                    btn.disabled    = false;
-                    btn.classList.remove('btn-loading');
+                    btn.disabled = false;
+                    btn.style.pointerEvents   = '';
+                    btn.style.backgroundColor = '';
                     label.innerHTML = originalText;
-                    isProcessing    = false;
+                    isProcessing = false;
 
-                    if (!document.getElementById('log-corruption-warning')) {
+                    const existing = document.getElementById('log-corruption-warning');
+                    if (!existing) {
                         const warning = document.createElement('div');
-                        warning.id    = 'log-corruption-warning';
-                        warning.classList.add('corruption-warning');
+                        warning.id = 'log-corruption-warning';
+                        warning.style.cssText = `
+                            position: fixed;
+                            top: 1rem;
+                            left: 50%;
+                            transform: translateX(-50%);
+                            background: #dc3545;
+                            color: white;
+                            padding: 0.75rem 1.25rem;
+                            border-radius: 10px;
+                            font-size: 0.875rem;
+                            font-family: 'Poppins', sans-serif;
+                            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+                            z-index: 9999;
+                            display: flex;
+                            align-items: center;
+                            gap: 0.5rem;
+                            max-width: 420px;
+                            text-align: center;
+                        `;
                         warning.innerHTML = `
-                            <i class="bi bi-exclamation-triangle-fill"></i>
+                            <i class="bi bi-exclamation-triangle-fill" style="font-size:1.1rem; flex-shrink:0;"></i>
                             <span>Attendance log corrupted. Please contact your administrator to fix your records.</span>
                         `;
                         document.body.appendChild(warning);
@@ -383,18 +389,19 @@ $currentStatus = $timedIn ? 'Timed In' : 'Timed Out';
                     return;
                 }
 
-                // Shift has already ended
                 if (response.error === 'shift_ended') {
-                    btn.disabled    = false;
-                    btn.classList.remove('btn-loading');
+                    btn.disabled = false;
+                    btn.style.pointerEvents   = '';
+                    btn.style.backgroundColor = '';
                     label.innerHTML = originalText;
-                    isProcessing    = false;
+                    isProcessing = false;
                     alert('Your shift has already ended. You have been marked absent.');
                     return;
                 }
 
                 btn.disabled = false;
-                btn.classList.remove('btn-loading');
+                btn.style.pointerEvents   = '';
+                btn.style.backgroundColor = '';
 
                 let tapSuccess = false;
 
@@ -404,43 +411,6 @@ $currentStatus = $timedIn ? 'Timed In' : 'Timed Out';
                     label.innerHTML = 'Time Out';
                     if (status) status.textContent = 'Timed In';
                     tapSuccess = true;
-
-                    // Inject break menu if it doesn't exist yet
-                    if (!document.getElementById('break-menu')) {
-                        const breakMenuEl     = document.createElement('div');
-                        breakMenuEl.className = 'break-menu';
-                        breakMenuEl.id        = 'break-menu';
-                        breakMenuEl.innerHTML = `
-                            <div class="break-menu-section">
-                                <button class="break-menu-item break-in-btn" id="break-action-btn" onclick="handleBreak()">
-                                    <i class="bi bi-pause-fill"></i>
-                                    <span id="break-label">Break In</span>
-                                </button>
-                            </div>
-                        `;
-                        document.getElementById('time-in-wrapper').appendChild(breakMenuEl);
-
-                        const breakMenu     = breakMenuEl;
-                        const timeInWrapper = document.getElementById('time-in-wrapper');
-                        let breakMenuTimeout = null;
-
-                        const showBreakMenu = () => {
-                            const btn = document.getElementById('time-in-btn');
-                            if (!btn || !btn.classList.contains('btn-out')) return;
-                            clearTimeout(breakMenuTimeout);
-                            breakMenu.classList.add('show');
-                        };
-
-                        const hideBreakMenu = () => {
-                            breakMenuTimeout = setTimeout(() => breakMenu.classList.remove('show'), 150);
-                        };
-
-                        timeInWrapper.addEventListener('mouseenter', showBreakMenu);
-                        timeInWrapper.addEventListener('mouseleave', hideBreakMenu);
-                        breakMenu.addEventListener('mouseenter', () => clearTimeout(breakMenuTimeout));
-                        breakMenu.addEventListener('mouseleave', hideBreakMenu);
-                        breakMenu.classList.add('show');
-                    }
                 }
 
                 if (response.tap === 'timed_out') {
@@ -448,36 +418,36 @@ $currentStatus = $timedIn ? 'Timed In' : 'Timed Out';
                     btn.classList.add('btn-in');
                     label.innerHTML = 'Time In';
                     if (status) status.textContent = 'Timed Out';
+                    // NEW: clear break state on time out
+                    localStorage.removeItem('attendance_break_state');
                     tapSuccess = true;
-
-                    const breakMenu = document.getElementById('break-menu');
-                    if (breakMenu) breakMenu.remove();
                 }
 
                 if (tapSuccess) {
                     localStorage.setItem('attendance_tap_result', response.tap);
                     localStorage.setItem('attendance_update', Date.now());
-                    if (document.getElementById('attendance-timeline')) refreshChart();
+                    if (document.getElementById('attendanceTimeline')) refreshChart();
+                    if (document.querySelector('.ganttContainer')) refreshGantt();
                 }
 
                 if (typeof getTotalWorkedHours === 'function') getTotalWorkedHours();
-                if (document.getElementById('logs-table-body')) fetchLogs();
-                if (document.getElementById('attendance-table-body')) loadAttendance();
+                if (document.getElementById('logs_table_body')) fetchLogs();
+                if (document.getElementById('attendance_table_body')) loadAttendance();
 
             } catch (err) {
                 console.error(err);
             } finally {
                 isProcessing = false;
-                if (document.querySelector('.gantt-container')) refreshGantt();
             }
         };
 
         const onError = (err) => {
             console.error(err);
             alert('Location permission is required.');
-            isProcessing    = false;
-            btn.disabled    = false;
-            btn.classList.remove('btn-loading');
+            isProcessing = false;
+            btn.disabled = false;
+            btn.style.pointerEvents   = '';
+            btn.style.backgroundColor = '';
             label.innerHTML = originalText;
         };
 
@@ -492,140 +462,91 @@ $currentStatus = $timedIn ? 'Timed In' : 'Timed Out';
         }
     };
 
-    // ===== BREAK IN / OUT =====
-    let isBreakProcessing = false;
+    // ===== BREAK HANDLERS (NEW) =====
+    const handleTakeBreak = () => {
+        document.getElementById('breakDropdown').style.display = 'none';
 
-    const handleBreak = async () => {
-        if (isBreakProcessing) return;
+        const btn    = document.getElementById('timeInBtn');
+        const label  = btn.querySelector('#timeInLabel');
+        const status = document.getElementById('dashboard_status');
 
-        const btn           = document.getElementById('break-action-btn');
-        const originalClass = btn.className;
-        const isBreakOut    = originalClass.includes('break-out-btn');
+        // Swap to break state
+        btn.classList.remove('btn-out');
+        btn.classList.add('btn-break');
+        btn.disabled          = false;
+        btn.style.pointerEvents = '';
+        btn.onclick           = handleEndBreak;
+        label.innerHTML       = 'End Break';
 
-        isBreakProcessing = true;
+        if (status) status.textContent = 'On Break';
 
-        const breakLabel     = btn.querySelector('#break-label');
-        breakLabel.innerHTML = `<span class="btn-spinner btn-spinner--sm"></span>`;
+        localStorage.setItem('attendance_break_state', 'on_break');
+        localStorage.setItem('attendance_update', Date.now());
+    };
 
-        const setBreakBtn = (isOut) => {
-            btn.querySelector('i').className              = isOut ? 'bi bi-play-fill' : 'bi bi-pause-fill';
-            btn.querySelector('#break-label').textContent = isOut ? 'Break Out' : 'Break In';
-            btn.className = `break-menu-item ${isOut ? 'break-out-btn' : 'break-in-btn'}`;
-        };
+    const handleEndBreak = () => {
+        const btn    = document.getElementById('timeInBtn');
+        const label  = btn.querySelector('#timeInLabel');
+        const status = document.getElementById('dashboard_status');
 
-        const restoreBreakBtn = () => setBreakBtn(isBreakOut);
+        // Swap back to timed-in state
+        btn.classList.remove('btn-break');
+        btn.classList.add('btn-out');
+        btn.onclick     = handleTimeIn;
+        label.innerHTML = 'Time Out';
 
-        const submitBreak = async (pos) => {
-            try {
-                const res = await fetch('../system_functions/attendance_tap.php', {
-                    method:  'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body:    JSON.stringify({
-                        lat:       pos.coords.latitude,
-                        lng:       pos.coords.longitude,
-                        accuracy:  pos.coords.accuracy,
-                        break_tap: true,
-                    })
-                });
+        if (status) status.textContent = 'Timed In';
 
-                const response = await res.json();
-                console.log(response);
+        localStorage.removeItem('attendance_break_state');
+        localStorage.setItem('attendance_update', Date.now());
+    };
 
-                // Clicked too fast
-                if (response.error === 'too_fast') {
-                    const wait = response.seconds_remaining || 5;
-                    let remaining = wait;
+    // ===== BREAK DROPDOWN HOVER =====
+    const wrapper  = document.getElementById('timeInWrapper');
+    const dropdown = document.getElementById('breakDropdown');
+    const btn      = document.getElementById('timeInBtn');
 
-                    btn.className = originalClass;
-                    btn.querySelector('i').className = isBreakOut ? 'bi bi-play-fill' : 'bi bi-pause-fill';
-                    btn.querySelector('#break-label').innerHTML = `
-                        <span class="break-cooldown-label">
-                            <span class="btn-spinner btn-spinner--xs"></span>
-                            <span id="break-cooldown-text">(${remaining}s)</span>
-                        </span>
-                    `;
-                    btn.disabled = true;
-                    btn.classList.add('btn-disabled');
+    let hoverTimer = null;
 
-                    const interval = setInterval(() => {
-                        remaining--;
-                        const el = document.getElementById('break-cooldown-text');
-                        if (remaining > 0 && el) {
-                            el.textContent = `(${remaining}s)`;
-                        } else {
-                            clearInterval(interval);
-                            btn.querySelector('#break-label').textContent = isBreakOut ? 'Break Out' : 'Break In';
-                            btn.disabled = false;
-                            btn.classList.remove('btn-disabled');
-                        }
-                    }, 1000);
-
-                    isBreakProcessing = false;
-                    return;
-                }
-
-                btn.disabled = false;
-
-                if (response.tap === 'break_in') {
-                    setBreakBtn(true);
-                } else if (response.tap === 'break_out') {
-                    setBreakBtn(false);
-                    btn.disabled = true;
-                    btn.classList.add('btn-disabled');
-                } else {
-                    restoreBreakBtn();
-                }
-
-                if (document.querySelector('.gantt-container')) refreshGantt();
-                if (document.getElementById('logs-table-body')) fetchLogs();
-
-            } catch (err) {
-                console.error(err);
-                restoreBreakBtn();
-            } finally {
-                isBreakProcessing = false;
-                const breakMenu = document.getElementById('break-menu');
-                if (breakMenu) breakMenu.classList.remove('show');
-            }
-        };
-
-        const onBreakError = (err) => {
-            console.error(err);
-            alert('Location permission is required.');
-            restoreBreakBtn();
-            isBreakProcessing = false;
-        };
-
-        if (cachedPosition) {
-            await submitBreak(cachedPosition);
-        } else {
-            navigator.geolocation.getCurrentPosition(
-                async (pos) => await submitBreak(pos),
-                onBreakError,
-                { enableHighAccuracy: false, maximumAge: 60000, timeout: 10000 }
-            );
+    const showDropdown = () => {
+        if (btn.classList.contains('btn-out')) {
+            clearTimeout(hoverTimer);
+            dropdown.style.display = 'block';
         }
     };
 
-    // ===== NAVIGATION UNLOAD GUARD =====
-    let _allowUnload = false;
+    const hideDropdown = () => {
+        hoverTimer = setTimeout(() => {
+            dropdown.style.display = 'none';
+        }, 1500);
+    };
+
+    wrapper.addEventListener('mouseenter', showDropdown);
+    wrapper.addEventListener('mouseleave', hideDropdown);
+    dropdown.addEventListener('mouseenter', () => clearTimeout(hoverTimer));
+    dropdown.addEventListener('mouseleave', hideDropdown);
+
+    // ===== USER DROPDOWN =====
+    const toggle = document.getElementById('userDropdownToggle');
+    const menu   = document.getElementById('userDropdownMenu');
+    let isOpen   = false;
+
+    toggle.addEventListener('mouseenter', () => menu.classList.add('show'));
+    toggle.addEventListener('mouseleave', () => { if (!isOpen) menu.classList.remove('show'); });
+    menu.addEventListener('mouseenter',   () => menu.classList.add('show'));
+    menu.addEventListener('mouseleave',   () => { if (!isOpen) menu.classList.remove('show'); });
+
+    toggle.addEventListener('click', (e) => {
+        e.stopPropagation();
+        isOpen = !isOpen;
+        menu.classList.toggle('show', isOpen);
+    });
 
     document.addEventListener('click', (e) => {
-        const link = e.target.closest('a[href]');
-        if (!link) return;
-        const href = link.getAttribute('href');
-        if (!href || href === '#' || href.startsWith('javascript:') || href.startsWith('#')) return;
-        try {
-            const url = new URL(link.href, window.location.href);
-            if (url.origin === window.location.origin) _allowUnload = true;
-        } catch (_) {}
+        if (!toggle.contains(e.target) && !menu.contains(e.target)) {
+            menu.classList.remove('show');
+            isOpen = false;
+        }
     });
 
-    document.addEventListener('submit', () => { _allowUnload = true; });
-
-    window.addEventListener('beforeunload', (e) => {
-        if (_allowUnload) return;
-        e.preventDefault();
-        e.returnValue = '';
-    });
 </script>

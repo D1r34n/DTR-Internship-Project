@@ -1,3 +1,132 @@
-.breadcrumb {
-    font-size: var();
+/* ================================================
+   ATTENDANCE BREAK STATE TOKENS
+   ================================================ */
+
+:root {
+    --break-color: #D97706;
+    --break-glass: rgba(217, 119, 6, 0.15);
+    --break-border: rgba(217, 119, 6, 0.35);
+    --break-glow: rgba(217, 119, 6, 0.25);
+    --break-glass-hover: rgba(217, 119, 6, 0.25);
+
+    --break-out-color: #3B82F6;
+    --break-out-glass: rgba(59, 130, 246, 0.15);
+    --break-out-border: rgba(59, 130, 246, 0.35);
+    --break-out-glow: rgba(59, 130, 246, 0.25);
+    --break-out-glass-hover: rgba(59, 130, 246, 0.25);
+}
+
+/* ================================================
+   DROPDOWN MENU (BREAK STATE)
+   ================================================ */
+.dropdown-menu.break-menu {
+    box-shadow: none !important;
+    background: transparent !important;
+    border: none !important;
+}
+
+/* ================================================
+   BREAK BUTTON BASE STYLE
+   ================================================ */
+
+.btn-break,
+.btn.btn-break {
+    color: var(--break-color) !important;
+
+    background: var(--break-glass) linear-gradient(
+        to right,
+        rgba(255, 255, 255, 0.10) 0%,
+        rgba(255, 255, 255, 0.05) 40%,
+        rgba(255, 255, 255, 0.02) 70%,
+        transparent 100%
+    ) !important;
+
+    border: 1px solid var(--break-border) !important;
+    box-shadow: var(--break-soft, var(--glass-inset)) !important;
+
+    transition:
+        transform 0.25s ease-out,
+        opacity 0.25s ease-out,
+        box-shadow 0.25s ease-out,
+        background 0.25s ease-out,
+        color 0.25s ease-out !important;
+}
+
+.btn-break:hover,
+.btn-break:focus,
+.btn-break:focus-visible {
+    color: var(--text-lightest) !important;
+
+    background: var(--break-glass-hover) linear-gradient(
+        to right,
+        rgba(255, 255, 255, 0.10) 0%,
+        rgba(255, 255, 255, 0.05) 40%,
+        rgba(255, 255, 255, 0.02) 70%,
+        transparent 100%
+    ) !important;
+
+    box-shadow: 0 4px 16px var(--break-glow) !important;
+}
+
+/* START BREAK (Take Break) */
+.btn-break[data-state="in"] {
+    color: var(--break-color) !important;
+
+    background: var(--break-glass) linear-gradient(
+        to right,
+        rgba(255, 255, 255, 0.10) 0%,
+        rgba(255, 255, 255, 0.05) 40%,
+        rgba(255, 255, 255, 0.02) 70%,
+        transparent 100%
+    ) !important;
+
+    border: 1px solid var(--break-border) !important;
+    box-shadow: var(--glass-inset) !important;
+}
+
+.btn-break[data-state="in"]:hover,
+.btn-break[data-state="in"]:focus {
+    color: var(--text-lightest) !important;
+
+    background: var(--break-glass-hover) linear-gradient(
+        to right,
+        rgba(255, 255, 255, 0.10) 0%,
+        rgba(255, 255, 255, 0.05) 40%,
+        rgba(255, 255, 255, 0.02) 70%,
+        transparent 100%
+    ) !important;
+
+    box-shadow: 0 4px 16px var(--break-glow) !important;
+}
+
+/* END BREAK (Resume Work) */
+.btn-break[data-state="out"] {
+    color: var(--break-out-color) !important;
+
+    background: var(--break-out-glass) linear-gradient(
+        to right,
+        rgba(255, 255, 255, 0.10) 0%,
+        rgba(255, 255, 255, 0.05) 40%,
+        rgba(255, 255, 255, 0.02) 70%,
+        transparent 100%
+    ) !important;
+
+    border: 1px solid var(--break-out-border) !important;
+    box-shadow: var(--glass-inset) !important;
+}
+
+.btn-break[data-state="out"]:hover,
+.btn-break[data-state="out"]:focus,
+.btn-break[data-state="out"]:focus-visible {
+    color: var(--text-lightest) !important;
+
+    background: var(--break-out-glass-hover) linear-gradient(
+        to right,
+        rgba(255, 255, 255, 0.10) 0%,
+        rgba(255, 255, 255, 0.05) 40%,
+        rgba(255, 255, 255, 0.02) 70%,
+        transparent 100%
+    ) !important;
+
+    box-shadow: 0 4px 16px var(--break-out-glow) !important;
 }

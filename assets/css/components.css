@@ -3,10 +3,22 @@
    ================================================ */
 
 
+/* ================================================
+BTN GROUP SWAP ANIMATION
+================================================ */
+
+@keyframes btnSlideIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.btn-group-animate {
+    animation: btnSlideIn 0.3s ease forwards;
+}
+
 /* FORCE BASE BUTTON RESET */
 .btn,
 button.btn {
-    all: unset !important;
 
     display: inline-flex !important;
     align-items: center !important;
@@ -16,14 +28,13 @@ button.btn {
     padding: 0.45rem 1rem !important;
 
     color: var(--text-light) !important;
-    background: var(--neutral-glass) !important;
 
-    /* ✨ SUBTLE GLASS FADE (VERY LIGHT) */
-    background-image: linear-gradient(
-        to bottom,
-        rgba(255, 255, 255, 0.10),
-        rgba(255, 255, 255, 0.04),
-        rgba(255, 255, 255, 0)
+    background: var(--neutral-glass) linear-gradient(
+        to right,
+        rgba(255, 255, 255, 0.10) 0%,
+        rgba(255, 255, 255, 0.05) 40%,
+        rgba(255, 255, 255, 0.02) 70%,
+        transparent 100%
     ) !important;
 
     border: 1px solid var(--neutral-border) !important;
@@ -44,15 +55,15 @@ button.btn {
     overflow: hidden !important;
 
     transition:
+        transform 0.2s ease,
         color 0.2s ease,
         background 0.25s ease,
-        box-shadow 0.2s ease,
-        transform 0.2s ease !important;
+        box-shadow 0.2s ease !important;
 }
 
 
 /* ================================================
-   VERY SUBTLE TOP HIGHLIGHT (NO SHARP SHINE)
+   VERY SUBTLE TOP HIGHLIGHT
    ================================================ */
 
 .btn::before {
@@ -73,7 +84,7 @@ button.btn {
 
 
 /* ================================================
-   HOVER / FOCUS / ACTIVE (SOFT)
+   HOVER / FOCUS / ACTIVE
    ================================================ */
 
 .btn:hover,
@@ -84,13 +95,13 @@ button.btn {
     border-color: var(--neutral-border) !important;
 
     box-shadow: var(--glass-shadow) !important;
-    transform: var(--lift-sm) !important;
 
-    outline: none !important;
+    transform: scale(1.04) !important;
 }
 
 .btn:active {
-    transform: translateY(0) !important;
+    transform: scale(0.98) !important;
+
     background: var(--neutral-glass) !important;
     box-shadow: var(--glass-inset) !important;
 }
@@ -119,21 +130,20 @@ button.btn {
     transform: none !important;
 }
 
-
 /* ================================================
-   PRIMARY (SUBTLE MATCHED STYLE)
+   SUCCESS
    ================================================ */
 
-.btn-primary,
-.btn.btn-primary {
+.btn-success,
+.btn.btn-success {
     color: var(--primary-color) !important;
-    background: var(--primary-glass) !important;
 
-    background-image: linear-gradient(
-        to bottom,
-        rgba(255, 255, 255, 0.10),
-        rgba(255, 255, 255, 0.03),
-        transparent
+    background: var(--primary-glass) linear-gradient(
+        to right,
+        rgba(255, 255, 255, 0.10) 0%,
+        rgba(255, 255, 255, 0.05) 40%,
+        rgba(255, 255, 255, 0.02) 70%,
+        transparent 100%
     ) !important;
 
     border: 1px solid var(--primary-border) !important;
@@ -141,40 +151,66 @@ button.btn {
     box-shadow: var(--primary-soft) !important;
 }
 
-.btn-primary:hover,
-.btn-primary:focus,
-.btn-primary:focus-visible {
+.btn-success:hover,
+.btn-success:focus,
+.btn-success:focus-visible {
+    color: var(--text-lightest) !important;
+
+    background: var(--primary-glass-hover) linear-gradient(
+        to right,
+        rgba(255, 255, 255, 0.10) 0%,
+        rgba(255, 255, 255, 0.05) 40%,
+        rgba(255, 255, 255, 0.02) 70%,
+        transparent 100%
+    ) !important;
+
     box-shadow: 0 4px 16px var(--primary-glow) !important;
 }
 
 
 /* ================================================
-   DANGER (SUBTLE MATCHED STYLE)
+   DANGER
    ================================================ */
 
 .btn-danger,
 .btn.btn-danger {
     color: var(--danger-color) !important;
-    background: var(--danger-glass) !important;
 
-    background-image: linear-gradient(
-        to bottom,
-        rgba(255, 255, 255, 0.10),
-        rgba(255, 255, 255, 0.03),
-        transparent
+    background: var(--danger-glass) linear-gradient(
+        to right,
+        rgba(255, 255, 255, 0.10) 0%,
+        rgba(255, 255, 255, 0.05) 40%,
+        rgba(255, 255, 255, 0.02) 70%,
+        transparent 100%
     ) !important;
 
     border: 1px solid var(--danger-border) !important;
 
     box-shadow: var(--danger-soft) !important;
+
+    transition:
+        transform 0.25s ease-out,
+        opacity 0.25s ease-out,
+        box-shadow 0.25s ease-out,
+        background 0.25s ease-out,
+        color 0.25s ease-out !important;
 }
 
 .btn-danger:hover,
 .btn-danger:focus,
 .btn-danger:focus-visible {
+    color: var(--text-lightest) !important;
+
+    background: var(--danger-glass-hover ) linear-gradient(
+        to right,
+        rgba(255, 255, 255, 0.10) 0%,
+        rgba(255, 255, 255, 0.05) 40%,
+        rgba(255, 255, 255, 0.02) 70%,
+        transparent 100%
+    ) !important;
+
     box-shadow: 0 4px 16px var(--danger-glow) !important;
 }
-
 
 /* ================================================
    BOOTSTRAP EDGE CASE FIXES
@@ -191,10 +227,131 @@ button.btn {
     box-shadow: var(--glass-shadow) !important;
 }
 
-.btn-group .btn {
+
+/* ================================================
+   BUTTON GROUP — SEAMLESS GLASS
+   ================================================ */
+
+.btn-group {
     border-radius: 12px !important;
 }
 
+/* Remove highlight seam inside groups */
+.btn-group .btn::before {
+    display: none !important;
+}
+
+/* Left button */
+.btn-group > .btn:not(:last-child):not(.dropdown-toggle),
+.btn-group > .btn.dropdown-toggle-split:first-child {
+    border-top-right-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+}
+
+/* Right button */
+.btn-group > .btn:not(:first-child),
+.btn-group > .btn-group:not(:first-child) > .btn {
+    border-top-left-radius: 0 !important;
+    border-bottom-left-radius: 0 !important;
+}
+
+/* Remove inner borders */
+.btn-group > .btn + .btn,
+.btn-group > .btn + .btn-group,
+.btn-group > .btn-group + .btn,
+.btn-group > .btn-group + .btn-group {
+    border-left: none !important;
+}
+
+/* Fix subpixel seam + prevent sibling jump on hover */
+.btn-group > .btn + .btn {
+    margin-left: -1px !important;
+}
+
+/* Lift hovered button above siblings */
+.btn-group .btn:hover {
+    z-index: 1 !important;
+}
+
+/* Solo button */
+.btn-group > .btn:only-child {
+    border-radius: 12px !important;
+}
+
+
+/* ================================================
+   FINAL FOCUS CLEANUP
+   ================================================ */
+
 .btn:focus {
-    box-shadow: none !important;
+    outline: none !important;
+}
+
+/* ================================================
+   DROPDOWN
+   ================================================ */
+
+.dropdown-menu {
+    background: var(--neutral-glass) linear-gradient(
+        to right,
+        rgba(255, 255, 255, 0.10) 0%,
+        rgba(255, 255, 255, 0.05) 40%,
+        rgba(255, 255, 255, 0.02) 70%,
+        transparent 100%
+    ) !important;
+
+    border: 1px solid var(--neutral-border) !important;
+    border-radius: 12px !important;
+
+    backdrop-filter: blur(10px) !important;
+    -webkit-backdrop-filter: blur(10px) !important;
+
+    box-shadow: var(--glass-inset) !important;
+
+    padding: 0.4rem !important;
+}
+
+/* Dropdown items */
+.dropdown-item {
+    border-radius: 8px !important;
+    color: var(--text-light) !important;
+    font-size: 0.9rem !important;
+    padding: 0.45rem 0.75rem !important;
+    transition:
+        background 0.2s ease,
+        color 0.2s ease !important;
+}
+
+.dropdown-item:hover,
+.dropdown-item:focus {
+    background: var(--neutral-glass-hover) !important;
+    color: var(--text-lightest) !important;
+}
+
+.dropdown-item:active {
+    background: var(--neutral-glass) !important;
+}
+
+.dropdown-divider {
+    border-color: var(--neutral-border) !important;
+    opacity: 0.5 !important;
+}
+
+/* Dropdown item buttons fill full width */
+.dropdown-menu .btn {
+    width: 100% !important;
+    display: flex !important;
+    justify-content: flex-start !important;
+}
+
+/* ================================================
+   DROPDOWN TOGGLE — ARROW ROTATION
+   ================================================ */
+
+.dropdown-toggle::after {
+    transition: transform 0.25s ease !important;
+}
+
+.dropdown-toggle[aria-expanded="true"]::after {
+    transform: rotate(180deg) !important;
 }
