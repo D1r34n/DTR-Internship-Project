@@ -3,6 +3,7 @@
    ================================================ */
 
 :root {
+    /* BREAK SYSTEM */
     --break-color: #D97706;
     --break-glass: rgba(217, 119, 6, 0.15);
     --break-border: rgba(217, 119, 6, 0.35);
@@ -14,11 +15,30 @@
     --break-out-border: rgba(59, 130, 246, 0.35);
     --break-out-glow: rgba(59, 130, 246, 0.25);
     --break-out-glass-hover: rgba(59, 130, 246, 0.25);
+
+    /* SIDEBAR SYSTEM */
+    --sidebar-width: 260px;
+    --sidebar-collapsed-width: 72px;
+
+    --sidebar-bg: #0f172a;
+    --sidebar-border: rgba(255,255,255,0.06);
+
+    --text-color: #e5e7eb;
+    --muted-text: rgba(229,231,231,0.65);
+
+    --active-bg: rgba(59,130,246,0.15);
+    --active-color: #60a5fa;
+
+    --hover-bg: rgba(255,255,255,0.06);
+
+    --transition-fast: 180ms ease;
+    --transition-med: 260ms ease;
 }
 
 /* ================================================
    DROPDOWN MENU (BREAK STATE)
    ================================================ */
+
 .dropdown-menu.break-menu {
     box-shadow: none !important;
     background: transparent !important;
@@ -41,6 +61,7 @@
         transparent 100%
     ) !important;
 
+    z-index: 99;
     border: 1px solid var(--break-border) !important;
     box-shadow: var(--break-soft, var(--glass-inset)) !important;
 
@@ -68,10 +89,9 @@
     box-shadow: 0 4px 16px var(--break-glow) !important;
 }
 
-/* START BREAK (Take Break) */
+/* START BREAK */
 .btn-break[data-state="in"] {
     color: var(--break-color) !important;
-
     background: var(--break-glass) linear-gradient(
         to right,
         rgba(255, 255, 255, 0.10) 0%,
@@ -84,25 +104,9 @@
     box-shadow: var(--glass-inset) !important;
 }
 
-.btn-break[data-state="in"]:hover,
-.btn-break[data-state="in"]:focus {
-    color: var(--text-lightest) !important;
-
-    background: var(--break-glass-hover) linear-gradient(
-        to right,
-        rgba(255, 255, 255, 0.10) 0%,
-        rgba(255, 255, 255, 0.05) 40%,
-        rgba(255, 255, 255, 0.02) 70%,
-        transparent 100%
-    ) !important;
-
-    box-shadow: 0 4px 16px var(--break-glow) !important;
-}
-
-/* END BREAK (Resume Work) */
+/* END BREAK */
 .btn-break[data-state="out"] {
     color: var(--break-out-color) !important;
-
     background: var(--break-out-glass) linear-gradient(
         to right,
         rgba(255, 255, 255, 0.10) 0%,
@@ -115,27 +119,10 @@
     box-shadow: var(--glass-inset) !important;
 }
 
-.btn-break[data-state="out"]:hover,
-.btn-break[data-state="out"]:focus,
-.btn-break[data-state="out"]:focus-visible {
-    color: var(--text-lightest) !important;
-
-    background: var(--break-out-glass-hover) linear-gradient(
-        to right,
-        rgba(255, 255, 255, 0.10) 0%,
-        rgba(255, 255, 255, 0.05) 40%,
-        rgba(255, 255, 255, 0.02) 70%,
-        transparent 100%
-    ) !important;
-
-    box-shadow: 0 4px 16px var(--break-out-glow) !important;
-}
-
 /* ================================================
    LOGOUT BUTTON STYLE
    ================================================ */
 
-/* Dropdown items */
 .logout-item {
     color: var(--danger-color) !important;
 }
@@ -148,7 +135,173 @@
 
 .logout-item:active {
     transform: scale(0.98) !important;
-
     background: var(--neutral-glass) !important;
     box-shadow: var(--glass-inset) !important;
+}
+
+/* =================================================
+   SIDEBAR SYSTEM (MINI / MODERN VERSION - FULL FIXED)
+   ================================================= */
+
+#sidebar {
+    width: var(--sidebar-width);
+    min-height: 100vh;
+    background: var(--sidebar-bg);
+    color: var(--text-color);
+    border-right: 1px solid var(--sidebar-border);
+    transition: width var(--transition-med);
+    overflow: hidden;
+    position: sticky;
+    top: 0;
+}
+
+#sidebar.collapsed {
+    width: var(--sidebar-collapsed-width);
+}
+
+
+/* =================================================
+   BRAND (FINAL SMOOTH VERSION - NO SWAP ELEMENTS)
+   ================================================= */
+
+.sidebar-brand {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    padding: 14px;
+    border-bottom: 1px solid var(--sidebar-border);
+
+    height: 64px;
+    overflow: hidden;
+}
+
+/* brand item */
+#brandLink {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    color: var(--text-color);
+    font-weight: 500;
+    font-size: 14px;
+    white-space: nowrap;
+
+    transition:
+        opacity 200ms ease,
+        transform 260ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+#brandLink img {
+    border-radius: 6px;
+}
+
+#sidebar.collapsed #brandLink {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* shrink text smoothly */
+#brandLink span {
+    transition: opacity 180ms ease, transform 260ms ease;
+}
+
+#sidebar.collapsed #brandLink span {
+    opacity: 0;
+    transform: translateX(-6px);
+}
+
+/* collapse button stays stable */
+#sidebarToggle {
+    margin-left: auto;
+}
+
+/* =================================================
+   BUTTONS
+   ================================================= */
+
+.sidebar-brand-toggle,
+.sidebar-toggle {
+    background: transparent;
+    border: none;
+    color: var(--text-color);
+    cursor: pointer;
+    transition: transform var(--transition-fast);
+}
+
+.sidebar-brand-toggle:hover,
+.sidebar-toggle:hover {
+    transform: scale(1.08);
+}
+
+/* =================================================
+   LINKS
+   ================================================= */
+
+.sidebar-link,
+.sidebar-sub-link,
+.sidebar-dropdown-toggle {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    padding: 10px 14px;
+    margin: 2px 8px;
+
+    border-radius: 10px;
+
+    color: var(--muted-text);
+    text-decoration: none;
+
+    transition: all var(--transition-fast);
+}
+
+.sidebar-link:hover,
+.sidebar-sub-link:hover,
+.sidebar-dropdown-toggle:hover {
+    background: var(--hover-bg);
+    color: var(--text-color);
+}
+
+.sidebar-link.active,
+.sidebar-sub-link.active {
+    background: var(--active-bg);
+    color: var(--active-color);
+}
+
+/* =================================================
+   COLLAPSED MODE (CLEAN ICON RAIL)
+   ================================================= */
+
+#sidebar.collapsed .sidebar-link span,
+#sidebar.collapsed .sidebar-sub-link span,
+#sidebar.collapsed .sidebar-dropdown-toggle span {
+    display: none;
+}
+
+#sidebar.collapsed .sidebar-link,
+#sidebar.collapsed .sidebar-dropdown-toggle {
+    justify-content: flex-start;
+}
+
+/* =================================================
+   DROPDOWN
+   ================================================= */
+
+.transition-chevron {
+    margin-left: auto;
+    transition: transform var(--transition-med);
+}
+
+.sidebar-dropdown-toggle[aria-expanded="true"] .transition-chevron {
+    transform: rotate(180deg);
+}
+
+/* =================================================
+   SUBMENU
+   ================================================= */
+
+.sidebar-sub-link {
+    margin-left: 18px;
+    font-size: 13px;
 }

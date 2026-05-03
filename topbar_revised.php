@@ -138,7 +138,6 @@ $currentStatus = $timedIn ? 'Timed In' : 'Timed Out';
 
 <!-- Bootstrap -->
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
 <!-- Shared CSS — loaded once via topbar for all pages -->
 <link rel="stylesheet" href="../assets/css/root.css">
@@ -153,7 +152,7 @@ $currentStatus = $timedIn ? 'Timed In' : 'Timed Out';
 <link rel="stylesheet" href="../dropdown_requests/log_edit_modal.css">
 
 <!-- TOP BAR -->
-<nav class="navbar fixed-top shadow-sm">
+<nav class="navbar shadow-sm">
     <div class="container-fluid d-flex align-items-center justify-content-between">
 
         <!-- LEFT: Breadcrumb + Title -->
@@ -295,10 +294,6 @@ $currentStatus = $timedIn ? 'Timed In' : 'Timed Out';
 
 <!-- MODALS -->
 <?php include '../dropdown_requests/modal_request.php'; ?>
-<?php include '../dropdown_requests/leave_modal.php'; ?>
-<?php include '../dropdown_requests/ob_modal.php'; ?>
-<?php include '../dropdown_requests/log_edit_modal.php'; ?>
-
 <script defer>
     // ===============================
     // GLOBAL STATES

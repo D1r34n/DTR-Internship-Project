@@ -286,7 +286,13 @@
 <script>
   // ===== OT MODAL =====
   let otSelectedRecord = null;
-  const otModal = new bootstrap.Modal(document.getElementById('otModal'));
+  let otModal, leaveModal, obModal;
+
+  document.addEventListener('DOMContentLoaded', () => {
+      otModal    = new bootstrap.Modal(document.getElementById('otModal'));
+      leaveModal = new bootstrap.Modal(document.getElementById('leaveModal'));
+      obModal    = new bootstrap.Modal(document.getElementById('obModal'));
+  });
 
   function openOTModal() {
     // Reset state
@@ -319,7 +325,7 @@
     const list = document.getElementById('otGanttList');
     list.innerHTML = '<p class="ot-gantt-loading">Loading...</p>';
 
-    fetch('/DTR-Internship-Project/employee_pages/get_ot_records.php')
+    fetch('../employee_pages/get_ot_records.php')
       .then(res => res.json())
       .then(records => {
         if (records.length === 0) {
@@ -510,9 +516,7 @@
   let leaveSelectedDates = [];
   let currentLeaveType = '';
 
-  const leaveModal = new bootstrap.Modal(document.getElementById('leaveModal'));
-
-  // Cleanup when Bootstrap closes the modal (backdrop, Esc, btn-close)
+    // Cleanup when Bootstrap closes the modal (backdrop, Esc, btn-close)
   document.getElementById('leaveModal').addEventListener('hidden.bs.modal', () => {
     if (leaveCalendarInstance) {
       leaveCalendarInstance.destroy();
@@ -837,8 +841,6 @@
   let obScheduledDates = [];
   let obExistingDates = [];
   let obSelectedDate = null;
-
-  const obModal = new bootstrap.Modal(document.getElementById('obModal'));
 
   // Cleanup when Bootstrap closes the modal (backdrop, Esc, btn-close)
   document.getElementById('obModal').addEventListener('hidden.bs.modal', () => {
