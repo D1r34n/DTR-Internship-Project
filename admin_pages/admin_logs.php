@@ -1,5 +1,7 @@
 <?php
-session_start();
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
 if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'admin') {
     header("Location: ../index.php");
@@ -8,8 +10,6 @@ if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'admin') {
 
 require_once '../db.php';
 date_default_timezone_set('Asia/Manila');
-
-$current_page = 'employee_logs';
 
 $employees = $pdo->query("
     SELECT e.id, e.name, e.role, e.department_id, d.department_code
@@ -25,131 +25,137 @@ $employees = $pdo->query("
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Employee Logs</title>
 
-    <link rel="stylesheet" href="../root.css">
+    <link rel="stylesheet" href="../assets/css/root.css">
+    <link rel="stylesheet" href="../assets/css/typography.css">
+    <link rel="stylesheet" href="../assets/css/components.css">
     <link rel="stylesheet" href="admin_logs.css">
-    <link rel="stylesheet" href="../side_and_top_bar.css">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
 <body>
 
-    <?php include '../sidebar.php'; ?>
-    <?php include '../topbar.php'; ?>
+    <?php $currentPage = 'employee_logs'; include '../sidebar_revised.php'; ?>
 
-    <div class="logsWrapper">
-        <div class="logsBox">
+    <div id="main-wrapper">
 
-            <!-- ===== LEFT PANEL: EMPLOYEE LIST ===== -->
-            <div class="logsLeftPanel">
+        <?php include '../topbar_revised.php'; ?>
 
-                <div class="logsLeftHeader">
-                    <h6 class="logsLeftTitle">Employees</h6>
-                    <input type="text" id="empSearch" class="logsEmpSearch"
-                        placeholder="Search employee..." oninput="filterEmployees()">
+        <div class="logsWrapper">
+            <div class="logsBox">
+
+                <!-- ===== LEFT PANEL: EMPLOYEE LIST ===== -->
+                <div class="logsLeftPanel">
+
+                    <div class="logsLeftHeader">
+                        <h6 class="logsLeftTitle">Employees</h6>
+                        <input type="text" id="empSearch" class="logsEmpSearch"
+                            placeholder="Search employee..." oninput="filterEmployees()">
+                    </div>
+
+                    <div class="empList" id="empList">
+                        <?php foreach ($employees as $emp): ?>
+                            <div class="empRow"
+                                 data-id="<?= $emp['id'] ?>"
+                                 data-name="<?= htmlspecialchars($emp['name']) ?>"
+                                 onclick="selectEmployee(<?= $emp['id'] ?>, '<?= htmlspecialchars($emp['name'], ENT_QUOTES) ?>')">
+                                <div class="empName"><?= htmlspecialchars($emp['name']) ?></div>
+                                <div class="empMeta">
+                                    <span class="empRoleBadge empRole-<?= $emp['role'] ?>"><?= ucfirst($emp['role']) ?></span>
+                                    <?php if ($emp['department_id']): ?>
+                                        <span class="empDept"><?= htmlspecialchars($emp['department_code'] ?? '') ?></span>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                        <?php if (empty($employees)): ?>
+                            <div class="empEmpty">No employees found.</div>
+                        <?php endif; ?>
+                    </div>
+
                 </div>
 
-                <div class="empList" id="empList">
-                    <?php foreach ($employees as $emp): ?>
-                        <div class="empRow"
-                             data-id="<?= $emp['id'] ?>"
-                             data-name="<?= htmlspecialchars($emp['name']) ?>"
-                             onclick="selectEmployee(<?= $emp['id'] ?>, '<?= htmlspecialchars($emp['name'], ENT_QUOTES) ?>')">
-                            <div class="empName"><?= htmlspecialchars($emp['name']) ?></div>
-                            <div class="empMeta">
-                                <span class="empRoleBadge empRole-<?= $emp['role'] ?>"><?= ucfirst($emp['role']) ?></span>
-                                <?php if ($emp['department_id']): ?>
-                                    <span class="empDept"><?= htmlspecialchars($emp['department_code'] ?? '') ?></span>
-                                <?php endif; ?>
+                <!-- ===== DIVIDER ===== -->
+                <div class="logsPanelDivider"></div>
+
+                <!-- ===== RIGHT PANEL: LOGS VIEW ===== -->
+                <div class="logsRightPanel">
+
+                    <!-- Placeholder -->
+                    <div class="logsPlaceholder" id="logsPlaceholder">
+                        <i class="bi bi-person-lines-fill logsPlaceholderIcon"></i>
+                        <p>Select an employee to view their logs</p>
+                    </div>
+
+                    <!-- Log Content -->
+                    <div class="logsContent" id="logsContent" style="display:none;">
+
+                        <div class="logsRightHeader">
+                            <h6 class="logsRightTitle">
+                                Logs for <span id="selectedEmpName"></span>
+                            </h6>
+                            <div class="logsFilterRow">
+                                <select id="filterLogType" class="logsFilterInput" onchange="loadLogs()">
+                                    <option value="">All Types</option>
+                                    <option value="IN">Time In</option>
+                                    <option value="OUT">Time Out</option>
+                                    <option value="BREAK_IN">Break In</option>
+                                    <option value="BREAK_OUT">Break Out</option>
+                                </select>
+                                <input type="date" id="filterDateFrom" class="logsFilterInput" onchange="loadLogs()">
+                                <span class="logsFilterSep">to</span>
+                                <input type="date" id="filterDateTo" class="logsFilterInput" onchange="loadLogs()">
+                                <button class="logsClearBtn" onclick="clearFilters()">
+                                    <i class="bi bi-x-circle"></i> Clear
+                                </button>
                             </div>
                         </div>
-                    <?php endforeach; ?>
-                    <?php if (empty($employees)): ?>
-                        <div class="empEmpty">No employees found.</div>
-                    <?php endif; ?>
-                </div>
 
-            </div>
-
-            <!-- ===== DIVIDER ===== -->
-            <div class="logsPanelDivider"></div>
-
-            <!-- ===== RIGHT PANEL: LOGS VIEW ===== -->
-            <div class="logsRightPanel">
-
-                <!-- Placeholder -->
-                <div class="logsPlaceholder" id="logsPlaceholder">
-                    <i class="bi bi-person-lines-fill logsPlaceholderIcon"></i>
-                    <p>Select an employee to view their logs</p>
-                </div>
-
-                <!-- Log Content -->
-                <div class="logsContent" id="logsContent" style="display:none;">
-
-                    <div class="logsRightHeader">
-                        <h6 class="logsRightTitle">
-                            Logs for <span id="selectedEmpName"></span>
-                        </h6>
-                        <div class="logsFilterRow">
-                            <select id="filterLogType" class="logsFilterInput" onchange="loadLogs()">
-                                <option value="">All Types</option>
-                                <option value="IN">Time In</option>
-                                <option value="OUT">Time Out</option>
-                                <option value="BREAK_IN">Break In</option>
-                                <option value="BREAK_OUT">Break Out</option>
-                            </select>
-                            <input type="date" id="filterDateFrom" class="logsFilterInput" onchange="loadLogs()">
-                            <span class="logsFilterSep">to</span>
-                            <input type="date" id="filterDateTo" class="logsFilterInput" onchange="loadLogs()">
-                            <button class="logsClearBtn" onclick="clearFilters()">
-                                <i class="bi bi-x-circle"></i> Clear
-                            </button>
+                        <div class="logsTableWrapper">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Date &amp; Time</th>
+                                        <th>Log Type</th>
+                                        <th>Distance</th>
+                                        <th>Accuracy</th>
+                                        <th>Location</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="logsTableBody">
+                                    <tr>
+                                        <td colspan="6" class="logsLoadingCell">
+                                            <span class="logsSpinner"></span> Loading...
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
                         </div>
-                    </div>
 
-                    <div class="logsTableWrapper">
-                        <table class="table">
-                            <thead>
-                                <tr>
-                                    <th>#</th>
-                                    <th>Date &amp; Time</th>
-                                    <th>Log Type</th>
-                                    <th>Distance</th>
-                                    <th>Accuracy</th>
-                                    <th>Location</th>
-                                </tr>
-                            </thead>
-                            <tbody id="logsTableBody">
-                                <tr>
-                                    <td colspan="6" class="logsLoadingCell">
-                                        <span class="logsSpinner"></span> Loading...
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
                     </div>
 
                 </div>
 
             </div>
-
         </div>
-    </div>
 
-    <!-- Map Hover Popup -->
-    <div class="mapPopUpContainer" id="map_pop_up_container">
-        <div class="mapPopUp" id="map_pop_up"></div>
-        <div class="mapPopUpInfo" id="map_pop_up_info"></div>
-        <div style="padding: 10px;">
-            <a class="openGoogleMapsBtn" id="open_gmaps_btn" href="#" target="_blank">
-                Open in Google Maps
-            </a>
+        <!-- Map Hover Popup -->
+        <div class="mapPopUpContainer" id="map_pop_up_container">
+            <div class="mapPopUp" id="map_pop_up"></div>
+            <div class="mapPopUpInfo" id="map_pop_up_info"></div>
+            <div style="padding: 10px;">
+                <a class="openGoogleMapsBtn" id="open_gmaps_btn" href="#" target="_blank">
+                    Open in Google Maps
+                </a>
+            </div>
         </div>
-    </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+    </div><!-- #main-wrapper -->
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
 
         let currentEmployeeId = null;

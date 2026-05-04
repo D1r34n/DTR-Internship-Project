@@ -1,8 +1,10 @@
 <?php
-session_start();
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
 if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'admin') {
-    header("Location: index.php");
+    header("Location: ../index.php");
     exit();
 }
 
@@ -124,8 +126,6 @@ if ($selectedEmpId) {
         if ($emp['id'] == $selectedEmpId) { $selectedEmpName = $emp['name']; break; }
     }
 }
-
-$current_page = 'schedule';
 ?>
 <!doctype html>
 <html lang="en">
@@ -134,149 +134,224 @@ $current_page = 'schedule';
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Schedule Management</title>
 
-    <link rel="stylesheet" href="../root.css">
+    <link rel="stylesheet" href="../assets/css/root.css">
+    <link rel="stylesheet" href="../assets/css/typography.css">
+    <link rel="stylesheet" href="../assets/css/components.css">
     <link rel="stylesheet" href="admin_schedule.css">
-    <link rel="stylesheet" href="../side_and_top_bar.css">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-
-    <style>body::before { background-image: url('../images/drt_bg.jpg'); }</style>
 </head>
 <body>
-    <?php include '../sidebar.php'; ?>
-    <?php include '../topbar.php'; ?>
 
-    <div class="schedWrapper">
-        <div class="schedBox">
+    <?php $currentPage = 'schedule'; include '../sidebar_revised.php'; ?>
 
-            <!-- ===== LEFT PANEL ===== -->
-            <div class="schedLeftPanel">
-                <div class="schedLeftHeader">
-                    <h6 class="schedLeftTitle">Employees</h6>
-                    <input type="text" id="empSearch" class="schedEmpSearch"
-                           placeholder="Search..." oninput="filterEmployees()">
-                </div>
+    <div id="main-wrapper">
 
-                <?php if ($success): ?>
-                    <div class="schedAlert success"><?= htmlspecialchars($success) ?></div>
-                <?php endif; ?>
-                <?php if ($error): ?>
-                    <div class="schedAlert error"><?= htmlspecialchars($error) ?></div>
-                <?php endif; ?>
+        <?php include '../topbar_revised.php'; ?>
 
-                <div class="schedEmpList" id="schedEmpList">
-                    <?php foreach ($employees as $emp): ?>
-                        <div class="schedEmpRow <?= ($emp['id'] == $selectedEmpId) ? 'active' : '' ?>"
-                             data-id="<?= $emp['id'] ?>"
-                             data-name="<?= htmlspecialchars($emp['name'], ENT_QUOTES) ?>"
-                             onclick="selectEmployee(<?= $emp['id'] ?>, '<?= htmlspecialchars($emp['name'], ENT_QUOTES) ?>')">
-                            <div class="schedEmpName"><?= htmlspecialchars($emp['name']) ?></div>
-                            <div class="schedEmpMeta">
-                                <span class="schedEmpRole empRole-<?= $emp['role'] ?>"><?= ucfirst($emp['role']) ?></span>
-                                <?php if ($emp['department_id']): ?>
-                                    <span class="schedEmpDept"><?= htmlspecialchars($emp['department_code'] ?? '') ?></span>
-                                <?php endif; ?>
-                            </div>
+        <div class="card card-glass logs-card">
+            <div class="card-body d-flex flex-column logs-card-body">
+
+                <!-- Split panel (horizontal flex row) -->
+                <div class="d-flex flex-grow-1" style="overflow:hidden;min-height:0;">
+
+                    <!-- ===== LEFT PANEL ===== -->
+                    <div class="sched-left-panel">
+                        <div class="sched-left-header">
+                            <h6 class="sched-left-title">Employees</h6>
+                            <input type="text" id="empSearch" class="sched-emp-search"
+                                   placeholder="Search..." oninput="filterEmployees()">
                         </div>
-                    <?php endforeach; ?>
-                    <?php if (empty($employees)): ?>
-                        <div class="schedEmpEmpty">No employees found.</div>
-                    <?php endif; ?>
-                </div>
-            </div>
 
-            <!-- ===== DIVIDER ===== -->
-            <div class="schedPanelDivider"></div>
+                        <?php if ($success): ?>
+                            <div class="sched-alert success"><?= htmlspecialchars($success) ?></div>
+                        <?php endif; ?>
+                        <?php if ($error): ?>
+                            <div class="sched-alert error"><?= htmlspecialchars($error) ?></div>
+                        <?php endif; ?>
 
-            <!-- ===== RIGHT PANEL ===== -->
-            <div class="schedRightPanel">
+                        <div class="sched-emp-list" id="schedEmpList">
+                            <?php foreach ($employees as $emp): ?>
+                                <div class="sched-emp-row <?= ($emp['id'] == $selectedEmpId) ? 'active' : '' ?>"
+                                     data-id="<?= $emp['id'] ?>"
+                                     data-name="<?= htmlspecialchars($emp['name'], ENT_QUOTES) ?>"
+                                     onclick="selectEmployee(<?= $emp['id'] ?>, '<?= htmlspecialchars($emp['name'], ENT_QUOTES) ?>')">
+                                    <div class="sched-emp-name"><?= htmlspecialchars($emp['name']) ?></div>
+                                    <div class="sched-emp-meta">
+                                        <span class="sched-emp-role emp-role-<?= $emp['role'] ?>"><?= ucfirst($emp['role']) ?></span>
+                                        <?php if ($emp['department_id']): ?>
+                                            <span class="sched-emp-dept"><?= htmlspecialchars($emp['department_code'] ?? '') ?></span>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                            <?php if (empty($employees)): ?>
+                                <div class="sched-emp-empty">No employees found.</div>
+                            <?php endif; ?>
+                        </div>
+                    </div>
 
-                <!-- Placeholder -->
-                <div class="schedPlaceholder" id="schedPlaceholder">
-                    <i class="bi bi-calendar2-week schedPlaceholderIcon"></i>
-                    <p>Select an employee to view their schedule</p>
-                </div>
+                    <!-- ===== DIVIDER ===== -->
+                    <div class="sched-panel-divider"></div>
 
-                <!-- Calendar content -->
-                <div class="schedCalContent" id="schedCalContent" style="display:none;">
+                    <!-- ===== RIGHT PANEL ===== -->
+                    <div class="sched-right-panel">
 
-                    <div class="schedCalHeader">
-                        <h6 class="schedCalTitle">Schedule for <span id="selectedEmpName"><?= htmlspecialchars($selectedEmpName) ?></span></h6>
-                        <div style="display:flex;align-items:center;gap:0.5rem;">
-                            <button class="schedNavBtn" onclick="changeMonth(-1)"><i class="bi bi-chevron-left"></i></button>
-                            <span class="schedMonthLabel" id="schedMonthLabel"></span>
-                            <button class="schedNavBtn" onclick="changeMonth(1)"><i class="bi bi-chevron-right"></i></button>
-                            <button class="schedAddBtn" onclick="openAddModal()">
-                                <i class="bi bi-plus-lg"></i> Add Schedule
+                        <!-- Placeholder -->
+                        <div class="sched-placeholder" id="schedPlaceholder">
+                            <i class="bi bi-calendar2-week sched-placeholder-icon"></i>
+                            <p>Select an employee to view their schedule</p>
+                            <p>or import an existing schedule</p>
+                            <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#importScheduleModal">
+                                Import Schedule
                             </button>
                         </div>
+
+                        <!-- Calendar content -->
+                        <div class="sched-cal-content" id="schedCalContent" style="display:none;">
+
+                            <div class="sched-cal-header">
+                                <h6 class="sched-cal-title">Schedule for <span id="selectedEmpName"><?= htmlspecialchars($selectedEmpName) ?></span></h6>
+                                <div style="display:flex;align-items:center;gap:0.5rem;">
+                                    <button class="sched-nav-btn" onclick="changeMonth(-1)"><i class="bi bi-chevron-left"></i></button>
+                                    <span class="sched-month-label" id="schedMonthLabel"></span>
+                                    <button class="sched-nav-btn" onclick="changeMonth(1)"><i class="bi bi-chevron-right"></i></button>
+                                    <button class="sched-add-btn" onclick="openAddModal()">
+                                        <i class="bi bi-plus-lg"></i> Add Schedule
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="sched-cal-container" id="schedCalContainer">
+                                <!-- AJAX loaded -->
+                            </div>
+
+                        </div>
                     </div>
 
-                    <div class="schedCalContainer" id="schedCalContainer">
-                        <!-- AJAX loaded -->
+                </div><!-- end split panel -->
+
+            </div>
+        </div>
+
+        <!-- Add / Edit Modal -->
+        <div class="sched-modal-overlay" id="schedModalOverlay" style="display:none;" onclick="closeModal(event)">
+            <div class="sched-modal">
+                <div class="sched-modal-header">
+                    <h6 id="schedModalTitle">Add Schedule</h6>
+                    <button onclick="closeModalBtn()"><i class="bi bi-x-lg"></i></button>
+                </div>
+                <div class="sched-modal-body">
+                    <form method="POST" action="admin_schedule.php" onsubmit="return prepareSubmit()">
+                        <input type="hidden" name="employee_id"          id="modalEmpId">
+                        <input type="hidden" name="selected_employee_id" id="modalSelEmpId">
+                        <input type="hidden" name="selected_dates"       id="selectedDatesInput">
+                        <input type="hidden" name="is_edit"              id="isEditMode" value="0">
+
+                        <div class="form-group" style="margin-bottom:1rem;">
+                            <label>Employee</label>
+                            <input type="text" id="modalEmpName" class="form-control-custom" readonly
+                                   style="opacity:0.6;cursor:default;">
+                        </div>
+
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Time In</label>
+                                <input type="time" name="time_in" id="modalTimeIn" class="form-control-custom" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Time Out <small class="night-shift-hint">(next day if night shift)</small></label>
+                                <input type="time" name="time_out" id="modalTimeOut" class="form-control-custom" required>
+                            </div>
+                        </div>
+
+                        <div class="form-group" style="margin-top:1rem;">
+                            <label>Select Dates</label>
+                            <p class="text-meta">Click dates to select work days. Click again to deselect.</p>
+                            <input type="text" id="schedDatePicker" class="form-control-custom"
+                                   placeholder="Click to select dates..." readonly>
+                            <div id="selectedDatesList" class="selected-dates-list"></div>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle-fill"></i>
+                                <span id="schedSubmitLabel">Save Schedule</span>
+                            </button>
+                            <button type="button" class="btn btn-secondary" onclick="closeModalBtn()">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bulk Schedule Modal -->
+        <div class="modal fade" id="importScheduleModal" tabindex="-1">
+            <div class="modal-dialog modal-lg modal-dialog-centered">
+                <div class="modal-content">
+
+                <!-- Header -->
+                <div class="modal-header">
+                    <h5 class="modal-title">Import Employee Schedule</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+
+                <!-- Body -->
+                <form id="importScheduleForm" enctype="multipart/form-data">
+                    <div class="modal-body">
+
+                    <!-- Instructions -->
+                    <div class="alert alert-info">
+                        Upload an <strong>.xlsx</strong> file with the following columns:
+                        <br>
+                        <small>
+                        <b>employee_id</b>, employee_name (optional), start_date, end_date, time
+                        </small>
                     </div>
+
+                    <!-- File Input -->
+                    <div class="mb-3">
+                        <label class="form-label">Select Excel File</label>
+                        <input 
+                        type="file" 
+                        name="schedule_file" 
+                        class="form-control"
+                        accept=".xlsx"
+                        required
+                        >
+                    </div>
+
+                    <!-- Optional Preview Info -->
+                    <div class="border rounded p-3 bg-light">
+                        <small class="text-muted">
+                        Example format:
+                        <br>
+                        1001 | John Doe | 2026-05-01 | 2026-05-07 | 08:00-17:00
+                        </small>
+                    </div>
+
+                    </div>
+
+                    <!-- Footer -->
+                    <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        Cancel
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        Import Schedule
+                    </button>
+                    </div>
+                </form>
 
                 </div>
             </div>
-
         </div>
-    </div>
+    </div><!-- #main-wrapper -->
 
-    <!-- Add / Edit Modal -->
-    <div class="schedModalOverlay" id="schedModalOverlay" style="display:none;" onclick="closeModal(event)">
-        <div class="schedModal">
-            <div class="schedModalHeader">
-                <h6 id="schedModalTitle">Add Schedule</h6>
-                <button onclick="closeModalBtn()"><i class="bi bi-x-lg"></i></button>
-            </div>
-            <div class="schedModalBody">
-                <form method="POST" action="admin_schedule.php" onsubmit="return prepareSubmit()">
-                    <input type="hidden" name="employee_id"          id="modalEmpId">
-                    <input type="hidden" name="selected_employee_id" id="modalSelEmpId">
-                    <input type="hidden" name="selected_dates"       id="selectedDatesInput">
-                    <input type="hidden" name="is_edit"              id="isEditMode" value="0">
-
-                    <div class="formGroup" style="margin-bottom:1rem;">
-                        <label>Employee</label>
-                        <input type="text" id="modalEmpName" class="formControl" readonly
-                               style="opacity:0.6;cursor:default;">
-                    </div>
-
-                    <div class="formGrid">
-                        <div class="formGroup">
-                            <label>Time In</label>
-                            <input type="time" name="time_in" id="modalTimeIn" class="formControl" required>
-                        </div>
-                        <div class="formGroup">
-                            <label>Time Out <small class="nightShiftHint">(next day if night shift)</small></label>
-                            <input type="time" name="time_out" id="modalTimeOut" class="formControl" required>
-                        </div>
-                    </div>
-
-                    <div class="formGroup" style="margin-top:1rem;">
-                        <label>Select Dates</label>
-                        <p class="formHint">Click dates to select work days. Click again to deselect.</p>
-                        <input type="text" id="schedDatePicker" class="formControl"
-                               placeholder="Click to select dates..." readonly>
-                        <div id="selectedDatesList" class="selectedDatesList"></div>
-                    </div>
-
-                    <div class="formActions">
-                        <button type="submit" class="btnSave">
-                            <i class="bi bi-check-circle-fill"></i>
-                            <span id="schedSubmitLabel">Save Schedule</span>
-                        </button>
-                        <button type="button" class="btnCancel" onclick="closeModalBtn()">Cancel</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
 
         let currentEmpId   = <?= $selectedEmpId ?: 'null' ?>;
@@ -296,7 +371,7 @@ $current_page = 'schedule';
         // ---- EMPLOYEE FILTER ----
         function filterEmployees() {
             const q = document.getElementById('empSearch').value.toLowerCase();
-            document.querySelectorAll('#schedEmpList .schedEmpRow').forEach(row => {
+            document.querySelectorAll('#schedEmpList .sched-emp-row').forEach(row => {
                 row.style.display = row.dataset.name.toLowerCase().includes(q) ? '' : 'none';
             });
         }
@@ -308,8 +383,8 @@ $current_page = 'schedule';
             currentYear    = new Date().getFullYear();
             currentMonth   = new Date().getMonth() + 1;
 
-            document.querySelectorAll('#schedEmpList .schedEmpRow').forEach(r => r.classList.remove('active'));
-            document.querySelector(`#schedEmpList .schedEmpRow[data-id="${id}"]`).classList.add('active');
+            document.querySelectorAll('#schedEmpList .sched-emp-row').forEach(r => r.classList.remove('active'));
+            document.querySelector(`#schedEmpList .sched-emp-row[data-id="${id}"]`).classList.add('active');
             document.getElementById('selectedEmpName').textContent = name;
 
             showCalendarPanel();
@@ -341,12 +416,12 @@ $current_page = 'schedule';
         function loadCalendar() {
             if (!currentEmpId) return;
             const c = document.getElementById('schedCalContainer');
-            c.innerHTML = '<div class="schedCalLoading"><div class="schedSpinner"></div> Loading...</div>';
+            c.innerHTML = '<div class="sched-cal-loading"><div class="sched-spinner"></div> Loading...</div>';
 
             fetch(`get_admin_schedule_calendar.php?employee_id=${currentEmpId}&year=${currentYear}&month=${currentMonth}`)
                 .then(r => r.text())
                 .then(html => { c.innerHTML = html; })
-                .catch(() => { c.innerHTML = '<div class="schedCalEmpty" style="color:#ff8a8a;">Failed to load.</div>'; });
+                .catch(() => { c.innerHTML = '<div class="sched-cal-empty" style="color:#ff8a8a;">Failed to load.</div>'; });
         }
 
         // ---- MODAL: ADD ----
@@ -416,16 +491,16 @@ $current_page = 'schedule';
         function updateSelectedDatesList() {
             const list = document.getElementById('selectedDatesList');
             if (selectedDates.length === 0) {
-                list.innerHTML = '<p class="noDateSelected">No dates selected.</p>';
+                list.innerHTML = '<p class="text-meta">No dates selected.</p>';
                 return;
             }
             const fmt = d => new Date(d + 'T00:00:00').toLocaleDateString('en-US', {
                 weekday: 'short', month: 'short', day: 'numeric', year: 'numeric'
             });
             list.innerHTML = selectedDates.map(d => `
-                <span class="selectedDateTag">
+                <span class="selected-date-tag">
                     ${fmt(d)}
-                    <span onclick="removeDate('${d}')" class="selectedDateRemove">✕</span>
+                    <span onclick="removeDate('${d}')" class="selected-date-remove">✕</span>
                 </span>
             `).join('');
         }
@@ -459,7 +534,7 @@ $current_page = 'schedule';
 
         // Auto-dismiss flash alerts
         setTimeout(() => {
-            document.querySelectorAll('.schedAlert').forEach(a => {
+            document.querySelectorAll('.sched-alert').forEach(a => {
                 a.style.transition = 'opacity 0.5s';
                 a.style.opacity    = '0';
                 setTimeout(() => a.remove(), 500);

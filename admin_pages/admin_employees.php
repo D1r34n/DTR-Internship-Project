@@ -1,5 +1,7 @@
 <?php
-session_start();
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
 if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'admin') {
     header("Location: ../index.php");
@@ -7,6 +9,7 @@ if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'admin') {
 }
 
 require_once '../db.php';
+date_default_timezone_set('Asia/Manila');
 
 $success = "";
 
@@ -50,8 +53,6 @@ $employees = $pdo->query("
     LEFT JOIN departments d ON e.department_id = d.id
     ORDER BY e.name
 ")->fetchAll(PDO::FETCH_ASSOC);
-
-$current_page = 'employees';
 ?>
 <!doctype html>
 <html lang="en">
@@ -60,217 +61,221 @@ $current_page = 'employees';
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Employee Management</title>
 
-    <link rel="stylesheet" href="../root.css">
+    <link rel="stylesheet" href="../assets/css/root.css">
+    <link rel="stylesheet" href="../assets/css/typography.css">
+    <link rel="stylesheet" href="../assets/css/components.css">
     <link rel="stylesheet" href="admin_employees.css">
-    <link rel="stylesheet" href="../side_and_top_bar.css">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-
-    <style>body::before { background-image: url('../images/drt_bg.jpg'); }</style>
 </head>
 <body>
 
-    <?php include '../sidebar.php'; ?>
-    <?php include '../topbar.php'; ?>
+    <?php $currentPage = 'employees'; include '../sidebar_revised.php'; ?>
 
-    <div class="empWrapper">
-        <div class="empBox">
+    <div id="main-wrapper">
 
-            <!-- ===== LEFT PANEL ===== -->
-            <div class="empLeftPanel">
-                <div class="empLeftHeader">
-                    <h6 class="empLeftTitle">Employees</h6>
-                    <div style="display:flex;gap:6px;align-items:center;">
-                        <input type="text" id="empSearch" class="empSearch"
-                               placeholder="Search..." oninput="filterEmployees()">
-                        <button class="empAddBtn" onclick="openAddModal()" title="Add Employee">
-                            <i class="bi bi-plus-lg"></i>
-                        </button>
-                    </div>
-                </div>
+        <?php include '../topbar_revised.php'; ?>
 
-                <?php if ($success): ?>
-                    <div class="empAlert"><?= $success ?></div>
-                <?php endif; ?>
+        <div class="empWrapper">
+            <div class="empBox">
 
-                <div class="empList" id="empList">
-                    <?php foreach ($employees as $emp): ?>
-                        <div class="empRow"
-                             data-id="<?= $emp['id'] ?>"
-                             data-name="<?= htmlspecialchars($emp['name']) ?>"
-                             data-email="<?= htmlspecialchars($emp['email']) ?>"
-                             data-role="<?= $emp['role'] ?>"
-                             data-dept="<?= htmlspecialchars($emp['department_id'] ?? '') ?>"
-                             data-dept-name="<?= htmlspecialchars($emp['department_name'] ?? '') ?>"
-                             onclick="selectEmployee(<?= $emp['id'] ?>, '<?= htmlspecialchars($emp['name'], ENT_QUOTES) ?>')">
-                            <div class="empName"><?= htmlspecialchars($emp['name']) ?></div>
-                            <div class="empMeta">
-                                <span class="empRoleBadge empRole-<?= $emp['role'] ?>"><?= ucfirst($emp['role']) ?></span>
-                                <?php if ($emp['department_id']): ?>
-                                    <span class="empDept"><?= htmlspecialchars($emp['department_code'] ?? '') ?></span>
-                                <?php endif; ?>
-                            </div>
-                            <div class="empRowActions" onclick="event.stopPropagation()">
-                                <button class="empActionBtn empEditBtn"
-                                        onclick="openEditModal(this.closest('.empRow'))"
-                                        title="Edit">
-                                    <i class="bi bi-pencil-fill"></i>
-                                </button>
-                                <a class="empActionBtn empDeleteBtn"
-                                   href="admin_employees.php?delete=<?= $emp['id'] ?>"
-                                   onclick="return confirm('Delete <?= htmlspecialchars($emp['name'], ENT_QUOTES) ?>?')"
-                                   title="Delete">
-                                    <i class="bi bi-trash-fill"></i>
-                                </a>
-                            </div>
+                <!-- ===== LEFT PANEL ===== -->
+                <div class="empLeftPanel">
+                    <div class="empLeftHeader">
+                        <h6 class="empLeftTitle">Employees</h6>
+                        <div style="display:flex;gap:6px;align-items:center;">
+                            <input type="text" id="empSearch" class="empSearch"
+                                   placeholder="Search..." oninput="filterEmployees()">
+                            <button class="empAddBtn" onclick="openAddModal()" title="Add Employee">
+                                <i class="bi bi-plus-lg"></i>
+                            </button>
                         </div>
-                    <?php endforeach; ?>
-                    <?php if (empty($employees)): ?>
-                        <div class="empEmpty">No employees found.</div>
+                    </div>
+
+                    <?php if ($success): ?>
+                        <div class="empAlert"><?= $success ?></div>
                     <?php endif; ?>
-                </div>
-            </div>
 
-            <!-- ===== DIVIDER ===== -->
-            <div class="empPanelDivider"></div>
-
-            <!-- ===== RIGHT PANEL ===== -->
-            <div class="empRightPanel">
-
-                <!-- Placeholder -->
-                <div class="empPlaceholder" id="empPlaceholder">
-                    <i class="bi bi-person-lines-fill empPlaceholderIcon"></i>
-                    <p>Select an employee to view their records</p>
-                </div>
-
-                <!-- Records Content -->
-                <div class="empRecordsContent" id="empRecordsContent" style="display:none;flex-direction:column;flex:1;overflow:hidden;">
-
-                    <div class="empRecordsHeader">
-                        <h6 class="empRecordsTitle">Records for <span id="selectedEmpName"></span></h6>
-                        <div class="empDateWrapper">
-                            <input type="text" id="dateRangePicker" class="empDateInput" readonly>
-                            <i class="bi bi-chevron-down empDateIcon"></i>
-                        </div>
-                    </div>
-
-                    <div class="ganttContainer" id="ganttContainer">
-                        <!-- AJAX loaded -->
-                    </div>
-
-                </div>
-
-            </div>
-
-        </div>
-    </div>
-
-    <!-- Gantt Tooltip -->
-    <div id="gantt_tooltip">
-        <div class="ganttToolTipRow">
-            <span class="ganttToolTipLabel">Scheduled</span>
-            <span class="ganttToolTipValue" id="gt-sched"></span>
-        </div>
-        <div class="ganttToolTipRow">
-            <span class="ganttToolTipLabel">Time In</span>
-            <span class="ganttToolTipValue" id="gt-actual-in"></span>
-        </div>
-        <div class="ganttToolTipRow">
-            <span class="ganttToolTipLabel">Time Out</span>
-            <span class="ganttToolTipValue" id="gt-actual-out"></span>
-        </div>
-        <div class="ganttToolTipRow ganttToolTipEarly" id="gt-early-row">
-            <span class="ganttToolTipLabel">Early</span>
-            <span class="ganttToolTipValue" id="gt-early"></span>
-        </div>
-        <div class="ganttToolTipRow ganttToolTipLate" id="gt-late-row">
-            <span class="ganttToolTipLabel">Late</span>
-            <span class="ganttToolTipValue" id="gt-late"></span>
-        </div>
-        <div class="ganttToolTipRow ganttToolTipOverBreak" id="gt-ob-row">
-            <span class="ganttToolTipLabel">Overbreak</span>
-            <span class="ganttToolTipValue" id="gt-ob"></span>
-        </div>
-        <div class="ganttToolTipRow ganttToolTipOverTime" id="gt-ot-row">
-            <span class="ganttToolTipLabel">Overtime</span>
-            <span class="ganttToolTipValue" id="gt-ot"></span>
-        </div>
-        <div class="ganttToolTipRow ganttToolTipUnderTime" id="gt-ut-row">
-            <span class="ganttToolTipLabel">Undertime</span>
-            <span class="ganttToolTipValue" id="gt-ut"></span>
-        </div>
-    </div>
-
-    <!-- Add / Edit Modal -->
-    <div class="empModalOverlay" id="empModalOverlay" style="display:none;" onclick="closeModal(event)">
-        <div class="empModal">
-            <div class="empModalHeader">
-                <h6 id="empModalTitle">Add Employee</h6>
-                <button onclick="closeModalBtn()"><i class="bi bi-x-lg"></i></button>
-            </div>
-            <div class="empModalBody">
-                <form method="POST" action="admin_employees.php">
-                    <input type="hidden" name="employee_id" id="modalEmpId">
-
-                    <div class="formGrid">
-                        <div class="formGroup">
-                            <label>Name</label>
-                            <input type="text" name="name" id="modalName" class="formControl" required>
-                        </div>
-                        <div class="formGroup">
-                            <label>Email</label>
-                            <input type="email" name="email" id="modalEmail" class="formControl" required>
-                        </div>
-                        <div class="formGroup">
-                            <label id="modalPwdLabel">Password</label>
-                            <input type="password" name="password" id="modalPassword" class="formControl">
-                        </div>
-                        <div class="formGroup">
-                            <label>Role</label>
-                            <div class="customSelectWrapper">
-                                <div class="customSelectToggle" onclick="toggleModalDropdown('roleDropdown')">
-                                    <span id="roleLabel">Employee</span>
-                                    <i class="bi bi-chevron-down"></i>
+                    <div class="empList" id="empList">
+                        <?php foreach ($employees as $emp): ?>
+                            <div class="empRow"
+                                 data-id="<?= $emp['id'] ?>"
+                                 data-name="<?= htmlspecialchars($emp['name']) ?>"
+                                 data-email="<?= htmlspecialchars($emp['email']) ?>"
+                                 data-role="<?= $emp['role'] ?>"
+                                 data-dept="<?= htmlspecialchars($emp['department_id'] ?? '') ?>"
+                                 data-dept-name="<?= htmlspecialchars($emp['department_name'] ?? '') ?>"
+                                 onclick="selectEmployee(<?= $emp['id'] ?>, '<?= htmlspecialchars($emp['name'], ENT_QUOTES) ?>')">
+                                <div class="empName"><?= htmlspecialchars($emp['name']) ?></div>
+                                <div class="empMeta">
+                                    <span class="empRoleBadge empRole-<?= $emp['role'] ?>"><?= ucfirst($emp['role']) ?></span>
+                                    <?php if ($emp['department_id']): ?>
+                                        <span class="empDept"><?= htmlspecialchars($emp['department_code'] ?? '') ?></span>
+                                    <?php endif; ?>
                                 </div>
-                                <div class="customSelectMenu" id="roleDropdown">
-                                    <div class="customSelectItem" onclick="selectRole('employee','Employee')">Employee</div>
-                                    <div class="customSelectItem" onclick="selectRole('workforce','Workforce')">Workforce</div>
-                                    <div class="customSelectItem" onclick="selectRole('admin','Admin')">Admin</div>
+                                <div class="empRowActions" onclick="event.stopPropagation()">
+                                    <button class="empActionBtn empEditBtn"
+                                            onclick="openEditModal(this.closest('.empRow'))"
+                                            title="Edit">
+                                        <i class="bi bi-pencil-fill"></i>
+                                    </button>
+                                    <a class="empActionBtn empDeleteBtn"
+                                       href="admin_employees.php?delete=<?= $emp['id'] ?>"
+                                       onclick="return confirm('Delete <?= htmlspecialchars($emp['name'], ENT_QUOTES) ?>?')"
+                                       title="Delete">
+                                        <i class="bi bi-trash-fill"></i>
+                                    </a>
                                 </div>
                             </div>
-                            <input type="hidden" name="role" id="roleInput" value="employee">
-                        </div>
-                        <div class="formGroup">
-                            <label>Department</label>
-                            <div class="customSelectWrapper">
-                                <div class="customSelectToggle" onclick="toggleModalDropdown('deptDropdown')">
-                                    <span id="deptLabel">Select Department</span>
-                                    <i class="bi bi-chevron-down"></i>
-                                </div>
-                                <div class="customSelectMenu" id="deptDropdown">
-                                    <div class="customSelectItem" onclick="selectDept('','Select Department')">None</div>
-                                
-                                </div>
-                            </div>
-                            <input type="hidden" name="department_id" id="deptInput" value="">
-                        </div>
+                        <?php endforeach; ?>
+                        <?php if (empty($employees)): ?>
+                            <div class="empEmpty">No employees found.</div>
+                        <?php endif; ?>
+                    </div>
+                </div>
+
+                <!-- ===== DIVIDER ===== -->
+                <div class="empPanelDivider"></div>
+
+                <!-- ===== RIGHT PANEL ===== -->
+                <div class="empRightPanel">
+
+                    <!-- Placeholder -->
+                    <div class="empPlaceholder" id="empPlaceholder">
+                        <i class="bi bi-person-lines-fill empPlaceholderIcon"></i>
+                        <p>Select an employee to view their records</p>
                     </div>
 
-                    <div class="formActions">
-                        <button type="submit" class="btnSave" id="modalSubmitBtn">
-                            <i class="bi bi-check-circle-fill"></i> Save Employee
-                        </button>
-                        <button type="button" class="btnCancel" onclick="closeModalBtn()">Cancel</button>
+                    <!-- Records Content -->
+                    <div class="empRecordsContent" id="empRecordsContent" style="display:none;flex-direction:column;flex:1;overflow:hidden;">
+
+                        <div class="empRecordsHeader">
+                            <h6 class="empRecordsTitle">Records for <span id="selectedEmpName"></span></h6>
+                            <div class="empDateWrapper">
+                                <input type="text" id="dateRangePicker" class="empDateInput" readonly>
+                                <i class="bi bi-chevron-down empDateIcon"></i>
+                            </div>
+                        </div>
+
+                        <div class="ganttContainer" id="ganttContainer">
+                            <!-- AJAX loaded -->
+                        </div>
+
                     </div>
-                </form>
+
+                </div>
+
             </div>
         </div>
-    </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+        <!-- Gantt Tooltip -->
+        <div id="gantt_tooltip">
+            <div class="ganttToolTipRow">
+                <span class="ganttToolTipLabel">Scheduled</span>
+                <span class="ganttToolTipValue" id="gt-sched"></span>
+            </div>
+            <div class="ganttToolTipRow">
+                <span class="ganttToolTipLabel">Time In</span>
+                <span class="ganttToolTipValue" id="gt-actual-in"></span>
+            </div>
+            <div class="ganttToolTipRow">
+                <span class="ganttToolTipLabel">Time Out</span>
+                <span class="ganttToolTipValue" id="gt-actual-out"></span>
+            </div>
+            <div class="ganttToolTipRow ganttToolTipEarly" id="gt-early-row">
+                <span class="ganttToolTipLabel">Early</span>
+                <span class="ganttToolTipValue" id="gt-early"></span>
+            </div>
+            <div class="ganttToolTipRow ganttToolTipLate" id="gt-late-row">
+                <span class="ganttToolTipLabel">Late</span>
+                <span class="ganttToolTipValue" id="gt-late"></span>
+            </div>
+            <div class="ganttToolTipRow ganttToolTipOverBreak" id="gt-ob-row">
+                <span class="ganttToolTipLabel">Overbreak</span>
+                <span class="ganttToolTipValue" id="gt-ob"></span>
+            </div>
+            <div class="ganttToolTipRow ganttToolTipOverTime" id="gt-ot-row">
+                <span class="ganttToolTipLabel">Overtime</span>
+                <span class="ganttToolTipValue" id="gt-ot"></span>
+            </div>
+            <div class="ganttToolTipRow ganttToolTipUnderTime" id="gt-ut-row">
+                <span class="ganttToolTipLabel">Undertime</span>
+                <span class="ganttToolTipValue" id="gt-ut"></span>
+            </div>
+        </div>
+
+        <!-- Add / Edit Modal -->
+        <div class="empModalOverlay" id="empModalOverlay" style="display:none;" onclick="closeModal(event)">
+            <div class="empModal">
+                <div class="empModalHeader">
+                    <h6 id="empModalTitle">Add Employee</h6>
+                    <button onclick="closeModalBtn()"><i class="bi bi-x-lg"></i></button>
+                </div>
+                <div class="empModalBody">
+                    <form method="POST" action="admin_employees.php">
+                        <input type="hidden" name="employee_id" id="modalEmpId">
+
+                        <div class="formGrid">
+                            <div class="formGroup">
+                                <label>Name</label>
+                                <input type="text" name="name" id="modalName" class="formControl" required>
+                            </div>
+                            <div class="formGroup">
+                                <label>Email</label>
+                                <input type="email" name="email" id="modalEmail" class="formControl" required>
+                            </div>
+                            <div class="formGroup">
+                                <label id="modalPwdLabel">Password</label>
+                                <input type="password" name="password" id="modalPassword" class="formControl">
+                            </div>
+                            <div class="formGroup">
+                                <label>Role</label>
+                                <div class="customSelectWrapper">
+                                    <div class="customSelectToggle" onclick="toggleModalDropdown('roleDropdown')">
+                                        <span id="roleLabel">Employee</span>
+                                        <i class="bi bi-chevron-down"></i>
+                                    </div>
+                                    <div class="customSelectMenu" id="roleDropdown">
+                                        <div class="customSelectItem" onclick="selectRole('employee','Employee')">Employee</div>
+                                        <div class="customSelectItem" onclick="selectRole('workforce','Workforce')">Workforce</div>
+                                        <div class="customSelectItem" onclick="selectRole('admin','Admin')">Admin</div>
+                                    </div>
+                                </div>
+                                <input type="hidden" name="role" id="roleInput" value="employee">
+                            </div>
+                            <div class="formGroup">
+                                <label>Department</label>
+                                <div class="customSelectWrapper">
+                                    <div class="customSelectToggle" onclick="toggleModalDropdown('deptDropdown')">
+                                        <span id="deptLabel">Select Department</span>
+                                        <i class="bi bi-chevron-down"></i>
+                                    </div>
+                                    <div class="customSelectMenu" id="deptDropdown">
+                                        <div class="customSelectItem" onclick="selectDept('','Select Department')">None</div>
+
+                                    </div>
+                                </div>
+                                <input type="hidden" name="department_id" id="deptInput" value="">
+                            </div>
+                        </div>
+
+                        <div class="formActions">
+                            <button type="submit" class="btnSave" id="modalSubmitBtn">
+                                <i class="bi bi-check-circle-fill"></i> Save Employee
+                            </button>
+                            <button type="button" class="btnCancel" onclick="closeModalBtn()">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+    </div><!-- #main-wrapper -->
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="../system_functions/gantt.js"></script>
     <script>
 
