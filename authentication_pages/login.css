@@ -29,7 +29,7 @@ body::before {
     position: fixed;
     inset: 0;
 
-    background: url(images/drt_bg.jpg) center / cover no-repeat;
+    background: url(../assets/images/drt_bg.jpg) center / cover no-repeat;
     z-index: -1;
 }
 

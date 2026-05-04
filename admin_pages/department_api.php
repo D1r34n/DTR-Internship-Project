@@ -128,7 +128,7 @@ if ($action === 'get_sub') {
     $id = $_GET['id'] ?? 0;
 
     $stmt = $pdo->prepare("
-        SELECT id, department_code, department_name
+        SELECT id, department_code, department_name, color
         FROM departments
         WHERE parent_id = ?
         ORDER BY department_name ASC

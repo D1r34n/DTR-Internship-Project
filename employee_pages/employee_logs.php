@@ -10,10 +10,8 @@ require_once '../db.php';
 
 date_default_timezone_set('Asia/Manila');
 
-$today = date('Y-m-d');
-
-$startDate = !empty($_GET['start']) ? date('Y-m-d', strtotime($_GET['start'])) : $today;
-$endDate   = !empty($_GET['end'])   ? date('Y-m-d', strtotime($_GET['end']))   : $today;
+$startDate = !empty($_GET['start']) ? date('Y-m-d', strtotime($_GET['start'])) : '';
+$endDate   = !empty($_GET['end'])   ? date('Y-m-d', strtotime($_GET['end']))   : '';
 
 $current_page = 'logs';
 ?>
@@ -40,41 +38,47 @@ $current_page = 'logs';
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <!-- CSS -->
-    <link rel="stylesheet" href="../root.css">
-    <link rel="stylesheet" href="../side_and_top_bar.css">
+    <link rel="stylesheet" href="../assets/css/root.css">
+    <link rel="stylesheet" href="../assets/css/typography.css">
+    <link rel="stylesheet" href="../assets/css/components.css">
     <link rel="stylesheet" href="employee_logs.css">
+
 </head>
 
 <body>
-    <?php include '../sidebar.php'; ?>
-    <?php include '../topbar.php'; ?>
+    <?php $currentPage = 'logs'; include '../sidebar_revised.php'; ?>
 
-    <div class="recordBoxWrapper">
-        <div class="recordBox">
+    <div id="main-wrapper">
+        <?php include '../topbar_revised.php'; ?>
+
+        <div class="card card-glass logs-card">
+            <div class="card-body d-flex flex-column logs-card-body">
 
             <!-- Filter Section -->
             <div class="filterWrapper">
 
-                <div class="dateWrapper">
-                    <input type="text" id="dateRangePicker" class="recordTitle" readonly>
-                    <i class="bi bi-calendar3 dateIcon"></i>
+                <!-- Date Range Picker -->
+                <div class="dropdown">
+                    <button class="btn dropdown-toggle" id="datePickerBtn" type="button">
+                        <i class="bi bi-calendar3"></i>
+                        <span id="dateRangeLabel">Today</span>
+                    </button>
                 </div>
 
                 <!-- Log Type Filter -->
-                <div class="userDropdownWrapper logTypeDropdown">
-                    <span class="userEmail dropdown-toggle" id="logTypeToggle">
-                        All Types
-                        <i class="bi bi-chevron-down logArrow"></i>
-                    </span>
-                    <div class="userDropdownMenu" id="logTypeMenu">
-                        <div class="logTypeSection">
-                            <a href="#" class="userDropdownItem" data-value="ALL">All Types</a>
-                            <a href="#" class="userDropdownItem" data-value="IN">Time in</a>
-                            <a href="#" class="userDropdownItem" data-value="OUT">Time out</a>
-                            <a href="#" class="userDropdownItem" data-value="BREAK_IN">Break In</a>
-                            <a href="#" class="userDropdownItem" data-value="BREAK_OUT">Break Out</a>
-                        </div>
-                    </div>
+                <div class="dropdown">
+                    <button class="btn dropdown-toggle" type="button" id="logTypeToggle"
+                            data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="bi bi-funnel"></i>
+                        <span id="logTypeLabel">All Types</span>
+                    </button>
+                    <ul class="dropdown-menu" id="logTypeMenu">
+                        <li><a class="dropdown-item" href="#" data-value="ALL">All Types</a></li>
+                        <li><a class="dropdown-item" href="#" data-value="IN">Time In</a></li>
+                        <li><a class="dropdown-item" href="#" data-value="OUT">Time Out</a></li>
+                        <li><a class="dropdown-item" href="#" data-value="BREAK_IN">Break In</a></li>
+                        <li><a class="dropdown-item" href="#" data-value="BREAK_OUT">Break Out</a></li>
+                    </ul>
                 </div>
 
                 <input type="hidden" id="logTypeFilter" value="ALL">
@@ -114,8 +118,8 @@ $current_page = 'logs';
                 </table>
             </div>
 
+            </div>
         </div>
-    </div>
 
     <!-- Map Hover Popup -->
     <div class="mapPopUpContainer" id="map_pop_up_container">
@@ -127,6 +131,7 @@ $current_page = 'logs';
             </a>
         </div>
     </div>
+</div><!-- #main-wrapper -->
 
 <script>
 const tbody = document.getElementById('logs_table_body');
@@ -145,104 +150,56 @@ function fetchLogs() {
 }
 
 /* =========================
-   DATE RESIZE FIX
-========================= */
-function resizeDateInput() {
-    const input =
-        document.querySelector(".flatpickr-input.active") ||
-        document.querySelector(".flatpickr-input");
-    if (!input) return;
-
-    const wrapper = input.closest('.dateWrapper');
-    if (!wrapper) return;
-
-    const icon  = wrapper.querySelector('.dateIcon');
-    const style = window.getComputedStyle(input);
-
-    const mirror = document.createElement('span');
-    document.body.appendChild(mirror);
-    mirror.style.position   = 'absolute';
-    mirror.style.visibility = 'hidden';
-    mirror.style.whiteSpace = 'pre';
-    mirror.style.font       = style.font;
-    mirror.textContent      = input.value || '';
-
-    const iconWidth     = icon ? icon.offsetWidth : 20;
-    const computedWidth = mirror.offsetWidth + iconWidth + 40;
-    const maxWidth      = wrapper.parentElement.offsetWidth * 0.6;
-
-    wrapper.style.width = Math.min(computedWidth, maxWidth) + 'px';
-    document.body.removeChild(mirror);
-}
-
-/* =========================
    FLATPICKR INIT
 ========================= */
-const startInput = document.getElementById('startDate');
-const endInput   = document.getElementById('endDate');
+const startInput     = document.getElementById('startDate');
+const endInput       = document.getElementById('endDate');
+const datePickerBtn  = document.getElementById('datePickerBtn');
+const dateRangeLabel = document.getElementById('dateRangeLabel');
 
-flatpickr("#dateRangePicker", {
-    mode: "range",
-    dateFormat: "Y-m-d",
-    altInput: true,
-    altFormat: "F j, Y",
-    defaultDate: [startInput.value, endInput.value],
+function fmtDate(d) {
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
 
-    onReady(selectedDates) {
-        if (selectedDates.length === 0) {
-            startInput.value = endInput.value = startInput.value;
-        }
-    },
+function updateDateLabel(dates) {
+    if (!dates.length) { dateRangeLabel.textContent = 'All Logs'; return; }
+    const isSameDay = dates.length > 1 && dates[0].toDateString() === dates[1].toDateString();
+    dateRangeLabel.textContent = (dates.length === 1 || isSameDay)
+        ? fmtDate(dates[0])
+        : fmtDate(dates[0]) + ' – ' + fmtDate(dates[1]);
+}
 
-    onChange(selectedDates) {
-        if (selectedDates.length !== 2) return;
+flatpickr(datePickerBtn, {
+    mode: 'range',
+    dateFormat: 'Y-m-d',
+    defaultDate: startInput.value ? [startInput.value, endInput.value] : [],
+
+    onReady(dates) { updateDateLabel(dates); },
+
+    onChange(dates) {
+        updateDateLabel(dates);
+        if (dates.length !== 2) return;
 
         const pad     = n => String(n).padStart(2, '0');
         const toLocal = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
 
-        startInput.value = toLocal(selectedDates[0]);
-        endInput.value   = toLocal(selectedDates[1]);
-
+        startInput.value = toLocal(dates[0]);
+        endInput.value   = toLocal(dates[1]);
         fetchLogs();
-        setTimeout(resizeDateInput, 0);
     }
 });
 
 /* =========================
    LOG TYPE FILTER
 ========================= */
-const logTypeWrapper = document.querySelector('.logTypeDropdown');
-const logTypeToggle  = document.getElementById('logTypeToggle');
-const logTypeMenu    = document.getElementById('logTypeMenu');
-const logTypeHidden  = document.getElementById('logTypeFilter');
+const logTypeHidden = document.getElementById('logTypeFilter');
+const logTypeLabel  = document.getElementById('logTypeLabel');
 
-let logTypeOpen = false;
-
-logTypeToggle.addEventListener('mouseenter', () => logTypeMenu.classList.add('show'));
-logTypeToggle.addEventListener('mouseleave', () => { if (!logTypeOpen) logTypeMenu.classList.remove('show'); });
-logTypeMenu.addEventListener('mouseenter',   () => logTypeMenu.classList.add('show'));
-logTypeMenu.addEventListener('mouseleave',   () => { if (!logTypeOpen) logTypeMenu.classList.remove('show'); });
-
-logTypeToggle.addEventListener('click', e => {
-    e.stopPropagation();
-    logTypeOpen = !logTypeOpen;
-    logTypeMenu.classList.toggle('show', logTypeOpen);
-});
-
-document.addEventListener('click', e => {
-    if (!logTypeWrapper.contains(e.target)) {
-        logTypeMenu.classList.remove('show');
-        logTypeOpen = false;
-    }
-});
-
-document.querySelectorAll('#logTypeMenu .userDropdownItem').forEach(item => {
+document.querySelectorAll('#logTypeMenu .dropdown-item').forEach(item => {
     item.addEventListener('click', e => {
         e.preventDefault();
-        logTypeToggle.textContent = item.textContent;
+        logTypeLabel.textContent = item.textContent.trim();
         logTypeHidden.value = item.dataset.value;
-        logTypeMenu.classList.remove('show');
-        logTypeOpen = false;
         fetchLogs();
     });
 });
@@ -378,8 +335,13 @@ mapPopup.addEventListener('mouseout', () => {
 ========================= */
 document.addEventListener('DOMContentLoaded', () => {
     fetchLogs();
-    resizeDateInput();
 });
+
+/* =========================
+   REAL-TIME UPDATE
+   Re-fetch when topbar fires a tap (same tab)
+========================= */
+document.addEventListener('attendance_tapped', () => fetchLogs());
 </script>
 </body>
 </html>

@@ -1,0 +1,508 @@
+/* ================================================
+   ATTENDANCE BREAK STATE TOKENS
+   ================================================ */
+
+:root {
+    /* BREAK SYSTEM */
+    --break-color: #D97706;
+    --break-glass: rgba(217, 119, 6, 0.15);
+    --break-border: rgba(217, 119, 6, 0.35);
+    --break-glow: rgba(217, 119, 6, 0.25);
+    --break-glass-hover: rgba(217, 119, 6, 0.25);
+
+    --break-out-color: #3B82F6;
+    --break-out-glass: rgba(59, 130, 246, 0.15);
+    --break-out-border: rgba(59, 130, 246, 0.35);
+    --break-out-glow: rgba(59, 130, 246, 0.25);
+    --break-out-glass-hover: rgba(59, 130, 246, 0.25);
+
+    /* SIDEBAR SYSTEM */
+    --sidebar-width: 250px;
+    --sidebar-collapsed-width: 64px;
+
+    --transition-fast: 180ms ease;
+    --transition-med: 260ms ease;
+}
+
+/* ================================================
+   DROPDOWN MENU (BREAK STATE)
+   ================================================ */
+
+.dropdown-menu.break-menu {
+    box-shadow: none !important;
+    background: transparent !important;
+    border: none !important;
+    backdrop-filter: none !important;
+}
+
+/* ================================================
+   BREAK BUTTON BASE STYLE
+   ================================================ */
+
+.btn-break,
+.btn.btn-break {
+    color: var(--break-color) !important;
+    background: var(--break-glass) linear-gradient(
+        to right,
+        rgba(255, 255, 255, 0.10) 0%,
+        rgba(255, 255, 255, 0.05) 40%,
+        rgba(255, 255, 255, 0.02) 70%,
+        transparent 100%
+    ) !important;
+    z-index: 1000;
+    border: 1px solid var(--break-border) !important;
+    box-shadow: var(--break-soft, var(--glass-inset)) !important;
+    transition:
+        transform 0.25s ease-out,
+        opacity 0.25s ease-out,
+        box-shadow 0.25s ease-out,
+        background 0.25s ease-out,
+        color 0.25s ease-out !important;
+}
+
+.btn-break:hover,
+.btn-break:focus,
+.btn-break:focus-visible {
+    color: var(--text-lightest) !important;
+    background: var(--break-glass-hover) linear-gradient(
+        to right,
+        rgba(255, 255, 255, 0.10) 0%,
+        rgba(255, 255, 255, 0.05) 40%,
+        rgba(255, 255, 255, 0.02) 70%,
+        transparent 100%
+    ) !important;
+    box-shadow: 0 4px 16px var(--break-glow) !important;
+}
+
+.btn-break[data-state="in"] {
+    color: var(--break-color) !important;
+    background: var(--break-glass) linear-gradient(
+        to right,
+        rgba(255, 255, 255, 0.10) 0%,
+        rgba(255, 255, 255, 0.05) 40%,
+        rgba(255, 255, 255, 0.02) 70%,
+        transparent 100%
+    ) !important;
+    border: 1px solid var(--break-border) !important;
+}
+
+.btn-break[data-state="out"] {
+    color: var(--break-out-color) !important;
+    background: var(--break-out-glass) linear-gradient(
+        to right,
+        rgba(255, 255, 255, 0.10) 0%,
+        rgba(255, 255, 255, 0.05) 40%,
+        rgba(255, 255, 255, 0.02) 70%,
+        transparent 100%
+    ) !important;
+    border: 1px solid var(--break-out-border) !important;
+}
+
+/* ================================================
+   LOGOUT BUTTON STYLE
+   ================================================ */
+
+.logout-item {
+    color: var(--danger-color) !important;
+}
+
+.logout-item:hover,
+.logout-item:focus {
+    background: var(--danger-glass) !important;
+    color: var(--danger-color) !important;
+}
+
+.logout-item:active {
+    transform: scale(0.98) !important;
+}
+
+/* ================================================
+   SIDEBAR SYSTEM
+   ================================================
+   Minimalist dark mode sidebar — ChatGPT style.
+   Depends on: root.css, typography.css
+   ================================================ */
+
+/* ------------------------------------------------
+   ANIMATIONS
+   ------------------------------------------------ */
+
+@keyframes sidebar-link-in {
+    from {
+        opacity: 0;
+        transform: translateX(-8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes sidebar-icon-in {
+    from {
+        opacity: 0;
+        transform: scale(0.8);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* ------------------------------------------------
+   BASE
+   ------------------------------------------------ */
+
+#sidebar {
+    width: var(--sidebar-width);
+    min-height: 100vh;
+    background: var(--bg-dark);
+    border-right: 1px solid rgba(255, 255, 255, 0.06);
+    color: var(--text-light);
+    overflow: hidden;
+    position: sticky;
+    top: 0;
+    transition: width 0.25s ease;
+    z-index: 1000;
+    gap: 1rem;
+}
+
+#sidebar.collapsed {
+    width: 64px;
+}
+
+#sidebar.collapsed .tooltip {
+    z-index: 9999;
+}
+
+/* ------------------------------------------------
+   BRAND
+   ------------------------------------------------ */
+
+.sidebar-brand {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px;
+    height: 56px;
+    overflow: hidden;
+    position: relative;
+}
+
+#brand-link {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--text-light);
+    font-size: 0.875rem;
+    font-weight: 500;
+    white-space: nowrap;
+    text-decoration: none;
+    transition: color 0.15s ease;
+}
+
+#brand-link:hover {
+    color: var(--text-lightest);
+}
+
+#brand-link img {
+    flex-shrink: 0;
+    height: 15px;
+    transition: opacity 0.2s ease;
+}
+
+#brand-link span {
+    transition: opacity 0.15s ease, transform 0.2s ease;
+    animation: sidebar-link-in 0.2s ease forwards;
+}
+
+#sidebar.collapsed #brand-link span {
+    opacity: 0;
+    transform: translateX(-6px);
+    pointer-events: none;
+    animation: none;
+}
+
+/* ------------------------------------------------
+   TOGGLE BUTTON
+   ------------------------------------------------ */
+
+.sidebar-toggle {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+
+    width: 40px;
+    height: 40px;
+    padding: 0;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 8px;
+    font-size: 1rem;
+    flex-shrink: 0;
+
+    position: absolute;
+    top: 50%;
+    right: 12px;
+    transform: translateY(-50%);
+    z-index: 10;
+
+    transition:
+        color 0.15s ease,
+        background 0.15s ease,
+        opacity 0.2s ease,
+        transform 0.2s ease;
+}
+
+.sidebar-toggle i {
+    transition: transform 0.2s ease;
+}
+
+.sidebar-toggle:hover {
+    color: var(--text-lightest);
+    background: rgba(255, 255, 255, 0.08);
+    transform: translateY(-50%) scale(1.05);
+}
+
+.sidebar-toggle:hover .bi {
+    transform: scale(1.04);
+}
+
+#sidebar:not(.collapsed) .sidebar-toggle {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(-50%);
+}
+
+#sidebar.collapsed .sidebar-toggle {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(-50%);
+}
+
+#sidebar.collapsed .sidebar-brand:hover .sidebar-toggle {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+#sidebar.collapsed .brand-item {
+    pointer-events: none;
+}
+
+/* ------------------------------------------------
+   NAV LINKS
+   ------------------------------------------------ */
+
+.sidebar-link,
+.sidebar-dropdown-toggle {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    width: 40px;
+    height: 40px;
+    padding: 0 11px;
+    justify-content: flex-start;
+    margin: 1px auto;
+
+    border-radius: 8px;
+    border: none;
+    background: transparent;
+
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 0.875rem;
+    font-weight: 300;
+    white-space: nowrap;
+    cursor: pointer;
+
+    transition:
+        width 0.25s ease,
+        padding 0.25s ease,
+        background 0.15s ease,
+        color 0.15s ease,
+        transform 0.15s ease;
+}
+
+/* Expand when open */
+#sidebar:not(.collapsed) .sidebar-link,
+#sidebar:not(.collapsed) .sidebar-dropdown-toggle {
+    width: calc(var(--sidebar-width) - 16px);
+    padding: 0 10px;
+}
+
+/* Slide in when expanded */
+#sidebar:not(.collapsed) nav > * {
+    animation: sidebar-link-in 0.22s ease forwards;
+    opacity: 0;
+}
+
+#sidebar:not(.collapsed) nav > *:nth-child(1) { animation-delay: 0.00s; }
+#sidebar:not(.collapsed) nav > *:nth-child(2) { animation-delay: 0.04s; }
+#sidebar:not(.collapsed) nav > *:nth-child(3) { animation-delay: 0.08s; }
+#sidebar:not(.collapsed) nav > *:nth-child(4) { animation-delay: 0.12s; }
+#sidebar:not(.collapsed) nav > *:nth-child(5) { animation-delay: 0.16s; }
+#sidebar:not(.collapsed) nav > *:nth-child(6) { animation-delay: 0.20s; }
+#sidebar:not(.collapsed) nav > *:nth-child(7) { animation-delay: 0.24s; }
+#sidebar:not(.collapsed) nav > *:nth-child(8) { animation-delay: 0.28s; }
+
+/* Pop in when collapsed */
+#sidebar.collapsed .sidebar-link,
+#sidebar.collapsed .sidebar-dropdown-toggle {
+    animation: sidebar-icon-in 0.18s ease forwards;
+}
+
+.sidebar-link i,
+.sidebar-dropdown-toggle i:first-child,
+.sidebar-link span,
+.sidebar-dropdown-toggle span:first-child{
+    flex-shrink: 0;
+    width: 18px;
+    text-align: center;
+    transition: transform 0.15s ease;
+}
+
+/* Hover */
+.sidebar-link:hover,
+.sidebar-dropdown-toggle:hover {
+    background: rgba(255, 255, 255, 0.07);
+    color: var(--text-lightest);
+    transform: translateX(2px);
+}
+
+.sidebar-link:hover i,
+.sidebar-dropdown-toggle:hover i:first-child,
+.sidebar-link:hover span,
+.sidebar-dropdown-toggle:hover span:first-child {
+    transform: scale(1.04);
+}
+
+/* Press */
+.sidebar-link:active,
+.sidebar-dropdown-toggle:active {
+    transform: translateX(1px) scale(0.96);
+}
+
+/* Focus */
+.sidebar-link:focus,
+.sidebar-link:focus-visible,
+.sidebar-dropdown-toggle:focus,
+.sidebar-dropdown-toggle:focus-visible {
+    outline: none;
+}
+
+/* Active page */
+.sidebar-link.active,
+.sidebar-dropdown-toggle.active {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-lightest);
+}
+
+.sidebar-link.active i,
+.sidebar-dropdown-toggle.active i:first-child {
+    color: var(--primary-color);
+}
+
+/* Hide text when collapsed */
+#sidebar.collapsed .sidebar-link span,
+#sidebar.collapsed .sidebar-dropdown-toggle span {
+    display: none;
+}
+
+/* ------------------------------------------------
+   DROPDOWN
+   ------------------------------------------------ */
+
+.sidebar-dropdown {
+    width: 100%;
+}
+
+.sidebar-dropdown-toggle {
+    width: 100%;
+}
+
+.transition-chevron {
+    margin-left: auto;
+    font-size: 0.65rem;
+    flex-shrink: 0;
+    color: var(--text-muted);
+    transition: transform 0.25s ease;
+}
+
+.sidebar-dropdown-toggle[aria-expanded="true"] .transition-chevron {
+    transform: rotate(180deg);
+}
+
+#sidebar.collapsed .transition-chevron {
+    display: none;
+}
+
+#sidebar.collapsed .collapse {
+    display: none !important;
+}
+
+/* ------------------------------------------------
+   SUBMENU LINKS
+   ------------------------------------------------ */
+
+.sidebar-sub-link {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    height: 34px;
+    padding: 0 10px;
+    margin: 1px 8px 1px 24px;
+
+    border-radius: 6px;
+    border: none;
+    background: transparent;
+
+    font-size: 0.8rem;
+    font-weight: 300;
+    color: var(--text-muted);
+    text-decoration: none;
+    white-space: nowrap;
+
+    transition: background 0.15s ease, color 0.15s ease, transform 0.15s ease;
+}
+
+.sidebar-sub-link i {
+    font-size: 0.8rem;
+    flex-shrink: 0;
+    width: 16px;
+    text-align: center;
+}
+
+.sidebar-sub-link:hover {
+    background: rgba(255, 255, 255, 0.07);
+    color: var(--text-lightest);
+    transform: translateX(2px);
+}
+
+.sidebar-sub-link:active {
+    transform: translateX(1px) scale(0.97);
+}
+
+.sidebar-sub-link:focus,
+.sidebar-sub-link:focus-visible {
+    outline: none;
+}
+
+.sidebar-sub-link.active {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-lightest);
+}
+
+/* ------------------------------------------------
+   GLOBAL RESETS
+   ------------------------------------------------ */
+
+a:focus,
+img:focus {
+    outline: none;
+}

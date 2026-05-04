@@ -1,43 +1,105 @@
-/* BACKGROUND IMAGE (with blur only) */
+/* ================================================
+   EMPLOYEE RECORDS
+   ================================================
+   Page-specific styles for the employee dashboard.
+   Depends on: root.css, typography.css,
+               components.css, navbars.css
+   ================================================ */
+
+/* ================================================
+   BACKGROUND SYSTEM
+   ================================================ */
+
+/* ------------------------------------------------
+   BASE IMAGE LAYER
+   ------------------------------------------------ */
+
 body::before {
     content: '';
     position: fixed;
     inset: 0;
 
-    background-image: url('../images/drt_bg.jpg');
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
+    background: url('../assets/images/drt_bg.jpg') center / cover no-repeat;
 
-    /* blur directly on image */
-    filter: blur(2px);
-    transform: scale(1.1); /* prevents edge cut-off from blur */
+    /* slightly lighter background than before
+    filter: blur(5px) brightness(0.98) saturate(1.08); */
+
+    transform: scale(1.06);
 
     z-index: -2;
 }
 
-body {
-    font-family: 'Poppins', sans-serif;
-    min-height: 100vh;
-    margin: 0;
-    overflow-x: hidden;
-}
+/* ------------------------------------------------
+   GLASS OVERLAY (LIGHTER)
+   ------------------------------------------------ */
 
 body::after {
     content: '';
     position: fixed;
     inset: 0;
 
-    /* fade to black overlay */
-    background: linear-gradient(
-        to bottom,
-        rgba(0, 0, 0, 0.15) 0%,
-        rgba(0, 0, 0, 0.55) 50%,
-        rgba(0, 0, 0, 0.85) 100%
-    );
+    /* lighter base glass */
+    background: rgba(15, 15, 18, 0.45);
+
+    backdrop-filter: blur(28px) saturate(150%) brightness(0.55);
+    -webkit-backdrop-filter: blur(28px) saturate(150%) brightness(0.55);
+
+    border: 1px solid rgba(255, 255, 255, 0.07);
+
+    box-shadow:
+        inset 0 0 90px rgba(0, 0, 0, 0.45),
+        inset 0 0 30px rgba(255, 255, 255, 0.04);
 
     z-index: -1;
-    pointer-events: none;
+}
+
+/* ------------------------------------------------
+   BODY BASE
+   ------------------------------------------------ */
+
+html { height: 100%; }
+
+body {
+    display: flex;
+    min-height: 100vh;
+    margin: 0;
+
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* =========================
+   LAYOUT
+========================= */
+
+#main-wrapper {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    min-width: 0;
+    height: 100vh;
+    overflow: hidden;
+}
+
+/* =========================
+   CARD WRAPPER
+========================= */
+
+.records-card {
+    flex: 1;
+    min-height: 0;
+    margin: 0.5rem 1rem 1rem;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.records-card-body {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
 }
 
 .recordBoxWrapper {

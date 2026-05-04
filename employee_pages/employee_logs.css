@@ -1,266 +1,110 @@
-/* =========================
-   BACKGROUND
-========================= */
+/* ================================================
+   EMPLOYEE LOGS
+   ================================================
+   Page-specific styles for the employee dashboard.
+   Depends on: root.css, typography.css,
+               components.css, navbars.css
+   ================================================ */
+
+/* ================================================
+   BACKGROUND SYSTEM
+   ================================================ */
+
+/* ------------------------------------------------
+   BASE IMAGE LAYER
+   ------------------------------------------------ */
+
 body::before {
     content: '';
     position: fixed;
     inset: 0;
 
-    background: url('../images/drt_bg.jpg') center/cover no-repeat;
-    filter: blur(2px);
-    transform: scale(1.1);
+    background: url('../assets/images/drt_bg.jpg') center / cover no-repeat;
+
+    /* slightly lighter background than before
+    filter: blur(5px) brightness(0.98) saturate(1.08); */
+
+    transform: scale(1.06);
 
     z-index: -2;
 }
 
-body {
-    font-family: 'Poppins', sans-serif;
-    min-height: 100vh;
-    margin: 0;
-    overflow-x: hidden;
-}
+/* ------------------------------------------------
+   GLASS OVERLAY (LIGHTER)
+   ------------------------------------------------ */
 
 body::after {
     content: '';
     position: fixed;
     inset: 0;
 
-    background: linear-gradient(
-        to bottom,
-        rgba(0, 0, 0, 0.15),
-        rgba(0, 0, 0, 0.55),
-        rgba(0, 0, 0, 0.85)
-    );
+    /* lighter base glass */
+    background: rgba(15, 15, 18, 0.45);
+
+    backdrop-filter: blur(28px) saturate(150%) brightness(0.55);
+    -webkit-backdrop-filter: blur(28px) saturate(150%) brightness(0.55);
+
+    border: 1px solid rgba(255, 255, 255, 0.07);
+
+    box-shadow:
+        inset 0 0 90px rgba(0, 0, 0, 0.45),
+        inset 0 0 30px rgba(255, 255, 255, 0.04);
 
     z-index: -1;
-    pointer-events: none;
+}
+
+/* ------------------------------------------------
+   BODY BASE
+   ------------------------------------------------ */
+
+html { height: 100%; }
+
+body {
+    display: flex;
+    min-height: 100vh;
+    margin: 0;
+
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
 /* =========================
    LAYOUT
 ========================= */
-.recordBoxWrapper {
-    position: fixed;
-    top: 84px;
-    left: var(--sidebar-width);
-    width: calc(100% - var(--sidebar-width));
-    height: calc(100vh - 100px);
 
-    padding: 0.5rem 1rem;
-
+#main-wrapper {
     display: flex;
-    justify-content: center;
-    align-items: stretch;
-
-    z-index: 10;
-    transition: left 0.3s ease, width 0.3s ease;
+    flex-direction: column;
+    flex-grow: 1;
+    min-width: 0;
+    height: 100vh;
+    overflow: hidden;
 }
 
 /* =========================
-   GLASS CONTAINER
+   CARD WRAPPER
 ========================= */
-.recordBox {
-    background: var(--glass-bg);
-    backdrop-filter: blur(32px) saturate(160%) brightness(0.3);
-    -webkit-backdrop-filter: blur(32px) saturate(160%) brightness(0.3);
 
-    border: 1px solid var(--glass-border);
-    border-radius: 16px;
+.logs-card {
+    flex: 1;
+    min-height: 0;
+    margin: 0.5rem 1rem 1rem;
+    overflow: visible !important;
+}
 
+.logs-card-body {
     padding: 1.5rem;
-    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.5);
-
-    width: 100%;
     height: 100%;
-
-    display: flex;
-    flex-direction: column;
-
     overflow: visible;
 }
 
 /* Filter Wrapper */
 .filterWrapper {
-    position: relative;
     display: flex;
     align-items: center;
-    gap: 2rem;
+    gap: 1rem;
     padding-bottom: 1rem;
     flex-wrap: wrap;
-}
-
-/* =========================
-   DATE WRAPPER (ICON INSIDE INPUT)
-========================= */
-.dateWrapper {
-    flex: 0 0 auto;
-    min-width: 12rem;
-    max-width: 22rem;
-
-    position: relative;
-
-    transition: width 0.35s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.dateWrapper .recordTitle {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-
-    font-size: 0.875rem;
-    font-weight: 400;
-
-    width: 100%;
-    min-width: 7rem;
-    padding: 0.75rem;
-
-    border-radius: 16px;
-
-    color: var(--text-muted);
-
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
-
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-
-    transition:
-        background 0.25s ease,
-        border-color 0.25s ease,
-        color 0.25s ease,
-        transform 0.25s cubic-bezier(0.22, 1, 0.36, 1),
-        box-shadow 0.25s ease;
-}
-
-.dateIcon {
-    position: absolute;
-    right: 1rem;
-    top: 50%;
-    transform: translateY(-50%);
-
-    color: var(--text-muted);
-    pointer-events: none;
-
-    transition: color 0.25s ease, transform 0.25s ease;
-}
-
-.dateWrapper:hover .recordTitle {
-    color: var(--text-lightest);
-    background: rgba(255, 255, 255, 0.12);
-    border-color: rgba(255, 255, 255, 0.25);
-    transform: translateY(-1px);
-    box-shadow: 
-        inset 0 1px 0 rgba(255, 255, 255, 0.12),
-        0 4px 12px rgba(0, 0, 0, 0.25);
-}
-
-.dateWrapper:hover .dateIcon {
-    color: var(--text-lightest);
-    transform: translateY(-50%) translateX(3px);
-}
-
-/* =========================
-   DATE PICKER
-========================= */
-.recordTitle {
-    font-size: 1rem;
-    font-weight: 400;
-    color: var(--text-light);
-    width: 100%;
-    background: transparent;
-    border: none;
-    cursor: pointer;
-    transition: 0.2s ease;
-}
-
-.recordTitle:hover {
-    color: var(--text-lightest) !important;
-    background: var(--overlay-soft) !important;
-}
-
-.recordTitle:focus {
-    outline: none;
-    box-shadow: none;
-    background: var(--overlay-soft) !important;
-    color: var(--primary-color) !important;
-}
-
-/* Log type filter */
-#logTypeToggle {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-
-    font-size: 0.875rem;
-    font-weight: 400;
-
-    min-width: 7rem;
-    padding: 0.75rem 1rem;
-
-    border-radius: 16px;
-
-    color: var(--text-muted);
-
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
-
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-
-    cursor: pointer;
-
-    transition:
-        background 0.25s ease,
-        border-color 0.25s ease,
-        color 0.25s ease,
-        transform 0.25s cubic-bezier(0.22, 1, 0.36, 1),
-        box-shadow 0.25s ease;
-}
-
-#logTypeToggle:hover {
-    color: var(--text-lightest);
-    background: rgba(255, 255, 255, 0.12);
-    border-color: rgba(255, 255, 255, 0.25);
-    transform: translateY(-1px);
-    box-shadow: 
-        inset 0 1px 0 rgba(255, 255, 255, 0.12),
-        0 4px 12px rgba(0, 0, 0, 0.25);
-}
-
-.logArrow {
-    transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-#logTypeToggle:hover .logArrow {
-    transform: rotate(180deg);
-}
-
-.logTypeSection {
-    padding: 0.5rem;
-
-    /* semi-transparent base (required for glass effect) */
-    background: rgba(0, 0, 0, 0.95);
-
-    /* real glass blur */
-    backdrop-filter: blur(32px);
-    -webkit-backdrop-filter: blur(32px);
-
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 12px;
-
-    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.5);
-
-    clip-path: inset(0 0 100% 0 round 12px);
-    transition: clip-path 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.userDropdownMenu.show .logTypeSection {
-    clip-path: inset(0 0 0% 0 round 12px);
 }
 
 
@@ -330,7 +174,8 @@ body::after {
 ========================= */
 .tableScroll {
     width: 100%;
-    height: 100%;
+    flex: 1;
+    min-height: 0;
     overflow-y: auto;
 }
 
@@ -369,6 +214,8 @@ body::after {
     font-size: 0.875rem;
     user-select: none;
     text-align: left;
+    color: var(--text-muted);
+    text-transform: none !important;
 }
 
 /* rows */
@@ -670,18 +517,6 @@ body::after {
     color: var(--overlay-muted) !important;
 }
 
-.flatpickr-input.form-control,
-.flatpickr-input {
-    background: transparent !important;
-    border: none !important;
-    color: var(--text-light) !important;
-    font-family: 'Poppins', sans-serif !important;
-    font-size: 1.125rem !important;
-    font-weight: 400 !important;
-    cursor: pointer !important;
-    outline: none !important;
-    caret-color: transparent !important;
-}
 
 /* =========================
    MAP POPUP

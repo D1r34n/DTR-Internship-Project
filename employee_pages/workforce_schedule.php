@@ -142,23 +142,62 @@ $current_page = 'workforce_schedule';
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Manage Schedules</title>
 
-    <link rel="stylesheet" href="../root.css">
+    <link rel="stylesheet" href="../assets/css/root.css">
+    <link rel="stylesheet" href="../assets/css/typography.css">
+    <link rel="stylesheet" href="../assets/css/components.css">
     <link rel="stylesheet" href="../admin_pages/admin_schedule.css">
-    <link rel="stylesheet" href="../side_and_top_bar.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 
-    <style>body::before { background-image: url('../images/drt_bg.jpg'); }</style>
+    <style>
+        html, body { height: 100%; margin: 0; }
+        body { display: flex; min-height: 100vh; }
+        #sidebar { flex-shrink: 0; }
+        #main-wrapper {
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+            min-width: 0;
+            overflow-y: auto;
+        }
+        #topbar { flex-shrink: 0; position: sticky; top: 0; z-index: 100; }
+
+        body::before { background-image: url('../images/drt_bg.jpg'); }
+
+        .wf-dept-badge {
+            background: rgba(151, 190, 65, 0.15);
+            border: 1px solid rgba(151, 190, 65, 0.3);
+            color: #97be41;
+            border-radius: 20px;
+            padding: 0.15rem 0.7rem;
+            font-size: 0.75rem;
+        }
+
+        .status-pending  { color: #f0ad4e; font-weight: 600; font-size: 0.8rem; }
+        .status-approved { color: #97be41; font-weight: 600; font-size: 0.8rem; }
+        .status-rejected { color: #ff8a8a; font-weight: 600; font-size: 0.8rem; }
+
+        .no-dept-warning {
+            background: rgba(220, 53, 69, 0.12);
+            border: 1px solid rgba(220, 53, 69, 0.3);
+            border-radius: 10px;
+            padding: 1rem 1.2rem;
+            color: #ff8a8a;
+            font-size: 0.875rem;
+        }
+    </style>
 </head>
 <body>
-    <?php include '../sidebar.php'; ?>
-    <?php include '../topbar.php'; ?>
+    <?php $currentPage = 'workforce_schedule'; include '../sidebar_revised.php'; ?>
 
-    <div class="schedWrapper">
-        <div class="schedBox">
+    <div id="main-wrapper">
+        <?php include '../topbar_revised.php'; ?>
+
+        <div class="scheduleWrapper">
+        <div class="scheduleBox">
 
             <!-- ===== LEFT PANEL ===== -->
             <div class="schedLeftPanel">
@@ -291,6 +330,7 @@ $current_page = 'workforce_schedule';
             </div>
         </div>
     </div>
+</div><!-- #main-wrapper -->
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
     <script>

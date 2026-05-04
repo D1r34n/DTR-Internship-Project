@@ -102,18 +102,29 @@
         const wrapper = document.getElementById('leEditTypeWrapper');
         if (wrapper && !wrapper.contains(e.target)) wrapper.classList.remove('open');
     });
-
+    
     function openLogEditModal() {
-        document.getElementById('logEditModalOverlay').style.display = 'flex';
-        document.getElementById('leStep1').style.display             = 'block';
-        document.getElementById('leStep2').style.display             = 'none';
-        document.getElementById('leErrorMsg').style.display          = 'none';
-        document.getElementById('leSuccessMsg').style.display        = 'none';
+        const modal = new bootstrap.Modal(document.getElementById('logEditModal'));
+        modal.show();
+
+        // reset UI state
+        document.getElementById('leStep1').style.display = 'block';
+        document.getElementById('leStep2').style.display = 'none';
+
+        document.getElementById('leErrorMsg').textContent = '';
+        document.getElementById('leSuccessMsg').textContent = '';
+
+        leSelectedRecord = null;
+
         loadLeGantt();
     }
 
     function closeLogEditModal() {
-        document.getElementById('logEditModalOverlay').style.display = 'none';
+        const modalEl = document.getElementById('logEditModal');
+        const modal   = bootstrap.Modal.getInstance(modalEl);
+
+        if (modal) modal.hide();
+
         leSelectedRecord = null;
     }
 
