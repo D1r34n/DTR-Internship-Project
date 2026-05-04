@@ -1,12 +1,16 @@
 <?php
-session_start();
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
+// Authentication + role check
 if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'workforce') {
     header("Location: ../index.php");
     exit();
 }
 
 require_once '../db.php';
+
 date_default_timezone_set('Asia/Manila');
 
 $employeeId = $_SESSION['user_id'];
@@ -25,15 +29,15 @@ $selfData       = $selfStmt->fetch(PDO::FETCH_ASSOC);
 $department     = $selfData['department_id']   ?? null;
 $departmentName = $selfData['department_name'] ?? null;
 
-// ---- HANDLE SUBMIT ----
+// Handle form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $targetId   = $_POST['employee_id'] ?? '';
-    $dates      = json_decode($_POST['selected_dates'] ?? '[]', true);
-    $time_in    = $_POST['time_in']  ?? '';
-    $time_out   = $_POST['time_out'] ?? '';
-    $is_overnight = $time_out < $time_in;
+    $targetId     = $_POST['employee_id']    ?? '';
+    $dates        = json_decode($_POST['selected_dates'] ?? '[]', true);
+    $timeIn       = $_POST['time_in']        ?? '';
+    $timeOut      = $_POST['time_out']       ?? '';
+    $isOvernight  = $timeOut < $timeIn;
 
-    if (empty($targetId) || empty($dates) || !$time_in || !$time_out) {
+    if (empty($targetId) || empty($dates) || !$timeIn || !$timeOut) {
         $error = "Please fill in all fields and select at least one date.";
     } elseif (!$department) {
         $error = "Your account has no department assigned. Contact an admin.";
@@ -47,6 +51,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             $checkStmt      = $pdo->prepare("SELECT COUNT(*) FROM schedules WHERE employee_id = ? AND schedule_date = ?");
             $duplicateDates = [];
+
             foreach ($dates as $date) {
                 $checkStmt->execute([$targetId, $date]);
                 if ($checkStmt->fetchColumn() > 0) {
@@ -63,10 +68,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ");
 
                 foreach ($dates as $date) {
-                    $startDT = $date . ' ' . $time_in  . ':00';
-                    $endDT   = $is_overnight
-                        ? date('Y-m-d', strtotime($date . ' +1 day')) . ' ' . $time_out . ':00'
-                        : $date . ' ' . $time_out . ':00';
+                    $startDT = $date . ' ' . $timeIn  . ':00';
+                    $endDT   = $isOvernight
+                        ? date('Y-m-d', strtotime($date . ' +1 day')) . ' ' . $timeOut . ':00'
+                        : $date . ' ' . $timeOut . ':00';
 
                     $insertStmt->execute([$targetId, $date, $startDT, $endDT]);
                 }
@@ -77,7 +82,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// Get employees in same department (all roles except self)
+// Get employees in same department (excluding self)
 $deptEmployees = [];
 if ($department) {
     $empStmt = $pdo->prepare("
@@ -89,13 +94,13 @@ if ($department) {
     $deptEmployees = $empStmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
-// Get all pending + recently approved schedules for dept employees
+// Get pending + recently approved/rejected schedules for dept employees
 $deptSchedules = [];
 if ($department) {
     $schedStmt = $pdo->prepare("
         SELECT
             s.id,
-            e.name   AS employee_name,
+            e.name AS employee_name,
             s.schedule_date,
             s.scheduled_start,
             s.scheduled_end,
@@ -104,242 +109,240 @@ if ($department) {
         JOIN employees e ON s.employee_id = e.id
         WHERE e.department_id = ?
           AND s.is_rest_day = 0
-          AND (s.status = 'pending' OR (s.status IN ('approved','rejected') AND s.schedule_date >= CURDATE() - INTERVAL 7 DAY))
+          AND (
+              s.status = 'pending'
+              OR (s.status IN ('approved','rejected') AND s.schedule_date >= CURDATE() - INTERVAL 7 DAY)
+          )
         ORDER BY s.status ASC, s.schedule_date ASC, e.name
     ");
     $schedStmt->execute([$department]);
     $deptSchedules = $schedStmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
-$current_page = 'workforce_schedule';
+$currentPage = 'workforce_schedule';
 ?>
-<!doctype html>
+
+<!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Manage Schedules</title>
 
+    <!-- CSS Load Order: root → typography → components → navbars → page -->
     <link rel="stylesheet" href="../assets/css/root.css">
     <link rel="stylesheet" href="../assets/css/typography.css">
     <link rel="stylesheet" href="../assets/css/components.css">
+    <link rel="stylesheet" href="../navbars_revised.css">
     <link rel="stylesheet" href="../admin_pages/admin_schedule.css">
+
+    <!-- Bootstrap -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Flatpickr -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-
-    <style>
-        html, body { height: 100%; margin: 0; }
-        body { display: flex; min-height: 100vh; }
-        #sidebar { flex-shrink: 0; }
-        #main-wrapper {
-            display: flex;
-            flex-direction: column;
-            flex-grow: 1;
-            min-width: 0;
-            overflow-y: auto;
-        }
-        #topbar { flex-shrink: 0; position: sticky; top: 0; z-index: 100; }
-
-        body::before { background-image: url('../images/drt_bg.jpg'); }
-
-        .wf-dept-badge {
-            background: rgba(151, 190, 65, 0.15);
-            border: 1px solid rgba(151, 190, 65, 0.3);
-            color: #97be41;
-            border-radius: 20px;
-            padding: 0.15rem 0.7rem;
-            font-size: 0.75rem;
-        }
-
-        .status-pending  { color: #f0ad4e; font-weight: 600; font-size: 0.8rem; }
-        .status-approved { color: #97be41; font-weight: 600; font-size: 0.8rem; }
-        .status-rejected { color: #ff8a8a; font-weight: 600; font-size: 0.8rem; }
-
-        .no-dept-warning {
-            background: rgba(220, 53, 69, 0.12);
-            border: 1px solid rgba(220, 53, 69, 0.3);
-            border-radius: 10px;
-            padding: 1rem 1.2rem;
-            color: #ff8a8a;
-            font-size: 0.875rem;
-        }
-    </style>
 </head>
 <body>
-    <?php $currentPage = 'workforce_schedule'; include '../sidebar_revised.php'; ?>
+
+    <?php include '../sidebar_revised.php'; ?>
 
     <div id="main-wrapper">
         <?php include '../topbar_revised.php'; ?>
 
-        <div class="scheduleWrapper">
-        <div class="scheduleBox">
+        <div class="card card-glass logs-card">
+            <div class="card-body d-flex flex-column logs-card-body">
 
-            <!-- TITLE ROW -->
-            <div class="adminTitleRow">
-                <div style="display:flex;align-items:center;gap:0.75rem;">
-                    <h5 class="adminTitle">Manage Schedules</h5>
-                    <?php if ($department): ?>
-                        <span class="wf-dept-badge"><?= htmlspecialchars($departmentName ?? $department) ?> Department</span>
-                    <?php endif; ?>
+                <!-- Title Row -->
+                <div class="admin-title-row">
+                    <div class="admin-title-left">
+                        <h5 class="admin-title section-title">Manage Schedules</h5>
+                        <?php if ($department): ?>
+                            <span class="dept-badge">
+                                <?= htmlspecialchars($departmentName ?? $department) ?> Department
+                            </span>
+                        <?php endif; ?>
+                    </div>
+                    <input type="text" id="search-input" class="search-input" placeholder="Search schedules..." onkeyup="searchTable()">
                 </div>
-                <input type="text" id="searchInput" class="searchInput" placeholder="Search schedules..." onkeyup="searchTable()">
-            </div>
 
-            <!-- ALERTS -->
-            <?php if ($success): ?>
-                <div class="alert alert-success"><?= htmlspecialchars($success) ?></div>
-            <?php endif; ?>
-            <?php if ($error): ?>
-                <div class="alert alert-danger"><?= htmlspecialchars($error) ?></div>
-            <?php endif; ?>
+                <!-- Alerts -->
+                <?php if ($success): ?>
+                    <div class="alert alert-success text-meta"><?= htmlspecialchars($success) ?></div>
+                <?php endif; ?>
+                <?php if ($error): ?>
+                    <div class="alert alert-danger text-meta"><?= htmlspecialchars($error) ?></div>
+                <?php endif; ?>
 
-            <?php if (!$department): ?>
-                <div class="no-dept-warning">
-                    <i class="bi bi-exclamation-triangle-fill"></i>
-                    Your account has no department assigned. Contact an admin to set your department before you can manage schedules.
-                </div>
-            <?php else: ?>
+                <?php if (!$department): ?>
+                    <div class="no-dept-warning text-meta">
+                        <i class="bi bi-exclamation-triangle-fill"></i>
+                        Your account has no department assigned. Contact an admin to set your department before you can manage schedules.
+                    </div>
+                <?php else: ?>
 
-            <!-- DEPT SCHEDULES TABLE -->
-            <div class="tableScrollWrapper">
-                <table class="table table-bordered table-hover mt-0">
-                    <thead>
-                        <tr>
-                            <th>Employee</th>
-                            <th>Date</th>
-                            <th>Time In</th>
-                            <th>Time Out</th>
-                            <th>Type</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php if (count($deptSchedules) > 0): ?>
-                            <?php foreach ($deptSchedules as $row): ?>
-                                <?php
-                                    $startDT      = $row['scheduled_start'];
-                                    $endDT        = $row['scheduled_end'];
-                                    $startHour    = $startDT ? (int)date('H', strtotime($startDT)) : 6;
-                                    $isNightShift = ($startHour >= 18 || $startHour < 6);
-                                ?>
+                <!-- Department Schedules Table -->
+                <div class="table-scroll-wrapper">
+                    <table class="table table-bordered table-hover mt-0">
+                        <thead>
+                            <tr>
+                                <th>Employee</th>
+                                <th>Date</th>
+                                <th>Time In</th>
+                                <th>Time Out</th>
+                                <th>Type</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php if (count($deptSchedules) > 0): ?>
+                                <?php foreach ($deptSchedules as $row): ?>
+                                    <?php
+                                        $startDT      = $row['scheduled_start'];
+                                        $endDT        = $row['scheduled_end'];
+                                        $startHour    = $startDT ? (int)date('H', strtotime($startDT)) : 6;
+                                        $isNightShift = ($startHour >= 18 || $startHour < 6);
+                                    ?>
+                                    <tr>
+                                        <td class="text-secondary"><?= htmlspecialchars($row['employee_name']) ?></td>
+                                        <td class="text-secondary"><?= date('M d, Y', strtotime($row['schedule_date'])) ?></td>
+                                        <td class="text-secondary"><?= $startDT ? date('h:i A', strtotime($startDT)) : '—' ?></td>
+                                        <td class="text-secondary"><?= $endDT   ? date('h:i A', strtotime($endDT))   : '—' ?></td>
+                                        <td>
+                                            <?php if ($isNightShift): ?>
+                                                <span class="badge night-shift-badge">Night Shift</span>
+                                            <?php else: ?>
+                                                <span class="badge day-shift-badge">Day Shift</span>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td>
+                                            <?php if ($row['status'] === 'pending'): ?>
+                                                <span class="status-pending text-meta">
+                                                    <i class="bi bi-hourglass-split"></i> Pending
+                                                </span>
+                                            <?php elseif ($row['status'] === 'rejected'): ?>
+                                                <span class="status-rejected text-meta">
+                                                    <i class="bi bi-x-circle-fill"></i> Rejected
+                                                </span>
+                                            <?php else: ?>
+                                                <span class="status-approved text-meta">
+                                                    <i class="bi bi-check-circle-fill"></i> Approved
+                                                </span>
+                                            <?php endif; ?>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            <?php else: ?>
                                 <tr>
-                                    <td><?= htmlspecialchars($row['employee_name']) ?></td>
-                                    <td><?= date('M d, Y', strtotime($row['schedule_date'])) ?></td>
-                                    <td><?= $startDT ? date('h:i A', strtotime($startDT)) : '—' ?></td>
-                                    <td><?= $endDT   ? date('h:i A', strtotime($endDT))   : '—' ?></td>
-                                    <td>
-                                        <?php if ($isNightShift): ?>
-                                            <span class="badge nightShiftBadge">Night Shift</span>
-                                        <?php else: ?>
-                                            <span class="badge dayShiftBadge">Day Shift</span>
-                                        <?php endif; ?>
-                                    </td>
-                                    <td>
-                                        <?php if ($row['status'] === 'pending'): ?>
-                                            <span class="status-pending"><i class="bi bi-hourglass-split"></i> Pending</span>
-                                        <?php elseif ($row['status'] === 'rejected'): ?>
-                                            <span class="status-rejected"><i class="bi bi-x-circle-fill"></i> Rejected</span>
-                                        <?php else: ?>
-                                            <span class="status-approved"><i class="bi bi-check-circle-fill"></i> Approved</span>
-                                        <?php endif; ?>
+                                    <td colspan="6" class="text-center text-meta">
+                                        No schedules found for your department.
                                     </td>
                                 </tr>
-                            <?php endforeach; ?>
-                        <?php else: ?>
-                            <tr><td colspan="6" class="text-center" style="color:rgba(255,255,255,0.4);">No schedules found for your department.</td></tr>
-                        <?php endif; ?>
-                    </tbody>
-                </table>
-            </div>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
+                </div>
 
-            <!-- PROPOSE SCHEDULE FORM -->
-            <div class="adminFormWrapper">
-                <h6 class="formTitle">Propose New Schedule</h6>
-                <p style="color:rgba(255,255,255,0.4);font-size:0.8rem;margin-bottom:1rem;">
-                    Schedules are submitted for admin approval before taking effect.
-                </p>
-                <form method="POST" action="/DTR-Internship-Project/employee_pages/workforce_schedule.php" onsubmit="return prepareSubmit()">
+                <!-- Propose Schedule Form -->
+                <div class="admin-form-wrapper">
+                    <h6 class="form-title subsection-title">Propose New Schedule</h6>
+                    <p class="text-meta" style="margin-bottom:1rem;">
+                        Schedules are submitted for admin approval before taking effect.
+                    </p>
 
-                    <input type="hidden" name="employee_id"    id="employeeSelect">
-                    <input type="hidden" name="selected_dates" id="selectedDatesInput">
+                    <form method="POST" action="/DTR-Internship-Project/employee_pages/workforce_schedule.php" onsubmit="return prepareSubmit()">
 
-                    <div class="formGrid">
+                        <input type="hidden" name="employee_id"    id="employee-select">
+                        <input type="hidden" name="selected_dates" id="selected-dates-input">
 
-                        <!-- Employee Search -->
-                        <div class="formGroup" style="position:relative;">
-                            <label>Employee (<?= htmlspecialchars($departmentName ?? $department) ?> Dept.)</label>
-                            <input type="text" id="employeeSearch" class="formControl"
-                                placeholder="Type to search..." autocomplete="off"
-                                oninput="filterEmployees()">
-                            <div id="employeeDropdown" class="employeeDropdown">
-                                <?php foreach ($deptEmployees as $emp): ?>
-                                    <div class="employeeOption"
-                                        data-id="<?= $emp['id'] ?>"
-                                        data-name="<?= htmlspecialchars($emp['name']) ?>"
-                                        onclick="selectEmployee(this)">
-                                        <?= htmlspecialchars($emp['name']) ?>
-                                    </div>
-                                <?php endforeach; ?>
-                                <?php if (empty($deptEmployees)): ?>
-                                    <div class="employeeOption" style="color:#aaa;cursor:default;">No employees in your department.</div>
-                                <?php endif; ?>
+                        <div class="form-grid">
+
+                            <!-- Employee Search -->
+                            <div class="form-group" style="position: relative;">
+                                <label class="text-secondary">
+                                    Employee (<?= htmlspecialchars($departmentName ?? $department) ?> Dept.)
+                                </label>
+                                <input
+                                    type="text"
+                                    id="employee-search"
+                                    class="form-control-custom"
+                                    placeholder="Type to search..."
+                                    autocomplete="off"
+                                    oninput="filterEmployees()"
+                                >
+                                <div id="employee-dropdown" class="employee-dropdown">
+                                    <?php foreach ($deptEmployees as $emp): ?>
+                                        <div class="employee-option text-secondary"
+                                             data-id="<?= $emp['id'] ?>"
+                                             data-name="<?= htmlspecialchars($emp['name']) ?>"
+                                             onclick="selectEmployee(this)">
+                                            <?= htmlspecialchars($emp['name']) ?>
+                                        </div>
+                                    <?php endforeach; ?>
+                                    <?php if (empty($deptEmployees)): ?>
+                                        <div class="employee-option text-meta" style="cursor: default;">
+                                            No employees in your department.
+                                        </div>
+                                    <?php endif; ?>
+                                </div>
                             </div>
+
+                            <!-- Time In -->
+                            <div class="form-group">
+                                <label class="text-secondary">Time In</label>
+                                <input type="time" name="time_in" id="time-in" class="form-control-custom" required>
+                            </div>
+
+                            <!-- Time Out -->
+                            <div class="form-group">
+                                <label class="text-secondary">
+                                    Time Out <small class="night-shift-hint text-meta">(next day if night shift)</small>
+                                </label>
+                                <input type="time" name="time_out" id="time-out" class="form-control-custom" required>
+                            </div>
+
                         </div>
 
-                        <!-- Time In -->
-                        <div class="formGroup">
-                            <label>Time In</label>
-                            <input type="time" name="time_in" id="timeIn" class="formControl" required>
+                        <!-- Date Picker -->
+                        <div class="form-group" style="margin-top: 1rem;">
+                            <label class="text-secondary">Select Dates</label>
+                            <p class="text-meta">Click dates to select work days. Click again to deselect.</p>
+                            <input type="text" id="schedule-date-picker" class="form-control-custom" placeholder="Click to select dates..." readonly>
+                            <div id="selected-dates-list" class="selected-dates-list"></div>
                         </div>
 
-                        <!-- Time Out -->
-                        <div class="formGroup">
-                            <label>Time Out <small class="nightShiftHint">(next day if night shift)</small></label>
-                            <input type="time" name="time_out" id="timeOut" class="formControl" required>
+                        <!-- Submit -->
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-success">
+                                <i class="bi bi-send-fill"></i> Submit for Approval
+                            </button>
                         </div>
 
-                    </div>
+                    </form>
+                </div>
 
-                    <!-- Date Picker -->
-                    <div class="formGroup" style="margin-top:1rem;">
-                        <label>Select Dates</label>
-                        <p class="formHint">Click dates to select work days. Click again to deselect.</p>
-                        <input type="text" id="scheduleDatePicker" class="formControl" placeholder="Click to select dates..." readonly>
-                        <div id="selectedDatesList" class="selectedDatesList"></div>
-                    </div>
+                <?php endif; ?>
 
-                    <!-- Submit -->
-                    <div class="formActions">
-                        <button type="submit" class="btnSave">
-                            <i class="bi bi-send-fill"></i> Submit for Approval
-                        </button>
-                    </div>
-
-                </form>
             </div>
-
-            <?php endif; ?>
-
         </div>
-    </div>
-</div><!-- #main-wrapper -->
+
+    </div><!-- #main-wrapper -->
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-
-        // ---- FLATPICKR ----
+        /* ================================================
+           FLATPICKR
+           ================================================ */
         let selectedDates = [];
 
-        const fp = flatpickr('#scheduleDatePicker', {
+        const fp = flatpickr('#schedule-date-picker', {
             mode:        'multiple',
             dateFormat:  'Y-m-d',
             altInput:    true,
             altFormat:   'M j, Y',
             conjunction: ', ',
-            onChange: function(dates) {
+            onChange(dates) {
                 selectedDates = dates.map(d => {
                     const y   = d.getFullYear();
                     const m   = String(d.getMonth() + 1).padStart(2, '0');
@@ -351,18 +354,18 @@ $current_page = 'workforce_schedule';
         });
 
         function updateSelectedDatesList() {
-            const list = document.getElementById('selectedDatesList');
+            const list = document.getElementById('selected-dates-list');
             if (selectedDates.length === 0) {
-                list.innerHTML = '<p class="noDateSelected">No dates selected.</p>';
+                list.innerHTML = '<p class="text-meta">No dates selected.</p>';
                 return;
             }
             const fmtDate = d => new Date(d + 'T00:00:00').toLocaleDateString('en-US', {
                 weekday: 'short', month: 'short', day: 'numeric', year: 'numeric'
             });
             list.innerHTML = selectedDates.map(d => `
-                <span class="selectedDateTag">
+                <span class="selected-date-tag text-meta">
                     ${fmtDate(d)}
-                    <span onclick="removeDate('${d}')" class="selectedDateRemove">✕</span>
+                    <span onclick="removeDate('${d}')" class="selected-date-remove">✕</span>
                 </span>
             `).join('');
         }
@@ -373,9 +376,11 @@ $current_page = 'workforce_schedule';
             updateSelectedDatesList();
         }
 
-        // ---- PREPARE SUBMIT ----
+        /* ================================================
+           FORM SUBMIT
+           ================================================ */
         function prepareSubmit() {
-            if (!document.getElementById('employeeSelect').value) {
+            if (!document.getElementById('employee-select').value) {
                 alert('Please select an employee.');
                 return false;
             }
@@ -383,50 +388,58 @@ $current_page = 'workforce_schedule';
                 alert('Please select at least one date.');
                 return false;
             }
-            if (!document.getElementById('timeIn').value || !document.getElementById('timeOut').value) {
+            if (!document.getElementById('time-in').value || !document.getElementById('time-out').value) {
                 alert('Please enter time in and time out.');
                 return false;
             }
-            document.getElementById('selectedDatesInput').value = JSON.stringify(selectedDates);
+            document.getElementById('selected-dates-input').value = JSON.stringify(selectedDates);
             return true;
         }
 
-        // ---- EMPLOYEE SEARCH ----
+        /* ================================================
+           EMPLOYEE SEARCH
+           ================================================ */
         function filterEmployees() {
-            const input    = document.getElementById('employeeSearch').value.toLowerCase();
-            const dropdown = document.getElementById('employeeDropdown');
-            const options  = document.querySelectorAll('.employeeOption[data-id]');
+            const input    = document.getElementById('employee-search').value.toLowerCase();
+            const dropdown = document.getElementById('employee-dropdown');
+            const options  = document.querySelectorAll('.employee-option[data-id]');
 
             dropdown.style.display = input === '' ? 'none' : 'block';
             options.forEach(opt => {
                 opt.style.display = opt.getAttribute('data-name').toLowerCase().includes(input) ? 'block' : 'none';
             });
-            document.getElementById('employeeSelect').value = '';
+            document.getElementById('employee-select').value = '';
         }
 
         function selectEmployee(el) {
-            document.getElementById('employeeSearch').value           = el.getAttribute('data-name');
-            document.getElementById('employeeSelect').value           = el.getAttribute('data-id');
-            document.getElementById('employeeDropdown').style.display = 'none';
+            document.getElementById('employee-search').value           = el.getAttribute('data-name');
+            document.getElementById('employee-select').value           = el.getAttribute('data-id');
+            document.getElementById('employee-dropdown').style.display = 'none';
         }
 
-        // ---- SEARCH TABLE ----
+        /* ================================================
+           TABLE SEARCH
+           ================================================ */
         function searchTable() {
-            const input = document.getElementById('searchInput').value.toLowerCase();
-            document.querySelectorAll('.tableScrollWrapper tbody tr').forEach(row => {
+            const input = document.getElementById('search-input').value.toLowerCase();
+            document.querySelectorAll('.table-scroll-wrapper tbody tr').forEach(row => {
                 row.style.display = row.textContent.toLowerCase().includes(input) ? '' : 'none';
             });
         }
 
-        // ---- CLOSE DROPDOWNS ON OUTSIDE CLICK ----
-        document.addEventListener('click', (e) => {
-            if (!e.target.closest('#employeeSearch') && !e.target.closest('#employeeDropdown')) {
-                const dd = document.getElementById('employeeDropdown');
+        /* ================================================
+           CLOSE DROPDOWNS ON OUTSIDE CLICK
+           ================================================ */
+        document.addEventListener('click', e => {
+            if (!e.target.closest('#employee-search') && !e.target.closest('#employee-dropdown')) {
+                const dd = document.getElementById('employee-dropdown');
                 if (dd) dd.style.display = 'none';
             }
         });
 
-        // ---- AUTO DISMISS ALERTS ----
+        /* ================================================
+           AUTO DISMISS ALERTS
+           ================================================ */
         setTimeout(() => {
             document.querySelectorAll('.alert').forEach(alert => {
                 alert.style.transition = 'opacity 0.5s ease';
@@ -434,7 +447,7 @@ $current_page = 'workforce_schedule';
                 setTimeout(() => alert.remove(), 500);
             });
         }, 3000);
-
     </script>
+
 </body>
 </html>

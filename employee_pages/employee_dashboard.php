@@ -47,48 +47,6 @@ $records = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
-
-    <style>
-        /* Ensure full-height flex layout */
-        html, body {
-            height: 100%;
-            margin: 0;
-        }
-
-        body {
-            display: flex;
-            min-height: 100vh;
-        }
-
-        /* Sidebar stays on the left, full height */
-        #sidebar {
-            flex-shrink: 0;
-            /* width is set in sidebar.php */
-        }
-
-        /* Right side: topbar on top, content below — both scroll together */
-        #main-wrapper {
-            display: flex;
-            flex-direction: column;
-            flex-grow: 1;
-            min-width: 0;        /* prevents flex blowout */
-            overflow-y: auto;
-        }
-
-        /* Topbar spans the full width of the right column */
-        #topbar {
-            flex-shrink: 0;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
-
-        /* Dashboard content fills the rest */
-        .dashboard-wrapper {
-            flex-grow: 1;
-            padding: 1.5rem;
-        }
-    </style>
 </head>
 <body>
 
@@ -107,7 +65,7 @@ $records = $stmt->fetchAll(PDO::FETCH_ASSOC);
         <!-- DASHBOARD CONTENT -->
         <div class="dashboard-wrapper">
             <div class="dashboard-content">
-                <!-- your dashboard widgets go here -->
+                
             </div>
         </div>
 

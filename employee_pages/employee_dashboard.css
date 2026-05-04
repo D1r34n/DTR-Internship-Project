@@ -21,8 +21,8 @@ body::before {
 
     background: url('../assets/images/drt_bg.jpg') center / cover no-repeat;
 
-    /* slightly lighter background than before */
-    /* filter: blur(5px) brightness(0.98) saturate(1.08); */
+    /* slightly lighter background than before
+    filter: blur(5px) brightness(0.98) saturate(1.08); */
 
     transform: scale(1.06);
 
@@ -68,169 +68,31 @@ body {
     -moz-osx-font-smoothing: grayscale;
 }
 
-/* ------------------------------------------------
+/* =========================
    LAYOUT
-   ------------------------------------------------ */
+========================= */
 
-.dashboard-wrapper {
+#main-wrapper {
+    display: flex;
+    flex-direction: column;
     flex-grow: 1;
-    display: flex;
-    align-items: center;
-    padding: 1rem 2rem;
-    z-index: 10;
+    min-width: 0;
+    height: 100vh;
+    overflow: hidden;
 }
 
-/* ------------------------------------------------
-   DASHBOARD CONTENT — DATE & TIME
-   ------------------------------------------------ */
-
-.dashboard-content {
-    display: flex;
-    flex-direction: column;
-    color: var(--text-lightest);
-    margin: 1rem;
+.today-logs-card {
+    flex: 1;
+    min-height: 0;
 }
 
-#current-date {
-    font-size: 3rem;
-    margin-bottom: 5px;
-    color: var(--text-lightest);
-    text-shadow: 2px 2px 5px var(--shadow);
-}
-
-#current-time {
-    font-size: 6rem;
-    color: var(--text-lightest);
-    text-shadow: 2px 2px 5px var(--shadow);
-}
-
-/* ------------------------------------------------
-   SUMMARY CARDS
-   ------------------------------------------------ */
-
-.dashboard-summary {
-    display: flex;
-    flex-direction: row;
-    gap: 2rem;
-    margin-top: 5rem;
-}
-
-.summary-card {
-    background-color: rgba(0, 0, 0, 0.5);
-    padding: 20px;
-    border-radius: 12px;
-    width: 220px;
-    text-align: left;
-    box-shadow: 0 4px 20px var(--shadow);
-}
-
-.summary-card .text-secondary {
-    color: var(--text-light);
-    margin-bottom: 0.25rem;
-}
-
-.summary-card .stats-number {
-    color: var(--text-lightest);
-    margin: 0;
-}
-
-/* ------------------------------------------------
-   LOGS TABLE
-   ------------------------------------------------ */
-
-.logs-for-the-day {
-    background-color: var(--bg-light);
-    padding: 30px;
-    border-radius: 12px;
-    width: 1150px;
-    height: 500px;
-    display: flex;
-    flex-direction: column;
-    box-shadow: 0 4px 20px var(--shadow);
-    position: relative;
-    z-index: 10;
-}
-
-.record-box {
-    display: flex;
-    flex-direction: column;
-    position: relative;
-    z-index: 10;
-}
-
-.table-title {
-    text-align: left;
-    margin-bottom: 0;
-    color: var(--text-darkest);
-}
-
-.table-scroll {
-    width: 100%;
-    max-height: 400px;
+/* reuse your logs scroll behavior */
+.todayLogsScroll {
+    max-height: 260px;   /* adjust depending on dashboard space */
     overflow-y: auto;
-    margin-top: 15px;
-    position: relative;
 }
 
-/* ------------------------------------------------
-   LOG TABLE STYLES
-   ------------------------------------------------ */
-
-.log-table {
-    width: 100%;
-    border-collapse: collapse;
-}
-
-.log-table th {
-    position: sticky;
-    top: -0.5px;
-    background-color: var(--bg-light);
-    color: var(--text-dark);
-    padding: 0.65rem 1rem;
-    text-align: left;
-    font-size: 0.8rem;
-    font-weight: 500;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    z-index: 10;
-    border-bottom: 1px solid var(--border);
-}
-
-.log-table td {
-    padding: 0.65rem 1rem;
-    color: var(--text-dark);
-    font-size: 0.875rem;
-    font-weight: 300;
-    border-top: 1px solid var(--border);
-}
-
-.log-table tbody tr:hover {
-    background: var(--bg-soft);
-}
-
-/* ------------------------------------------------
-   LOG TYPE INDICATORS
-   ------------------------------------------------ */
-
-.log-in {
-    color: #198754;
-    font-weight: 500;
-}
-
-.log-out {
-    color: var(--danger);
-    font-weight: 500;
-}
-
-/* ------------------------------------------------
-   SCROLLBAR
-   ------------------------------------------------ */
-
-.table-scroll::-webkit-scrollbar {
-    width: 6px;
-}
-
-.table-scroll::-webkit-scrollbar-thumb {
-    background: #ccc;
-    border-radius: 10px;
+/* optional nicer spacing */
+.todayLogsScroll td {
+    font-size: 0.85rem;
 }

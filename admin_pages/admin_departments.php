@@ -1,5 +1,7 @@
 <?php
-session_start();
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
 if (!isset($_SESSION['user_id'])) {
     header("Location: ../index.php");
@@ -29,7 +31,7 @@ FETCH DEPARTMENTS (OPTIMIZED)
 -----------------------------------------
 */
 $stmt = $pdo->prepare("
-    SELECT 
+    SELECT
         d.id,
         d.department_code,
         d.department_name,
@@ -45,7 +47,7 @@ $stmt = $pdo->prepare("
     LEFT JOIN departments c ON c.parent_id = d.id
     LEFT JOIN employees e ON e.department_id = d.id
 
-    GROUP BY 
+    GROUP BY
         d.id,
         d.department_code,
         d.department_name,
@@ -63,13 +65,11 @@ DROPDOWN DATA (clean & separate)
 -----------------------------------------
 */
 $stmt2 = $pdo->query("
-    SELECT id, department_name 
-    FROM departments 
+    SELECT id, department_name
+    FROM departments
     ORDER BY department_name ASC
 ");
 $departmentList = $stmt2->fetchAll(PDO::FETCH_ASSOC);
-
-$current_page = 'departments';
 ?>
 
 <!doctype html>
@@ -80,308 +80,312 @@ $current_page = 'departments';
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Admin Departments</title>
 
-    <!-- Bootstrap -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
-
-    <!-- CSS -->
-    <link rel="stylesheet" href="../root.css">
-    <link rel="stylesheet" href="../side_and_top_bar.css">
+    <link rel="stylesheet" href="../assets/css/root.css">
+    <link rel="stylesheet" href="../assets/css/typography.css">
+    <link rel="stylesheet" href="../assets/css/components.css">
     <link rel="stylesheet" href="admin_departments.css">
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </head>
 
 <body>
 
-<?php include '../sidebar.php'; ?>
-<?php include '../topbar.php'; ?>
+<?php $currentPage = 'departments'; include '../sidebar_revised.php'; ?>
 
-<div class="recordBoxWrapper">
-    <div class="recordBox">
+<div id="main-wrapper">
 
-        <!-- HEADER -->
-        <div class="deptHeader">
+    <?php include '../topbar_revised.php'; ?>
 
-            <!-- LEFT SIDE -->
-            <div class="deptHeaderLeft">
+    <div class="card card-glass logs-card">
+        <div class="card-body d-flex flex-column logs-card-body">
 
-                <!-- SEARCH -->
-                <div class="deptSearchWrapper">
-                    <input type="text" id="deptSearch" class="deptSearchInput" placeholder="Search departments...">
-                    <i class="bi bi-search searchIcon"></i>
+            <!-- HEADER -->
+            <div class="deptHeader">
+
+                <!-- LEFT SIDE -->
+                <div class="deptHeaderLeft">
+
+                    <!-- SEARCH -->
+                    <div class="deptSearchWrapper">
+                        <input type="text" id="deptSearch" class="deptSearchInput" placeholder="Search departments...">
+                        <i class="bi bi-search searchIcon"></i>
+                    </div>
+
+                    <!-- SORT -->
+                    <div class="userDropdownWrapper deptSortDropdown">
+                        <span class="userEmail dropdown-toggle" id="deptSortToggle">
+                            Name (A → Z)
+                            <i class="bi bi-chevron-down logArrow"></i>
+                        </span>
+
+                        <div class="userDropdownMenu" id="deptSortMenu">
+                            <div class="logTypeSection">
+                                <a href="#" class="userDropdownItem" data-value="name_asc">Name (A → Z)</a>
+                                <a href="#" class="userDropdownItem" data-value="name_desc">Name (Z → A)</a>
+                                <a href="#" class="userDropdownItem" data-value="code_asc">Code (A → Z)</a>
+                                <a href="#" class="userDropdownItem" data-value="code_desc">Code (Z → A)</a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <input type="hidden" id="deptSortValue" value="name_asc">
+
                 </div>
 
-                <!-- SORT -->
-                <div class="userDropdownWrapper deptSortDropdown">
-                    <span class="userEmail dropdown-toggle" id="deptSortToggle">
-                        Name (A → Z)
-                        <i class="bi bi-chevron-down logArrow"></i>
-                    </span>
+                <!-- RIGHT SIDE -->
+                <div class="deptHeaderRight">
 
-                    <div class="userDropdownMenu" id="deptSortMenu">
-                        <div class="logTypeSection">
-                            <a href="#" class="userDropdownItem" data-value="name_asc">Name (A → Z)</a>
-                            <a href="#" class="userDropdownItem" data-value="name_desc">Name (Z → A)</a>
-                            <a href="#" class="userDropdownItem" data-value="code_asc">Code (A → Z)</a>
-                            <a href="#" class="userDropdownItem" data-value="code_desc">Code (Z → A)</a>
-                        </div>
-                    </div>
-                </div>
-
-                <input type="hidden" id="deptSortValue" value="name_asc">
-
-            </div>
-
-            <!-- RIGHT SIDE -->
-            <div class="deptHeaderRight">
-
-                <!-- CREATE -->
-                <button class="createDeptBtn" data-bs-toggle="modal" data-bs-target="#createDeptModal">
-                    <i class="bi bi-plus-lg"></i>
-                </button>
-
-            </div>
-
-        </div>
-
-        <!-- GRID -->
-        <div class="deptGrid">
-
-            <?php foreach ($departments as $dept): ?>
-                <div class="deptCard">
-
-                    <?php $color = $dept['color'] ?? '#4e73df'; ?>
-
-                    <div class="deptActions">
-                        <i class="bi bi-pencil-square editDeptIcon"
-                        onclick='openEditDept(<?= json_encode($dept) ?>)'></i>
-                    </div>
-
-                    <div class="deptIdentity">
-                        <div class="deptIcon"
-                            style="background: <?= htmlspecialchars($color) ?>;
-                                    color: <?= getContrastColor($color) ?>;">
-                            <?= htmlspecialchars($dept['department_code']) ?>
-                        </div>
-
-                        <div class="deptName">
-                            <?= htmlspecialchars($dept['department_name']) ?>
-                        </div>
-                    </div>
-
-                    <?php if (!empty($dept['parent_name']) || $dept['child_count'] > 0): ?>
-                        <div class="deptPills">
-
-                            <?php if (!empty($dept['parent_name'])): ?>
-                                <button
-                                    class="deptParentLink"
-                                    onclick="viewParentDepartment(<?= $dept['parent_id'] ?>)">
-                                    <i class="bi bi-diagram-3"></i>
-                                    Under <?= htmlspecialchars($dept['parent_name']) ?>
-                                </button>
-                            <?php endif; ?>
-
-                            <?php if ($dept['child_count'] > 0): ?>
-                                <button
-                                    class="deptSubBtn"
-                                    onclick="viewSubDepartments(
-                                        <?= $dept['id'] ?>,
-                                        '<?= htmlspecialchars($dept['department_name'], ENT_QUOTES) ?>'
-                                    )">
-                                    <i class="bi bi-diagram-2"></i>
-                                    <?= $dept['child_count'] ?> Sub <?= $dept['child_count'] != 1 ? 'Departments' : 'Department' ?>
-                                </button>
-                            <?php endif; ?>
-
-                        </div>
-                    <?php endif; ?>
-
-                    <button class="deptMeta">
-                        <i class="bi bi-people"></i>
-                        <?= $dept['employee_count'] ?> <?= $dept['employee_count'] != 1 ? 'Employees' : 'Employee' ?>
+                    <!-- CREATE -->
+                    <button class="createDeptBtn" data-bs-toggle="modal" data-bs-target="#createDeptModal">
+                        <i class="bi bi-plus-lg"></i>
                     </button>
 
                 </div>
-            <?php endforeach; ?>
 
-        </div>
-
-    </div>
-</div>
-
-<!-- CREATE MODAL -->
-<div class="modal fade" id="createDeptModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content deptModal">
-
-            <div class="modal-header">
-                <h5 class="modal-title">Create Department</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
 
-            <div class="modal-body">
+            <!-- GRID -->
+            <div class="deptGrid">
 
-                <form id="createDeptForm">
+                <?php foreach ($departments as $dept): ?>
+                    <div class="deptCard">
 
-                    <div class="createDeptLayout">
+                        <?php $color = $dept['color'] ?? '#4e73df'; ?>
 
-                        <!-- LEFT: PREVIEW CARD -->
-                        <div class="createDeptPreview">
-                            <div class="createDeptPreviewIcon" id="previewIcon">
-                            </div>
-                            <div class="createDeptPreviewName" id="previewName">
-                                Department Name
-                            </div>
-                            
-                            <label class="colorPickWrapper">
-                                <input type="color" class="colorPickInput" name="color" id="colorPicker" value="#4e73df">
-                                Color
-                            </label>
+                        <div class="deptActions">
+                            <i class="bi bi-pencil-square editDeptIcon"
+                            onclick='openEditDept(<?= json_encode($dept) ?>)'></i>
                         </div>
 
-                        <!-- RIGHT: FIELDS -->
-                        <div class="createDeptFields">
-
-                            <div class="mb-3">
-                                <label class="form-label">Department Code</label>
-                                <input type="text" class="form-control" name="department_code" id="inputCode" required>
+                        <div class="deptIdentity">
+                            <div class="deptIcon"
+                                style="background: <?= htmlspecialchars($color) ?>;
+                                        color: <?= getContrastColor($color) ?>;">
+                                <?= htmlspecialchars($dept['department_code']) ?>
                             </div>
 
-                            <div class="mb-3">
-                                <label class="form-label">Department Name</label>
-                                <input type="text" class="form-control" name="department_name" id="inputName" required>
+                            <div class="deptName">
+                                <?= htmlspecialchars($dept['department_name']) ?>
                             </div>
+                        </div>
 
-                            <div class="mb-3">
-                                <label class="form-label">Parent Department (Optional)</label>
+                        <?php if (!empty($dept['parent_name']) || $dept['child_count'] > 0): ?>
+                            <div class="deptPills">
 
-                                <div class="selectWrapper">
-                                    <select class="form-control customSelect" name="parent_id">
-                                        <option value="">None</option>
-                                        <?php foreach ($departmentList as $row): ?>
-                                            <option value="<?= $row['id'] ?>">
-                                                <?= htmlspecialchars($row['department_name']) ?>
-                                            </option>
-                                        <?php endforeach; ?>
-                                    </select>
+                                <?php if (!empty($dept['parent_name'])): ?>
+                                    <button
+                                        class="deptParentLink"
+                                        onclick="viewParentDepartment(<?= $dept['parent_id'] ?>)">
+                                        <i class="bi bi-diagram-3"></i>
+                                        Under <?= htmlspecialchars($dept['parent_name']) ?>
+                                    </button>
+                                <?php endif; ?>
 
-                                    <i class="bi bi-chevron-down selectArrow"></i>
+                                <?php if ($dept['child_count'] > 0): ?>
+                                    <button
+                                        class="deptSubBtn"
+                                        onclick="viewSubDepartments(
+                                            <?= $dept['id'] ?>,
+                                            '<?= htmlspecialchars($dept['department_name'], ENT_QUOTES) ?>'
+                                        )">
+                                        <i class="bi bi-diagram-2"></i>
+                                        <?= $dept['child_count'] ?> Sub <?= $dept['child_count'] != 1 ? 'Departments' : 'Department' ?>
+                                    </button>
+                                <?php endif; ?>
+
+                            </div>
+                        <?php endif; ?>
+
+                        <button class="deptMeta">
+                            <i class="bi bi-people"></i>
+                            <?= $dept['employee_count'] ?> <?= $dept['employee_count'] != 1 ? 'Employees' : 'Employee' ?>
+                        </button>
+
+                    </div>
+                <?php endforeach; ?>
+
+            </div>
+
+        </div>
+    </div>
+
+    <!-- CREATE MODAL -->
+    <div class="modal fade" id="createDeptModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content deptModal">
+
+                <div class="modal-header">
+                    <h5 class="modal-title">Create Department</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+
+                <div class="modal-body">
+
+                    <form id="createDeptForm">
+
+                        <div class="createDeptLayout">
+
+                            <!-- LEFT: PREVIEW CARD -->
+                            <div class="createDeptPreview">
+                                <div class="createDeptPreviewIcon" id="previewIcon">
                                 </div>
+                                <div class="createDeptPreviewName" id="previewName">
+                                    Department Name
+                                </div>
+
+                                <label class="colorPickWrapper">
+                                    <input type="color" class="colorPickInput" name="color" id="colorPicker" value="#4e73df">
+                                    Color
+                                </label>
                             </div>
-                            
-                            <button type="submit" class="btn btn-primary w-100 createDeptBtn">
-                                Create Department
-                            </button>
+
+                            <!-- RIGHT: FIELDS -->
+                            <div class="createDeptFields">
+
+                                <div class="mb-3">
+                                    <label class="form-label">Department Code</label>
+                                    <input type="text" class="form-control" name="department_code" id="inputCode" required>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label">Department Name</label>
+                                    <input type="text" class="form-control" name="department_name" id="inputName" required>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label">Parent Department (Optional)</label>
+
+                                    <div class="selectWrapper">
+                                        <select class="form-control customSelect" name="parent_id">
+                                            <option value="">None</option>
+                                            <?php foreach ($departmentList as $row): ?>
+                                                <option value="<?= $row['id'] ?>">
+                                                    <?= htmlspecialchars($row['department_name']) ?>
+                                                </option>
+                                            <?php endforeach; ?>
+                                        </select>
+
+                                        <i class="bi bi-chevron-down selectArrow"></i>
+                                    </div>
+                                </div>
+
+                                <button type="submit" class="btn btn-primary w-100 createDeptBtn">
+                                    Create Department
+                                </button>
+
+                            </div>
 
                         </div>
 
-                    </div>
+                    </form>
 
-                </form>
+                    <div id="deptMsg" class="mt-2 text-center"></div>
 
-                <div id="deptMsg" class="mt-2 text-center"></div>
+                </div>
 
             </div>
-
         </div>
     </div>
-</div>
 
-<div class="modal fade" id="editDeptModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content deptModal">
+    <div class="modal fade" id="editDeptModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content deptModal">
 
-            <div class="modal-header">
-                <h5 class="modal-title">Edit Department</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                <div class="modal-header">
+                    <h5 class="modal-title">Edit Department</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+
+                <div class="modal-body">
+
+                    <form id="editDeptForm">
+
+                        <input type="hidden" name="id">
+
+                        <div class="mb-3">
+                            <label class="form-label">Department Code</label>
+                            <input type="text" class="form-control" name="department_code" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Department Name</label>
+                            <input type="text" class="form-control" name="department_name" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Department Color</label>
+                            <input type="color" class="form-control form-control-color" name="color">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Parent Department</label>
+                            <select class="form-control" name="parent_id">
+                                <option value="">None</option>
+                                <?php foreach ($departmentList as $row): ?>
+                                    <option value="<?= $row['id'] ?>">
+                                        <?= htmlspecialchars($row['department_name']) ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100">
+                            Save Changes
+                        </button>
+
+                        <button type="button" class="btn btn-danger w-100 mt-2" onclick="deleteDept()">
+                            Delete Department
+                        </button>
+
+                    </form>
+
+                    <div id="editMsg" class="mt-2 text-center"></div>
+
+                </div>
+
             </div>
-
-            <div class="modal-body">
-
-                <form id="editDeptForm">
-
-                    <input type="hidden" name="id">
-
-                    <div class="mb-3">
-                        <label class="form-label">Department Code</label>
-                        <input type="text" class="form-control" name="department_code" required>
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label">Department Name</label>
-                        <input type="text" class="form-control" name="department_name" required>
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label">Department Color</label>
-                        <input type="color" class="form-control form-control-color" name="color">
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label">Parent Department</label>
-                        <select class="form-control" name="parent_id">
-                            <option value="">None</option>
-                            <?php foreach ($departmentList as $row): ?>
-                                <option value="<?= $row['id'] ?>">
-                                    <?= htmlspecialchars($row['department_name']) ?>
-                                </option>
-                            <?php endforeach; ?>
-                        </select>
-                    </div>
-
-                    <button type="submit" class="btn btn-primary w-100">
-                        Save Changes
-                    </button>
-
-                    <button type="button" class="btn btn-danger w-100 mt-2" onclick="deleteDept()">
-                        Delete Department
-                    </button>
-
-                </form>
-
-                <div id="editMsg" class="mt-2 text-center"></div>
-
-            </div>
-
         </div>
     </div>
-</div>
 
-<!-- PARENT DEPT MODAL -->
- <div class="modal fade" id="parentDeptModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content deptModal">
+    <!-- PARENT DEPT MODAL -->
+    <div class="modal fade" id="parentDeptModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content deptModal">
 
-            <div class="modal-header">
-                <h5 class="modal-title">Parent Department</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                <div class="modal-header">
+                    <h5 class="modal-title">Parent Department</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+
+                <div class="modal-body" id="parentDeptBody">
+                    Loading...
+                </div>
+
             </div>
-
-            <div class="modal-body" id="parentDeptBody">
-                Loading...
-            </div>
-
         </div>
     </div>
-</div>
 
-<!-- SUB DEPT MODAL -->
-<div class="modal fade" id="subDeptModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content deptModal">
+    <!-- SUB DEPT MODAL -->
+    <div class="modal fade" id="subDeptModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content deptModal">
 
-            <div class="modal-header">
-                <h5 class="modal-title" id="subDeptTitle">Sub Departments</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                <div class="modal-header">
+                    <h5 class="modal-title" id="subDeptTitle">Sub Departments</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+
+                <div class="modal-body">
+                    <div id="subDeptList" class="subDeptList"></div>
+                </div>
+
             </div>
-
-            <div class="modal-body">
-                <div id="subDeptList" class="subDeptList"></div>
-            </div>
-
         </div>
     </div>
-</div>
+
+</div><!-- #main-wrapper -->
 
 <!-- JS -->
 <script>

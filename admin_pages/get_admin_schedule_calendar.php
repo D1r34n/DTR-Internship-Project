@@ -32,14 +32,14 @@ foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
     $schedMap[$row['schedule_date']] = $row;
 }
 ?>
-<div class="schedCalGrid">
+<div class="sched-cal-grid">
 
     <?php foreach (['Mon','Tue','Wed','Thu','Fri','Sat','Sun'] as $d): ?>
-        <div class="schedCalDayHeader"><?= $d ?></div>
+        <div class="sched-cal-day-header"><?= $d ?></div>
     <?php endforeach; ?>
 
     <?php for ($i = 1; $i < $startDow; $i++): ?>
-        <div class="schedCalDay empty"></div>
+        <div class="sched-cal-day empty"></div>
     <?php endfor; ?>
 
     <?php for ($day = 1; $day <= $daysInMonth; $day++):
@@ -48,7 +48,7 @@ foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
         $isToday  = ($dateStr === $today);
         $isPast   = ($dateStr < $today);
 
-        $classes  = 'schedCalDay';
+        $classes  = 'sched-cal-day';
         if ($sched)   $classes .= ' has-sched sched-' . $sched['status'];
         if ($isToday) $classes .= ' is-today';
         if ($isPast && !$sched) $classes .= ' is-past';
@@ -57,21 +57,21 @@ foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
         $isNight   = $sched && ($startHour >= 18 || $startHour < 6);
     ?>
     <div class="<?= $classes ?>">
-        <div class="schedCalDayNum <?= $isToday ? 'is-today-num' : '' ?>"><?= $day ?></div>
+        <div class="sched-cal-day-num <?= $isToday ? 'is-today-num' : '' ?>"><?= $day ?></div>
 
         <?php if ($sched): ?>
-            <div class="schedCalShiftBadge <?= $isNight ? 'night' : 'day' ?>">
+            <div class="sched-cal-shift-badge <?= $isNight ? 'night' : 'day' ?>">
                 <?= $isNight ? 'Night' : 'Day' ?>
             </div>
-            <div class="schedCalTimes">
+            <div class="sched-cal-times">
                 <?= date('h:i A', strtotime($sched['scheduled_start'])) ?><br>
                 <?= date('h:i A', strtotime($sched['scheduled_end'])) ?>
             </div>
-            <div class="schedCalStatusBadge sched-status-<?= $sched['status'] ?>">
+            <div class="sched-cal-status-badge sched-status-<?= $sched['status'] ?>">
                 <?= ucfirst($sched['status']) ?>
             </div>
-            <div class="schedCalDayActions">
-                <button class="schedCalActionBtn edit"
+            <div class="sched-cal-day-actions">
+                <button class="sched-cal-action-btn edit"
                         title="Edit"
                         onclick="openEditModal(
                             <?= $employeeId ?>,
@@ -81,7 +81,7 @@ foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
                         )">
                     <i class="bi bi-pencil-fill"></i>
                 </button>
-                <button class="schedCalActionBtn delete"
+                <button class="sched-cal-action-btn delete"
                         title="Delete"
                         onclick="deleteScheduleDay(<?= $employeeId ?>, '<?= $dateStr ?>')">
                     <i class="bi bi-trash-fill"></i>
@@ -94,8 +94,8 @@ foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
 </div>
 
 <?php if (empty($schedMap)): ?>
-<div class="schedCalEmpty">
-    <i class="bi bi-calendar-x schedCalEmptyIcon"></i>
+<div class="sched-cal-empty">
+    <i class="bi bi-calendar-x sched-cal-empty-icon"></i>
     <div>No schedules for this month.</div>
 </div>
 <?php endif; ?>

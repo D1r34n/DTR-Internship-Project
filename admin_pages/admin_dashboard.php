@@ -1,10 +1,21 @@
 <?php
-session_start();
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
 if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'admin') {
     header("Location: ../index.php");
     exit();
 }
+
+require_once '../db.php';
+date_default_timezone_set('Asia/Manila');
+
+$today   = date('Y-m-d');
+$count   = $pdo->query("SELECT COUNT(*) FROM employees WHERE role = 'employee'")->fetchColumn();
+$stmt    = $pdo->prepare("SELECT COUNT(DISTINCT employee_id) FROM logs WHERE DATE(log_time) = ? AND log_type = 'login'");
+$stmt->execute([$today]);
+$present = $stmt->fetchColumn();
 ?>
 
 <!doctype html>
@@ -13,54 +24,45 @@ if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'admin') {
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Admin Dashboard</title>
-    <link rel="stylesheet" href="../root.css">
+
+    <link rel="stylesheet" href="../assets/css/root.css">
+    <link rel="stylesheet" href="../assets/css/typography.css">
+    <link rel="stylesheet" href="../assets/css/components.css">
     <link rel="stylesheet" href="admin_dashboard.css">
-    <link rel="stylesheet" href="../side_and_top_bar.css">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        body::before { background-image: url('../images/drt_bg.jpg'); }
-    </style>
 </head>
 <body>
-    <!-- SIDEBAR -->
-    <?php include '../sidebar.php'; ?>
 
-    <!-- TOPBAR -->
-    <?php 
-    $current_page = 'dashboard';
-    include '../topbar.php'; 
-    ?>
+    <?php $currentPage = 'dashboard'; include '../sidebar_revised.php'; ?>
 
-    <div class="dashboardContent">
-        <p id="currentDate"></p>
-        <h1 id="currentTime"></h1>
+    <div id="main-wrapper">
 
-        <div class="dashboardSummary">
-            <div class="summaryCard">
-                <p>Total Employees</p>
-                <h5><?php
-                    require_once '../db.php';
-                    $count = $pdo->query("SELECT COUNT(*) FROM employees WHERE role = 'employee'")->fetchColumn();
-                    echo $count;
-                ?></h5>
-            </div>
+        <?php include '../topbar_revised.php'; ?>
 
-            <div class="summaryCard">
-                <p>Present Today</p>
-                <h5><?php
-                    $today = date('Y-m-d');
-                    $present = $pdo->query("SELECT COUNT(DISTINCT employee_id) FROM logs WHERE DATE(log_time) = '$today' AND log_type = 'login'")->fetchColumn();
-                    echo $present;
-                ?></h5>
-            </div>
+        <div class="dashboardContent">
+            <p id="currentDate"></p>
+            <h1 id="currentTime"></h1>
 
-            <div class="summaryCard">
-                <p>Absent Today</p>
-                <h5><?php echo $count - $present; ?></h5>
+            <div class="dashboardSummary">
+                <div class="summaryCard">
+                    <p>Total Employees</p>
+                    <h5><?= $count ?></h5>
+                </div>
+
+                <div class="summaryCard">
+                    <p>Present Today</p>
+                    <h5><?= $present ?></h5>
+                </div>
+
+                <div class="summaryCard">
+                    <p>Absent Today</p>
+                    <h5><?= $count - $present ?></h5>
+                </div>
             </div>
         </div>
+
     </div>
 
     <script>
@@ -75,6 +77,6 @@ if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'admin') {
         setInterval(updateDateTime, 1000);
     </script>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
