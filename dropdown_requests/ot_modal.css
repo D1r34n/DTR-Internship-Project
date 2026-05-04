@@ -1,3 +1,24 @@
+/* ---------- Bootstrap Modal Override ---------- */
+#otModal .modal-content {
+    background: var(--glass-bg);
+    backdrop-filter: blur(32px) saturate(160%) brightness(0.3);
+    -webkit-backdrop-filter: blur(32px) saturate(160%) brightness(0.3);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.5);
+    color: #fff;
+}
+
+#otModal .modal-header,
+#otModal .modal-footer {
+    border-color: var(--glass-border);
+}
+
+#otModal .modal-title { color: #fff; }
+#otModal .btn-close { filter: invert(1); }
+
+
+
 /* ============================================================
    OT REQUEST MODAL — ot_modal.css
    ============================================================ */

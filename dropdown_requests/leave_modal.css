@@ -1,3 +1,21 @@
+/* ---------- Bootstrap Modal Override ---------- */
+#leaveModal .modal-content {
+    background: var(--glass-bg);
+    backdrop-filter: blur(32px) saturate(160%) brightness(0.3);
+    -webkit-backdrop-filter: blur(32px) saturate(160%) brightness(0.3);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.5);
+    color: var(--text-light);
+}
+#leaveModal .modal-header,
+#leaveModal .modal-footer {
+    border-color: var(--glass-border);
+}
+#leaveModal .modal-title { color: #fff; }
+#leaveModal .btn-close { filter: invert(1); }
+
+
 /* ============================================================
    LEAVE REQUEST MODAL — leave_modal.css
    ============================================================ */
