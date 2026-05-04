@@ -1,3 +1,39 @@
+#importScheduleModal .modal-content {
+    background: var(--glass-bg);
+    backdrop-filter: blur(32px) saturate(160%) brightness(0.3);
+    -webkit-backdrop-filter: blur(32px) saturate(160%) brightness(0.3);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.5);
+    color: #fff;
+}
+#importScheduleModal .modal-header,
+#importScheduleModal .modal-footer { border-color: var(--glass-border); }
+#importScheduleModal .modal-title { color: #fff; }
+#importScheduleModal .btn-close { filter: invert(1); }
+#importScheduleModal .alert-info {
+    background: var(--info-bg);
+    border-color: var(--info-border);
+    color: var(--info);
+}
+#importScheduleModal .form-control {
+    background: rgba(0,0,0,0.3);
+    border-color: var(--glass-border);
+    color: #fff;
+}
+#importScheduleModal .form-label { color: rgba(255,255,255,0.7); }
+#importScheduleModal .text-muted { color: rgba(255,255,255,0.5) !important; }
+#importScheduleModal .bg-light { background: rgba(255,255,255,0.05) !important; }
+#importScheduleModal .bg-white { background: rgba(255,255,255,0.05) !important; }
+#importScheduleModal .border { border-color: var(--glass-border) !important; }
+#importScheduleModal .table { color: #fff; }
+#importScheduleModal .table-bordered td,
+#importScheduleModal .table-bordered th { border-color: var(--glass-border); }
+#importScheduleModal .table-light th { 
+    background: rgba(255,255,255,0.08); 
+    color: #fff; 
+}
+
 /* ================================================
    ADMIN SCHEDULE
    ================================================
