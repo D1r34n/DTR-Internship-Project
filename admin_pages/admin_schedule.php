@@ -143,6 +143,7 @@ if ($selectedEmpId) {
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 </head>
 <body>
 
@@ -300,55 +301,108 @@ if ($selectedEmpId) {
                 </div>
 
                 <!-- Body -->
-                <form id="importScheduleForm" enctype="multipart/form-data">
+                <form id="importScheduleForm"
+                    action="bulk_schedule_api.php?action=import"
+                    method="POST"
+                    enctype="multipart/form-data">
+
                     <div class="modal-body">
 
-                    <!-- Instructions -->
-                    <div class="alert alert-info">
-                        Upload an <strong>.xlsx</strong> file with the following columns:
-                        <br>
-                        <small>
-                        <b>employee_id</b>, employee_name (optional), start_date, end_date, time
-                        </small>
-                    </div>
+                        <!-- Instructions -->
+                        <div class="alert alert-info">
+                            Upload an <strong>.xlsx</strong> file with the following columns:
+                            <br>
+                            <small>
+                            <b>employee_id</b>, employee_name (optional), start_date, end_date, time
+                            </small>
+                        </div>
 
-                    <!-- File Input -->
-                    <div class="mb-3">
-                        <label class="form-label">Select Excel File</label>
-                        <input 
-                        type="file" 
-                        name="schedule_file" 
-                        class="form-control"
-                        accept=".xlsx"
-                        required
-                        >
-                    </div>
+                        <!-- File Input -->
+                        <div class="mb-3">
+                            <label class="form-label">Select Excel File</label>
+                            <input 
+                                type="file" 
+                                name="schedule_file" 
+                                id="scheduleFileInput"
+                                class="form-control"
+                                accept=".xlsx"
+                                required
+                            >
 
-                    <!-- Optional Preview Info -->
-                    <div class="border rounded p-3 bg-light">
-                        <small class="text-muted">
-                        Example format:
-                        <br>
-                        1001 | John Doe | 2026-05-01 | 2026-05-07 | 08:00-17:00
-                        </small>
-                    </div>
+                            <small class="text-muted d-block mt-1">
+                                Preview will appear below after selecting file.
+                            </small>
+                        </div>
+
+                        <!-- FILE PREVIEW -->
+                        <div id="filePreview" class="mt-3" style="display:none;">
+                            <div class="border rounded p-2 bg-white">
+
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <strong>File Preview</strong>
+                                    <span id="fileName" class="text-muted small"></span>
+                                </div>
+
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-bordered mb-0">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>employee_id</th>
+                                                <th>employee_name</th>
+                                                <th>start_date</th>
+                                                <th>end_date</th>
+                                                <th>time</th>
+                                                <th>is_rest_day</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="previewBody">
+                                            <!-- JS inject -->
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                <small class="text-muted d-block mt-2">
+                                    Showing first 5 rows only
+                                </small>
+                            </div>
+                        </div>
+
+                        <!-- Template Download -->
+                        <div class="d-flex justify-content-between align-items-center border rounded p-3 bg-light">
+                            
+                            <div>
+                                <small class="text-muted d-block">
+                                    Download the official Excel template to ensure correct format.
+                                </small>
+                                <small class="text-muted">
+                                    Columns: employee_id, employee_name (optional), start_date, end_date, time
+                                </small>
+                            </div>
+
+                            <a href="bulk_schedule_api.php?action=download_template"
+                            class="btn btn-outline-primary btn-sm">
+                                Download Template
+                            </a>
+
+                        </div>
 
                     </div>
 
                     <!-- Footer -->
                     <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                        Cancel
-                    </button>
-                    <button type="submit" class="btn btn-primary">
-                        Import Schedule
-                    </button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            Cancel
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            Import Schedule
+                        </button>
                     </div>
                 </form>
 
                 </div>
             </div>
         </div>
+        
     </div><!-- #main-wrapper -->
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
@@ -540,7 +594,118 @@ if ($selectedEmpId) {
                 setTimeout(() => a.remove(), 500);
             });
         }, 3000);
+    
+    document.getElementById('importScheduleForm').addEventListener('submit', function(e) {
+        e.preventDefault();
 
+        let formData = new FormData(this);
+
+        const btn = this.querySelector('button[type="submit"]');
+        btn.disabled = true;
+        btn.innerHTML = "Importing...";
+
+        fetch(this.action, {
+            method: 'POST',
+            body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+
+            btn.disabled = false;
+            btn.innerHTML = "Import Schedule";
+
+            if (data.status === 'success') {
+                alert(`Imported: ${data.inserted} schedules`);
+
+                if (data.errors.length > 0) {
+                    console.log("Errors:", data.errors);
+                    alert("Some rows had errors. Check console.");
+                }
+
+                location.reload();
+            } else {
+                alert(data.message || "Import failed");
+            }
+        })
+        .catch(err => {
+            btn.disabled = false;
+            btn.innerHTML = "Import Schedule";
+            console.error(err);
+            alert("Server error occurred.");
+        });
+    });
+
+document.getElementById('scheduleFileInput').addEventListener('change', function (e) {
+
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // ✅ validate file type
+    if (!file.name.endsWith('.xlsx')) {
+        alert("Please upload a valid .xlsx file");
+        e.target.value = '';
+        return;
+    }
+
+    document.getElementById('fileName').textContent = file.name;
+
+        const reader = new FileReader();
+
+        reader.onload = function (event) {
+
+            try {
+                const data = new Uint8Array(event.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+
+                const sheetName = workbook.SheetNames[0];
+                const sheet = workbook.Sheets[sheetName];
+
+                const json = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+
+                if (!json || json.length < 2) {
+                    alert("Excel file is empty or invalid");
+                    return;
+                }
+
+                const tbody = document.getElementById('previewBody');
+                tbody.innerHTML = '';
+
+                // skip header row
+                const rows = json.slice(1, 6); // max 5 rows
+
+                rows.forEach(row => {
+
+                    if (!row) return;
+
+                    const employeeId   = row[0] ?? '';
+                    const employeeName = row[1] ?? '';
+                    const startDate    = row[2] ?? '';
+                    const endDate      = row[3] ?? '';
+                    const time         = row[4] ?? '';
+                    const isRestDay    = row[5] ?? 0;
+
+                    tbody.innerHTML += `
+                        <tr>
+                            <td>${employeeId}</td>
+                            <td>${employeeName}</td>
+                            <td>${startDate}</td>
+                            <td>${endDate}</td>
+                            <td>${time}</td>
+                            <td>${isRestDay == 1 ? 'Yes' : 'No'}</td>
+                        </tr>
+                    `;
+                });
+
+                document.getElementById('filePreview').style.display = 'block';
+
+            } catch (err) {
+                console.error(err);
+                alert("Failed to read Excel file. Make sure it's valid.");
+            }
+        };
+
+        reader.readAsArrayBuffer(file);
+    });
     </script>
 </body>
 </html>
