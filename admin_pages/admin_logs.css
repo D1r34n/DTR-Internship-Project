@@ -61,8 +61,7 @@ body::after {
     border: 1px solid var(--glass-border);
     box-shadow: 0 12px 35px rgba(0, 0, 0, 0.5);
     border-radius: 16px;
-    width: 1120px;
-    max-width: 100%;
+    width: 100%;
     height: calc(100vh - 100px);
     display: flex;
     overflow: hidden;

@@ -550,7 +550,7 @@ $logEditRequests = $pdo->query("
         function switchReqTab(tab, btn) {
             document.querySelectorAll('.reqTabContent').forEach(t => t.style.display = 'none');
             document.querySelectorAll('.reqTabBtn').forEach(b => b.classList.remove('active'));
-            document.getElementById(tab).style.display = 'block';
+            document.getElementById(tab).style.display = 'flex';
             btn.classList.add('active');
         }
 

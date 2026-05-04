@@ -312,7 +312,7 @@
                     list.appendChild(rowEl);
                 });
 
-                initGanttCursors();
+                if (typeof initGanttCursors === 'function') initGanttCursors();
             })
             .catch(() => {
                 list.innerHTML = '<p style="color:#ff8a8a; text-align:center;">Failed to load records.</p>';

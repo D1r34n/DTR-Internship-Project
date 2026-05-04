@@ -56,8 +56,7 @@ body::after {
     border: 1px solid var(--glass-border);
     box-shadow: 0 12px 35px rgba(0,0,0,0.5);
     border-radius: 16px;
-    width: 1120px;
-    max-width: 100%;
+    width: 100%;
     height: calc(100vh - 100px);
     display: flex;
     overflow: hidden;
@@ -450,15 +449,20 @@ body::after {
 .customSelectMenu {
     display: none;
     position: absolute;
-    bottom: calc(100% + 4px);
+    top: calc(100% + 4px);
     left: 0;
     width: 100%;
     background: #1e1e1e;
     border: 1px solid rgba(255,255,255,0.12);
     border-radius: 8px;
-    z-index: 99;
-    overflow: hidden;
+    z-index: 9999;
+    max-height: 200px;
+    overflow-y: auto;
 }
+.customSelectMenu::-webkit-scrollbar { width: 4px; }
+.customSelectMenu::-webkit-scrollbar-track { background: transparent; }
+.customSelectMenu::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 4px; }
+.customSelectMenu::-webkit-scrollbar-thumb:hover { background: #97be41; }
 .customSelectMenu.show { display: block; }
 
 .customSelectItem {

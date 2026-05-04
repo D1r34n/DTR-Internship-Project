@@ -232,17 +232,21 @@ $current_page = 'departments';
 
                     <div class="mb-3">
                         <label class="form-label">Parent Department (Optional)</label>
-
-                        <select class="form-control" name="parent_id">
-                            <option value="">-- None (Top Level) --</option>
-
-                            <?php foreach ($departmentList as $row): ?>
-                                <option value="<?= $row['id'] ?>">
-                                    <?= htmlspecialchars($row['department_name']) ?>
-                                </option>
-                            <?php endforeach; ?>
-
-                        </select>
+                        <div class="customSelectWrapper">
+                            <div class="customSelectToggle" onclick="toggleDeptDropdown('createParentMenu')">
+                                <span id="createParentLabel">-- None (Top Level) --</span>
+                                <i class="bi bi-chevron-down"></i>
+                            </div>
+                            <div class="customSelectMenu" id="createParentMenu">
+                                <div class="customSelectItem" onclick="selectParentDept('create','','-- None (Top Level) --')">-- None (Top Level) --</div>
+                                <?php foreach ($departmentList as $row): ?>
+                                    <div class="customSelectItem" onclick="selectParentDept('create','<?= $row['id'] ?>','<?= addslashes(htmlspecialchars($row['department_name'])) ?>')">
+                                        <?= htmlspecialchars($row['department_name']) ?>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                            <input type="hidden" name="parent_id" id="createParentInput" value="">
+                        </div>
                     </div>
 
                     <button type="submit" class="btn btn-primary w-100">
@@ -291,14 +295,21 @@ $current_page = 'departments';
 
                     <div class="mb-3">
                         <label class="form-label">Parent Department</label>
-                        <select class="form-control" name="parent_id">
-                            <option value="">-- None --</option>
-                            <?php foreach ($departmentList as $row): ?>
-                                <option value="<?= $row['id'] ?>">
-                                    <?= htmlspecialchars($row['department_name']) ?>
-                                </option>
-                            <?php endforeach; ?>
-                        </select>
+                        <div class="customSelectWrapper">
+                            <div class="customSelectToggle" onclick="toggleDeptDropdown('editParentMenu')">
+                                <span id="editParentLabel">-- None --</span>
+                                <i class="bi bi-chevron-down"></i>
+                            </div>
+                            <div class="customSelectMenu" id="editParentMenu">
+                                <div class="customSelectItem" onclick="selectParentDept('edit','','-- None --')">-- None --</div>
+                                <?php foreach ($departmentList as $row): ?>
+                                    <div class="customSelectItem" onclick="selectParentDept('edit','<?= $row['id'] ?>','<?= addslashes(htmlspecialchars($row['department_name'])) ?>')">
+                                        <?= htmlspecialchars($row['department_name']) ?>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                            <input type="hidden" name="parent_id" id="editParentInput" value="">
+                        </div>
                     </div>
 
                     <button type="submit" class="btn btn-primary w-100">
@@ -423,6 +434,37 @@ form.addEventListener('submit', function(e) {
             }
         }
     });
+});
+
+/* PARENT DEPT CUSTOM DROPDOWNS */
+function toggleDeptDropdown(id) {
+    const menu = document.getElementById(id);
+    const isOpen = menu.classList.contains('show');
+    document.querySelectorAll('.customSelectMenu').forEach(m => m.classList.remove('show'));
+    if (!isOpen) menu.classList.add('show');
+}
+
+function selectParentDept(modal, value, label) {
+    if (modal === 'create') {
+        document.getElementById('createParentInput').value = value;
+        document.getElementById('createParentLabel').textContent = label;
+        document.getElementById('createParentMenu').classList.remove('show');
+    } else {
+        document.getElementById('editParentInput').value = value;
+        document.getElementById('editParentLabel').textContent = label;
+        document.getElementById('editParentMenu').classList.remove('show');
+    }
+}
+
+document.getElementById('createDeptModal').addEventListener('hidden.bs.modal', () => {
+    document.getElementById('createParentInput').value = '';
+    document.getElementById('createParentLabel').textContent = '-- None (Top Level) --';
+});
+
+document.addEventListener('click', e => {
+    if (!e.target.closest('.customSelectWrapper')) {
+        document.querySelectorAll('.customSelectMenu').forEach(m => m.classList.remove('show'));
+    }
 });
 
 /* SORT DROPDOWN (log-type style) */
@@ -577,7 +619,14 @@ function openEditDept(dept) {
     form.department_code.value = dept.department_code;
     form.department_name.value = dept.department_name;
     form.color.value = dept.color || '#4e73df';
-    form.parent_id.value = dept.parent_id || '';
+
+    const parentId = String(dept.parent_id || '');
+    document.getElementById('editParentInput').value = parentId;
+    const matchedItem = [...document.querySelectorAll('#editParentMenu .customSelectItem')]
+        .find(el => el.getAttribute('onclick').includes(`'${parentId}'`));
+    document.getElementById('editParentLabel').textContent = parentId && matchedItem
+        ? matchedItem.textContent.trim()
+        : '-- None --';
 
     new bootstrap.Modal(document.getElementById('editDeptModal')).show();
 }

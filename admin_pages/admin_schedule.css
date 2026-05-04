@@ -31,15 +31,16 @@ body {
     height: calc(100vh - 60px);
     display: flex;
     justify-content: center;
-    align-items: center; /* ← back to center */
+    align-items: center;
     z-index: 10;
+    padding: 20px;
+    box-sizing: border-box;
     transition: left 0.38s cubic-bezier(0.4, 0, 0.2, 1), width 0.38s cubic-bezier(0.4, 0, 0.2, 1);
 }
 /* ============================================================
    MAIN BOX (Glass Dark Style)
    ============================================================ */
 .scheduleBox {
-    font-family: 'Poppins', sans-serif;
     background: var(--glass-bg);
     backdrop-filter: blur(32px) saturate(160%) brightness(0.3);
     -webkit-backdrop-filter: blur(32px) saturate(160%) brightness(0.3);
@@ -47,9 +48,10 @@ body {
     box-shadow: 0 12px 35px rgba(0, 0, 0, 0.5);
     padding: 30px;
     border-radius: 16px;
-    width: 1120px;
-    max-height: calc(100vh - 100px); /* ← fits screen */
+    width: 100%;
+    max-height: calc(100vh - 100px);
     overflow-y: auto;
+    box-sizing: border-box;
 }
 /* ============================================================
    MAIN BOX SCROLLBAR
@@ -420,10 +422,7 @@ body {
     cursor: pointer;
     transition: color 0.2s;
 }
-.btnCancel:hover 
-{ 
-    color: #dc3545; 
-}
+.btnCancel:hover { color: #dc3545; }
 /* ============================================================
    FLATPICKR DARK THEME OVERRIDES
    ============================================================ */
@@ -513,13 +512,15 @@ body {
     justify-content: center;
     align-items: center;
     z-index: 10;
+    padding: 20px;
+    box-sizing: border-box;
     transition: left 0.38s cubic-bezier(0.4, 0, 0.2, 1),
                 width 0.38s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .schedBox {
     display: flex;
-    width: 1120px;
+    width: 100%;
     height: calc(100vh - 100px);
     background: var(--glass-bg);
     backdrop-filter: blur(32px) saturate(160%) brightness(0.3);
