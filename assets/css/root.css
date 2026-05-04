@@ -40,6 +40,7 @@
     --bg-light: #ffffff;
     --bg-soft:  #f5f5f5;
     --bg-dark:  #1e1e1e;
+    --bg-darkest:  #121212;
 
     /* DANGER (ALIGNED TO NEUTRAL GLASS SYSTEM) */
     --danger-color:        #ef4444;

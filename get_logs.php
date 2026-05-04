@@ -10,15 +10,8 @@ if (!isset($_SESSION['user_id'])) {
 $employeeId = $_SESSION['user_id'];
 date_default_timezone_set('Asia/Manila');
 
-$today = date("Y-m-d");
-
-$startDate = !empty($_GET['start']) 
-    ? date('Y-m-d', strtotime($_GET['start'])) 
-    : $today;
-
-$endDate = !empty($_GET['end']) 
-    ? date('Y-m-d', strtotime($_GET['end'])) 
-    : $today;
+$startDate = !empty($_GET['start']) ? date('Y-m-d', strtotime($_GET['start'])) : '';
+$endDate   = !empty($_GET['end'])   ? date('Y-m-d', strtotime($_GET['end']))   : '';
 
 $type = $_GET['type'] ?? 'ALL';
 
@@ -41,14 +34,14 @@ $orderClause = "log_time DESC"; // default
 if ($sort && isset($allowedSort[$sort])) {
     $column    = $allowedSort[$sort];
     $direction = strtolower($dir) === 'asc' ? 'ASC' : 'DESC';
-    $orderClause = "$column $direction";
+    $orderClause = "$column $direction, log_time DESC";
 }
 
 /* =========================
    QUERY
 ========================= */
 $sql = "
-    SELECT 
+    SELECT
         log_time,
         log_type,
         latitude,
@@ -58,14 +51,21 @@ $sql = "
         distance_meters
     FROM logs
     WHERE employee_id = ?
-    AND log_time >= ?
-    AND log_time < DATE_ADD(?, INTERVAL 1 DAY)
 ";
 
-$params = [$employeeId, $startDate, $endDate];
+$params = [$employeeId];
+
+if ($startDate !== '') {
+    $sql .= " AND log_time >= ?";
+    $params[] = $startDate;
+}
+if ($endDate !== '') {
+    $sql .= " AND log_time < DATE_ADD(?, INTERVAL 1 DAY)";
+    $params[] = $endDate;
+}
 
 if ($type !== 'ALL') {
-    $sql .= " AND log_type = ? ";
+    $sql .= " AND log_type = ?";
     $params[] = $type;
 }
 

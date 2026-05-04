@@ -302,21 +302,21 @@ button.btn {
    ================================================ */
 
 .dropdown-menu {
-    background: var(--neutral-glass) linear-gradient(
+    background: var(--glass-bg-dark) linear-gradient(
         to right,
-        rgba(255, 255, 255, 0.10) 0%,
-        rgba(255, 255, 255, 0.05) 40%,
-        rgba(255, 255, 255, 0.02) 70%,
+        rgba(255, 255, 255, 0.06) 0%,
+        rgba(255, 255, 255, 0.03) 40%,
+        rgba(255, 255, 255, 0.01) 70%,
         transparent 100%
     ) !important;
 
-    border: 1px solid var(--neutral-border) !important;
+    border: 1px solid var(--glass-border) !important;
     border-radius: 12px !important;
 
-    backdrop-filter: blur(10px) !important;
-    -webkit-backdrop-filter: blur(10px) !important;
+    backdrop-filter: blur(14px) saturate(140%) brightness(0.75) !important;
+    -webkit-backdrop-filter: blur(14px) saturate(140%) brightness(0.75) !important;
 
-    box-shadow: var(--glass-inset) !important;
+    box-shadow: var(--sidebar-glow) !important;
 
     padding: 0.4rem !important;
 }
@@ -372,5 +372,171 @@ button.btn {
 
 .dropdown-toggle[aria-expanded="true"]::after {
     transform: rotate(180deg) !important;
+}
+
+/* ================================================
+   DARK GLASS TOOLTIP (LESS TRANSPARENT)
+   ================================================ */
+
+.tooltip {
+    opacity: 0;
+    transition: opacity 0.15s ease;
+}
+
+.tooltip.show {
+    opacity: 1;
+}
+
+/* INNER */
+.tooltip .tooltip-inner {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 0.4rem !important;
+
+    padding: 0.45rem 1rem !important;
+
+    color: var(--text-light) !important;
+
+    background: rgba(15, 15, 18, 0.10) linear-gradient(
+        to right,
+        rgba(255, 255, 255, 0.08) 0%,
+        rgba(255, 255, 255, 0.04) 40%,
+        rgba(255, 255, 255, 0.01) 70%,
+        transparent 100%
+    ) !important;
+
+    border: 1px solid rgba(255, 255, 255, 0.10);
+
+    border-radius: 12px !important;
+
+    font-size: 0.85rem !important;
+    font-weight: 400 !important;
+
+    user-select: none !important;
+
+    /* STRONGER GLASS BLUR */
+    backdrop-filter: blur(4px) !important;
+    -webkit-backdrop-filter: blur(14px) !important;
+
+    /* deeper shadow */
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.55), var(--glass-inset);
+
+    position: relative !important;
+    overflow: hidden !important;
+
+    transition:
+        transform 0.2s ease,
+        background 0.25s ease,
+        box-shadow 0.2s ease !important;
+}
+
+/* subtle highlight (slightly stronger for dark UI) */
+.tooltip .tooltip-inner::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+
+    background: linear-gradient(
+        to bottom,
+        rgba(255, 255, 255, 0.06),
+        transparent 90%
+    );
+
+    opacity: 0.35;
+    pointer-events: none;
+}
+
+/* REMOVE ARROW */
+.tooltip .tooltip-arrow {
+    display: none !important;
+}
+
+/* ================================================
+   GLASS CARD
+   ================================================ */
+
+.card-glass {
+    /* use your glass system */
+    background: var(--glass-bg-dark) linear-gradient(
+        to right,
+        rgba(255, 255, 255, 0.06) 0%,
+        rgba(255, 255, 255, 0.03) 40%,
+        rgba(255, 255, 255, 0.015) 70%,
+        transparent 100%
+    ) !important;
+
+    border: 1px solid var(--glass-border) !important;
+    border-radius: 16px !important;
+
+    /* slightly stronger readability than sidebar */
+    backdrop-filter: blur(14px) saturate(140%) brightness(0.75);
+    -webkit-backdrop-filter: blur(14px) saturate(140%) brightness(0.75);
+
+    /* unified shadow system */
+    box-shadow:
+        var(--box-shadow-heavy),
+        inset 0 1px 0 rgba(255, 255, 255, 0.04);
+
+    position: relative;
+    overflow: hidden;
+    z-index: 10;
+}
+
+.card-glass::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(
+        to bottom,
+        rgba(255, 255, 255, 0.08),
+        transparent 65%
+    );
+    opacity: 0.5;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.card-glass > .card-body {
+    position: relative;
+    z-index: 1;
+}
+
+/* ================================================
+   SLIDE ANIMATIONS
+   ================================================ */
+
+.tooltip.bs-tooltip-top {
+    transform: translateY(6px);
+}
+.tooltip.bs-tooltip-top.show {
+    transform: translateY(0);
+    transition: transform 0.18s ease, opacity 0.15s ease;
+}
+
+.tooltip.bs-tooltip-bottom {
+    transform: translateY(-6px);
+}
+.tooltip.bs-tooltip-bottom.show {
+    transform: translateY(0);
+    transition: transform 0.18s ease, opacity 0.15s ease;
+}
+
+.tooltip.bs-tooltip-start {
+    transform: translateX(6px);
+}
+.tooltip.bs-tooltip-start.show {
+    transform: translateX(0);
+    transition: transform 0.18s ease, opacity 0.15s ease;
+}
+
+.tooltip.bs-tooltip-end {
+    transform: translateX(-6px);
+}
+.tooltip.bs-tooltip-end.show {
+    transition: transform 0.18s ease, opacity 0.15s ease;
+    transform: translateX(0);
 }
 

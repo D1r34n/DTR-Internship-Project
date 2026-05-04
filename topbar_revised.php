@@ -152,7 +152,7 @@ $currentStatus = $timedIn ? 'Timed In' : 'Timed Out';
 <link rel="stylesheet" href="../dropdown_requests/log_edit_modal.css">
 
 <!-- TOP BAR -->
-<nav class="navbar shadow-sm">
+<nav class="navbar shadow-sm m-2">
     <div class="container-fluid d-flex align-items-center justify-content-between">
 
         <!-- LEFT: Breadcrumb + Title -->
@@ -478,6 +478,7 @@ $currentStatus = $timedIn ? 'Timed In' : 'Timed Out';
 
                 localStorage.setItem('attendance_tap_result', response.tap);
                 localStorage.setItem('attendance_update', Date.now());
+                document.dispatchEvent(new CustomEvent('attendance_tapped'));
 
             } catch (err) {
                 console.error(err);
@@ -563,12 +564,14 @@ $currentStatus = $timedIn ? 'Timed In' : 'Timed Out';
                     btn.disabled = false;
                     btn.dataset.state = 'out'; // ← add this
                     btn.innerHTML = `<i class="bi bi-arrow-return-right"></i> Resume Work`;
+                    document.dispatchEvent(new CustomEvent('attendance_tapped'));
                 }
 
                 if (response.tap === 'break_out') {
                     btn.disabled = true;
                     btn.dataset.state = 'in'; // ← add this
                     btn.innerHTML = `<i class="bi bi-cup-hot-fill"></i> Take Break`;
+                    document.dispatchEvent(new CustomEvent('attendance_tapped'));
                 }
 
             } catch (err) {

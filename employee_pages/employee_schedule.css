@@ -1,81 +1,101 @@
-/* BACKGROUND IMAGE (with blur only) */
+/* ================================================
+   EMPLOYEE SCHEDULES
+   ================================================
+   Page-specific styles for the employee dashboard.
+   Depends on: root.css, typography.css,
+               components.css, navbars.css
+   ================================================ */
+
+/* ================================================
+   BACKGROUND SYSTEM
+   ================================================ */
+
+/* ------------------------------------------------
+   BASE IMAGE LAYER
+   ------------------------------------------------ */
+
 body::before {
     content: '';
     position: fixed;
     inset: 0;
 
-    background-image: url('../images/drt_bg.jpg');
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
+    background: url('../assets/images/drt_bg.jpg') center / cover no-repeat;
 
-    /* blur directly on image */
-    filter: blur(2px);
-    transform: scale(1.1); /* prevents edge cut-off from blur */
+    /* slightly lighter background than before
+    filter: blur(5px) brightness(0.98) saturate(1.08); */
+
+    transform: scale(1.06);
 
     z-index: -2;
 }
 
-body {
-    font-family: 'Poppins', sans-serif;
-    min-height: 100vh;
-    margin: 0;
-    overflow-x: hidden;
-}
+/* ------------------------------------------------
+   GLASS OVERLAY (LIGHTER)
+   ------------------------------------------------ */
 
 body::after {
     content: '';
     position: fixed;
     inset: 0;
 
-    /* fade to black overlay */
-    background: linear-gradient(
-        to bottom,
-        rgba(0, 0, 0, 0.15) 0%,
-        rgba(0, 0, 0, 0.55) 50%,
-        rgba(0, 0, 0, 0.85) 100%
-    );
+    /* lighter base glass */
+    background: rgba(15, 15, 18, 0.45);
+
+    backdrop-filter: blur(28px) saturate(150%) brightness(0.55);
+    -webkit-backdrop-filter: blur(28px) saturate(150%) brightness(0.55);
+
+    border: 1px solid rgba(255, 255, 255, 0.07);
+
+    box-shadow:
+        inset 0 0 90px rgba(0, 0, 0, 0.45),
+        inset 0 0 30px rgba(255, 255, 255, 0.04);
 
     z-index: -1;
-    pointer-events: none;
 }
 
-.scheduleBoxWrapper {
-    position: fixed;
-    top: 84px;
-    left: var(--sidebar-width);
-    width: calc(100% - var(--sidebar-width));
-    height: calc(100vh - 84px);
+/* ------------------------------------------------
+   BODY BASE
+   ------------------------------------------------ */
 
-    padding: 1rem 2rem;
+html { height: 100%; }
 
+body {
     display: flex;
-    justify-content: center;
-    align-items: stretch;
+    min-height: 100vh;
+    margin: 0;
 
-    z-index: 10;
-    transition: left 0.3s ease, width 0.3s ease;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
-.scheduleBox {
-    background: var(--glass-bg);
-    backdrop-filter: blur(32px) saturate(160%) brightness(0.3);
-    -webkit-backdrop-filter: blur(32px) saturate(160%) brightness(0.3);
+/* =========================
+   LAYOUT
+========================= */
 
-    border: 1px solid var(--glass-border);
-    border-radius: 16px;
-    padding: 1.5rem;
-
-    box-shadow: 0 12px 35px var(--box-shadow-heavy);
-
-    overflow: hidden;
-    min-width: 0;
-
-    width: 100%;
-    height: 100%;
-
+#main-wrapper {
     display: flex;
     flex-direction: column;
+    flex-grow: 1;
+    min-width: 0;
+    height: 100vh;
+    overflow: hidden;
+}
+
+/* =========================
+   CARD WRAPPER
+========================= */
+
+.schedules-card {
+    flex: 1;
+    min-height: 0;
+    margin: 0.5rem 1rem 1rem;
+    overflow: visible !important;
+}
+
+.schedules-card-body {
+    padding: 1.5rem;
+    height: 100%;
+    overflow: visible;
 }
 
 /* Full Calendar CSS Edit */

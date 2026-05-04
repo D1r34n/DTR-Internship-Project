@@ -25,20 +25,23 @@ $dashboardLink = ($role === 'admin')
 $requestsOpen = in_array($currentPage, ['employee_requests', 'schedule_requests']);
 ?>
 
-<div id="sidebar" class="d-flex flex-column flex-shrink-0 position-sticky top-0">
+<div id="sidebar" class="d-flex flex-column flex-shrink-0">
 
     <!-- Brand / Logo -->
-    <div class="sidebar-brand">
-
-        <a id="brandLink" href="<?= $dashboardLink ?>" class="brand-item">
-            <img src="../assets/images/hsn_logo_white.png" height="20">
+    <div class="sidebar-brand" id="sidebar-brand">
+        <a id="brand-link" href="<?= $dashboardLink ?>" class="brand-item">
+            <img src="../assets/images/hsn_logo_white.png" height="20" alt="HSN Logo">
             <span>DTR System</span>
         </a>
 
-        <button id="sidebarToggle" class="sidebar-toggle" title="Collapse sidebar">
-            <i class="bi bi-list"></i>
+        <!-- Maximize icon — shown on hover when collapsed -->
+        <button id="sidebar-toggle"
+                class="sidebar-toggle"
+                data-bs-toggle="tooltip"
+                data-bs-placement="right"
+                data-bs-title="Toggle sidebar">
+            <i class="bi bi-layout-sidebar-inset" id="toggle-icon"></i>
         </button>
-
     </div>
 
     <!-- Navigation -->
@@ -47,8 +50,13 @@ $requestsOpen = in_array($currentPage, ['employee_requests', 'schedule_requests'
         <?php
         function navLink(string $href, string $icon, string $label, bool $active): void {
             $cls = $active ? 'active' : '';
+
             echo <<<HTML
-            <a href="{$href}" class="sidebar-link {$cls}">
+            <a href="{$href}"
+            class="sidebar-link {$cls}"
+            data-bs-toggle="tooltip"
+            data-bs-placement="right"
+            data-bs-title="{$label}">
                 <i class="bi {$icon}"></i>
                 <span>{$label}</span>
             </a>
@@ -56,78 +64,148 @@ $requestsOpen = in_array($currentPage, ['employee_requests', 'schedule_requests'
         }
         ?>
 
-        <!-- ── EMPLOYEE MENU ───────────────────────────────────────────────── -->
+        <!-- EMPLOYEE MENU -->
         <?php if ($role === 'employee'): ?>
-            <?php navLink('employee_dashboard.php', 'bi-columns-gap',      'Dashboard', $currentPage === 'dashboard'); ?>
-            <?php navLink('employee_records.php',   'bi-bar-chart-steps',  'Records',   $currentPage === 'records');   ?>
-            <?php navLink('employee_schedule.php',  'bi-calendar-week',    'Schedules', $currentPage === 'schedule');  ?>
-            <?php navLink('employee_logs.php',      'bi-clipboard-minus',  'Logs',      $currentPage === 'logs');      ?>
+            <?php navLink('employee_dashboard.php', 'bi-columns-gap',     'Dashboard', $currentPage === 'dashboard'); ?>
+            <?php navLink('employee_records.php',   'bi-bar-chart-steps', 'Records',   $currentPage === 'records');   ?>
+            <?php navLink('employee_schedule.php',  'bi-calendar-week',   'Schedules', $currentPage === 'schedule');  ?>
+            <?php navLink('employee_logs.php',      'bi-clipboard-minus', 'Logs',      $currentPage === 'logs');      ?>
         <?php endif; ?>
 
-        <!-- ── WORKFORCE MENU ─────────────────────────────────────────────── -->
+        <!-- WORKFORCE MENU -->
         <?php if ($role === 'workforce'): ?>
-            <?php navLink('employee_dashboard.php', 'bi-columns-gap',       'Dashboard',        $currentPage === 'dashboard');        ?>
-            <?php navLink('employee_records.php',   'bi-bar-chart-steps',   'Records',          $currentPage === 'records');          ?>
-            <?php navLink('employee_schedule.php',  'bi-calendar-week',     'Schedules',        $currentPage === 'schedule');         ?>
-            <?php navLink('employee_logs.php',      'bi-clipboard-minus',   'Logs',             $currentPage === 'logs');             ?>
-            <?php navLink('workforce_schedule.php', 'bi-calendar-plus',     'Manage Schedules', $currentPage === 'workforce_schedule'); ?>
+            <?php navLink('employee_dashboard.php', 'bi-columns-gap',      'Dashboard',        $currentPage === 'dashboard');         ?>
+            <?php navLink('employee_records.php',   'bi-bar-chart-steps',  'Records',          $currentPage === 'records');           ?>
+            <?php navLink('employee_schedule.php',  'bi-calendar-week',    'Schedules',        $currentPage === 'schedule');          ?>
+            <?php navLink('employee_logs.php',      'bi-clipboard-minus',  'Logs',             $currentPage === 'logs');              ?>
+            <?php navLink('workforce_schedule.php', 'bi-calendar-plus',    'Manage Schedules', $currentPage === 'workforce_schedule'); ?>
         <?php endif; ?>
 
-        <!-- ── ADMIN MENU ─────────────────────────────────────────────────── -->
+        <!-- ADMIN MENU -->
         <?php if ($role === 'admin'): ?>
-            <?php navLink('admin_dashboard.php',   'bi-columns-gap',      'Dashboard',   $currentPage === 'dashboard');  ?>
-            <?php navLink('admin_employees.php',   'bi-people-fill',      'Employees',   $currentPage === 'employees');  ?>
-            <?php navLink('admin_schedule.php',    'bi-calendar-week',    'Schedules',   $currentPage === 'schedule');   ?>
+            <?php navLink('admin_dashboard.php',   'bi-columns-gap',   'Dashboard',   $currentPage === 'dashboard');  ?>
+            <?php navLink('admin_employees.php',   'bi-people-fill',   'Employees',   $currentPage === 'employees');  ?>
+            <?php navLink('admin_schedule.php',    'bi-calendar-week', 'Schedules',   $currentPage === 'schedule');   ?>
 
             <!-- Requests dropdown -->
             <div class="sidebar-dropdown">
                 <button
                     class="sidebar-link sidebar-dropdown-toggle <?= $requestsOpen ? 'active' : '' ?>"
                     data-bs-toggle="collapse"
-                    data-bs-target="#requestsSubmenu"
+                    data-bs-target="#requests-submenu"
                     aria-expanded="<?= $requestsOpen ? 'true' : 'false' ?>"
+                    title="Requests"
                 >
                     <i class="bi bi-envelope-paper"></i>
                     <span>Requests</span>
                     <i class="bi bi-chevron-down transition-chevron"></i>
                 </button>
 
-                <div id="requestsSubmenu" class="collapse <?= $requestsOpen ? 'show' : '' ?>">
+                <div id="requests-submenu" class="collapse <?= $requestsOpen ? 'show' : '' ?>">
                     <a href="admin_requests.php"
-                       class="sidebar-sub-link <?= ($currentPage === 'employee_requests') ? 'active' : '' ?>">
+                       class="sidebar-sub-link <?= ($currentPage === 'employee_requests') ? 'active' : '' ?>"
+                       title="Employee Requests">
                         <i class="bi bi-file-earmark-text"></i>
                         <span>Employee Requests</span>
                     </a>
                     <a href="admin_schedule_requests.php"
-                       class="sidebar-sub-link <?= ($currentPage === 'schedule_requests') ? 'active' : '' ?>">
+                       class="sidebar-sub-link <?= ($currentPage === 'schedule_requests') ? 'active' : '' ?>"
+                       title="Schedule Requests">
                         <i class="bi bi-calendar-check"></i>
                         <span>Schedule Requests</span>
                     </a>
                 </div>
             </div>
 
-            <?php navLink('admin_logs.php',        'bi-journal-text',     'Logs',        $currentPage === 'employee_logs'); ?>
-            <?php navLink('admin_departments.php', 'bi-building-gear',    'Departments', $currentPage === 'departments');   ?>
+            <?php navLink('admin_logs.php',        'bi-journal-text',  'Logs',        $currentPage === 'employee_logs'); ?>
+            <?php navLink('admin_departments.php', 'bi-building-gear', 'Departments', $currentPage === 'departments');   ?>
         <?php endif; ?>
 
     </nav>
 </div>
 
 <script>
-const sidebar = document.getElementById('sidebar');
-const toggle  = document.getElementById('sidebarToggle');
+    // Initialize tooltips
+    document.addEventListener('DOMContentLoaded', () => {
+        const sidebar = document.getElementById('sidebar');
 
-function setCollapsed(collapsed) {
-    sidebar.classList.toggle('collapsed', collapsed);
-    localStorage.setItem('sidebar-collapsed', collapsed);
-}
+        const initTooltips = () => {
+            document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => {
+                bootstrap.Tooltip.getOrCreateInstance(el, {
+                    placement: 'right',
+                    trigger: 'hover',
+                    container: 'body',
+                    delay: { show: 100, hide: 100 }
+                });
+            });
+        };
 
-// restore state
-setCollapsed(localStorage.getItem('sidebar-collapsed') === 'true');
+        const destroyTooltips = () => {
+            document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => {
+                const instance = bootstrap.Tooltip.getInstance(el);
+                if (instance) instance.dispose();
+            });
+        };
 
-// ONLY ONE CONTROLLER NOW
-toggle.addEventListener('click', () => {
-    const isCollapsed = sidebar.classList.contains('collapsed');
-    setCollapsed(!isCollapsed);
-});
+        const toggleTooltips = () => {
+            if (sidebar.classList.contains('collapsed')) {
+                initTooltips();
+            } else {
+                destroyTooltips();
+            }
+        };
+
+        // initial state
+        toggleTooltips();
+
+        // observe changes
+        const observer = new MutationObserver(toggleTooltips);
+        observer.observe(sidebar, { attributes: true, attributeFilter: ['class'] });
+    });
+   
+    const sidebar    = document.getElementById('sidebar');
+    const toggle     = document.getElementById('sidebar-toggle');
+    const toggleIcon = document.getElementById('toggle-icon');
+    const brand      = document.getElementById('sidebar-brand'); 
+    const brandLogo  = document.getElementById('brand-link').querySelector('img'); 
+            
+    function setCollapsed(collapsed) {
+        sidebar.classList.toggle('collapsed', collapsed);
+        toggleIcon.className = collapsed
+            ? 'bi bi-layout-sidebar-inset'
+            : 'bi bi-layout-sidebar-inset-reverse';
+        localStorage.setItem('sidebar-collapsed', collapsed);
+
+        // Reset logo opacity when expanding
+        if (!collapsed) {
+            brandLogo.style.opacity = '1';
+            toggle.style.opacity    = '1';
+            toggle.style.pointerEvents = 'auto';
+        }
+    }
+
+    // Restore saved state
+    setCollapsed(localStorage.getItem('sidebar-collapsed') === 'true');
+
+    // Toggle on button click
+    toggle.addEventListener('click', () => {
+        setCollapsed(!sidebar.classList.contains('collapsed'));
+    });
+
+    // When collapsed: hovering the brand fades it out and shows the toggle overlay
+    brand.addEventListener('mouseenter', () => {
+        if (sidebar.classList.contains('collapsed')) {
+            toggle.style.opacity = '1';
+            toggle.style.pointerEvents = 'auto';
+            brandLogo.style.opacity = '0';
+        }
+    });
+
+    brand.addEventListener('mouseleave', () => {
+        if (sidebar.classList.contains('collapsed')) {
+            toggle.style.opacity = '0';
+            toggle.style.pointerEvents = 'none';
+            brandLogo.style.opacity = '1';
+        }
+    });
 </script>
