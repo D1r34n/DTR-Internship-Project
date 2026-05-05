@@ -2,6 +2,197 @@
    BOOTSTRAP MODAL OVERRIDE
    ================================================ */
 
+
+:root {
+    --control-height: 38px;
+}
+
+   /* ================================================
+   DIVIDER
+   ================================================ */
+
+.vr {
+    color: var(--text-light);
+}
+
+/* ============================================================
+   GLOBAL SCROLLBAR
+   ============================================================ */
+
+*::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+/* Track (keeps it almost invisible) */
+*::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: 10px;
+}
+
+/* Thumb (neutral glass, not green by default) */
+*::-webkit-scrollbar-thumb {
+    background: var(--neutral-color);
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    transition: background 0.2s ease;
+}
+
+/* Hover = use PRIMARY subtly (not full intensity) */
+*::-webkit-scrollbar-thumb:hover {
+    background: var(--neutral-hover);
+}
+
+/* Optional: corner (for dual-axis scroll areas) */
+*::-webkit-scrollbar-corner {
+    background: transparent;
+}
+
+/* ================================================
+   SEARCH INPUT (BUTTON-MATCHED FROSTED GLASS)
+   ================================================ */
+
+.input-group {
+    display: flex;
+    align-items: stretch;
+
+    min-height: var(--control-height) !important;
+
+    border-radius: 12px;
+    overflow: hidden;
+
+    background: var(--neutral-glass) linear-gradient(
+        to right,
+        rgba(255, 255, 255, 0.10) 0%,
+        rgba(255, 255, 255, 0.05) 40%,
+        rgba(255, 255, 255, 0.02) 70%,
+        transparent 100%
+    ) !important;
+
+    border: 1px solid var(--neutral-border) !important;
+
+    backdrop-filter: var(--frosted-blur);
+    -webkit-backdrop-filter: var(--frosted-blur);
+
+    box-shadow: var(--glass-inset);
+
+    position: relative;
+
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.25s ease,
+        background 0.25s ease;
+}
+
+/* TOP HIGHLIGHT (same as buttons) */
+.input-group::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: var(--frosted-highlight);
+    opacity: 0.5;
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* LEFT ICON */
+.input-group-text {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background: transparent !important;
+    border: none !important;
+
+    color: var(--text-light) !important;
+
+    padding: 0 0.9rem !important;
+
+    z-index: 1;
+}
+
+/* INPUT FIELD */
+.input-group .form-control {
+    height: var(--control-height) !important;
+
+    background: transparent !important;
+    border: none !important;
+
+    color: var(--text-lightest) !important;
+    font-size: 0.85rem !important;
+
+    box-shadow: none !important;
+
+    z-index: 1;
+}
+
+/* PLACEHOLDER */
+.input-group .form-control::placeholder {
+    color: var(--text-muted);
+}
+
+/* ================================================
+   HOVER (MATCH BUTTON BEHAVIOR)
+   ================================================ */
+
+.input-group:hover {
+    background: var(--neutral-glass-hover) !important;
+    box-shadow: var(--glass-shadow);
+    transform: scale(1.02);
+}
+
+/* ================================================
+   FOCUS GLOW (ADDITIVE LIKE BUTTONS)
+   ================================================ */
+
+.input-group:focus-within {
+    border-color: var(--primary-border) !important;
+
+    box-shadow:
+        var(--glass-shadow),
+        0 0 0 1px var(--primary-border),
+        0 0 18px var(--primary-glow);
+
+    transform: translateY(-1px);
+}
+
+/* remove bootstrap focus glow */
+.form-control:focus {
+    box-shadow: none !important;
+    background: transparent !important;
+    outline: none !important;
+}
+
+/* ================================================
+   OPTIONAL: GLOW PULSE ANIMATION
+   ================================================ */
+
+@keyframes inputGlowPulse {
+    0% {
+        box-shadow:
+            0 0 0 1px rgba(151,190,65,0.25),
+            0 4px 12px rgba(151,190,65,0.12),
+            0 0 0 rgba(151,190,65,0);
+    }
+    50% {
+        box-shadow:
+            0 0 0 1px rgba(151,190,65,0.45),
+            0 6px 20px rgba(151,190,65,0.22),
+            0 0 18px rgba(151,190,65,0.18);
+    }
+    100% {
+        box-shadow:
+            0 0 0 1px rgba(151,190,65,0.25),
+            0 4px 12px rgba(151,190,65,0.12),
+            0 0 0 rgba(151,190,65,0);
+    }
+}
+
+/* ================================================
+   MODAL
+   ================================================ */
+
 .modal-content {
     background: var(--glass-bg) !important;
     backdrop-filter: blur(32px) saturate(160%) brightness(0.3) !important;
@@ -23,14 +214,6 @@
 
 .btn-close {
     filter: invert(1) !important;
-}
-
-/* ================================================
-   DIVIDER
-   ================================================ */
-
-.vr {
-    color: var(--text-light);
 }
 
 /* ================================================
@@ -91,6 +274,9 @@ button.btn {
         color 0.2s ease,
         background 0.25s ease,
         box-shadow 0.2s ease !important;
+
+    min-height: var(--control-height) !important;
+    line-height: 1 !important;
 }
 
 /* ------------------------------------------------
@@ -321,6 +507,9 @@ button.btn {
     box-shadow: var(--glass-inset) !important;
 }
 
+.dropdown-item i {
+    margin-right: 1rem;
+}
 .dropdown-divider {
     border-color: var(--neutral-border) !important;
     opacity: 0.5 !important;

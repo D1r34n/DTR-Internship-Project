@@ -184,18 +184,35 @@ if ($selectedEmpId) {
                         <div class="sched-emp-list" id="schedEmpList">
                             <?php foreach ($employees as $emp): ?>
                                 <div class="sched-emp-row <?= ($emp['id'] == $selectedEmpId) ? 'active' : '' ?>"
-                                     data-id="<?= $emp['id'] ?>"
-                                     data-name="<?= htmlspecialchars($emp['name'], ENT_QUOTES) ?>"
-                                     onclick="selectEmployee(<?= $emp['id'] ?>, '<?= htmlspecialchars($emp['name'], ENT_QUOTES) ?>')">
-                                    <div class="sched-emp-name"><?= htmlspecialchars($emp['name']) ?></div>
+                                    data-id="<?= $emp['id'] ?>"
+                                    data-name="<?= htmlspecialchars($emp['name'], ENT_QUOTES) ?>"
+                                    onclick="selectEmployee(<?= $emp['id'] ?>, '<?= htmlspecialchars($emp['name'], ENT_QUOTES) ?>')">
+
+                                    <div class="sched-emp-name">
+                                        <span class="emp-name-text text-secondary">
+                                            <?= htmlspecialchars($emp['name']) ?>
+                                        </span>
+
+                                        <span class="sched-emp-id text-meta">
+                                            #<?= $emp['id'] ?>
+                                        </span>
+                                    </div>
+
                                     <div class="sched-emp-meta">
-                                        <span class="sched-emp-role emp-role-<?= $emp['role'] ?>"><?= ucfirst($emp['role']) ?></span>
+                                        <span class="sched-emp-role emp-role-<?= $emp['role'] ?>">
+                                            <?= ucfirst($emp['role']) ?>
+                                        </span>
+
                                         <?php if ($emp['department_id']): ?>
-                                            <span class="sched-emp-dept"><?= htmlspecialchars($emp['department_code'] ?? '') ?></span>
+                                            <span class="sched-emp-dept">
+                                                <?= htmlspecialchars($emp['department_code'] ?? '') ?>
+                                            </span>
                                         <?php endif; ?>
                                     </div>
+
                                 </div>
                             <?php endforeach; ?>
+
                             <?php if (empty($employees)): ?>
                                 <div class="sched-emp-empty">No employees found.</div>
                             <?php endif; ?>
@@ -204,31 +221,43 @@ if ($selectedEmpId) {
 
                     <!-- ===== RIGHT PANEL ===== -->
                     <div class="card-glass sched-right-panel">
+                        <div class="sched-cal-header">
+                            <h6 class="sched-cal-title">Schedule for <span id="selectedEmpName"><?= htmlspecialchars($selectedEmpName) ?></span></h6>
+                            <div style="display:flex;align-items:center;gap:0.5rem;">
+                                <button class="sched-nav-btn" onclick="changeMonth(-1)"><i class="bi bi-chevron-left"></i></button>
+                                <span class="sched-month-label" id="schedMonthLabel"></span>
+                                <button class="sched-nav-btn" onclick="changeMonth(1)"><i class="bi bi-chevron-right"></i></button>
+                                
+                                <div class="dropdown">
+                                    <button class=" btn btn-success dropdown-toggle sched-add-btn" type="button" id="schedAddBtn" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class="bi bi-calendar-plus"></i> Create Schedule
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end">
+                                        <li>
+                                            <a class="dropdown-item" href="#" onclick="openAddModal()">
+                                                <i class="bi bi-plus-lg"></i> Add Schedule
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#importScheduleModal">
+                                                <i class="bi bi-file-earmark-spreadsheet"></i> Import Schedule
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </div>
+
+                            </div>
+                        </div>
 
                         <!-- Placeholder -->
                         <div class="sched-placeholder" id="schedPlaceholder">
                             <i class="bi bi-calendar2-week sched-placeholder-icon"></i>
-                            <p>Select an employee to view their schedule</p>
-                            <p>or import an existing schedule</p>
-                            <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#importScheduleModal">
-                                Import Schedule
-                            </button>
+                            <p>Select an employee to view their schedule
+                            or import an existing schedule</p>
                         </div>
 
                         <!-- Calendar content -->
                         <div class="sched-cal-content" id="schedCalContent" style="display:none;">
-
-                            <div class="sched-cal-header">
-                                <h6 class="sched-cal-title">Schedule for <span id="selectedEmpName"><?= htmlspecialchars($selectedEmpName) ?></span></h6>
-                                <div style="display:flex;align-items:center;gap:0.5rem;">
-                                    <button class="sched-nav-btn" onclick="changeMonth(-1)"><i class="bi bi-chevron-left"></i></button>
-                                    <span class="sched-month-label" id="schedMonthLabel"></span>
-                                    <button class="sched-nav-btn" onclick="changeMonth(1)"><i class="bi bi-chevron-right"></i></button>
-                                    <button class="sched-add-btn" onclick="openAddModal()">
-                                        <i class="bi bi-plus-lg"></i> Add Schedule
-                                    </button>
-                                </div>
-                            </div>
 
                             <div class="sched-cal-container" id="schedCalContainer">
                                 <!-- AJAX loaded -->
@@ -243,52 +272,66 @@ if ($selectedEmpId) {
         </div>
 
         <!-- Add / Edit Modal -->
-        <div class="sched-modal-overlay" id="schedModalOverlay" style="display:none;" onclick="closeModal(event)">
-            <div class="sched-modal">
-                <div class="sched-modal-header">
-                    <h6 id="schedModalTitle">Add Schedule</h6>
-                    <button onclick="closeModalBtn()"><i class="bi bi-x-lg"></i></button>
-                </div>
-                <div class="sched-modal-body">
+        <div class="modal fade" id="schedModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-lg modal-dialog-centered">
+                <div class="modal-content glass-modal">
+
+                    <!-- Header -->
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="schedModalTitle">Add Schedule</h5>
+                        <button type="button" class="btn-close btn-close-white" onclick="closeSchedModal()"></button>
+                    </div>
+
+                    <!-- Body -->
                     <form method="POST" action="admin_schedule.php" onsubmit="return prepareSubmit()">
-                        <input type="hidden" name="employee_id"          id="modalEmpId">
-                        <input type="hidden" name="selected_employee_id" id="modalSelEmpId">
-                        <input type="hidden" name="selected_dates"       id="selectedDatesInput">
-                        <input type="hidden" name="is_edit"              id="isEditMode" value="0">
 
-                        <div class="form-group" style="margin-bottom:1rem;">
-                            <label>Employee</label>
-                            <input type="text" id="modalEmpName" class="form-control-custom" readonly
-                                   style="opacity:0.6;cursor:default;">
-                        </div>
+                        <div class="modal-body">
 
-                        <div class="form-grid">
-                            <div class="form-group">
-                                <label>Time In</label>
-                                <input type="time" name="time_in" id="modalTimeIn" class="form-control-custom" required>
+                            <input type="hidden" name="employee_id" id="modalEmpId">
+                            <input type="hidden" name="selected_employee_id" id="modalSelEmpId">
+                            <input type="hidden" name="selected_dates" id="selectedDatesInput">
+                            <input type="hidden" name="is_edit" id="isEditMode" value="0">
+
+                            <div class="mb-3">
+                                <label class="form-label">Employee</label>
+                                <input type="text" id="modalEmpName" class="form-control" readonly>
                             </div>
-                            <div class="form-group">
-                                <label>Time Out <small class="night-shift-hint">(next day if night shift)</small></label>
-                                <input type="time" name="time_out" id="modalTimeOut" class="form-control-custom" required>
+
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Time In</label>
+                                    <input type="time" name="time_in" id="modalTimeIn" class="form-control" required>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label class="form-label">
+                                        Time Out <small class="text-muted">(next day if night shift)</small>
+                                    </label>
+                                    <input type="time" name="time_out" id="modalTimeOut" class="form-control" required>
+                                </div>
                             </div>
+
+                            <div class="mt-3">
+                                <label class="form-label">Select Dates</label>
+                                <p class="text-muted small mb-2">Click to select/deselect work days.</p>
+
+                                <input type="text" id="schedDatePicker" class="form-control" readonly>
+
+                                <div id="selectedDatesList" class="mt-2"></div>
+                            </div>
+
                         </div>
 
-                        <div class="form-group" style="margin-top:1rem;">
-                            <label>Select Dates</label>
-                            <p class="text-meta">Click dates to select work days. Click again to deselect.</p>
-                            <input type="text" id="schedDatePicker" class="form-control-custom"
-                                   placeholder="Click to select dates..." readonly>
-                            <div id="selectedDatesList" class="selected-dates-list"></div>
-                        </div>
-
-                        <div class="form-actions">
-                            <button type="submit" class="btn btn-primary">
+                        <!-- Footer -->
+                        <div class="modal-footer">
+                            <button type="submit" class="btn btn-success">
                                 <i class="bi bi-check-circle-fill"></i>
                                 <span id="schedSubmitLabel">Save Schedule</span>
                             </button>
-                            <button type="button" class="btn btn-secondary" onclick="closeModalBtn()">Cancel</button>
                         </div>
+
                     </form>
+
                 </div>
             </div>
         </div>
@@ -416,33 +459,56 @@ if ($selectedEmpId) {
         let currentEmpName = <?= json_encode($selectedEmpName) ?>;
         let currentYear    = <?= date('Y') ?>;
         let currentMonth   = <?= date('n') ?>;
+
         let schedDatePicker = null;
         let selectedDates   = [];
 
-        // Auto-select on page load (e.g. after form submit redirect)
+        /* ============================================================
+        BOOTSTRAP MODAL INSTANCE
+        ============================================================ */
+        function getSchedModal() {
+            const el = document.getElementById('schedModal');
+            return bootstrap.Modal.getOrCreateInstance(el);
+        }
+
+        /* ============================================================
+        INIT STATE
+        ============================================================ */
         if (currentEmpId) {
             showCalendarPanel();
             updateMonthLabel();
             loadCalendar();
         }
 
-        // ---- EMPLOYEE FILTER ----
+        /* ============================================================
+        EMPLOYEE FILTER
+        ============================================================ */
         function filterEmployees() {
             const q = document.getElementById('empSearch').value.toLowerCase();
+
             document.querySelectorAll('#schedEmpList .sched-emp-row').forEach(row => {
                 row.style.display = row.dataset.name.toLowerCase().includes(q) ? '' : 'none';
             });
         }
 
-        // ---- SELECT EMPLOYEE ----
+        /* ============================================================
+        SELECT EMPLOYEE
+        ============================================================ */
         function selectEmployee(id, name) {
             currentEmpId   = id;
             currentEmpName = name;
             currentYear    = new Date().getFullYear();
             currentMonth   = new Date().getMonth() + 1;
 
-            document.querySelectorAll('#schedEmpList .sched-emp-row').forEach(r => r.classList.remove('active'));
-            document.querySelector(`#schedEmpList .sched-emp-row[data-id="${id}"]`).classList.add('active');
+            document.querySelectorAll('#schedEmpList .sched-emp-row')
+                .forEach(r => r.classList.remove('active'));
+
+            const selected = document.querySelector(
+                `#schedEmpList .sched-emp-row[data-id="${id}"]`
+            );
+
+            if (selected) selected.classList.add('active');
+
             document.getElementById('selectedEmpName').textContent = name;
 
             showCalendarPanel();
@@ -450,90 +516,147 @@ if ($selectedEmpId) {
             loadCalendar();
         }
 
+        /* ============================================================
+        CALENDAR UI
+        ============================================================ */
         function showCalendarPanel() {
-            document.getElementById('schedPlaceholder').style.display  = 'none';
-            document.getElementById('schedCalContent').style.display   = 'flex';
+            document.getElementById('schedPlaceholder').style.display = 'none';
+            document.getElementById('schedCalContent').style.display  = 'flex';
         }
 
-        // ---- MONTH NAVIGATION ----
         function changeMonth(dir) {
             currentMonth += dir;
+
             if (currentMonth < 1)  { currentMonth = 12; currentYear--; }
             if (currentMonth > 12) { currentMonth = 1;  currentYear++; }
+
             updateMonthLabel();
             loadCalendar();
         }
 
         function updateMonthLabel() {
-            const months = ['January','February','March','April','May','June',
-                            'July','August','September','October','November','December'];
-            document.getElementById('schedMonthLabel').textContent = months[currentMonth - 1] + ' ' + currentYear;
+            const months = [
+                'January','February','March','April','May','June',
+                'July','August','September','October','November','December'
+            ];
+
+            document.getElementById('schedMonthLabel').textContent =
+                months[currentMonth - 1] + ' ' + currentYear;
         }
 
-        // ---- LOAD CALENDAR (AJAX) ----
         function loadCalendar() {
             if (!currentEmpId) return;
+
             const c = document.getElementById('schedCalContainer');
             c.innerHTML = '<div class="sched-cal-loading"><div class="sched-spinner"></div> Loading...</div>';
 
             fetch(`get_admin_schedule_calendar.php?employee_id=${currentEmpId}&year=${currentYear}&month=${currentMonth}`)
                 .then(r => r.text())
-                .then(html => { c.innerHTML = html; })
-                .catch(() => { c.innerHTML = '<div class="sched-cal-empty" style="color:#ff8a8a;">Failed to load.</div>'; });
+                .then(html => c.innerHTML = html)
+                .catch(() => {
+                    c.innerHTML = '<div class="sched-cal-empty" style="color:#ff8a8a;">Failed to load.</div>';
+                });
         }
 
-        // ---- MODAL: ADD ----
+        /* ============================================================
+        MODAL - ADD
+        ============================================================ */
+
         function openAddModal() {
-            document.getElementById('schedModalTitle').textContent  = 'Add Schedule';
-            document.getElementById('modalEmpId').value             = currentEmpId;
-            document.getElementById('modalSelEmpId').value          = currentEmpId;
-            document.getElementById('modalEmpName').value           = currentEmpName;
-            document.getElementById('modalTimeIn').value            = '';
-            document.getElementById('modalTimeOut').value           = '';
-            document.getElementById('isEditMode').value             = '0';
+            if (!currentEmpId) {
+                alert('Please select an employee first.');
+                return;
+            }
+            document.getElementById('schedModalTitle').textContent = 'Add Schedule';
+
+            document.getElementById('modalEmpId').value    = currentEmpId;
+            document.getElementById('modalSelEmpId').value = currentEmpId;
+            document.getElementById('modalEmpName').value  = currentEmpName;
+
+            document.getElementById('modalTimeIn').value  = '';
+            document.getElementById('modalTimeOut').value = '';
+            document.getElementById('isEditMode').value   = '0';
+
             document.getElementById('schedSubmitLabel').textContent = 'Save Schedule';
 
             selectedDates = [];
-            document.getElementById('schedModalOverlay').style.display = 'flex';
-            setTimeout(() => { initDatePicker(); updateSelectedDatesList(); }, 30);
+
+            const modal = getSchedModal();
+            modal.show();
+
+            setTimeout(() => {
+                initDatePicker();
+                updateSelectedDatesList();
+            }, 150);
         }
 
-        // ---- MODAL: EDIT (called from calendar HTML) ----
+        /* ============================================================
+        MODAL - EDIT
+        ============================================================ */
         function openEditModal(empId, date, timeIn, timeOut) {
-            document.getElementById('schedModalTitle').textContent  = 'Edit Schedule';
-            document.getElementById('modalEmpId').value             = empId;
-            document.getElementById('modalSelEmpId').value          = currentEmpId;
-            document.getElementById('modalEmpName').value           = currentEmpName;
-            document.getElementById('modalTimeIn').value            = timeIn;
-            document.getElementById('modalTimeOut').value           = timeOut;
-            document.getElementById('isEditMode').value             = '1';
+            document.getElementById('schedModalTitle').textContent = 'Edit Schedule';
+
+            document.getElementById('modalEmpId').value    = empId;
+            document.getElementById('modalSelEmpId').value = currentEmpId;
+            document.getElementById('modalEmpName').value  = currentEmpName;
+
+            document.getElementById('modalTimeIn').value  = timeIn;
+            document.getElementById('modalTimeOut').value = timeOut;
+
+            document.getElementById('isEditMode').value = '1';
+
             document.getElementById('schedSubmitLabel').textContent = 'Update Schedule';
 
             selectedDates = [date];
-            document.getElementById('schedModalOverlay').style.display = 'flex';
+
+            const modal = getSchedModal();
+            modal.show();
+
             setTimeout(() => {
                 initDatePicker();
-                if (schedDatePicker) schedDatePicker.setDate([date]);
+
+                if (schedDatePicker) {
+                    schedDatePicker.setDate([date]);
+                }
+
                 updateSelectedDatesList();
-            }, 30);
+            }, 150);
         }
 
-        // ---- DELETE (AJAX, called from calendar HTML) ----
+        /* ============================================================
+        CLOSE MODAL
+        ============================================================ */
+        function closeSchedModal() {
+            const modal = getSchedModal();
+            modal.hide();
+        }
+
+        /* ============================================================
+        DELETE SCHEDULE
+        ============================================================ */
         async function deleteScheduleDay(empId, date) {
             if (!confirm('Delete schedule for ' + date + '?')) return;
+
             await fetch(`admin_schedule.php?ajax_delete=1&emp=${empId}&date=${date}`);
             loadCalendar();
         }
 
-        // ---- DATE PICKER ----
+        /* ============================================================
+        DATE PICKER
+        ============================================================ */
         function initDatePicker() {
-            if (schedDatePicker) { schedDatePicker.destroy(); schedDatePicker = null; }
+            if (schedDatePicker) {
+                schedDatePicker.destroy();
+                schedDatePicker = null;
+            }
+
             schedDatePicker = flatpickr('#schedDatePicker', {
-                mode:        'multiple',
-                dateFormat:  'Y-m-d',
-                altInput:    true,
-                altFormat:   'M j, Y',
+                mode: 'multiple',
+                dateFormat: 'Y-m-d',
+                altInput: true,
+                altFormat: 'M j, Y',
                 conjunction: ', ',
+
                 onChange(dates) {
                     selectedDates = dates.map(d => {
                         const y   = d.getFullYear();
@@ -541,20 +664,30 @@ if ($selectedEmpId) {
                         const day = String(d.getDate()).padStart(2, '0');
                         return `${y}-${m}-${day}`;
                     });
+
                     updateSelectedDatesList();
                 }
             });
         }
 
+        /* ============================================================
+        SELECTED DATES UI
+        ============================================================ */
         function updateSelectedDatesList() {
             const list = document.getElementById('selectedDatesList');
+
             if (selectedDates.length === 0) {
                 list.innerHTML = '<p class="text-meta">No dates selected.</p>';
                 return;
             }
+
             const fmt = d => new Date(d + 'T00:00:00').toLocaleDateString('en-US', {
-                weekday: 'short', month: 'short', day: 'numeric', year: 'numeric'
+                weekday: 'short',
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric'
             });
+
             list.innerHTML = selectedDates.map(d => `
                 <span class="selected-date-tag">
                     ${fmt(d)}
@@ -565,151 +698,157 @@ if ($selectedEmpId) {
 
         function removeDate(dateStr) {
             selectedDates = selectedDates.filter(d => d !== dateStr);
-            if (schedDatePicker) schedDatePicker.setDate(selectedDates);
+
+            if (schedDatePicker) {
+                schedDatePicker.setDate(selectedDates);
+            }
+
             updateSelectedDatesList();
         }
 
+        /* ============================================================
+        FORM SUBMIT
+        ============================================================ */
         function prepareSubmit() {
             if (!document.getElementById('modalEmpId').value) {
-                alert('No employee selected.'); return false;
+                alert('No employee selected.');
+                return false;
             }
+
             if (selectedDates.length === 0) {
-                alert('Please select at least one date.'); return false;
+                alert('Please select at least one date.');
+                return false;
             }
-            if (!document.getElementById('modalTimeIn').value || !document.getElementById('modalTimeOut').value) {
-                alert('Please enter time in and time out.'); return false;
+
+            if (
+                !document.getElementById('modalTimeIn').value ||
+                !document.getElementById('modalTimeOut').value
+            ) {
+                alert('Please enter time in and time out.');
+                return false;
             }
-            document.getElementById('selectedDatesInput').value = JSON.stringify(selectedDates);
+
+            document.getElementById('selectedDatesInput').value =
+                JSON.stringify(selectedDates);
+
             return true;
         }
 
-        function closeModal(e) {
-            if (e.target === document.getElementById('schedModalOverlay')) closeModalBtn();
-        }
-        function closeModalBtn() {
-            document.getElementById('schedModalOverlay').style.display = 'none';
-        }
-
-        // Auto-dismiss flash alerts
+        /* ============================================================
+        FLASH ALERT AUTO REMOVE
+        ============================================================ */
         setTimeout(() => {
             document.querySelectorAll('.sched-alert').forEach(a => {
                 a.style.transition = 'opacity 0.5s';
-                a.style.opacity    = '0';
+                a.style.opacity = '0';
+
                 setTimeout(() => a.remove(), 500);
             });
         }, 3000);
-    
-    document.getElementById('importScheduleForm').addEventListener('submit', function(e) {
-        e.preventDefault();
 
-        let formData = new FormData(this);
+        /* ============================================================
+        IMPORT FORM (AJAX)
+        ============================================================ */
+        document.getElementById('importScheduleForm').addEventListener('submit', function (e) {
+            e.preventDefault();
 
-        const btn = this.querySelector('button[type="submit"]');
-        btn.disabled = true;
-        btn.innerHTML = "Importing...";
+            let formData = new FormData(this);
 
-        fetch(this.action, {
-            method: 'POST',
-            body: formData
-        })
-        .then(res => res.json())
-        .then(data => {
+            const btn = this.querySelector('button[type="submit"]');
+            btn.disabled = true;
+            btn.innerHTML = "Importing...";
 
-            btn.disabled = false;
-            btn.innerHTML = "Import Schedule";
+            fetch(this.action, {
+                method: 'POST',
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
 
-            if (data.status === 'success') {
-                alert(`Imported: ${data.inserted} schedules`);
+                btn.disabled = false;
+                btn.innerHTML = "Import Schedule";
 
-                if (data.errors.length > 0) {
-                    console.log("Errors:", data.errors);
-                    alert("Some rows had errors. Check console.");
+                if (data.status === 'success') {
+                    alert(`Imported: ${data.inserted} schedules`);
+
+                    if (data.errors.length > 0) {
+                        console.log("Errors:", data.errors);
+                        alert("Some rows had errors. Check console.");
+                    }
+
+                    location.reload();
+                } else {
+                    alert(data.message || "Import failed");
                 }
-
-                location.reload();
-            } else {
-                alert(data.message || "Import failed");
-            }
-        })
-        .catch(err => {
-            btn.disabled = false;
-            btn.innerHTML = "Import Schedule";
-            console.error(err);
-            alert("Server error occurred.");
-        });
-    });
-
-document.getElementById('scheduleFileInput').addEventListener('change', function (e) {
-
-    const file = e.target.files[0];
-    if (!file) return;
-
-    // ✅ validate file type
-    if (!file.name.endsWith('.xlsx')) {
-        alert("Please upload a valid .xlsx file");
-        e.target.value = '';
-        return;
-    }
-
-    document.getElementById('fileName').textContent = file.name;
-
-        const reader = new FileReader();
-
-        reader.onload = function (event) {
-
-            try {
-                const data = new Uint8Array(event.target.result);
-                const workbook = XLSX.read(data, { type: 'array' });
-
-                const sheetName = workbook.SheetNames[0];
-                const sheet = workbook.Sheets[sheetName];
-
-                const json = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-
-                if (!json || json.length < 2) {
-                    alert("Excel file is empty or invalid");
-                    return;
-                }
-
-                const tbody = document.getElementById('previewBody');
-                tbody.innerHTML = '';
-
-                // skip header row
-                const rows = json.slice(1, 6); // max 5 rows
-
-                rows.forEach(row => {
-
-                    if (!row) return;
-
-                    const employeeId   = row[0] ?? '';
-                    const employeeName = row[1] ?? '';
-                    const startDate    = row[2] ?? '';
-                    const endDate      = row[3] ?? '';
-                    const time         = row[4] ?? '';
-                    const isRestDay    = row[5] ?? 0;
-
-                    tbody.innerHTML += `
-                        <tr>
-                            <td>${employeeId}</td>
-                            <td>${employeeName}</td>
-                            <td>${startDate}</td>
-                            <td>${endDate}</td>
-                            <td>${time}</td>
-                            <td>${isRestDay == 1 ? 'Yes' : 'No'}</td>
-                        </tr>
-                    `;
-                });
-
-                document.getElementById('filePreview').style.display = 'block';
-
-            } catch (err) {
+            })
+            .catch(err => {
+                btn.disabled = false;
+                btn.innerHTML = "Import Schedule";
                 console.error(err);
-                alert("Failed to read Excel file. Make sure it's valid.");
-            }
-        };
+                alert("Server error occurred.");
+            });
+        });
 
-        reader.readAsArrayBuffer(file);
-    });
+        /* ============================================================
+        FILE PREVIEW (EXCEL)
+        ============================================================ */
+        document.getElementById('scheduleFileInput').addEventListener('change', function (e) {
+
+            const file = e.target.files[0];
+            if (!file) return;
+
+            if (!file.name.endsWith('.xlsx')) {
+                alert("Please upload a valid .xlsx file");
+                e.target.value = '';
+                return;
+            }
+
+            document.getElementById('fileName').textContent = file.name;
+
+            const reader = new FileReader();
+
+            reader.onload = function (event) {
+
+                try {
+                    const data = new Uint8Array(event.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+
+                    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const json = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+
+                    if (!json || json.length < 2) {
+                        alert("Excel file is empty or invalid");
+                        return;
+                    }
+
+                    const tbody = document.getElementById('previewBody');
+                    tbody.innerHTML = '';
+
+                    const rows = json.slice(1, 6);
+
+                    rows.forEach(row => {
+                        tbody.innerHTML += `
+                            <tr>
+                                <td>${row[0] ?? ''}</td>
+                                <td>${row[1] ?? ''}</td>
+                                <td>${row[2] ?? ''}</td>
+                                <td>${row[3] ?? ''}</td>
+                                <td>${row[4] ?? ''}</td>
+                                <td>${row[5] == 1 ? 'Yes' : 'No'}</td>
+                            </tr>
+                        `;
+                    });
+
+                    document.getElementById('filePreview').style.display = 'block';
+
+                } catch (err) {
+                    console.error(err);
+                    alert("Failed to read Excel file.");
+                }
+            };
+
+            reader.readAsArrayBuffer(file);
+        });
     </script>
 </body>
 </html>

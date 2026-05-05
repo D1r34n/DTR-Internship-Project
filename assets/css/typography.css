@@ -83,6 +83,7 @@ body {
    ------------------------------------------------ */
 
 .text-primary {
+    color: var(--text-light) !important;
     font-size: 1rem;        /* 16px */
     font-weight: 300;
     line-height: 1.6;
@@ -92,7 +93,7 @@ body {
     font-size: 0.875rem;    /* 14px */
     font-weight: 300;
     line-height: 1.5;
-    color: var(--text-light);
+    color: var(--text-light) !important;
 }
 
 .text-meta {

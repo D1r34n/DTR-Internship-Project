@@ -73,10 +73,9 @@ $employees = $pdo->query("
     <link rel="stylesheet" href="../navbars_revised.css">
 
     <!-- 3. Page-specific CSS -->
-    <link rel="stylesheet" href="admin_employees.css">
+    <link rel="stylesheet" href="admin_employees_revised.css">
 
     <!-- 4. Scripts -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr" defer></script>
 </head>
 <body>
@@ -87,15 +86,55 @@ $employees = $pdo->query("
 
         <?php include '../topbar_revised.php'; ?>
 
-        <div class="content-wrapper">
+        <div class="card card-glass logs-card">
+            <div class="card-body d-flex flex-column logs-card-body">
 
-            <!-- ===== LEFT PANEL ===== -->
-            <div class="card-glass empLeftPanel">
-                <div class="empLeftHeader">
-                    <h6 class="empLeftTitle">Employees</h6>
-                    <div style="display:flex;gap:6px;align-items:center;">
-                        <input type="text" id="empSearch" class="empSearch"
-                                placeholder="Search..." oninput="filterEmployees()">
+                <!-- Filter Section -->
+                <div class="filter-wrapper">
+                    <span class="employee-title text-secondary">
+                        <i class="bi bi-people-fill"></i>
+                        Total Employees: <span id="empCount"><?= count($employees) ?></span>
+                    </span>
+                    <div class="d-flex gap-2 align-items-center ms-auto flex-wrap">
+
+                        <!-- Role filter -->
+                        <div class="dropdown">
+                            <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <span id="roleBtnLabel">All Roles</span>
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li><button class="dropdown-item" type="button" onclick="selectFilter('role','','All Roles')">All Roles</button></li>
+                                <li><button class="dropdown-item" type="button" onclick="selectFilter('role','employee','Employee')">Employee</button></li>
+                                <li><button class="dropdown-item" type="button" onclick="selectFilter('role','workforce','Workforce')">Workforce</button></li>
+                                <li><button class="dropdown-item" type="button" onclick="selectFilter('role','admin','Admin')">Admin</button></li>
+                            </ul>
+                        </div>
+                        <input type="hidden" id="roleFilter" value="">
+
+                        <!-- Dept filter -->
+                        <div class="dropdown">
+                            <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <span id="deptBtnLabel">All Depts</span>
+                            </button>
+                            <ul class="dropdown-menu" id="filterDeptMenu">
+                                <li><button class="dropdown-item" type="button" onclick="selectFilter('dept','','All Depts')">All Depts</button></li>
+                            </ul>
+                        </div>
+                        <input type="hidden" id="deptFilter" value="">
+
+                        <!-- Search -->
+                        <div class="input-group input-group-sm" style="max-width: 220px;">
+                            <span class="input-group-text">
+                                <i class="bi bi-search"></i>
+                            </span>
+                            <input 
+                                type="text" 
+                                id="empSearch" 
+                                class="form-control" 
+                                placeholder="Search..."
+                                oninput="applyFilters()">
+                        </div>
+
                         <button class="empAddBtn" onclick="openAddModal()" title="Add Employee">
                             <i class="bi bi-plus-lg"></i>
                         </button>
@@ -106,72 +145,93 @@ $employees = $pdo->query("
                     <div class="empAlert"><?= $success ?></div>
                 <?php endif; ?>
 
-                <div class="empList" id="empList">
-                    <?php foreach ($employees as $emp): ?>
-                        <div class="empRow"
-                                data-id="<?= $emp['id'] ?>"
-                                data-name="<?= htmlspecialchars($emp['name']) ?>"
-                                data-email="<?= htmlspecialchars($emp['email']) ?>"
-                                data-role="<?= $emp['role'] ?>"
-                                data-dept="<?= htmlspecialchars($emp['department_id'] ?? '') ?>"
-                                data-dept-name="<?= htmlspecialchars($emp['department_name'] ?? '') ?>"
-                                onclick="selectEmployee(<?= $emp['id'] ?>, '<?= htmlspecialchars($emp['name'], ENT_QUOTES) ?>')">
-                            <div class="empName"><?= htmlspecialchars($emp['name']) ?></div>
-                            <div class="empMeta">
-                                <span class="empRoleBadge empRole-<?= $emp['role'] ?>"><?= ucfirst($emp['role']) ?></span>
-                                <?php if ($emp['department_id']): ?>
-                                    <span class="empDept"><?= htmlspecialchars($emp['department_code'] ?? '') ?></span>
-                                <?php endif; ?>
-                            </div>
-                            <div class="empRowActions" onclick="event.stopPropagation()">
-                                <button class="empActionBtn empEditBtn"
-                                        onclick="openEditModal(this.closest('.empRow'))"
-                                        title="Edit">
-                                    <i class="bi bi-pencil-fill"></i>
-                                </button>
-                                <a class="empActionBtn empDeleteBtn"
-                                    href="admin_employees.php?delete=<?= $emp['id'] ?>"
-                                    onclick="return confirm('Delete <?= htmlspecialchars($emp['name'], ENT_QUOTES) ?>?')"
-                                    title="Delete">
-                                    <i class="bi bi-trash-fill"></i>
-                                </a>
-                            </div>
-                        </div>
-                    <?php endforeach; ?>
-                    <?php if (empty($employees)): ?>
-                        <div class="empEmpty">No employees found.</div>
-                    <?php endif; ?>
-                </div>
-            </div>
-
-            <!-- ===== DIVIDER ===== -->
-            <div class="empPanelDivider"></div>
-
-            <!-- ===== RIGHT PANEL ===== -->
-            <div class="empRightPanel">
-
-                <!-- Placeholder -->
-                <div class="empPlaceholder" id="empPlaceholder">
-                    <i class="bi bi-person-lines-fill empPlaceholderIcon"></i>
-                    <p>Select an employee to view their records</p>
+                <!-- Table Header -->
+                <div class="tableHeaderGlass">
+                    <table class="table table-borderless mb-0">
+                        <colgroup>
+                            <col style="width:8%">
+                            <col style="width:22%">
+                            <col style="width:26%">
+                            <col style="width:12%">
+                            <col style="width:20%">
+                            <col style="width:12%">
+                        </colgroup>
+                        <thead>
+                            <tr>
+                                <th class="sortable" onclick="sortBy('id')">ID <i class="bi bi-arrow-down-up sortIcon" id="sort-id"></i></th>
+                                <th class="sortable" onclick="sortBy('name')">Name <i class="bi bi-arrow-down-up sortIcon" id="sort-name"></i></th>
+                                <th class="sortable" onclick="sortBy('email')">Email <i class="bi bi-arrow-down-up sortIcon" id="sort-email"></i></th>
+                                <th class="sortable" onclick="sortBy('role')">Role <i class="bi bi-arrow-down-up sortIcon" id="sort-role"></i></th>
+                                <th class="sortable" onclick="sortBy('deptName')">Department <i class="bi bi-arrow-down-up sortIcon" id="sort-deptName"></i></th>
+                                <th class="text-end">Actions</th>
+                            </tr>
+                        </thead>
+                    </table>
                 </div>
 
-                <!-- Records Content -->
-                <div class="empRecordsContent" id="empRecordsContent" style="display:none;flex-direction:column;flex:1;overflow:hidden;">
+                <!-- Scrollable Body -->
+                <div class="tableScroll">
+                    <table class="table table-hover mb-0">
+                        <colgroup>
+                            <col style="width:8%">
+                            <col style="width:22%">
+                            <col style="width:26%">
+                            <col style="width:12%">
+                            <col style="width:20%">
+                            <col style="width:12%">
+                        </colgroup>
+                        <tbody id="empList">
+                            <?php foreach ($employees as $emp): ?>
+                                <tr class="empRow"
+                                    data-id="<?= $emp['id'] ?>"
+                                    data-name="<?= htmlspecialchars($emp['name']) ?>"
+                                    data-email="<?= htmlspecialchars($emp['email']) ?>"
+                                    data-role="<?= $emp['role'] ?>"
+                                    data-dept="<?= htmlspecialchars($emp['department_id'] ?? '') ?>"
+                                    data-dept-name="<?= htmlspecialchars($emp['department_name'] ?? '') ?>">
 
-                    <div class="empRecordsHeader">
-                        <h6 class="empRecordsTitle">Records for <span id="selectedEmpName"></span></h6>
-                        <div class="empDateWrapper">
-                            <input type="text" id="dateRangePicker" class="empDateInput" readonly>
-                            <i class="bi bi-chevron-down empDateIcon"></i>
-                        </div>
-                    </div>
+                                    <td><?= $emp['id'] ?></td>
+                                    <td><?= htmlspecialchars($emp['name']) ?></td>
+                                    <td><?= htmlspecialchars($emp['email']) ?></td>
+                                    <td>
+                                        <span class="empRoleBadge empRole-<?= $emp['role'] ?>">
+                                            <?= ucfirst($emp['role']) ?>
+                                        </span>
+                                    </td>
+                                    <td><?= htmlspecialchars($emp['department_name'] ?? 'No Department') ?></td>
+                                    <td class="text-end" onclick="event.stopPropagation()">
+                                        <button class="empActionBtn empEditBtn"
+                                                onclick="openEditModal(this.closest('tr'))"
+                                                title="Edit">
+                                            <i class="bi bi-pencil-fill"></i>
+                                        </button>
+                                        <a class="empActionBtn empDeleteBtn"
+                                           href="admin_employees.php?delete=<?= $emp['id'] ?>"
+                                           onclick="return confirm('Delete <?= htmlspecialchars($emp['name'], ENT_QUOTES) ?>?')"
+                                           title="Delete">
+                                            <i class="bi bi-trash-fill"></i>
+                                        </a>
+                                    </td>
 
-                    <div class="ganttContainer" id="ganttContainer">
-                        <!-- AJAX loaded -->
-                    </div>
+                                </tr>
+                            <?php endforeach; ?>
 
+                            <?php if (empty($employees)): ?>
+                                <tr class="emptyRow">
+                                    <td colspan="6">
+                                        <div class="logsEmpty">
+                                            <i class="bi bi-people logsEmptyIcon"></i>
+                                            No employees found.
+                                        </div>
+                                    </td>
+                                </tr>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
                 </div>
+
+                <!-- Pagination -->
+                <div id="empPagination" class="empPagination"></div>
 
             </div>
         </div>
@@ -289,12 +349,133 @@ $employees = $pdo->query("
         let currentStart      = '<?= date('Y-m-01') ?>';
         let currentEnd        = '<?= date('Y-m-t') ?>';
 
-        // ---- EMPLOYEE SEARCH ----
-        function filterEmployees() {
-            const q = document.getElementById('empSearch').value.toLowerCase();
-            document.querySelectorAll('#empList .empRow').forEach(row => {
-                row.style.display = row.dataset.name.toLowerCase().includes(q) ? '' : 'none';
+        // ---- TABLE STATE ----
+        const ROWS_PER_PAGE = 10;
+        let allRows     = [];
+        let sortCol     = null;
+        let sortDir     = 1;
+        let currentPage = 1;
+        let lastTotal   = 0;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            allRows = Array.from(document.querySelectorAll('#empList .empRow'));
+            applyFilters();
+        });
+
+        // ---- FILTER DROPDOWN SELECTION ----
+        function selectFilter(type, value, label) {
+            if (type === 'role') {
+                document.getElementById('roleFilter').value  = value;
+                document.getElementById('roleBtnLabel').textContent = label;
+            } else {
+                document.getElementById('deptFilter').value  = value;
+                document.getElementById('deptBtnLabel').textContent = label;
+            }
+            currentPage = 1;
+            applyFilters();
+        }
+
+        // ---- FILTER + SORT + PAGINATE ----
+        function applyFilters() {
+            const q    = document.getElementById('empSearch').value.toLowerCase().trim();
+            const role = document.getElementById('roleFilter').value;
+            const dept = document.getElementById('deptFilter').value;
+
+            let filtered = allRows.filter(row => {
+                const matchSearch = !q
+                    || row.dataset.name.toLowerCase().includes(q)
+                    || row.dataset.email.toLowerCase().includes(q);
+                const matchRole = !role || row.dataset.role === role;
+                const matchDept = !dept || row.dataset.dept === dept;
+                return matchSearch && matchRole && matchDept;
             });
+
+            if (sortCol) {
+                filtered.sort((a, b) => {
+                    if (sortCol === 'id') {
+                        return sortDir * (parseInt(a.dataset.id) - parseInt(b.dataset.id));
+                    }
+                    const av = (a.dataset[sortCol] || '').toLowerCase();
+                    const bv = (b.dataset[sortCol] || '').toLowerCase();
+                    return sortDir * av.localeCompare(bv);
+                });
+            }
+
+            const total = filtered.length;
+            lastTotal = total;
+            const totalPages = Math.max(1, Math.ceil(total / ROWS_PER_PAGE));
+            if (currentPage > totalPages) currentPage = 1;
+
+            const start = (currentPage - 1) * ROWS_PER_PAGE;
+            const pageSet = new Set(filtered.slice(start, start + ROWS_PER_PAGE));
+
+            allRows.forEach(r => r.style.display = pageSet.has(r) ? '' : 'none');
+
+            const emptyRow = document.querySelector('#empList .emptyRow');
+            if (emptyRow) emptyRow.style.display = total === 0 ? '' : 'none';
+
+            document.getElementById('empCount').textContent = total;
+            renderPagination(total, totalPages, start);
+        }
+
+        // ---- SORT ----
+        function sortBy(col) {
+            if (sortCol === col) sortDir *= -1;
+            else { sortCol = col; sortDir = 1; }
+            updateSortIcons();
+            currentPage = 1;
+            applyFilters();
+        }
+
+        function updateSortIcons() {
+            document.querySelectorAll('.sortIcon').forEach(el => {
+                el.className = 'sortIcon bi bi-arrow-down-up';
+            });
+            if (!sortCol) return;
+            const icon = document.getElementById('sort-' + sortCol);
+            if (icon) icon.className = 'sortIcon bi ' + (sortDir === 1 ? 'bi-arrow-up' : 'bi-arrow-down');
+        }
+
+        // ---- PAGINATION ----
+        function renderPagination(total, totalPages, start) {
+            const pag = document.getElementById('empPagination');
+            if (!pag) return;
+            if (total === 0) { pag.innerHTML = ''; return; }
+
+            const end     = Math.min(start + ROWS_PER_PAGE, total);
+            const showing = `${start + 1}–${end} of ${total}`;
+
+            let html = `<span class="pagInfo">Showing ${showing}</span><div class="pagBtns">`;
+
+            html += `<button class="pagBtn" onclick="changePage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>
+                        <i class="bi bi-chevron-left"></i></button>`;
+
+            getPageNums(currentPage, totalPages).forEach(p => {
+                if (p === '...') {
+                    html += `<span class="pagEllipsis">…</span>`;
+                } else {
+                    html += `<button class="pagBtn${p === currentPage ? ' active' : ''}" onclick="changePage(${p})">${p}</button>`;
+                }
+            });
+
+            html += `<button class="pagBtn" onclick="changePage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>
+                        <i class="bi bi-chevron-right"></i></button>`;
+            html += '</div>';
+            pag.innerHTML = html;
+        }
+
+        function getPageNums(cur, tot) {
+            if (tot <= 7) return Array.from({length: tot}, (_, i) => i + 1);
+            if (cur <= 4)      return [1,2,3,4,5,'...',tot];
+            if (cur >= tot-3)  return [1,'...',tot-4,tot-3,tot-2,tot-1,tot];
+            return [1,'...',cur-1,cur,cur+1,'...',tot];
+        }
+
+        function changePage(n) {
+            const totalPages = Math.max(1, Math.ceil(lastTotal / ROWS_PER_PAGE));
+            if (n < 1 || n > totalPages) return;
+            currentPage = n;
+            applyFilters();
         }
 
         // ---- SELECT EMPLOYEE ----
@@ -423,6 +604,7 @@ $employees = $pdo->query("
             fetch('/DTR-Internship-Project/admin_pages/department_api.php?action=list')
                 .then(r => r.json())
                 .then(depts => {
+                    // Populate modal dropdown
                     const menu = document.getElementById('deptDropdown');
                     menu.innerHTML = '<div class="customSelectItem" onclick="selectDept(\'\',\'Select Department\')">None</div>';
                     depts.forEach(d => {
@@ -431,6 +613,19 @@ $employees = $pdo->query("
                         item.textContent = d.department_name;
                         item.onclick = () => selectDept(d.id, d.department_name);
                         menu.appendChild(item);
+                    });
+
+                    // Populate filter dropdown
+                    const filterMenu = document.getElementById('filterDeptMenu');
+                    depts.forEach(d => {
+                        const li = document.createElement('li');
+                        const btn = document.createElement('button');
+                        btn.type      = 'button';
+                        btn.className = 'dropdown-item';
+                        btn.textContent = d.department_name;
+                        btn.onclick = () => selectFilter('dept', String(d.id), d.department_name);
+                        li.appendChild(btn);
+                        filterMenu.appendChild(li);
                     });
                 })
                 .catch(() => {});

@@ -267,7 +267,7 @@ $currentStatus = $timedIn ? 'Timed In' : 'Timed Out';
                     <!-- Request OB -->
                     <li>
                         <a class="dropdown-item" href="#" onclick="openOBModal()" data-bs-target="#obModal" data-bs-toggle="modal">
-                            <i class="bi bi-calendar-x"></i> Request OB
+                            <i class="bi bi-briefcase"></i> Request OB
                         </a>
                     </li>
                     
