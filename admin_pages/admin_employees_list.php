@@ -73,7 +73,7 @@ $employees = $pdo->query("
     <link rel="stylesheet" href="../navbars_revised.css">
 
     <!-- 3. Page-specific CSS -->
-    <link rel="stylesheet" href="admin_employees_revised.css">
+    <link rel="stylesheet" href="admin_employees_list.css">
 
     <!-- 4. Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/flatpickr" defer></script>

@@ -118,7 +118,42 @@ $requestsOpen = in_array($currentPage, ['employee_requests', 'schedule_requests'
         <!-- ADMIN MENU -->
         <?php if ($role === 'admin'): ?>
             <?php navLink('admin_dashboard.php',   'bi-columns-gap',   'Dashboard',   $currentPage === 'dashboard');  ?>
-            <?php navLink('admin_employees.php',   'bi-people-fill',   'Employees',   $currentPage === 'employees');  ?>
+            <!-- Employee List dropdown -->
+            <div class="sidebar-dropdown">
+                <button
+                    class="sidebar-link sidebar-dropdown-toggle <?= $requestsOpen ? 'active' : '' ?>"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#requests-submenu"
+                    aria-expanded="<?= $requestsOpen ? 'true' : 'false' ?>"
+                    title="Employee List"
+                >
+                    <i class="bi bi-people-fill"></i>
+                    <span>Employees</span>
+                    <i class="bi bi-chevron-down transition-chevron"></i>
+                </button>
+
+                <div id="requests-submenu" class="collapse <?= $requestsOpen ? 'show' : '' ?>">
+                    <a href="admin_employees_list.php"
+                       class="sidebar-sub-link <?= ($currentPage === 'employee_list') ? 'active' : '' ?>"
+                       title="Employee List">
+                        <i class="bi bi-file-earmark-text"></i>
+                        <span>Employee List</span>
+                    </a>
+                    <a href="admin_schedule.php"
+                       class="sidebar-sub-link <?= ($currentPage === 'employee_schedules') ? 'active' : '' ?>"
+                       title="Employee Schedules">
+                        <i class="bi bi-file-earmark-text"></i>
+                        <span>Schedules</span>
+                    </a>
+                    <a href="admin_records.php"
+                       class="sidebar-sub-link <?= ($currentPage === 'employee_records') ? 'active' : '' ?>"
+                       title="Employee Records">
+                        <i class="bi bi-calendar-check"></i>
+                        <span>Records</span>
+                    </a>
+                </div>
+            </div>
+
             <?php navLink('admin_schedule.php',    'bi-calendar-week', 'Schedules',   $currentPage === 'schedule');   ?>
 
             <!-- Requests dropdown -->

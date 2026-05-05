@@ -75,7 +75,7 @@ $logs = $logs->fetchAll(PDO::FETCH_ASSOC);
 
 <div id="main-wrapper" class="p-4">
 
-    <a href="admin_employees.php" class="btn btn-secondary mb-3">
+    <a href="admin_employees_revised.php" class="btn btn-secondary mb-3">
         <i class="bi bi-arrow-left"></i> Back
     </a>
 

@@ -1,0 +1,767 @@
+/* ============================================================
+   BACKGROUND
+   ============================================================ */
+body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: url('../images/drt_bg.jpg') center/cover no-repeat;
+    filter: blur(2px);
+    transform: scale(1.1);
+    z-index: -2;
+}
+
+body {
+    font-family: 'Poppins', sans-serif;
+    min-height: 100vh;
+    margin: 0;
+    overflow-x: hidden;
+}
+
+body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.15), rgba(0,0,0,0.55), rgba(0,0,0,0.85));
+    z-index: -1;
+    pointer-events: none;
+}
+
+/* ============================================================
+   PAGE WRAPPER
+   ============================================================ */
+.empWrapper {
+    position: fixed;
+    top: 60px;
+    left: calc(10px + var(--sidebar-width));
+    width: calc(100% - (10px + var(--sidebar-width)));
+    height: calc(100vh - 60px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10;
+    padding: 20px;
+    box-sizing: border-box;
+    transition: left 0.38s cubic-bezier(0.4,0,0.2,1), width 0.38s cubic-bezier(0.4,0,0.2,1);
+}
+
+/* ============================================================
+   MAIN BOX
+   ============================================================ */
+.empBox {
+    font-family: 'Poppins', sans-serif;
+    background: var(--glass-bg);
+    backdrop-filter: blur(32px) saturate(160%) brightness(0.3);
+    -webkit-backdrop-filter: blur(32px) saturate(160%) brightness(0.3);
+    border: 1px solid var(--glass-border);
+    box-shadow: 0 12px 35px rgba(0,0,0,0.5);
+    border-radius: 16px;
+    width: 100%;
+    height: calc(100vh - 100px);
+    display: flex;
+    overflow: hidden;
+}
+
+/* ============================================================
+   LEFT PANEL
+   ============================================================ */
+.empLeftPanel {
+    width: 290px;
+    min-width: 290px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.empLeftHeader {
+    padding: 24px 18px 12px;
+    flex-shrink: 0;
+}
+
+.empLeftTitle {
+    font-weight: 600;
+    color: #fff;
+    margin: 0 0 10px 0;
+    font-size: 0.95rem;
+}
+
+.empSearch {
+    font-family: 'Poppins', sans-serif;
+    flex: 1;
+    padding: 0.35rem 0.75rem;
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 20px;
+    font-size: 0.78rem;
+    outline: none;
+    background: rgba(0,0,0,0.3);
+    color: #fff;
+    transition: border-color 0.2s;
+}
+.empSearch:focus { border-color: #97be41; }
+.empSearch::placeholder { color: rgba(255,255,255,0.35); }
+
+.empAddBtn {
+    background: rgba(151,190,65,0.15);
+    border: 1px solid rgba(151,190,65,0.3);
+    color: #97be41;
+    border-radius: 8px;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: background 0.2s;
+    flex-shrink: 0;
+}
+.empAddBtn:hover { background: rgba(151,190,65,0.3); }
+
+.empAlert {
+    margin: 0 14px 8px;
+    padding: 8px 12px;
+    background: rgba(151,190,65,0.15);
+    border: 1px solid rgba(151,190,65,0.3);
+    border-radius: 8px;
+    color: #97be41;
+    font-size: 0.78rem;
+    flex-shrink: 0;
+}
+
+/* ============================================================
+   EMPLOYEE LIST
+   ============================================================ */
+.empList {
+    flex: 1;
+    overflow-y: auto;
+    padding: 4px 10px 16px;
+}
+
+.empList::-webkit-scrollbar { width: 4px; }
+.empList::-webkit-scrollbar-track { background: transparent; }
+.empList::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 10px; }
+.empList::-webkit-scrollbar-thumb:hover { background: #97be41; }
+
+.empRow {
+    padding: 10px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.15s;
+    margin-bottom: 2px;
+    border: 1px solid transparent;
+    position: relative;
+}
+
+.empRow:hover { background: rgba(255,255,255,0.06); }
+.empRow:hover .empRowActions { opacity: 1; }
+
+.empRow.active {
+    background: rgba(151,190,65,0.1);
+    border-color: rgba(151,190,65,0.25);
+}
+
+.empName {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #fff;
+    margin-bottom: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding-right: 52px;
+}
+
+.empMeta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.empRoleBadge {
+    font-size: 0.68rem;
+    padding: 1px 8px;
+    border-radius: 10px;
+    font-weight: 500;
+}
+
+.empRole-admin     { background: rgba(151,190,65,0.18); color: #97be41; }
+.empRole-employee  { background: rgba(96,165,250,0.15);  color: #60a5fa; }
+.empRole-workforce { background: rgba(251,191,36,0.15);  color: #fbbf24; }
+
+.empDept {
+    font-size: 0.68rem;
+    color: rgba(255,255,255,0.4);
+}
+
+.empEmpty {
+    padding: 20px 12px;
+    color: rgba(255,255,255,0.3);
+    font-size: 0.82rem;
+    text-align: center;
+}
+
+.empRowActions {
+    position: absolute;
+    top: 50%;
+    right: 10px;
+    transform: translateY(-50%);
+    display: flex;
+    gap: 4px;
+    opacity: 0;
+    transition: opacity 0.15s;
+}
+
+.empActionBtn {
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 0.7rem;
+    text-decoration: none;
+    transition: background 0.2s;
+}
+
+.empEditBtn {
+    background: rgba(96,165,250,0.15);
+    color: #60a5fa;
+}
+.empEditBtn:hover { background: rgba(96,165,250,0.3); color: #60a5fa; }
+
+.empDeleteBtn {
+    background: rgba(220,53,69,0.12);
+    color: #ff8a8a;
+}
+.empDeleteBtn:hover { background: rgba(220,53,69,0.25); color: #dc3545; }
+
+/* ============================================================
+   DIVIDER
+   ============================================================ */
+.empPanelDivider {
+    width: 1px;
+    background: rgba(255,255,255,0.1);
+    flex-shrink: 0;
+}
+
+/* ============================================================
+   RIGHT PANEL
+   ============================================================ */
+.empRightPanel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-width: 0;
+}
+
+/* ============================================================
+   PLACEHOLDER
+   ============================================================ */
+.empPlaceholder {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    color: rgba(255,255,255,0.2);
+    gap: 14px;
+}
+
+.empPlaceholderIcon { font-size: 3rem; }
+.empPlaceholder p { font-size: 0.9rem; margin: 0; }
+
+/* ============================================================
+   RECORDS CONTENT
+   ============================================================ */
+.empRecordsHeader {
+    padding: 22px 24px 14px;
+    flex-shrink: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    border-bottom: 1px solid rgba(255,255,255,0.07);
+}
+
+.empRecordsTitle {
+    font-weight: 600;
+    color: #fff;
+    margin: 0;
+    font-size: 0.95rem;
+}
+.empRecordsTitle span { color: #97be41; }
+
+.empDateWrapper {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+}
+
+.empDateInput {
+    font-family: 'Poppins', sans-serif;
+    font-size: 0.82rem;
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 8px;
+    color: #fff;
+    padding: 0.3rem 1.6rem 0.3rem 0.75rem;
+    cursor: pointer;
+    outline: none;
+    transition: border-color 0.2s;
+    min-width: 180px;
+}
+.empDateInput:focus { border-color: #97be41; }
+
+.empDateIcon {
+    position: absolute;
+    right: 8px;
+    pointer-events: none;
+    color: rgba(255,255,255,0.4);
+    font-size: 0.75rem;
+}
+
+/* ============================================================
+   LOADING SPINNER
+   ============================================================ */
+.empSpinner {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(255,255,255,0.15);
+    border-top-color: #97be41;
+    border-radius: 50%;
+    animation: empSpin 0.7s linear infinite;
+    vertical-align: middle;
+    margin-right: 6px;
+}
+@keyframes empSpin { to { transform: rotate(360deg); } }
+
+/* ============================================================
+   MODAL
+   ============================================================ */
+.empModalOverlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    z-index: 9999;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.empModal {
+    background: var(--glass-bg);
+    backdrop-filter: blur(32px) saturate(160%) brightness(0.3);
+    -webkit-backdrop-filter: blur(32px) saturate(160%) brightness(0.3);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    width: 580px;
+    max-width: 95vw;
+    box-shadow: 0 12px 35px rgba(0,0,0,0.5);
+}
+
+.empModalHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 24px 14px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+
+.empModalHeader h6 {
+    margin: 0;
+    font-weight: 600;
+    color: #fff;
+    font-size: 0.95rem;
+}
+
+.empModalHeader button {
+    background: none;
+    border: none;
+    color: rgba(255,255,255,0.4);
+    font-size: 1rem;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+.empModalHeader button:hover { color: #fff; }
+
+.empModalBody { padding: 20px 24px 24px; }
+
+/* ============================================================
+   FORM (shared between modal and general use)
+   ============================================================ */
+.formGrid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.formGroup {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 200px;
+}
+
+.formGroup label {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: rgba(255,255,255,0.6);
+    margin-bottom: 0.35rem;
+}
+
+.formControl {
+    font-family: 'Poppins', sans-serif;
+    padding: 0.4rem 0.8rem;
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 6px;
+    font-size: 0.875rem;
+    outline: none;
+    background: rgba(0,0,0,0.3);
+    color: #fff;
+    transition: border-color 0.2s;
+}
+.formControl:focus { border-color: #97be41; }
+
+.customSelectWrapper { position: relative; }
+
+.customSelectToggle {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.4rem 0.8rem;
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 6px;
+    background: rgba(0,0,0,0.3);
+    color: #fff;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: border-color 0.2s;
+    user-select: none;
+}
+.customSelectToggle:hover { border-color: #97be41; }
+
+.customSelectMenu {
+    display: none;
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    width: 100%;
+    background: #1e1e1e;
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 8px;
+    z-index: 9999;
+    max-height: 200px;
+    overflow-y: auto;
+}
+.customSelectMenu::-webkit-scrollbar { width: 4px; }
+.customSelectMenu::-webkit-scrollbar-track { background: transparent; }
+.customSelectMenu::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 4px; }
+.customSelectMenu::-webkit-scrollbar-thumb:hover { background: #97be41; }
+.customSelectMenu.show { display: block; }
+
+.customSelectItem {
+    padding: 0.55rem 1rem;
+    font-family: 'Poppins', sans-serif;
+    font-size: 0.85rem;
+    color: rgba(255,255,255,0.75);
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.customSelectItem:hover { background: rgba(151,190,65,0.12); color: #97be41; }
+
+.formActions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 1.5rem;
+}
+
+.btnSave {
+    font-family: 'Poppins', sans-serif;
+    background: #97be41;
+    color: #fff;
+    border: none;
+    padding: 0.5rem 1.5rem;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.btnSave:hover { background: #7ea832; }
+
+.btnCancel {
+    font-family: 'Poppins', sans-serif;
+    color: rgba(255,255,255,0.5);
+    background: none;
+    border: none;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+.btnCancel:hover 
+{ 
+    color: #dc3545; 
+}
+
+/* ============================================================
+   GANTT CONTAINER
+   ============================================================ */
+.ganttContainer {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2.5rem;
+    padding: 1.2rem 1.5rem;
+    overflow-y: auto;
+    min-height: 0;
+}
+
+.ganttContainer::-webkit-scrollbar { width: 5px; }
+.ganttContainer::-webkit-scrollbar-track { background: rgba(255,255,255,0.03); }
+.ganttContainer::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 10px; }
+.ganttContainer::-webkit-scrollbar-thumb:hover { background: #97be41; }
+
+.ganttRow {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.ganttEmpty {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    color: rgba(255,255,255,0.3);
+    font-size: 0.85rem;
+}
+
+.ganttEmptyIcon { font-size: 2rem; opacity: 0.4; }
+
+.ganttLabel {
+    width: 10rem;
+    font-size: 0.875rem;
+    font-weight: 400;
+    color: var(--text-light);
+    flex-shrink: 0;
+}
+
+.ganttSubLabel {
+    font-size: 0.75rem;
+    font-weight: 300;
+    color: var(--text-muted);
+}
+
+.ganttBarContainer {
+    position: relative;
+    flex: 1;
+    height: 30px;
+    background: var(--gantt-bar-bg);
+    background-image: repeating-linear-gradient(
+        to right,
+        var(--gantt-grid-line) 0px,
+        var(--gantt-grid-line) 1px,
+        transparent 1px,
+        transparent calc(100% / 24)
+    );
+    border-radius: 8px;
+    overflow: visible;
+}
+
+.ganttBarContainer:hover .ganttScale { opacity: 1; }
+
+.ganttScale {
+    position: absolute;
+    bottom: -20px;
+    left: 0;
+    width: 100%;
+    height: 20px;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    pointer-events: none;
+}
+
+.ganttScaleItem {
+    position: absolute;
+    transform: translateX(-50%);
+    font-size: 0.7rem;
+    color: var(--gantt-scale-color);
+    white-space: nowrap;
+}
+.ganttScaleItem:first-child { transform: translateX(0%); }
+.ganttScaleItem:last-child  { transform: translateX(-100%); }
+
+.ganttCursor {
+    position: absolute;
+    top: 0; left: 0;
+    height: 100%; width: 100%;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+    z-index: 20;
+}
+.ganttBarContainer:hover .ganttCursor { opacity: 1; }
+
+.ganttCursorLine {
+    position: absolute;
+    top: 0;
+    width: 2px;
+    height: 100%;
+    background: var(--gantt-cursor-line);
+    transform: translateX(-1px);
+}
+
+.ganttCursorLabel {
+    position: absolute;
+    top: -18px;
+    transform: translateX(-50%);
+    font-size: 0.7rem;
+    color: var(--text-lightest);
+    background: var(--gantt-cursor-bg);
+    padding: 2px 6px;
+    border-radius: 4px;
+    white-space: nowrap;
+}
+
+.ganttBar {
+    position: absolute;
+    top: 0;
+    height: 100%;
+    transition: left 0.3s ease, width 0.3s ease !important;
+}
+
+.ganttBarScheduled  { background: var(--gantt-scheduled); border: 1px dashed var(--gantt-scheduled-border); }
+.ganttBarEarly      { background: var(--gantt-early); border: 1px solid var(--gantt-early-border); }
+.ganttBarTardy      { background: var(--gantt-tardy); }
+.ganttBarOnTime     { background: var(--gantt-ontime); }
+.ganttBarUndertime  { background: var(--gantt-early); }
+.ganttBarBreak      { background: var(--gantt-break); opacity: 0.85; z-index: 5; }
+.ganttBarPending    { background: var(--gantt-pending); border: 1px dashed var(--gantt-pending-border); }
+.ganttBarAbsent     { background: var(--gantt-absent); border: 1px dashed var(--danger); }
+.ganttBarNoTimeOut  { background: var(--gantt-no-timeout); opacity: 0.85; }
+.ganttBarOvertimePending  { background: var(--gantt-ot-pending); }
+.ganttBarOvertimeApproved { background: var(--gantt-ot-approved); }
+
+.ganttBarLabel {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: 600;
+    color: #fff;
+    text-transform: uppercase;
+    white-space: nowrap;
+    overflow: hidden;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    pointer-events: none;
+    z-index: 2;
+}
+.ganttBar:hover .ganttBarLabel { opacity: 1; }
+
+.ganttAbsentLabel,
+.ganttPendingLabel {
+    position: absolute;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    pointer-events: none;
+    white-space: nowrap;
+    z-index: 2;
+}
+.ganttAbsentLabel  { color: var(--gantt-absent-color); }
+.ganttPendingLabel { color: var(--text-lightest); }
+
+.ganttMarker {
+    position: absolute;
+    top: -6px;
+    height: calc(100% + 12px);
+    width: 2px;
+    z-index: 10;
+}
+.ganttMarkerActualStart { border-left: 2px solid var(--gantt-marker-in);  filter: drop-shadow(0 0 6px var(--gantt-marker-in-glow)); }
+.ganttMarkerActualEnd   { border-left: 2px solid var(--gantt-marker-out); filter: drop-shadow(0 0 6px var(--gantt-marker-out-glow)); }
+
+/* ============================================================
+   GANTT TOOLTIP
+   ============================================================ */
+#gantt_tooltip {
+    position: fixed;
+    background: var(--glass-bg);
+    backdrop-filter: blur(32px) saturate(160%) brightness(0.3);
+    -webkit-backdrop-filter: blur(32px) saturate(160%) brightness(0.3);
+    border: 1px solid var(--glass-border);
+    box-shadow: 0 12px 35px var(--box-shadow-heavy);
+    color: var(--text-lightest);
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 0.75rem;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+    white-space: nowrap;
+    z-index: 9999;
+    transform: translate(-50%, calc(-100% - 3rem));
+    min-width: 200px;
+}
+#gantt_tooltip.visible { opacity: 1; }
+
+.ganttToolTipRow {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 2px 0;
+}
+.ganttToolTipLabel { color: var(--text-muted); }
+.ganttToolTipValue { font-weight: 500; }
+.ganttToolTipLate .ganttToolTipValue      { color: var(--tooltip-late); }
+.ganttToolTipOverTime .ganttToolTipValue  { color: var(--tooltip-overtime); }
+.ganttToolTipUnderTime .ganttToolTipValue { color: var(--tooltip-undertime); }
+.ganttToolTipOverBreak .ganttToolTipValue { color: var(--tooltip-overbreak); }
+
+/* ============================================================
+   FLATPICKR DARK THEME
+   ============================================================ */
+.flatpickr-calendar {
+    background: var(--glass-bg) !important;
+    backdrop-filter: blur(32px) saturate(160%) brightness(0.3) !important;
+    -webkit-backdrop-filter: blur(32px) saturate(160%) brightness(0.3) !important;
+    border: 1px solid var(--glass-border) !important;
+    border-radius: 16px !important;
+    box-shadow: 0 12px 35px rgba(0,0,0,0.5) !important;
+    font-family: 'Poppins', sans-serif !important;
+    color: var(--text-light) !important;
+}
+.flatpickr-month { color: var(--text-lightest) !important; fill: var(--text-lightest) !important; }
+.flatpickr-current-month input.cur-year,
+.flatpickr-current-month .flatpickr-monthDropdown-months {
+    background: transparent !important;
+    color: var(--text-lightest) !important;
+    font-family: 'Poppins', sans-serif !important;
+}
+.flatpickr-prev-month, .flatpickr-next-month { fill: var(--text-light) !important; color: var(--text-light) !important; }
+.flatpickr-weekday { color: var(--gantt-scale-color) !important; font-family: 'Poppins', sans-serif !important; }
+.flatpickr-day { color: var(--text-light) !important; border-radius: 8px !important; font-family: 'Poppins', sans-serif !important; }
+.flatpickr-day:hover { background: var(--overlay-hover) !important; border-color: transparent !important; }
+.flatpickr-day.selected, .flatpickr-day.startRange, .flatpickr-day.endRange {
+    background: var(--primary-color) !important; border-color: var(--primary-color) !important; color: #fff !important;
+}
+.flatpickr-day.inRange { background: var(--primary-range) !important; border-color: transparent !important; box-shadow: none !important; }
+.flatpickr-day.today { border-color: var(--primary-glow) !important; }
+.flatpickr-day.flatpickr-disabled, .flatpickr-day.prevMonthDay, .flatpickr-day.nextMonthDay {
+    color: var(--overlay-muted) !important;
+}
+.flatpickr-input { background: transparent !important; border: none !important; color: var(--text-light) !important; }
+.flatpickr-input.empDateInput { background: transparent !important; border: 1px solid rgba(255,255,255,0.15) !important; color: #fff !important; }
