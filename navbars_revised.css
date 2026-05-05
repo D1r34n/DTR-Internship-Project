@@ -25,6 +25,17 @@
 }
 
 /* ================================================
+   TOPBAR
+   ================================================ */
+.topbar {
+    margin: 1rem 1rem 0rem 1rem;
+    padding: 0rem;
+}
+
+.topbar .container-fluid {
+    padding: 0rem;
+}
+/* ================================================
    DROPDOWN MENU (BREAK STATE)
    ================================================ */
 
@@ -155,17 +166,14 @@
 
 #sidebar {
     width: var(--sidebar-width);
-    height: calc(100vh - 16px);
+    height: 100vh;
     background: var(--bg-darkest);
-    border-radius: 12px;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.55),
                 0 0 0 1px rgba(255, 255, 255, 0.06);
     color: var(--text-light);
     overflow: hidden;
     position: sticky;
-    top: 8px;
     align-self: flex-start;
-    margin: 0.5rem 0 0.5rem 0.5rem;
     transition: width 0.25s ease;
     z-index: 1000;
     gap: 1rem;

@@ -153,14 +153,14 @@ if ($selectedEmpId) {
 
         <?php include '../topbar_revised.php'; ?>
 
-        <div class="card card-glass logs-card">
+        <div class="logs-card">
             <div class="card-body d-flex flex-column logs-card-body">
 
                 <!-- Split panel (horizontal flex row) -->
-                <div class="d-flex flex-grow-1" style="overflow:hidden;min-height:0;">
+                <div class="d-flex flex-grow-1 panel-container" style="overflow:hidden;min-height:0;gap:20px">
 
                     <!-- ===== LEFT PANEL ===== -->
-                    <div class="sched-left-panel">
+                    <div class="card-glass sched-left-panel">
                         <div class="sched-left-header">
                             <h6 class="sched-left-title">Employees</h6>
                             <input type="text" id="empSearch" class="sched-emp-search"
@@ -195,11 +195,8 @@ if ($selectedEmpId) {
                         </div>
                     </div>
 
-                    <!-- ===== DIVIDER ===== -->
-                    <div class="sched-panel-divider"></div>
-
                     <!-- ===== RIGHT PANEL ===== -->
-                    <div class="sched-right-panel">
+                    <div class="card-glass sched-right-panel">
 
                         <!-- Placeholder -->
                         <div class="sched-placeholder" id="schedPlaceholder">

@@ -45,12 +45,12 @@ body {
 
 .breadcrumb-item {
     color: var(--text-muted);
-    font-weight: 300;
+    font-weight: 400;
 }
 
 .breadcrumb-item.active {
     color: var(--text-light);
-    font-weight: 300;
+    font-weight: 400;
 }
 
 .breadcrumb-item + .breadcrumb-item::before {
@@ -58,6 +58,7 @@ body {
     padding: 0 0.5rem;
 }
 
+.navbar-brand,
 .page-header {
     font-size: 1.5rem;      /* 24px */
     font-weight: 500;
