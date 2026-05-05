@@ -1,86 +1,10 @@
-/* ---------- Bootstrap Modal Override ---------- */
-#leaveModal .modal-content {
-    background: var(--glass-bg);
-    backdrop-filter: blur(32px) saturate(160%) brightness(0.3);
-    -webkit-backdrop-filter: blur(32px) saturate(160%) brightness(0.3);
-    border: 1px solid var(--glass-border);
-    border-radius: 16px;
-    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.5);
-    color: var(--text-light);
-}
-#leaveModal .modal-header,
-#leaveModal .modal-footer {
-    border-color: var(--glass-border);
-}
-#leaveModal .modal-title { color: #fff; }
-#leaveModal .btn-close { filter: invert(1); }
-
-
 /* ============================================================
    LEAVE REQUEST MODAL — leave_modal.css
    ============================================================ */
 
-/* ---------- Overlay ---------- */
-#leaveModalOverlay {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.6);
-    z-index: 99999;
-    justify-content: center;
-    align-items: center;
-}
-
-/* ---------- Modal Box ---------- */
-.leave-modal-box {
-    background: var(--glass-bg);
-    backdrop-filter: blur(32px) saturate(160%) brightness(0.3);
-    -webkit-backdrop-filter: blur(32px) saturate(160%) brightness(0.3);
-    border: 1px solid var(--glass-border);
-    border-radius: 16px;
-    padding: 2rem 1.5rem 2rem 2rem;
-    width: 750px;
-    max-height: 85vh;
-    overflow-y: auto;
-    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.5);
-}
-
-/* ---------- Modal Header ---------- */
-.leave-modal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1.5rem;
-}
-
-.leave-modal-title {
-    color: #fff;
-    margin: 0;
-    font-weight: 600;
-}
-
-.leave-modal-close-btn {
-    background: none;
-    border: none;
-    color: #aaa;
-    font-size: 1.3rem;
-    cursor: pointer;
-}
-
 /* ---------- Leave Type Section ---------- */
 .leave-type-section {
     margin-bottom: 1rem;
-}
-
-.leave-label {
-    color: rgba(255, 255, 255, 0.7);
-    font-size: 0.85rem;
-    font-weight: 600;
-    display: block;
-    margin-bottom: 0.5rem;
 }
 
 /* ---------- Leave Type Custom Dropdown ---------- */
@@ -182,83 +106,36 @@
     margin-bottom: 1.5rem;
 }
 
-/* ---------- Reason Textarea ---------- */
-.leave-textarea {
-    width: 100%;
-    background: rgba(0, 0, 0, 0.3);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    border-radius: 8px;
-    color: #fff;
-    padding: 0.6rem 0.8rem;
-    font-family: 'Poppins', sans-serif;
-    font-size: 0.875rem;
-    outline: none;
-    resize: none;
-}
-
-/* ---------- Submit Button ---------- */
-.leave-submit-btn {
-    margin-top: 1rem;
-    background: #97be41;
-    color: #fff;
-    border: none;
-    padding: 0.5rem 1.5rem;
-    border-radius: 8px;
-    font-family: 'Poppins', sans-serif;
-    font-size: 0.9rem;
-    cursor: pointer;
-    transition: background 0.2s;
-}
-
-.leave-submit-btn:hover {
-    background: #82a835;
-}
-
-/* ---------- Feedback Messages ---------- */
-.leave-error-msg {
-    display: none;
-    margin-top: 1rem;
-    background: rgba(220, 53, 69, 0.15);
-    border: 1px solid rgba(220, 53, 69, 0.3);
-    border-radius: 8px;
-    padding: 0.8rem 1rem;
-    color: #ff8a8a;
-    font-size: 0.875rem;
-}
-
-.leave-success-msg {
-    display: none;
-    margin-top: 1rem;
-    background: rgba(151, 190, 65, 0.15);
-    border: 1px solid rgba(151, 190, 65, 0.3);
-    border-radius: 8px;
-    padding: 0.8rem 1rem;
-    color: #97be41;
-    font-size: 0.875rem;
-}
-
 /* -----------------------------------
      LEAVE CALENDAR OVERRIDES
-     (mirrors employee_schedule.css — scoped to #leaveCalendar)
+     (admin_schedule card-grid style — scoped to #leaveCalendar)
 ----------------------------------- */
+
+/* Strip all native FullCalendar borders/backgrounds */
 #leaveCalendar .fc {
+    --fc-page-bg-color:      transparent;
+    --fc-border-color:       transparent;
+    --fc-today-bg-color:     transparent;
+    --fc-neutral-bg-color:   transparent;
+    --fc-highlight-color:    transparent;
+    --fc-non-business-color: transparent;
     color: var(--text-light);
     font-family: 'Poppins', sans-serif;
     width: 100%;
 }
 
-#leaveCalendar .fc .fc-toolbar {
-    margin-bottom: 1rem;
-}
+#leaveCalendar .fc .fc-toolbar { margin-bottom: 1rem; }
 
 #leaveCalendar .fc .fc-toolbar-title {
     font-size: 1rem;
     font-weight: 500;
-    color: var(--text-light);
+    color: var(--text-lightest);
 }
 
-#leaveCalendar .fc .fc-button {
-    background: rgba(255, 255, 255, 0.08);
+/* Nav / Today buttons */
+#leaveCalendar .fc .fc-button,
+#leaveCalendar .fc .fc-today-button {
+    background: var(--glass-bg);
     border: 1px solid var(--glass-border);
     color: var(--text-light);
     font-family: 'Poppins', sans-serif;
@@ -270,48 +147,19 @@
     transition: background 0.2s ease, color 0.2s ease;
 }
 
-#leaveCalendar .fc .fc-button:hover {
-    background: rgba(255, 255, 255, 0.14);
+#leaveCalendar .fc .fc-button:hover,
+#leaveCalendar .fc .fc-today-button:hover {
+    background: var(--glass-hover);
     border-color: rgba(255, 255, 255, 0.2);
     color: var(--text-lightest);
     box-shadow: none;
 }
 
-#leaveCalendar .fc .fc-button:focus {
-    box-shadow: none;
-    outline: none;
-}
+#leaveCalendar .fc .fc-button:focus { box-shadow: none; outline: none; }
 
 #leaveCalendar .fc .fc-button-primary:not(:disabled).fc-button-active,
 #leaveCalendar .fc .fc-button-primary:not(:disabled):active {
     background: var(--primary-color);
-    border-color: var(--primary-hover);
-    color: #fff;
-    box-shadow: none;
-}
-
-#leaveCalendar .fc .fc-today-button {
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid var(--glass-border);
-    color: var(--text-light);
-    font-family: 'Poppins', sans-serif;
-    font-size: 0.8rem;
-    font-weight: 400;
-    padding: 0.3rem 0.8rem;
-    border-radius: 8px;
-    box-shadow: none;
-    transition: background 0.2s ease, color 0.2s ease;
-}
-
-#leaveCalendar .fc .fc-today-button:hover {
-    background: rgba(255, 255, 255, 0.14);
-    border-color: rgba(255, 255, 255, 0.2);
-    color: var(--text-lightest);
-    box-shadow: none;
-}
-
-#leaveCalendar .fc .fc-today-button:active {
-    background: var(--primary-hover);
     border-color: var(--primary-hover);
     color: #fff;
     box-shadow: none;
@@ -325,40 +173,69 @@
     cursor: default;
 }
 
+/* Day-name header row — muted, small, uppercase (matches sched-cal-day-header) */
 #leaveCalendar .fc .fc-col-header-cell {
-    background: rgba(255, 255, 255, 0.04);
-    border-color: var(--glass-border);
-    padding: 0.5rem 0;
+    background: transparent;
+    border: none;
+    padding: 0.2rem 0 0.3rem;
 }
 
 #leaveCalendar .fc .fc-col-header-cell-cushion {
-    color: var(--text-light);
-    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-size: 0.68rem;
     font-weight: 500;
     text-decoration: none;
     text-transform: uppercase;
-    letter-spacing: 0.07em;
+    letter-spacing: 0.05em;
 }
 
+/* Remove scrollgrid table borders */
+#leaveCalendar .fc .fc-scrollgrid,
+#leaveCalendar .fc .fc-scrollgrid-section > td,
+#leaveCalendar .fc .fc-scrollgrid-section > th {
+    border: none !important;
+    background-color: transparent;
+}
+
+/* <td> wrapper — transparent, no border */
 #leaveCalendar .fc .fc-daygrid-day {
-    background: transparent;
-    border-color: var(--glass-border);
+    background: transparent !important;
+    border: none !important;
     cursor: pointer;
 }
 
-#leaveCalendar .fc .fc-daygrid-day:hover {
-    background: rgba(255, 255, 255, 0.03);
+/* Inner frame — card style (mirrors .sched-cal-day) */
+#leaveCalendar .fc .fc-daygrid-day-frame {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 8px;
+    overflow: hidden;
+    margin: 2px;
+    min-height: 80px;
+    transition: background 0.2s, border-color 0.2s;
 }
 
+#leaveCalendar .fc .fc-daygrid-day:hover .fc-daygrid-day-frame {
+    background: var(--glass-hover);
+}
+
+/* Day number — muted, small (matches sched-cal-day-num) */
 #leaveCalendar .fc .fc-daygrid-day-number {
-    color: var(--text-light);
-    font-size: 0.8rem;
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    font-weight: 500;
     text-decoration: none;
     padding: 4px 8px;
 }
 
+/* Today — primary border + glow (matches sched-cal-day.is-today) */
 #leaveCalendar .fc .fc-day-today {
-    background: rgba(151, 190, 65, 0.08) !important;
+    background: transparent !important;
+}
+
+#leaveCalendar .fc .fc-day-today .fc-daygrid-day-frame {
+    border-color: var(--primary-border) !important;
+    box-shadow: 0 0 0 1px var(--primary-soft);
 }
 
 #leaveCalendar .fc .fc-day-today .fc-daygrid-day-number {
@@ -366,27 +243,11 @@
     font-weight: 600;
 }
 
-#leaveCalendar .fc .fc-scrollgrid {
-    border-color: var(--glass-border);
-    border-radius: 10px;
-    overflow: hidden;
-}
+/* Suppress FullCalendar highlight / bg-harness */
+#leaveCalendar .fc .fc-highlight        { background: transparent !important; }
+#leaveCalendar .fc .fc-daygrid-bg-harness { background: transparent; }
 
-#leaveCalendar .fc .fc-scrollgrid-section > td,
-#leaveCalendar .fc .fc-scrollgrid-section > th {
-    border-color: var(--glass-border);
-    background-color: transparent;
-}
-
-#leaveCalendar .fc .fc-highlight {
-    background: transparent !important;
-}
-
-#leaveCalendar .fc .fc-daygrid-bg-harness {
-    background: transparent;
-}
-
-/* Smooth resize transition (matches schedule page) */
+/* Width transition */
 #leaveCalendar .fc .fc-daygrid-body,
 #leaveCalendar .fc .fc-scrollgrid-sync-table,
 #leaveCalendar .fc table,
@@ -395,21 +256,36 @@
     transition: width 0.38s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* ---------- Leave-specific states ---------- */
-#leaveCalendar .fc-day-selected {
-    background: rgba(151, 190, 65, 0.25) !important;
+#leaveCalendar .fc-daygrid-day-top {
+    display: flex;
+    align-items: center;
 }
 
+/* ---------- Leave-specific states ---------- */
+
+/* Selected — primary glass card */
+#leaveCalendar .fc-day-selected .fc-daygrid-day-frame {
+    background: var(--primary-glass) !important;
+    border-color: var(--primary-border) !important;
+}
+
+/* Dimmed — non-selectable */
 #leaveCalendar .fc-day-dimmed {
-    opacity: 0.25;
+    opacity: 0.3;
     pointer-events: none !important;
 }
 
+/* On leave — danger card */
 #leaveCalendar .fc-day-on-leave {
-    background: rgba(220, 53, 69, 0.18) !important;
     opacity: 0.6 !important;
 }
 
+#leaveCalendar .fc-day-on-leave .fc-daygrid-day-frame {
+    background: var(--danger-glass) !important;
+    border-color: var(--danger-border) !important;
+}
+
+/* Check icon */
 #leaveCalendar .leave-check {
     display: inline-flex;
     align-items: center;
@@ -419,28 +295,8 @@
     vertical-align: middle;
 }
 
-#leaveCalendar .fc-daygrid-day-top {
-    display: flex;
-    align-items: center;
-}
-
-/* -----------------------------------------
-         MODAL SCROLLBAR OVERRIDES
------------------------------------------ */
-#leaveModalOverlay ::-webkit-scrollbar {
-    width: 6px;
-}
-
-#leaveModalOverlay ::-webkit-scrollbar-track {
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 10px;
-}
-
-#leaveModalOverlay ::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.2);
-    border-radius: 10px;
-}
-
-#leaveModalOverlay ::-webkit-scrollbar-thumb:hover {
-    background: #97be41;
-}
+/* ---------- Modal scrollbar ---------- */
+#leaveModalOverlay ::-webkit-scrollbar       { width: 6px; }
+#leaveModalOverlay ::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); border-radius: 10px; }
+#leaveModalOverlay ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 10px; }
+#leaveModalOverlay ::-webkit-scrollbar-thumb:hover { background: #97be41; }

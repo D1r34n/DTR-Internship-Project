@@ -1,4 +1,31 @@
 /* ================================================
+   BOOTSTRAP MODAL OVERRIDE
+   ================================================ */
+
+.modal-content {
+    background: var(--glass-bg) !important;
+    backdrop-filter: blur(32px) saturate(160%) brightness(0.3) !important;
+    -webkit-backdrop-filter: blur(32px) saturate(160%) brightness(0.3) !important;
+    border: 1px solid var(--glass-border) !important;
+    border-radius: 16px !important;
+    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.5) !important;
+    color: var(--text-light) !important;
+}
+
+.modal-header,
+.modal-footer {
+    border-color: var(--glass-border) !important;
+}
+
+.modal-title {
+    color: #fff !important;
+}
+
+.btn-close {
+    filter: invert(1) !important;
+}
+
+/* ================================================
    DIVIDER
    ================================================ */
 
@@ -438,4 +465,179 @@ button.btn {
 .tooltip.bs-tooltip-end.show {
     transform: translateX(0);
     transition: transform 0.18s ease, opacity 0.15s ease;
+}
+
+/* ================================================
+   CALENDAR
+   ================================================ */
+
+.fc {
+    color: var(--text-light);
+    font-family: 'Poppins', sans-serif;
+    width: 100%;
+    height: 100%;
+}
+
+.fc .fc-toolbar {
+    margin-bottom: 1rem;
+}
+
+.fc .fc-toolbar-title {
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--text-light);
+}
+
+.fc .fc-button {
+    background: var(--calendar-btn-bg);
+    border: 1px solid var(--glass-border);
+    color: var(--text-light);
+    font-family: 'Poppins', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 400;
+    padding: 0.3rem 0.8rem;
+    border-radius: 8px;
+    box-shadow: none;
+    transition: background 0.2s ease, color 0.2s ease;
+}
+
+.fc .fc-button:hover {
+    background: var(--calendar-btn-hover-bg);
+    border-color: var(--calendar-btn-hover-border);
+    color: var(--text-lightest);
+    box-shadow: none;
+}
+
+
+.fc .fc-button:focus {
+    box-shadow: none;
+    outline: none;
+}
+
+.fc .fc-button-primary:not(:disabled).fc-button-active,
+.fc .fc-button-primary:not(:disabled):active {
+    background: var(--primary-color);
+    border-color: var(--primary-hover);
+    color: var(--bg-light);
+    box-shadow: none;
+}
+
+/* Current month button */
+.fc .fc-today-button {
+    background: var(--calendar-btn-bg);
+    border: 1px solid var(--glass-border);
+    color: var(--text-light);
+    font-family: 'Poppins', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 400;
+    padding: 0.3rem 0.8rem;
+    border-radius: 8px;
+    box-shadow: none;
+    transition: background 0.2s ease, color 0.2s ease;
+}
+
+.fc .fc-today-button:hover {
+    background: var(--calendar-btn-hover-bg);
+    border-color: var(--calendar-btn-hover-border);
+    color: var(--text-lightest);
+    box-shadow: none;
+}
+
+.fc .fc-today-button:active {
+    background: var(--primary-hover);
+    border-color: var(--primary-hover);
+    color: var(--bg-light);
+    box-shadow: none;
+}
+
+.fc .fc-today-button:disabled {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+    color: var(--bg-light);
+    opacity: 1;
+    cursor: default;
+}
+
+.fc .fc-col-header-cell {
+    background: var(--overlay-soft);
+    border-color: var(--glass-border);
+    padding: 0.5rem 0;
+}
+
+.fc .fc-col-header-cell-cushion {
+    color: var(--text-light);
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-decoration: none;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+}
+
+.fc .fc-daygrid-day {
+    background: transparent;
+    border-color: var(--glass-border);
+}
+
+.fc .fc-daygrid-day:hover {
+    background: var(--calendar-day-hover);
+}
+
+.fc .fc-daygrid-day-number {
+    color: var(--text-light);
+    font-size: 0.8rem;
+    text-decoration: none;
+    padding: 4px 8px;
+}
+
+.fc .fc-day-today {
+    background: var(--calendar-today-bg) !important;
+}
+
+.fc .fc-day-today .fc-daygrid-day-number {
+    color: var(--primary-color);
+    font-weight: 600;
+}
+
+.fc .fc-scrollgrid {
+    border-color: var(--glass-border);
+    border-radius: 10px;
+    overflow: hidden;
+    
+}
+
+.fc .fc-scrollgrid-section > td,
+.fc .fc-scrollgrid-section > th {
+    border-color: var(--glass-border);
+    background-color: transparent;
+}
+
+.fc .fc-event {
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-family: 'Poppins', sans-serif;
+    padding: 2px 6px;
+    font-weight: 500;
+    border: none;
+    cursor: default;
+}
+
+.fc .fc-event:hover {
+    filter: brightness(1.1);
+}
+
+/* No events text */
+.fc .fc-daygrid-body .fc-daygrid-day-events:empty::after {
+    content: '—';
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    padding: 4px 8px;
+    display: block;
+}
+
+.fc .fc-daygrid-body,
+.fc .fc-scrollgrid-sync-table,
+.fc table,
+.fc td,
+.fc th {
+    transition: width 0.38s cubic-bezier(0.4, 0, 0.2, 1);
 }
