@@ -2,11 +2,6 @@
    LEAVE REQUEST MODAL — leave_modal.css
    ============================================================ */
 
-/* ---------- Leave Type Section ---------- */
-.leave-type-section {
-    margin-bottom: 1rem;
-}
-
 /* ---------- Leave Type Custom Dropdown ---------- */
 .leaveTypeWrapper {
     position: relative;
@@ -102,16 +97,15 @@
 }
 
 /* ---------- Calendar ---------- */
-.leave-calendar-wrapper {
+#leaveCalendar {
     margin-bottom: 1.5rem;
 }
 
 /* -----------------------------------
-     LEAVE CALENDAR OVERRIDES
-     (admin_schedule card-grid style — scoped to #leaveCalendar)
+   LEAVE CALENDAR OVERRIDES
+   (scoped to #leaveCalendar)
 ----------------------------------- */
 
-/* Strip all native FullCalendar borders/backgrounds */
 #leaveCalendar .fc {
     --fc-page-bg-color:      transparent;
     --fc-border-color:       transparent;
@@ -132,7 +126,6 @@
     color: var(--text-lightest);
 }
 
-/* Nav / Today buttons */
 #leaveCalendar .fc .fc-button,
 #leaveCalendar .fc .fc-today-button {
     background: var(--glass-bg);
@@ -173,7 +166,6 @@
     cursor: default;
 }
 
-/* Day-name header row — muted, small, uppercase (matches sched-cal-day-header) */
 #leaveCalendar .fc .fc-col-header-cell {
     background: transparent;
     border: none;
@@ -189,7 +181,6 @@
     letter-spacing: 0.05em;
 }
 
-/* Remove scrollgrid table borders */
 #leaveCalendar .fc .fc-scrollgrid,
 #leaveCalendar .fc .fc-scrollgrid-section > td,
 #leaveCalendar .fc .fc-scrollgrid-section > th {
@@ -197,14 +188,12 @@
     background-color: transparent;
 }
 
-/* <td> wrapper — transparent, no border */
 #leaveCalendar .fc .fc-daygrid-day {
     background: transparent !important;
     border: none !important;
     cursor: pointer;
 }
 
-/* Inner frame — card style (mirrors .sched-cal-day) */
 #leaveCalendar .fc .fc-daygrid-day-frame {
     background: var(--glass-bg);
     border: 1px solid var(--glass-border);
@@ -219,7 +208,6 @@
     background: var(--glass-hover);
 }
 
-/* Day number — muted, small (matches sched-cal-day-num) */
 #leaveCalendar .fc .fc-daygrid-day-number {
     color: var(--text-muted);
     font-size: 0.75rem;
@@ -228,7 +216,6 @@
     padding: 4px 8px;
 }
 
-/* Today — primary border + glow (matches sched-cal-day.is-today) */
 #leaveCalendar .fc .fc-day-today {
     background: transparent !important;
 }
@@ -243,11 +230,9 @@
     font-weight: 600;
 }
 
-/* Suppress FullCalendar highlight / bg-harness */
 #leaveCalendar .fc .fc-highlight        { background: transparent !important; }
 #leaveCalendar .fc .fc-daygrid-bg-harness { background: transparent; }
 
-/* Width transition */
 #leaveCalendar .fc .fc-daygrid-body,
 #leaveCalendar .fc .fc-scrollgrid-sync-table,
 #leaveCalendar .fc table,
@@ -263,19 +248,16 @@
 
 /* ---------- Leave-specific states ---------- */
 
-/* Selected — primary glass card */
 #leaveCalendar .fc-day-selected .fc-daygrid-day-frame {
     background: var(--primary-glass) !important;
     border-color: var(--primary-border) !important;
 }
 
-/* Dimmed — non-selectable */
 #leaveCalendar .fc-day-dimmed {
     opacity: 0.3;
     pointer-events: none !important;
 }
 
-/* On leave — danger card */
 #leaveCalendar .fc-day-on-leave {
     opacity: 0.6 !important;
 }
@@ -285,7 +267,6 @@
     border-color: var(--danger-border) !important;
 }
 
-/* Check icon */
 #leaveCalendar .leave-check {
     display: inline-flex;
     align-items: center;
@@ -307,7 +288,7 @@
 #leaveCalendar .fc-scroller::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 10px; }
 #leaveCalendar .fc-scroller::-webkit-scrollbar-thumb:hover { background: #97be41; }
 
-/* ---------- Reason textarea dark theme ---------- */
+/* ---------- Reason textarea ---------- */
 #leaveModal .form-control {
     background: rgba(0, 0, 0, 0.3) !important;
     border: 1px solid rgba(255, 255, 255, 0.15) !important;
@@ -317,7 +298,9 @@
     border-radius: 8px;
     resize: none;
 }
+
 #leaveModal .form-control::placeholder { color: rgba(255, 255, 255, 0.3); }
+
 #leaveModal .form-control:focus {
     border-color: #97be41 !important;
     box-shadow: none !important;

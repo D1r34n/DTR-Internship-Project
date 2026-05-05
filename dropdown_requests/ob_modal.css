@@ -35,111 +35,15 @@
 }
 
 /* ---------- Calendar ---------- */
-.ob-calendar-wrapper {
+#obCalendar {
     margin-bottom: 1.5rem;
 }
 
-/* ---------- Labels ---------- */
-.ob-label {
-    color: rgba(255, 255, 255, 0.7);
-    font-size: 0.85rem;
-    font-weight: 600;
-    display: block;
-    margin-bottom: 0.5rem;
-}
-
-/* ---------- Client Name Input ---------- */
-.ob-input {
-    width: 100%;
-    background: rgba(0, 0, 0, 0.3);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    border-radius: 8px;
-    color: #fff;
-    padding: 0.6rem 0.8rem;
-    font-family: 'Poppins', sans-serif;
-    font-size: 0.875rem;
-    outline: none;
-    box-sizing: border-box;
-}
-
-.ob-input::placeholder {
-    color: rgba(255, 255, 255, 0.3);
-}
-
-.ob-input:focus {
-    border-color: #97be41;
-}
-
-/* ---------- Reason Textarea ---------- */
-.ob-textarea {
-    width: 100%;
-    background: rgba(0, 0, 0, 0.3);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    border-radius: 8px;
-    color: #fff;
-    padding: 0.6rem 0.8rem;
-    font-family: 'Poppins', sans-serif;
-    font-size: 0.875rem;
-    outline: none;
-    resize: none;
-    box-sizing: border-box;
-}
-
-.ob-textarea::placeholder {
-    color: rgba(255, 255, 255, 0.3);
-}
-
-.ob-textarea:focus {
-    border-color: #97be41;
-}
-
-/* ---------- Submit Button ---------- */
-.ob-submit-btn {
-    margin-top: 1rem;
-    background: #97be41;
-    color: #fff;
-    border: none;
-    padding: 0.5rem 1.5rem;
-    border-radius: 8px;
-    font-family: 'Poppins', sans-serif;
-    font-size: 0.9rem;
-    cursor: pointer;
-    transition: background 0.2s;
-}
-
-.ob-submit-btn:hover {
-    background: #82a835;
-}
-
-/* ---------- Feedback Messages ---------- */
-.ob-error-msg {
-    display: none;
-    margin-top: 1rem;
-    background: rgba(220, 53, 69, 0.15);
-    border: 1px solid rgba(220, 53, 69, 0.3);
-    border-radius: 8px;
-    padding: 0.8rem 1rem;
-    color: #ff8a8a;
-    font-size: 0.875rem;
-}
-
-.ob-success-msg {
-    display: none;
-    margin-top: 1rem;
-    background: rgba(151, 190, 65, 0.15);
-    border: 1px solid rgba(151, 190, 65, 0.3);
-    border-radius: 8px;
-    padding: 0.8rem 1rem;
-    color: #97be41;
-    font-size: 0.875rem;
-}
-
 /* -----------------------------------
-     OB CALENDAR OVERRIDES
-     (admin_schedule card-grid style — scoped to #obCalendar)
+   OB CALENDAR OVERRIDES
+   (scoped to #obCalendar)
 ----------------------------------- */
 
-/* Strip all native FullCalendar borders/backgrounds */
 #obCalendar .fc {
     --fc-page-bg-color:      transparent;
     --fc-border-color:       transparent;
@@ -160,7 +64,6 @@
     color: var(--text-lightest);
 }
 
-/* Nav / Today buttons */
 #obCalendar .fc .fc-button,
 #obCalendar .fc .fc-today-button {
     background: var(--glass-bg);
@@ -201,7 +104,6 @@
     cursor: default;
 }
 
-/* Day-name header row — muted, small, uppercase (matches sched-cal-day-header) */
 #obCalendar .fc .fc-col-header-cell {
     background: transparent;
     border: none;
@@ -209,7 +111,7 @@
 }
 
 #obCalendar .fc .fc-col-header-cell-cushion {
-    color: var(--text-muted)!important;
+    color: var(--text-muted);
     font-size: 0.68rem;
     font-weight: 500;
     text-decoration: none;
@@ -217,7 +119,6 @@
     letter-spacing: 0.05em;
 }
 
-/* Remove scrollgrid table borders */
 #obCalendar .fc .fc-scrollgrid,
 #obCalendar .fc .fc-scrollgrid-section > td,
 #obCalendar .fc .fc-scrollgrid-section > th {
@@ -225,16 +126,14 @@
     background-color: transparent;
 }
 
-/* <td> wrapper — transparent, no border */
 #obCalendar .fc .fc-daygrid-day {
     background: transparent !important;
     border: none !important;
     cursor: pointer;
 }
 
-/* Inner frame — card style (mirrors .sched-cal-day) */
 #obCalendar .fc .fc-daygrid-day-frame {
-    background: var(--glass-bg)!important;
+    background: var(--glass-bg);
     border: 1px solid var(--glass-border);
     border-radius: 8px;
     overflow: hidden;
@@ -244,10 +143,9 @@
 }
 
 #obCalendar .fc .fc-daygrid-day:hover .fc-daygrid-day-frame {
-    background: var(--glass-hover)!important; 
+    background: var(--glass-hover);
 }
 
-/* Day number — muted, small (matches sched-cal-day-num) */
 #obCalendar .fc .fc-daygrid-day-number {
     color: var(--text-muted);
     font-size: 0.75rem;
@@ -256,7 +154,6 @@
     padding: 4px 8px;
 }
 
-/* Today — primary border + glow (matches sched-cal-day.is-today) */
 #obCalendar .fc .fc-day-today {
     background: transparent !important;
 }
@@ -271,11 +168,9 @@
     font-weight: 600;
 }
 
-/* Suppress FullCalendar highlight / bg-harness */
 #obCalendar .fc .fc-highlight          { background: transparent !important; }
 #obCalendar .fc .fc-daygrid-bg-harness { background: transparent; }
 
-/* Width transition */
 #obCalendar .fc .fc-daygrid-body,
 #obCalendar .fc .fc-scrollgrid-sync-table,
 #obCalendar .fc table,
@@ -291,19 +186,16 @@
 
 /* ---------- OB-specific day states ---------- */
 
-/* Selected — primary glass card */
 #obCalendar .fc-day-selected-ob .fc-daygrid-day-frame {
     background: var(--primary-glass) !important;
     border-color: var(--primary-border) !important;
 }
 
-/* Dimmed — non-selectable */
 #obCalendar .fc-day-dimmed-ob {
     opacity: 0.3;
     pointer-events: none !important;
 }
 
-/* On OB — danger card */
 #obCalendar .fc-day-on-ob {
     opacity: 0.6 !important;
 }
@@ -313,7 +205,6 @@
     border-color: var(--danger-border) !important;
 }
 
-/* Check icon */
 #obCalendar .ob-check {
     display: inline-flex;
     align-items: center;
@@ -323,7 +214,7 @@
     vertical-align: middle;
 }
 
-/* ---------- Scrollbar ---------- */
+/* ---------- Modal scrollbar ---------- */
 #obModal .modal-body::-webkit-scrollbar       { width: 6px; }
 #obModal .modal-body::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); border-radius: 10px; }
 #obModal .modal-body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 10px; }
@@ -335,7 +226,7 @@
 #obCalendar .fc-scroller::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 10px; }
 #obCalendar .fc-scroller::-webkit-scrollbar-thumb:hover { background: #97be41; }
 
-/* ---------- Input / textarea dark theme ---------- */
+/* ---------- Input / textarea ---------- */
 #obModal .form-control {
     background: rgba(0, 0, 0, 0.3) !important;
     border: 1px solid rgba(255, 255, 255, 0.15) !important;
@@ -344,7 +235,9 @@
     font-size: 0.875rem;
     border-radius: 8px;
 }
+
 #obModal .form-control::placeholder { color: rgba(255, 255, 255, 0.3); }
+
 #obModal .form-control:focus {
     border-color: #97be41 !important;
     box-shadow: none !important;
