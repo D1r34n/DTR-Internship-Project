@@ -1,17 +1,14 @@
 /* ================================================
    DIVIDER
    ================================================ */
+
 .vr {
     color: var(--text-light);
 }
+
 /* ================================================
-   BOOTSTRAP BUTTON FULL OVERRIDE LAYER (SUBTLE GLASS)
+   BTN GROUP SWAP ANIMATION
    ================================================ */
-
-
-/* ================================================
-BTN GROUP SWAP ANIMATION
-================================================ */
 
 @keyframes btnSlideIn {
     from { opacity: 0; transform: translateY(6px); }
@@ -22,10 +19,12 @@ BTN GROUP SWAP ANIMATION
     animation: btnSlideIn 0.3s ease forwards;
 }
 
-/* FORCE BASE BUTTON RESET */
+/* ================================================
+   BOOTSTRAP BUTTON FULL OVERRIDE — FROSTED GLASS
+   ================================================ */
+
 .btn,
 button.btn {
-
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
@@ -52,8 +51,8 @@ button.btn {
     cursor: pointer !important;
     user-select: none !important;
 
-    backdrop-filter: blur(10px) !important;
-    -webkit-backdrop-filter: blur(10px) !important;
+    backdrop-filter: var(--frosted-blur) !important;
+    -webkit-backdrop-filter: var(--frosted-blur) !important;
 
     box-shadow: var(--glass-inset) !important;
 
@@ -67,33 +66,24 @@ button.btn {
         box-shadow 0.2s ease !important;
 }
 
-
-/* ================================================
-   VERY SUBTLE TOP HIGHLIGHT
-   ================================================ */
+/* ------------------------------------------------
+   TOP HIGHLIGHT
+   ------------------------------------------------ */
 
 .btn::before {
     content: "";
     position: absolute;
     inset: 0;
     border-radius: inherit;
-
-    background: linear-gradient(
-        to bottom,
-        rgba(255, 255, 255, 0.08),
-        transparent 65%
-    );
-
+    background: var(--frosted-highlight);
     opacity: 0.5;
     pointer-events: none;
 }
 
-
-/* ================================================
+/* ------------------------------------------------
    HOVER / FOCUS / ACTIVE
-   ================================================ */
+   ------------------------------------------------ */
 
-/* Hover ONLY */
 .btn:hover {
     color: var(--text-lightest) !important;
     background: var(--neutral-glass-hover) !important;
@@ -101,7 +91,6 @@ button.btn {
     transform: scale(1.04) !important;
 }
 
-/* Focus (no visual exaggeration) */
 .btn:focus,
 .btn:focus-visible {
     outline: none !important;
@@ -111,23 +100,23 @@ button.btn {
 
 .btn:active {
     transform: scale(0.98) !important;
-
     background: var(--neutral-glass) !important;
     box-shadow: var(--glass-inset) !important;
 }
 
-
-/* Bootstrap open state */
 .btn.show,
 .show > .btn {
     background: var(--neutral-glass-hover) !important;
     box-shadow: var(--glass-shadow) !important;
 }
 
+.btn:focus {
+    outline: none !important;
+}
 
-/* ================================================
+/* ------------------------------------------------
    DISABLED
-   ================================================ */
+   ------------------------------------------------ */
 
 .btn:disabled,
 .btn.disabled,
@@ -135,7 +124,6 @@ button.btn {
     opacity: 0.5 !important;
     cursor: not-allowed !important;
     pointer-events: none !important;
-
     box-shadow: none !important;
     transform: none !important;
 }
@@ -147,7 +135,6 @@ button.btn {
 .btn-success,
 .btn.btn-success {
     color: var(--primary-color) !important;
-
     background: var(--primary-glass) linear-gradient(
         to right,
         rgba(255, 255, 255, 0.10) 0%,
@@ -155,9 +142,7 @@ button.btn {
         rgba(255, 255, 255, 0.02) 70%,
         transparent 100%
     ) !important;
-
     border: 1px solid var(--primary-border) !important;
-
     box-shadow: var(--primary-soft) !important;
 }
 
@@ -165,7 +150,6 @@ button.btn {
 .btn-success:focus,
 .btn-success:focus-visible {
     color: var(--text-lightest) !important;
-
     background: var(--primary-glass-hover) linear-gradient(
         to right,
         rgba(255, 255, 255, 0.10) 0%,
@@ -173,10 +157,8 @@ button.btn {
         rgba(255, 255, 255, 0.02) 70%,
         transparent 100%
     ) !important;
-
     box-shadow: 0 4px 16px var(--primary-glow) !important;
 }
-
 
 /* ================================================
    DANGER
@@ -185,7 +167,6 @@ button.btn {
 .btn-danger,
 .btn.btn-danger {
     color: var(--danger-color) !important;
-
     background: var(--danger-glass) linear-gradient(
         to right,
         rgba(255, 255, 255, 0.10) 0%,
@@ -193,11 +174,8 @@ button.btn {
         rgba(255, 255, 255, 0.02) 70%,
         transparent 100%
     ) !important;
-
     border: 1px solid var(--danger-border) !important;
-
     box-shadow: var(--danger-soft) !important;
-
     transition:
         transform 0.25s ease-out,
         opacity 0.25s ease-out,
@@ -210,20 +188,18 @@ button.btn {
 .btn-danger:focus,
 .btn-danger:focus-visible {
     color: var(--text-lightest) !important;
-
-    background: var(--danger-glass-hover ) linear-gradient(
+    background: var(--danger-glass-hover) linear-gradient(
         to right,
         rgba(255, 255, 255, 0.10) 0%,
         rgba(255, 255, 255, 0.05) 40%,
         rgba(255, 255, 255, 0.02) 70%,
         transparent 100%
     ) !important;
-
     box-shadow: 0 4px 16px var(--danger-glow) !important;
 }
 
 /* ================================================
-   BOOTSTRAP EDGE CASE FIXES
+   BOOTSTRAP EDGE CASES
    ================================================ */
 
 .btn-check:checked + .btn {
@@ -237,35 +213,26 @@ button.btn {
     box-shadow: var(--glass-shadow) !important;
 }
 
-
 /* ================================================
    BUTTON GROUP — SEAMLESS GLASS
    ================================================ */
 
-.btn-group {
-    border-radius: 12px !important;
-}
+.btn-group { border-radius: 12px !important; }
 
-/* Remove highlight seam inside groups */
-.btn-group .btn::before {
-    display: none !important;
-}
+.btn-group .btn::before { display: none !important; }
 
-/* Left button */
 .btn-group > .btn:not(:last-child):not(.dropdown-toggle),
 .btn-group > .btn.dropdown-toggle-split:first-child {
     border-top-right-radius: 0 !important;
     border-bottom-right-radius: 0 !important;
 }
 
-/* Right button */
 .btn-group > .btn:not(:first-child),
 .btn-group > .btn-group:not(:first-child) > .btn {
     border-top-left-radius: 0 !important;
     border-bottom-left-radius: 0 !important;
 }
 
-/* Remove inner borders */
 .btn-group > .btn + .btn,
 .btn-group > .btn + .btn-group,
 .btn-group > .btn-group + .btn,
@@ -273,36 +240,16 @@ button.btn {
     border-left: none !important;
 }
 
-/* Fix subpixel seam + prevent sibling jump on hover */
-.btn-group > .btn + .btn {
-    margin-left: -1px !important;
-}
-
-/* Lift hovered button above siblings */
-.btn-group .btn:hover {
-    z-index: 1 !important;
-}
-
-/* Solo button */
-.btn-group > .btn:only-child {
-    border-radius: 12px !important;
-}
-
+.btn-group > .btn + .btn { margin-left: -1px !important; }
+.btn-group .btn:hover     { z-index: 1 !important; }
+.btn-group > .btn:only-child { border-radius: 12px !important; }
 
 /* ================================================
-   FINAL FOCUS CLEANUP
-   ================================================ */
-
-.btn:focus {
-    outline: none !important;
-}
-
-/* ================================================
-   DROPDOWN
+   DROPDOWN — FROSTED GLASS
    ================================================ */
 
 .dropdown-menu {
-    background: var(--glass-bg-dark) linear-gradient(
+    background: var(--frosted-bg) linear-gradient(
         to right,
         rgba(255, 255, 255, 0.06) 0%,
         rgba(255, 255, 255, 0.03) 40%,
@@ -310,18 +257,16 @@ button.btn {
         transparent 100%
     ) !important;
 
-    border: 1px solid var(--glass-border) !important;
+    border: 1px solid var(--frosted-border) !important;
     border-radius: 12px !important;
 
-    backdrop-filter: blur(14px) saturate(140%) brightness(0.75) !important;
-    -webkit-backdrop-filter: blur(14px) saturate(140%) brightness(0.75) !important;
+    backdrop-filter: var(--frosted-blur) !important;
+    -webkit-backdrop-filter: var(--frosted-blur) !important;
 
-    box-shadow: var(--sidebar-glow) !important;
-
+    box-shadow: var(--frosted-shadow) !important;
     padding: 0.4rem !important;
 }
 
-/* Dropdown items */
 .dropdown-item {
     border-radius: 8px !important;
     color: var(--text-light) !important;
@@ -345,7 +290,6 @@ button.btn {
 
 .dropdown-item:active {
     transform: scale(0.98) !important;
-
     background: var(--primary-glass) !important;
     box-shadow: var(--glass-inset) !important;
 }
@@ -355,16 +299,11 @@ button.btn {
     opacity: 0.5 !important;
 }
 
-/* Dropdown item buttons fill full width */
 .dropdown-menu .btn {
     width: 100% !important;
     display: flex !important;
     justify-content: flex-start !important;
 }
-
-/* ================================================
-   DROPDOWN TOGGLE — ARROW ROTATION
-   ================================================ */
 
 .dropdown-toggle::after {
     transition: transform 0.25s ease !important;
@@ -375,91 +314,11 @@ button.btn {
 }
 
 /* ================================================
-   DARK GLASS TOOLTIP (LESS TRANSPARENT)
-   ================================================ */
-
-.tooltip {
-    opacity: 0;
-    transition: opacity 0.15s ease;
-}
-
-.tooltip.show {
-    opacity: 1;
-}
-
-/* INNER */
-.tooltip .tooltip-inner {
-    display: inline-flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    gap: 0.4rem !important;
-
-    padding: 0.45rem 1rem !important;
-
-    color: var(--text-light) !important;
-
-    background: rgba(15, 15, 18, 0.10) linear-gradient(
-        to right,
-        rgba(255, 255, 255, 0.08) 0%,
-        rgba(255, 255, 255, 0.04) 40%,
-        rgba(255, 255, 255, 0.01) 70%,
-        transparent 100%
-    ) !important;
-
-    border: 1px solid rgba(255, 255, 255, 0.10);
-
-    border-radius: 12px !important;
-
-    font-size: 0.85rem !important;
-    font-weight: 400 !important;
-
-    user-select: none !important;
-
-    /* STRONGER GLASS BLUR */
-    backdrop-filter: blur(4px) !important;
-    -webkit-backdrop-filter: blur(14px) !important;
-
-    /* deeper shadow */
-    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.55), var(--glass-inset);
-
-    position: relative !important;
-    overflow: hidden !important;
-
-    transition:
-        transform 0.2s ease,
-        background 0.25s ease,
-        box-shadow 0.2s ease !important;
-}
-
-/* subtle highlight (slightly stronger for dark UI) */
-.tooltip .tooltip-inner::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    border-radius: inherit;
-
-    background: linear-gradient(
-        to bottom,
-        rgba(255, 255, 255, 0.06),
-        transparent 90%
-    );
-
-    opacity: 0.35;
-    pointer-events: none;
-}
-
-/* REMOVE ARROW */
-.tooltip .tooltip-arrow {
-    display: none !important;
-}
-
-/* ================================================
-   GLASS CARD
+   GLASS CARD — FROSTED
    ================================================ */
 
 .card-glass {
-    /* use your glass system */
-    background: var(--glass-bg-dark) linear-gradient(
+    background: var(--frosted-bg) linear-gradient(
         to right,
         rgba(255, 255, 255, 0.06) 0%,
         rgba(255, 255, 255, 0.03) 40%,
@@ -467,17 +326,13 @@ button.btn {
         transparent 100%
     ) !important;
 
-    border: 1px solid var(--glass-border) !important;
+    border: 1px solid var(--frosted-border) !important;
     border-radius: 16px !important;
 
-    /* slightly stronger readability than sidebar */
-    backdrop-filter: blur(14px) saturate(140%) brightness(0.75);
-    -webkit-backdrop-filter: blur(14px) saturate(140%) brightness(0.75);
+    backdrop-filter: var(--frosted-blur) !important;
+    -webkit-backdrop-filter: var(--frosted-blur) !important;
 
-    /* unified shadow system */
-    box-shadow:
-        var(--box-shadow-heavy),
-        inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    box-shadow: var(--frosted-shadow) !important;
 
     position: relative;
     overflow: hidden;
@@ -489,11 +344,7 @@ button.btn {
     position: absolute;
     inset: 0;
     border-radius: inherit;
-    background: linear-gradient(
-        to bottom,
-        rgba(255, 255, 255, 0.08),
-        transparent 65%
-    );
+    background: var(--frosted-highlight);
     opacity: 0.5;
     pointer-events: none;
     z-index: 0;
@@ -505,38 +356,86 @@ button.btn {
 }
 
 /* ================================================
-   SLIDE ANIMATIONS
+   TOOLTIP — FROSTED GLASS
    ================================================ */
 
-.tooltip.bs-tooltip-top {
-    transform: translateY(6px);
+.tooltip {
+    opacity: 0;
+    transition: opacity 0.15s ease;
 }
+
+.tooltip.show { opacity: 1; }
+
+.tooltip .tooltip-inner {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 0.4rem !important;
+
+    padding: 0.45rem 1rem !important;
+
+    color: var(--text-light) !important;
+
+    background: var(--frosted-bg) linear-gradient(
+        to right,
+        rgba(255, 255, 255, 0.08) 0%,
+        rgba(255, 255, 255, 0.04) 40%,
+        rgba(255, 255, 255, 0.01) 70%,
+        transparent 100%
+    ) !important;
+
+    border: 1px solid var(--frosted-border) !important;
+    border-radius: 12px !important;
+
+    font-size: 0.85rem !important;
+    font-weight: 400 !important;
+    user-select: none !important;
+
+    backdrop-filter: var(--frosted-blur) !important;
+    -webkit-backdrop-filter: var(--frosted-blur) !important;
+
+    box-shadow: var(--frosted-shadow) !important;
+
+    position: relative !important;
+    overflow: hidden !important;
+}
+
+.tooltip .tooltip-inner::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: var(--frosted-highlight);
+    opacity: 0.35;
+    pointer-events: none;
+}
+
+.tooltip .tooltip-arrow { display: none !important; }
+
+/* ================================================
+   SLIDE ANIMATIONS — TOOLTIP
+   ================================================ */
+
+.tooltip.bs-tooltip-top    { transform: translateY(6px); }
 .tooltip.bs-tooltip-top.show {
     transform: translateY(0);
     transition: transform 0.18s ease, opacity 0.15s ease;
 }
 
-.tooltip.bs-tooltip-bottom {
-    transform: translateY(-6px);
-}
+.tooltip.bs-tooltip-bottom { transform: translateY(-6px); }
 .tooltip.bs-tooltip-bottom.show {
     transform: translateY(0);
     transition: transform 0.18s ease, opacity 0.15s ease;
 }
 
-.tooltip.bs-tooltip-start {
-    transform: translateX(6px);
-}
+.tooltip.bs-tooltip-start  { transform: translateX(6px); }
 .tooltip.bs-tooltip-start.show {
     transform: translateX(0);
     transition: transform 0.18s ease, opacity 0.15s ease;
 }
 
-.tooltip.bs-tooltip-end {
-    transform: translateX(-6px);
-}
+.tooltip.bs-tooltip-end    { transform: translateX(-6px); }
 .tooltip.bs-tooltip-end.show {
-    transition: transform 0.18s ease, opacity 0.15s ease;
     transform: translateX(0);
+    transition: transform 0.18s ease, opacity 0.15s ease;
 }
-
