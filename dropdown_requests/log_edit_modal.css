@@ -250,26 +250,26 @@
 }
 
 /* ---------- Feedback Messages ---------- */
-#leErrorMsg {
-    display: none;
+#leErrorMsg,
+#leSuccessMsg {
     margin-top: 1rem;
-    background: rgba(220, 53, 69, 0.15);
-    border: 1px solid rgba(220, 53, 69, 0.3);
     border-radius: 8px;
     padding: 0.8rem 1rem;
-    color: #ff8a8a;
     font-size: 0.875rem;
 }
-
-#leSuccessMsg {
+#leErrorMsg:empty,
+#leSuccessMsg:empty {
     display: none;
-    margin-top: 1rem;
+}
+#leErrorMsg {
+    background: rgba(220, 53, 69, 0.15);
+    border: 1px solid rgba(220, 53, 69, 0.3);
+    color: #ff8a8a;
+}
+#leSuccessMsg {
     background: rgba(151, 190, 65, 0.15);
     border: 1px solid rgba(151, 190, 65, 0.3);
-    border-radius: 8px;
-    padding: 0.8rem 1rem;
     color: #97be41;
-    font-size: 0.875rem;
 }
 
 /* ---------- Late gantt row ---------- */

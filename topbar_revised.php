@@ -35,6 +35,7 @@ $titles = [
         'schedule'           => 'Employee Schedule',
         'logs'               => 'Employee Activity Logs',
         'workforce_schedule' => 'Manage Schedules',
+        'workforce_logs'     => 'Manage Logs',
     ],
     'admin' => [
         'dashboard'         => 'Admin Dashboard',
@@ -135,6 +136,7 @@ $currentStatus = $timedIn ? 'Timed In' : 'Timed Out';
 <!-- Topbar external libs -->
 <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
+<script src="../system_functions/gantt.js"></script>
 
 <!-- Bootstrap -->
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -273,7 +275,7 @@ $currentStatus = $timedIn ? 'Timed In' : 'Timed Out';
                     
                     <!-- Request Log Edit -->
                     <li>
-                        <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#logEditModal">
+                        <a class="dropdown-item" href="#" onclick="openLogEditModal(); return false;">
                             <i class="bi bi-pencil-square"></i> Request Log Edit
                         </a>
                     </li>
