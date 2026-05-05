@@ -167,45 +167,94 @@ $requestsOpen = in_array($currentPage, ['employee_requests', 'schedule_requests'
     const toggle     = document.getElementById('sidebar-toggle');
     const toggleIcon = document.getElementById('toggle-icon');
     const brand      = document.getElementById('sidebar-brand'); 
-    const brandLogo  = document.getElementById('brand-link').querySelector('img'); 
-            
-    function setCollapsed(collapsed) {
-        sidebar.classList.toggle('collapsed', collapsed);
-        toggleIcon.className = collapsed
-            ? 'bi bi-layout-sidebar-inset'
-            : 'bi bi-layout-sidebar-inset-reverse';
-        localStorage.setItem('sidebar-collapsed', collapsed);
 
-        // Reset logo opacity when expanding
-        if (!collapsed) {
-            brandLogo.style.opacity = '1';
-            toggle.style.opacity    = '1';
-            toggle.style.pointerEvents = 'auto';
+    const brandLink  = document.getElementById('brand-link');
+    const brandLogo  = brandLink ? brandLink.querySelector('img') : null;
+
+    const sidebar_dropdowns = document.querySelectorAll('.sidebar-dropdown');
+
+    if (sidebar && toggle && toggleIcon && brand) {
+
+        function setCollapsed(collapsed) {
+            sidebar.classList.toggle('collapsed', collapsed);
+
+            toggleIcon.className = collapsed
+                ? 'bi bi-layout-sidebar-inset'
+                : 'bi bi-layout-sidebar-inset-reverse';
+
+            localStorage.setItem('sidebar-collapsed', collapsed);
+
+            if (collapsed) {
+                // 🔥 RESET ALL DROPDOWNS
+                document.querySelectorAll('#sidebar .collapse.show').forEach(el => {
+                    const instance = bootstrap.Collapse.getOrCreateInstance(el);
+                    instance.hide();
+                });
+            } else {
+                if (brandLogo) brandLogo.style.opacity = '1';
+                toggle.style.opacity = '1';
+                toggle.style.pointerEvents = 'auto';
+            }
         }
-    }
 
-    // Restore saved state
-    setCollapsed(localStorage.getItem('sidebar-collapsed') === 'true');
+        // Restore saved state
+        setCollapsed(localStorage.getItem('sidebar-collapsed') === 'true');
 
-    // Toggle on button click
-    toggle.addEventListener('click', () => {
-        setCollapsed(!sidebar.classList.contains('collapsed'));
-    });
-
-    // When collapsed: hovering the brand fades it out and shows the toggle overlay
-    brand.addEventListener('mouseenter', () => {
-        if (sidebar.classList.contains('collapsed')) {
-            toggle.style.opacity = '1';
-            toggle.style.pointerEvents = 'auto';
-            brandLogo.style.opacity = '0';
-        }
-    });
-
-    brand.addEventListener('mouseleave', () => {
+        // Ensure correct initial hover state
         if (sidebar.classList.contains('collapsed')) {
             toggle.style.opacity = '0';
             toggle.style.pointerEvents = 'none';
-            brandLogo.style.opacity = '1';
         }
-    });
+
+        // Toggle click
+        toggle.addEventListener('click', () => {
+            setCollapsed(!sidebar.classList.contains('collapsed'));
+        });
+
+        // Hover behavior
+        brand.addEventListener('mouseenter', () => {
+            if (sidebar.classList.contains('collapsed')) {
+                toggle.style.opacity = '1';
+                toggle.style.pointerEvents = 'auto';
+                if (brandLogo) brandLogo.style.opacity = '0';
+            }
+        });
+
+        brand.addEventListener('mouseleave', () => {
+            if (sidebar.classList.contains('collapsed')) {
+                toggle.style.opacity = '0';
+                toggle.style.pointerEvents = 'none';
+                if (brandLogo) brandLogo.style.opacity = '1';
+            }
+        });
+
+        // Dropdown auto-expand
+        document.querySelectorAll('.sidebar-dropdown-toggle').forEach(toggleBtn => {
+
+            toggleBtn.addEventListener("click", function (e) {
+
+                const targetSelector = this.getAttribute('data-bs-target');
+                const targetEl = document.querySelector(targetSelector);
+
+                if (sidebar.classList.contains('collapsed')) {
+                    e.preventDefault();
+                    e.stopPropagation(); // 🚨 VERY IMPORTANT
+
+                    setCollapsed(false);
+
+                    if (targetEl) {
+                        setTimeout(() => {
+                            bootstrap.Collapse
+                                .getOrCreateInstance(targetEl)
+                                .show();
+                        }, 200);
+                    }
+
+                    return;
+                }
+
+            });
+
+        });
+    }
 </script>

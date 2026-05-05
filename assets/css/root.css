@@ -37,10 +37,10 @@
     --text-muted:      rgba(255, 255, 255, 0.55);
 
     /* BACKGROUNDS */
-    --bg-light: #ffffff;
-    --bg-soft:  #f5f5f5;
-    --bg-dark:  #1e1e1e;
-    --bg-darkest:  #121212;
+    --bg-light:   #ffffff;
+    --bg-soft:    #f5f5f5;
+    --bg-dark:    #1e1e1e;
+    --bg-darkest: #121212;
 
     /* DANGER (ALIGNED TO NEUTRAL GLASS SYSTEM) */
     --danger-color:        #ef4444;
@@ -72,7 +72,6 @@
     --shadow: rgba(0, 0, 0, 0.3);
 
     /* OVERLAY — PRIMARY-BASED GREEN SYSTEM */
-
     --overlay-hover-light: rgba(151, 190, 65, 0.06);
     --overlay-hover:       rgba(151, 190, 65, 0.10);
     --overlay-soft:        rgba(151, 190, 65, 0.04);
@@ -88,68 +87,86 @@
     --map-link:   rgba(0, 123, 255, 0.8);
 
     /* GLASS / SIDEBAR */
-    --glass-bg:     rgba(255, 255, 255, 0.038);
+    --glass-bg:      rgba(255, 255, 255, 0.038);
     --glass-bg-dark: rgba(15, 15, 18, 0.5);
-    --glass-border: rgba(255, 255, 255, 0.085);
-    --glass-top:    rgba(255, 255, 255, 0.16);
-    --glass-hover:  rgba(255, 255, 255, 0.06);
-    --sidebar-glow: 0 0 0 1px rgba(255,255,255,0.055),
-                    6px 0 48px rgba(0,0,0,0.55),
-                    inset -1px 0 0 rgba(255,255,255,0.04);
+    --glass-border:  rgba(255, 255, 255, 0.085);
+    --glass-top:     rgba(255, 255, 255, 0.16);
+    --glass-hover:   rgba(255, 255, 255, 0.06);
+    --sidebar-glow:  0 0 0 1px rgba(255,255,255,0.055),
+                     6px 0 48px rgba(0,0,0,0.55),
+                     inset -1px 0 0 rgba(255,255,255,0.04);
+
+    /* FROSTED GLASS — UI SURFACES (cards, modals, dropdowns)
+       Uses the wallpaper as the blur source via backdrop-filter.
+       Sidebar is excluded — it uses its own solid dark background. */
+    --frosted-bg:     rgba(10, 10, 14, 0.72);
+    --frosted-border: rgba(255, 255, 255, 0.08);
+    --frosted-blur:   blur(36px) saturate(180%) brightness(0.72);
+    --frosted-shadow: 0 12px 48px rgba(0, 0, 0, 0.60),
+                      inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    --frosted-highlight: linear-gradient(
+        to bottom,
+        rgba(255, 255, 255, 0.05),
+        transparent 60%
+    );
+
+    /* GLASS INSET / SHADOW TOKENS */
+    --glass-inset:  inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    --glass-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
 
     /* CALENDAR */
-    --calendar-btn-bg:       rgba(255, 255, 255, 0.08);
-    --calendar-btn-hover-bg: rgba(255, 255, 255, 0.14);
+    --calendar-btn-bg:           rgba(255, 255, 255, 0.08);
+    --calendar-btn-hover-bg:     rgba(255, 255, 255, 0.14);
     --calendar-btn-hover-border: rgba(255, 255, 255, 0.2);
-    --calendar-day-hover:    rgba(255, 255, 255, 0.03);
-    --calendar-today-bg:     rgba(151, 190, 65, 0.08);
+    --calendar-day-hover:        rgba(255, 255, 255, 0.03);
+    --calendar-today-bg:         rgba(151, 190, 65, 0.08);
 
     /* SHIFT LEGEND */
-    --shift-night:           #4da3ff;
-    --shift-night-bg:        rgba(77, 163, 255, 0.15);
-    --shift-rest:            #6c757d;
-    --shift-leave-approved:  #fd7e14;
-    --shift-leave-pending:   #f0ad4e;
-    --shift-leave-rejected:  #dc3545;
-    --shift-ob-approved:     #6f42c1;
-    --shift-ob-pending:      #f0ad4e;
-    --shift-ob-rejected:     #dc3545;
+    --shift-night:          #4da3ff;
+    --shift-night-bg:       rgba(77, 163, 255, 0.15);
+    --shift-rest:           #6c757d;
+    --shift-leave-approved: #fd7e14;
+    --shift-leave-pending:  #f0ad4e;
+    --shift-leave-rejected: #dc3545;
+    --shift-ob-approved:    #6f42c1;
+    --shift-ob-pending:     #f0ad4e;
+    --shift-ob-rejected:    #dc3545;
 
     /* BOX SHADOW */
     --box-shadow-heavy: rgba(0, 0, 0, 0.5);
 
     /* GANTT */
-    --gantt-bar-bg:          rgba(255, 255, 255, 0.05);
-    --gantt-grid-line:       rgba(255, 255, 255, 0.08);
-    --gantt-cursor-line:     rgba(255, 255, 255, 0.7);
-    --gantt-cursor-bg:       rgba(0, 0, 0, 0.5);
-    --gantt-scale-color:     var(--text-muted);
-    --gantt-scheduled:       rgba(255, 255, 255, 0.08);
-    --gantt-scheduled-border:rgba(255, 255, 255, 0.25);
-    --gantt-early:           rgba(96, 165, 250, 0.6);
-    --gantt-early-border:    rgba(96, 165, 250, 0.8);
-    --gantt-early-color:     var(--info);
-    --gantt-tardy:           rgba(251, 191, 36, 0.75);
-    --gantt-ontime:          rgba(25, 135, 84, 0.75);
-    --gantt-break:           var(--warning);
-    --gantt-pending:         rgba(95, 95, 95, 0.5);
-    --gantt-pending-border:  rgba(255, 255, 255, 0.15);
-    --gantt-absent:          rgba(220, 53, 69, 0.5);
-    --gantt-absent-color:    #ff8a8a;
-    --gantt-no-timeout:      #7c3aed;
-    --gantt-marker-in:       #22c55e;
-    --gantt-marker-in-glow:  rgba(34, 197, 94, 0.8);
-    --gantt-marker-out:      var(--danger);
-    --gantt-marker-out-glow: rgba(220, 53, 69, 0.8);
-    --gantt-ot-pending:      linear-gradient(90deg, #4facfe, #00f2fe);
-    --gantt-ot-approved:     #2ecc71;
+    --gantt-bar-bg:           rgba(255, 255, 255, 0.05);
+    --gantt-grid-line:        rgba(255, 255, 255, 0.08);
+    --gantt-cursor-line:      rgba(255, 255, 255, 0.7);
+    --gantt-cursor-bg:        rgba(0, 0, 0, 0.5);
+    --gantt-scale-color:      var(--text-muted);
+    --gantt-scheduled:        rgba(255, 255, 255, 0.08);
+    --gantt-scheduled-border: rgba(255, 255, 255, 0.25);
+    --gantt-early:            rgba(96, 165, 250, 0.6);
+    --gantt-early-border:     rgba(96, 165, 250, 0.8);
+    --gantt-early-color:      var(--info);
+    --gantt-tardy:            rgba(251, 191, 36, 0.75);
+    --gantt-ontime:           rgba(25, 135, 84, 0.75);
+    --gantt-break:            var(--warning);
+    --gantt-pending:          rgba(95, 95, 95, 0.5);
+    --gantt-pending-border:   rgba(255, 255, 255, 0.15);
+    --gantt-absent:           rgba(220, 53, 69, 0.5);
+    --gantt-absent-color:     #ff8a8a;
+    --gantt-no-timeout:       #7c3aed;
+    --gantt-marker-in:        #22c55e;
+    --gantt-marker-in-glow:   rgba(34, 197, 94, 0.8);
+    --gantt-marker-out:       var(--danger-color);
+    --gantt-marker-out-glow:  rgba(220, 53, 69, 0.8);
+    --gantt-ot-pending:       linear-gradient(90deg, #4facfe, #00f2fe);
+    --gantt-ot-approved:      #2ecc71;
 
     /* TOOLTIP */
-    --tooltip-late:          #f87171;
-    --tooltip-overtime:      #4da3ff;
-    --tooltip-undertime:     #ed6809;
-    --tooltip-overbreak:     #f59e0b;
-    --tooltip-ot-approved:   #4ade80;
+    --tooltip-late:        #f87171;
+    --tooltip-overtime:    #4da3ff;
+    --tooltip-undertime:   #ed6809;
+    --tooltip-overbreak:   #f59e0b;
+    --tooltip-ot-approved: #4ade80;
 
     /* DATEPICKER FORM */
     --datepicker-input-border: rgba(255, 255, 255, 0.2);

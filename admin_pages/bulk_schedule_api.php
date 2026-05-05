@@ -77,7 +77,7 @@ if ($action === 'download_template') {
 }
 
 /* =========================================================
-   IMPORT
+   IMPORT (UPSERT / OVERRIDE VERSION)
 ========================================================= */
 if ($action === 'import') {
 
@@ -99,16 +99,15 @@ if ($action === 'import') {
         $inserted = 0;
         $errors = [];
 
-        $insertStmt = $pdo->prepare("
+        // ✅ UPSERT STATEMENT (INSERT OR UPDATE)
+        $upsertStmt = $pdo->prepare("
             INSERT INTO schedules
             (employee_id, schedule_date, scheduled_start, scheduled_end, is_rest_day)
             VALUES (:employee_id, :schedule_date, :start, :end, :rest)
-        ");
-
-        $checkStmt = $pdo->prepare("
-            SELECT COUNT(*) FROM schedules
-            WHERE employee_id = :employee_id
-            AND schedule_date = :schedule_date
+            ON DUPLICATE KEY UPDATE
+                scheduled_start = VALUES(scheduled_start),
+                scheduled_end   = VALUES(scheduled_end),
+                is_rest_day     = VALUES(is_rest_day)
         ");
 
         foreach ($rows as $i => $row) {
@@ -150,27 +149,16 @@ if ($action === 'import') {
 
                 $date = date('Y-m-d', $current);
 
-                // ✅ IMPORTANT: schedule_date is the key
-                $checkStmt->execute([
-                    ':employee_id' => $employeeId,
-                    ':schedule_date' => $date
-                ]);
-
-                if ($checkStmt->fetchColumn() > 0) {
-                    $errors[] = "Row $rowNum: duplicate $date";
-                    $current = strtotime("+1 day", $current);
-                    continue;
-                }
-
                 $startDT = $isRest ? null : ($date . ' ' . $startTime . ':00');
                 $endDT   = $isRest ? null : ($date . ' ' . $endTime . ':00');
 
-                $insertStmt->execute([
-                    ':employee_id' => $employeeId,
-                    ':schedule_date' => $date,
-                    ':start' => $startDT,
-                    ':end' => $endDT,
-                    ':rest' => $isRest
+                // ✅ INSERT OR UPDATE (NO DUPLICATE CHECK NEEDED)
+                $upsertStmt->execute([
+                    ':employee_id'    => $employeeId,
+                    ':schedule_date'  => $date,
+                    ':start'          => $startDT,
+                    ':end'            => $endDT,
+                    ':rest'           => $isRest
                 ]);
 
                 $inserted++;
@@ -181,9 +169,9 @@ if ($action === 'import') {
         $pdo->commit();
 
         respond([
-            'status' => 'success',
+            'status'   => 'success',
             'inserted' => $inserted,
-            'errors' => $errors
+            'errors'   => $errors
         ]);
 
     } catch (Throwable $e) {
