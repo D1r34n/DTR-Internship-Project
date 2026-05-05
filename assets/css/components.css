@@ -49,7 +49,7 @@
 }
 
 /* ================================================
-   SEARCH INPUT (BUTTON-MATCHED FROSTED GLASS)
+   SEARCH BAR
    ================================================ */
 
 .input-group {
@@ -478,6 +478,10 @@ button.btn {
 
     box-shadow: var(--frosted-shadow) !important;
     padding: 0.4rem !important;
+
+    max-height: 260px;
+    overflow-y: auto;
+    overflow-x: hidden;
 }
 
 .dropdown-item {

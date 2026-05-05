@@ -91,7 +91,7 @@ $employees = $pdo->query("
 
                 <!-- Filter Section -->
                 <div class="filter-wrapper">
-                    <span class="employee-title text-secondary">
+                    <span class="employee-title text-primary">
                         <i class="bi bi-people-fill"></i>
                         Total Employees: <span id="empCount"><?= count($employees) ?></span>
                     </span>
@@ -109,21 +109,48 @@ $employees = $pdo->query("
                                 <li><button class="dropdown-item" type="button" onclick="selectFilter('role','admin','Admin')">Admin</button></li>
                             </ul>
                         </div>
-                        <input type="hidden" id="roleFilter" value="">
+                        <input type="hidden" id="role-filter" value="">
 
-                        <!-- Dept filter -->
-                        <div class="dropdown">
-                            <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                <span id="deptBtnLabel">All Depts</span>
-                            </button>
-                            <ul class="dropdown-menu" id="filterDeptMenu">
-                                <li><button class="dropdown-item" type="button" onclick="selectFilter('dept','','All Depts')">All Depts</button></li>
+                        <!-- DEPARTMENT SEARCH DROPDOWN -->
+                        <div class="dropdown w-30">
+
+                            <div class="input-group" style="max-width: 220px;">
+                                <span class="input-group-text">
+                                    <i class="bi bi-search"></i>
+                                </span>
+
+                                <!-- INPUT (NO data-bs-toggle) -->
+                                <input
+                                    type="text"
+                                    id="dept-search-input"
+                                    class="form-control form-control-sm"
+                                    placeholder="Sort Department"
+                                    onclick="openDeptDropdown()"
+                                    oninput="filterDeptOptions()"
+                                    autocomplete="off"
+                                >
+                            </div>
+
+                            <!-- DROPDOWN MUST BE DIRECT CHILD OF .dropdown -->
+                            <ul class="dropdown-menu p-2 w-100" id="filter-dept-menu">
+
+                                <li>
+                                    <button class="dropdown-item" type="button"
+                                        onclick="selectFilter('dept','','All Departments')">
+                                        All Departments
+                                    </button>
+                                </li>
+
+                                <li><hr class="dropdown-divider"></li>
+
                             </ul>
+
                         </div>
-                        <input type="hidden" id="deptFilter" value="">
+
+                        <input type="hidden" id="dept-filter" value="">
 
                         <!-- Search -->
-                        <div class="input-group input-group-sm" style="max-width: 220px;">
+                        <div class="input-group" style="max-width: 220px;">
                             <span class="input-group-text">
                                 <i class="bi bi-search"></i>
                             </span>
@@ -365,11 +392,12 @@ $employees = $pdo->query("
         // ---- FILTER DROPDOWN SELECTION ----
         function selectFilter(type, value, label) {
             if (type === 'role') {
-                document.getElementById('roleFilter').value  = value;
+                document.getElementById('role-filter').value         = value;
                 document.getElementById('roleBtnLabel').textContent = label;
             } else {
-                document.getElementById('deptFilter').value  = value;
-                document.getElementById('deptBtnLabel').textContent = label;
+                document.getElementById('dept-filter').value     = value;
+                document.getElementById('dept-search-input').value = label === 'All Departments' ? '' : label;
+                document.getElementById('filter-dept-menu').classList.remove('show');
             }
             currentPage = 1;
             applyFilters();
@@ -378,8 +406,8 @@ $employees = $pdo->query("
         // ---- FILTER + SORT + PAGINATE ----
         function applyFilters() {
             const q    = document.getElementById('empSearch').value.toLowerCase().trim();
-            const role = document.getElementById('roleFilter').value;
-            const dept = document.getElementById('deptFilter').value;
+            const role = document.getElementById('role-filter').value;
+            const dept = document.getElementById('dept-filter').value;
 
             let filtered = allRows.filter(row => {
                 const matchSearch = !q
@@ -395,21 +423,26 @@ $employees = $pdo->query("
                     if (sortCol === 'id') {
                         return sortDir * (parseInt(a.dataset.id) - parseInt(b.dataset.id));
                     }
-                    const av = (a.dataset[sortCol] || '').toLowerCase();
-                    const bv = (b.dataset[sortCol] || '').toLowerCase();
+                    const key = sortCol === 'deptName' ? 'deptName' : sortCol;
+                    const av  = (a.dataset[key] || '').toLowerCase();
+                    const bv  = (b.dataset[key] || '').toLowerCase();
                     return sortDir * av.localeCompare(bv);
                 });
             }
 
-            const total = filtered.length;
-            lastTotal = total;
+            const total      = filtered.length;
+            lastTotal        = total;
             const totalPages = Math.max(1, Math.ceil(total / ROWS_PER_PAGE));
             if (currentPage > totalPages) currentPage = 1;
 
-            const start = (currentPage - 1) * ROWS_PER_PAGE;
-            const pageSet = new Set(filtered.slice(start, start + ROWS_PER_PAGE));
+            const start   = (currentPage - 1) * ROWS_PER_PAGE;
+            const pagRows = filtered.slice(start, start + ROWS_PER_PAGE);
 
-            allRows.forEach(r => r.style.display = pageSet.has(r) ? '' : 'none');
+            const tbody = document.getElementById('empList');
+            pagRows.forEach(r => tbody.appendChild(r));
+
+            allRows.forEach(r => r.style.display = 'none');
+            pagRows.forEach(r => r.style.display = '');
 
             const emptyRow = document.querySelector('#empList .emptyRow');
             if (emptyRow) emptyRow.style.display = total === 0 ? '' : 'none';
@@ -420,20 +453,50 @@ $employees = $pdo->query("
 
         // ---- SORT ----
         function sortBy(col) {
-            if (sortCol === col) sortDir *= -1;
-            else { sortCol = col; sortDir = 1; }
+            if (sortCol === col) {
+                if (sortDir === 1) {
+                    // 2nd click → DESC
+                    sortDir = -1;
+                } else {
+                    // 3rd click → reset
+                    sortCol = null;
+                    sortDir = 1;
+                }
+            } else {
+                // New column → ASC
+                sortCol = col;
+                sortDir = 1;
+            }
             updateSortIcons();
             currentPage = 1;
             applyFilters();
         }
 
         function updateSortIcons() {
+            // Reset all headers
+            document.querySelectorAll('.sortable').forEach(el => {
+                el.classList.remove('sorted');
+            });
+
+            // Reset all icons
             document.querySelectorAll('.sortIcon').forEach(el => {
                 el.className = 'sortIcon bi bi-arrow-down-up';
             });
+
+            // If no sort, stop here
             if (!sortCol) return;
+
+            // Activate current header
+            const header = document.querySelector(`[onclick="sortBy('${sortCol}')"]`);
+            if (header) header.classList.add('sorted');
+
+            // Update icon direction
             const icon = document.getElementById('sort-' + sortCol);
-            if (icon) icon.className = 'sortIcon bi ' + (sortDir === 1 ? 'bi-arrow-up' : 'bi-arrow-down');
+            if (icon) {
+                icon.className =
+                    'sortIcon bi ' +
+                    (sortDir === 1 ? 'bi-arrow-up' : 'bi-arrow-down');
+            }
         }
 
         // ---- PAGINATION ----
@@ -616,7 +679,7 @@ $employees = $pdo->query("
                     });
 
                     // Populate filter dropdown
-                    const filterMenu = document.getElementById('filterDeptMenu');
+                    const filterMenu = document.getElementById('filter-dept-menu');
                     depts.forEach(d => {
                         const li = document.createElement('li');
                         const btn = document.createElement('button');
@@ -632,6 +695,35 @@ $employees = $pdo->query("
         }
 
         loadDepartments();
+
+        function openDeptDropdown() {
+            document.getElementById('filter-dept-menu').classList.add('show');
+        }
+
+        function filterDeptOptions() {
+            const q = document.getElementById('dept-search-input').value.toLowerCase().trim();
+
+            // ← Reset filter when input is cleared
+            if (q === '') {
+                document.getElementById('dept-filter').value = '';
+                applyFilters();
+                document.querySelectorAll('#filter-dept-menu li').forEach(li => {
+                    li.style.display = '';
+                });
+                return;
+            }
+
+            document.querySelectorAll('#filter-dept-menu li').forEach(li => {
+                li.style.display = li.textContent.toLowerCase().includes(q) ? '' : 'none';
+            });
+        }
+
+        // Close on outside click
+        document.addEventListener('click', e => {
+            if (!e.target.closest('.dropdown')) {
+                document.getElementById('filter-dept-menu').classList.remove('show');
+            }
+        });
 
         // Auto-dismiss success alert
         setTimeout(() => {

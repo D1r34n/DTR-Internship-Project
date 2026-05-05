@@ -77,6 +77,7 @@ body {
     gap: 1rem;
     padding-bottom: 1rem;
     flex-wrap: wrap;
+    margin: 0.5rem 0.5rem 0rem 0.5rem;
 }
 
 .employee-title {
@@ -881,9 +882,24 @@ body {
     cursor: pointer;
     user-select: none;
     white-space: nowrap;
+    color: var(--text-muted);
 }
 
-.sortable:hover { color: #97be41 !important; }
+/* hover */
+.sortable:hover {
+    color: var(--primary-color) !important;
+}
+
+/* ACTIVE SORT STATE */
+.sortable.sorted {
+    color: var(--primary-color) !important;
+}
+
+/* icon stays synced */
+.sortable.sorted .sortIcon {
+    opacity: 1;
+    color: var(--primary-color);
+}
 
 .sortIcon {
     font-size: 0.65rem;
@@ -892,13 +908,6 @@ body {
     vertical-align: middle;
     transition: opacity 0.15s;
 }
-
-.sortable:hover .sortIcon,
-.sortable .bi-arrow-up,
-.sortable .bi-arrow-down { opacity: 1; }
-
-.sortable .bi-arrow-up,
-.sortable .bi-arrow-down { color: #97be41; }
 
 /* ============================================================
    PAGINATION
