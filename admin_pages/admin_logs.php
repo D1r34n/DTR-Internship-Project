@@ -25,15 +25,22 @@ $employees = $pdo->query("
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Employee Logs</title>
 
-    <link rel="stylesheet" href="../assets/css/root.css">
-    <link rel="stylesheet" href="../assets/css/typography.css">
-    <link rel="stylesheet" href="../assets/css/components.css">
-    <link rel="stylesheet" href="admin_logs.css">
-
+    <!-- 1. Third-party CSS FIRST -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <!-- 2. Your global CSS -->
+    <link rel="stylesheet" href="../assets/css/root.css">
+    <link rel="stylesheet" href="../assets/css/typography.css">
+    <link rel="stylesheet" href="../assets/css/components.css">
+    <link rel="stylesheet" href="../navbars_revised.css">
+
+    <!-- 3. Page-specific CSS -->
+    <link rel="stylesheet" href="admin_logs.css">
+
+    <!-- 4. Scripts -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
 </head>
 <body>
 
