@@ -111,7 +111,7 @@ $employees = $pdo->query("
                         </div>
                         <input type="hidden" id="role-filter" value="">
 
-                        <!-- DEPARTMENT SEARCH DROPDOWN -->
+                        <!-- DEPARTMENT SEARCH DROPDOWN --> 
                         <div class="dropdown w-30">
 
                             <div class="input-group" style="max-width: 220px;">
@@ -123,7 +123,7 @@ $employees = $pdo->query("
                                 <input
                                     type="text"
                                     id="dept-search-input"
-                                    class="form-control form-control-sm"
+                                    class="form-control"
                                     placeholder="Sort Department"
                                     onclick="openDeptDropdown()"
                                     oninput="filterDeptOptions()"
@@ -162,8 +162,8 @@ $employees = $pdo->query("
                                 oninput="applyFilters()">
                         </div>
 
-                        <button class="empAddBtn" onclick="openAddModal()" title="Add Employee">
-                            <i class="bi bi-plus-lg"></i>
+                        <button class="btn btn-success" onclick="openAddModal()" title="Add Employee">
+                            <i class="bi bi-plus-lg"></i> Add Employee
                         </button>
                     </div>
                 </div>
@@ -227,17 +227,29 @@ $employees = $pdo->query("
                                     </td>
                                     <td><?= htmlspecialchars($emp['department_name'] ?? 'No Department') ?></td>
                                     <td class="text-end" onclick="event.stopPropagation()">
+
+                                        <!-- VIEW -->
+                                        <a class="empActionBtn empViewBtn"
+                                        href="admin_employee_view.php?id=<?= $emp['id'] ?>"
+                                        title="View Employee">
+                                            <i class="bi bi-eye-fill"></i>
+                                        </a>
+
+                                        <!-- EDIT -->
                                         <button class="empActionBtn empEditBtn"
                                                 onclick="openEditModal(this.closest('tr'))"
                                                 title="Edit">
                                             <i class="bi bi-pencil-fill"></i>
                                         </button>
+
+                                        <!-- DELETE -->
                                         <a class="empActionBtn empDeleteBtn"
-                                           href="admin_employees.php?delete=<?= $emp['id'] ?>"
-                                           onclick="return confirm('Delete <?= htmlspecialchars($emp['name'], ENT_QUOTES) ?>?')"
-                                           title="Delete">
+                                        href="admin_employees.php?delete=<?= $emp['id'] ?>"
+                                        onclick="return confirm('Delete <?= htmlspecialchars($emp['name'], ENT_QUOTES) ?>?')"
+                                        title="Delete">
                                             <i class="bi bi-trash-fill"></i>
                                         </a>
+
                                     </td>
 
                                 </tr>
@@ -262,7 +274,11 @@ $employees = $pdo->query("
 
             </div>
         </div>
-
+        
+        <!-- Card glass here that show info of employee -->
+        <!-- Card glass left schedule of employee calendar --> 
+        <!-- Card glass shows gantt chart record for that selected calendar shift -->
+         
         <!-- Gantt Tooltip -->
         <div id="gantt_tooltip">
             <div class="ganttToolTipRow">

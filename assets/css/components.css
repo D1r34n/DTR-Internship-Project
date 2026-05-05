@@ -56,7 +56,8 @@
     display: flex;
     align-items: stretch;
 
-    min-height: var(--control-height) !important;
+    height: var(--control-height) !important; 
+    box-sizing: border-box !important;
 
     border-radius: 12px;
     overflow: hidden;
@@ -114,7 +115,7 @@
 
 /* INPUT FIELD */
 .input-group .form-control {
-    height: var(--control-height) !important;
+    height: 100% !important;
 
     background: transparent !important;
     border: none !important;
@@ -240,7 +241,7 @@ button.btn {
     justify-content: center !important;
     gap: 0.4rem !important;
 
-    padding: 0.45rem 1rem !important;
+    padding: 0 1rem !important;          /* ← vertical padding removed */
 
     color: var(--text-light) !important;
 
@@ -275,7 +276,8 @@ button.btn {
         background 0.25s ease,
         box-shadow 0.2s ease !important;
 
-    min-height: var(--control-height) !important;
+    height: var(--control-height) !important;   /* ← explicit height */
+    min-height: unset !important;               /* ← clear old rule */
     line-height: 1 !important;
 }
 
