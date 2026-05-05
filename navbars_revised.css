@@ -165,7 +165,7 @@
     position: sticky;
     top: 8px;
     align-self: flex-start;
-    margin: 8px 0 8px 8px;
+    margin: 0.5rem 0 0.5rem 0.5rem;
     transition: width 0.25s ease;
     z-index: 1000;
     gap: 1rem;

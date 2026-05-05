@@ -326,6 +326,8 @@ button.btn {
         transparent 100%
     ) !important;
 
+    margin: 0.5rem;
+    
     border: 1px solid var(--frosted-border) !important;
     border-radius: 16px !important;
 

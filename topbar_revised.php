@@ -152,7 +152,7 @@ $currentStatus = $timedIn ? 'Timed In' : 'Timed Out';
 <link rel="stylesheet" href="../dropdown_requests/log_edit_modal.css">
 
 <!-- TOP BAR -->
-<nav class="navbar shadow-sm m-2">
+<nav class="navbar m-2">
     <div class="container-fluid d-flex align-items-center justify-content-between">
 
         <!-- LEFT: Breadcrumb + Title -->
