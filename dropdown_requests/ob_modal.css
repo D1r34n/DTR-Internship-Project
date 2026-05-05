@@ -1,73 +1,6 @@
-/* ---------- Bootstrap Modal Override ---------- */
-#obModal .modal-content {
-    background: var(--glass-bg);
-    backdrop-filter: blur(32px) saturate(160%) brightness(0.3);
-    -webkit-backdrop-filter: blur(32px) saturate(160%) brightness(0.3);
-    border: 1px solid var(--glass-border);
-    border-radius: 16px;
-    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.5);
-    color: #fff;
-}
-#obModal .modal-header,
-#obModal .modal-footer {
-    border-color: var(--glass-border);
-}
-#obModal .modal-title { color: #fff; }
-#obModal .btn-close { filter: invert(1); }
-
 /* ============================================================
    OB REQUEST MODAL — ob_modal.css
    ============================================================ */
-
-/* ---------- Overlay ---------- */
-#obModalOverlay {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.6);
-    z-index: 99999;
-    justify-content: center;
-    align-items: center;
-}
-
-/* ---------- Modal Box ---------- */
-.ob-modal-box {
-    background: var(--glass-bg);
-    backdrop-filter: blur(32px) saturate(160%) brightness(0.3);
-    -webkit-backdrop-filter: blur(32px) saturate(160%) brightness(0.3);
-    border: 1px solid var(--glass-border);
-    border-radius: 16px;
-    padding: 2rem 1.5rem 2rem 2rem;
-    width: 750px;
-    max-height: 85vh;
-    overflow-y: auto;
-    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.5);
-}
-
-/* ---------- Modal Header ---------- */
-.ob-modal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1.5rem;
-}
-
-.ob-modal-title {
-    color: #fff;
-    margin: 0;
-    font-weight: 600;
-}
-
-.ob-modal-close-btn {
-    background: none;
-    border: none;
-    color: #aaa;
-    font-size: 1.3rem;
-    cursor: pointer;
-}
 
 /* ---------- Instruction ---------- */
 .ob-instruction {
@@ -203,26 +136,34 @@
 
 /* -----------------------------------
      OB CALENDAR OVERRIDES
-     (scoped to #obCalendar)
+     (admin_schedule card-grid style — scoped to #obCalendar)
 ----------------------------------- */
+
+/* Strip all native FullCalendar borders/backgrounds */
 #obCalendar .fc {
+    --fc-page-bg-color:      transparent;
+    --fc-border-color:       transparent;
+    --fc-today-bg-color:     transparent;
+    --fc-neutral-bg-color:   transparent;
+    --fc-highlight-color:    transparent;
+    --fc-non-business-color: transparent;
     color: var(--text-light);
     font-family: 'Poppins', sans-serif;
     width: 100%;
 }
 
-#obCalendar .fc .fc-toolbar {
-    margin-bottom: 1rem;
-}
+#obCalendar .fc .fc-toolbar { margin-bottom: 1rem; }
 
 #obCalendar .fc .fc-toolbar-title {
     font-size: 1rem;
     font-weight: 500;
-    color: var(--text-light);
+    color: var(--text-lightest);
 }
 
-#obCalendar .fc .fc-button {
-    background: rgba(255, 255, 255, 0.08);
+/* Nav / Today buttons */
+#obCalendar .fc .fc-button,
+#obCalendar .fc .fc-today-button {
+    background: var(--glass-bg);
     border: 1px solid var(--glass-border);
     color: var(--text-light);
     font-family: 'Poppins', sans-serif;
@@ -234,17 +175,15 @@
     transition: background 0.2s ease, color 0.2s ease;
 }
 
-#obCalendar .fc .fc-button:hover {
-    background: rgba(255, 255, 255, 0.14);
+#obCalendar .fc .fc-button:hover,
+#obCalendar .fc .fc-today-button:hover {
+    background: var(--glass-hover);
     border-color: rgba(255, 255, 255, 0.2);
     color: var(--text-lightest);
     box-shadow: none;
 }
 
-#obCalendar .fc .fc-button:focus {
-    box-shadow: none;
-    outline: none;
-}
+#obCalendar .fc .fc-button:focus { box-shadow: none; outline: none; }
 
 #obCalendar .fc .fc-button-primary:not(:disabled).fc-button-active,
 #obCalendar .fc .fc-button-primary:not(:disabled):active {
@@ -252,18 +191,6 @@
     border-color: var(--primary-hover);
     color: #fff;
     box-shadow: none;
-}
-
-#obCalendar .fc .fc-today-button {
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid var(--glass-border);
-    color: var(--text-light);
-    font-family: 'Poppins', sans-serif;
-    font-size: 0.8rem;
-    padding: 0.3rem 0.8rem;
-    border-radius: 8px;
-    box-shadow: none;
-    transition: background 0.2s ease, color 0.2s ease;
 }
 
 #obCalendar .fc .fc-today-button:disabled {
@@ -274,40 +201,69 @@
     cursor: default;
 }
 
+/* Day-name header row — muted, small, uppercase (matches sched-cal-day-header) */
 #obCalendar .fc .fc-col-header-cell {
-    background: rgba(255, 255, 255, 0.04);
-    border-color: var(--glass-border);
-    padding: 0.5rem 0;
+    background: transparent;
+    border: none;
+    padding: 0.2rem 0 0.3rem;
 }
 
 #obCalendar .fc .fc-col-header-cell-cushion {
-    color: var(--text-light);
-    font-size: 0.75rem;
+    color: var(--text-muted)!important;
+    font-size: 0.68rem;
     font-weight: 500;
     text-decoration: none;
     text-transform: uppercase;
-    letter-spacing: 0.07em;
+    letter-spacing: 0.05em;
 }
 
+/* Remove scrollgrid table borders */
+#obCalendar .fc .fc-scrollgrid,
+#obCalendar .fc .fc-scrollgrid-section > td,
+#obCalendar .fc .fc-scrollgrid-section > th {
+    border: none !important;
+    background-color: transparent;
+}
+
+/* <td> wrapper — transparent, no border */
 #obCalendar .fc .fc-daygrid-day {
-    background: transparent;
-    border-color: var(--glass-border);
+    background: transparent !important;
+    border: none !important;
     cursor: pointer;
 }
 
-#obCalendar .fc .fc-daygrid-day:hover {
-    background: rgba(255, 255, 255, 0.03);
+/* Inner frame — card style (mirrors .sched-cal-day) */
+#obCalendar .fc .fc-daygrid-day-frame {
+    background: var(--glass-bg)!important;
+    border: 1px solid var(--glass-border);
+    border-radius: 8px;
+    overflow: hidden;
+    margin: 2px;
+    min-height: 80px;
+    transition: background 0.2s, border-color 0.2s;
 }
 
+#obCalendar .fc .fc-daygrid-day:hover .fc-daygrid-day-frame {
+    background: var(--glass-hover)!important; 
+}
+
+/* Day number — muted, small (matches sched-cal-day-num) */
 #obCalendar .fc .fc-daygrid-day-number {
-    color: var(--text-light);
-    font-size: 0.8rem;
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    font-weight: 500;
     text-decoration: none;
     padding: 4px 8px;
 }
 
+/* Today — primary border + glow (matches sched-cal-day.is-today) */
 #obCalendar .fc .fc-day-today {
-    background: rgba(151, 190, 65, 0.08) !important;
+    background: transparent !important;
+}
+
+#obCalendar .fc .fc-day-today .fc-daygrid-day-frame {
+    border-color: var(--primary-border) !important;
+    box-shadow: 0 0 0 1px var(--primary-soft);
 }
 
 #obCalendar .fc .fc-day-today .fc-daygrid-day-number {
@@ -315,20 +271,17 @@
     font-weight: 600;
 }
 
-#obCalendar .fc .fc-scrollgrid {
-    border-color: var(--glass-border);
-    border-radius: 10px;
-    overflow: hidden;
-}
+/* Suppress FullCalendar highlight / bg-harness */
+#obCalendar .fc .fc-highlight          { background: transparent !important; }
+#obCalendar .fc .fc-daygrid-bg-harness { background: transparent; }
 
-#obCalendar .fc .fc-scrollgrid-section > td,
-#obCalendar .fc .fc-scrollgrid-section > th {
-    border-color: var(--glass-border);
-    background-color: transparent;
-}
-
-#obCalendar .fc .fc-highlight {
-    background: transparent !important;
+/* Width transition */
+#obCalendar .fc .fc-daygrid-body,
+#obCalendar .fc .fc-scrollgrid-sync-table,
+#obCalendar .fc table,
+#obCalendar .fc td,
+#obCalendar .fc th {
+    transition: width 0.38s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 #obCalendar .fc .fc-daygrid-day-top {
@@ -337,20 +290,30 @@
 }
 
 /* ---------- OB-specific day states ---------- */
-#obCalendar .fc-day-selected-ob {
-    background: rgba(151, 190, 65, 0.25) !important;
+
+/* Selected — primary glass card */
+#obCalendar .fc-day-selected-ob .fc-daygrid-day-frame {
+    background: var(--primary-glass) !important;
+    border-color: var(--primary-border) !important;
 }
 
+/* Dimmed — non-selectable */
 #obCalendar .fc-day-dimmed-ob {
-    opacity: 0.25;
+    opacity: 0.3;
     pointer-events: none !important;
 }
 
+/* On OB — danger card */
 #obCalendar .fc-day-on-ob {
-    background: rgba(220, 53, 69, 0.18) !important;
     opacity: 0.6 !important;
 }
 
+#obCalendar .fc-day-on-ob .fc-daygrid-day-frame {
+    background: var(--danger-glass) !important;
+    border-color: var(--danger-border) !important;
+}
+
+/* Check icon */
 #obCalendar .ob-check {
     display: inline-flex;
     align-items: center;
@@ -361,13 +324,7 @@
 }
 
 /* ---------- Scrollbar ---------- */
-.ob-modal-box::-webkit-scrollbar { width: 6px; }
-.ob-modal-box::-webkit-scrollbar-track {
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 10px;
-}
-.ob-modal-box::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.2);
-    border-radius: 10px;
-}
+.ob-modal-box::-webkit-scrollbar       { width: 6px; }
+.ob-modal-box::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); border-radius: 10px; }
+.ob-modal-box::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 10px; }
 .ob-modal-box::-webkit-scrollbar-thumb:hover { background: #97be41; }

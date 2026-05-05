@@ -1,4 +1,31 @@
 /* ================================================
+   BOOTSTRAP MODAL OVERRIDE
+   ================================================ */
+
+.modal-content {
+    background: var(--glass-bg) !important;
+    backdrop-filter: blur(32px) saturate(160%) brightness(0.3) !important;
+    -webkit-backdrop-filter: blur(32px) saturate(160%) brightness(0.3) !important;
+    border: 1px solid var(--glass-border) !important;
+    border-radius: 16px !important;
+    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.5) !important;
+    color: var(--text-light) !important;
+}
+
+.modal-header,
+.modal-footer {
+    border-color: var(--glass-border) !important;
+}
+
+.modal-title {
+    color: #fff !important;
+}
+
+.btn-close {
+    filter: invert(1) !important;
+}
+
+/* ================================================
    DIVIDER
    ================================================ */
 .vr {

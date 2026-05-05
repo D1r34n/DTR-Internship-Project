@@ -1,12 +1,11 @@
 <!-- OT REQUEST MODAL -->
 <div class="modal fade" id="otModal" tabindex="-1" aria-labelledby="otModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered modal-lg">
+  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
     <div class="modal-content">
 
       <!-- Modal Header -->
       <div class="modal-header">
         <h5 class="modal-title" id="otModalLabel">File OT Request</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
 
       <!-- Modal Body -->
@@ -47,12 +46,12 @@
       <div class="modal-footer" id="otModalFooter">
 
         <!-- Step 1 footer: just Close -->
-        <div id="otFooterStep1" class="w-100 d-flex justify-content-end">
+        <div id="otFooterStep1">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
         </div>
 
         <!-- Step 2 footer: Back + Submit -->
-        <div id="otFooterStep2" class="w-100 d-flex justify-content-between" style="display:none !important;">
+        <div id="otFooterStep2" style="display:none;">
           <button type="button" class="btn btn-outline-secondary" onclick="backToStep1()">
             <i class="bi bi-arrow-left"></i> Back
           </button>
@@ -68,7 +67,7 @@
 
 <!-- LEAVE REQUEST MODAL -->
 <div class="modal fade" id="leaveModal" tabindex="-1" aria-labelledby="leaveModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered modal-lg">
+  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
     <div class="modal-content">
 
       <div class="modal-header">
@@ -135,7 +134,7 @@
 
 <!-- OB REQUEST MODAL -->
 <div class="modal fade" id="obModal" tabindex="-1" aria-labelledby="obModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered modal-lg">
+  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
     <div class="modal-content">
 
       <div class="modal-header">
@@ -298,7 +297,7 @@
     // Reset state
     document.getElementById('otStep1').style.display = 'block';
     document.getElementById('otStep2').style.display = 'none';
-    document.getElementById('otFooterStep1').style.display = '';
+    document.getElementById('otFooterStep1').style.display = 'flex';
     document.getElementById('otFooterStep2').style.display = 'none';
     document.getElementById('otErrorMsg').style.display = 'none';
     document.getElementById('otSuccessMsg').style.display = 'none';
@@ -317,7 +316,7 @@
     document.getElementById('otStep2').style.display = 'none';
     document.getElementById('otStep1').style.display = 'block';
     document.getElementById('otFooterStep2').style.display = 'none';
-    document.getElementById('otFooterStep1').style.display = '';
+    document.getElementById('otFooterStep1').style.display = 'flex';
     document.getElementById('otErrorMsg').style.display = 'none';
   }
 
@@ -352,8 +351,8 @@
           const tsActualOut = Date.parse(actualOut.replace(' ', 'T')) / 1000;
 
           const rangeStart = tsSchedIn - 7200;
-          const rangeEnd = tsActualOut + 7200;
-          const range = rangeEnd - rangeStart;
+          const rangeEnd = rangeStart + 64800; // fixed 18-hour window for consistent scale
+          const range = 64800;
 
           const schedLeft = ((tsSchedIn - rangeStart) / range) * 100;
           const schedWidth = ((tsSchedOut - tsSchedIn) / range) * 100;
@@ -453,7 +452,7 @@
             document.getElementById('otStep1').style.display = 'none';
             document.getElementById('otStep2').style.display = 'block';
             document.getElementById('otFooterStep1').style.display = 'none';
-            document.getElementById('otFooterStep2').style.display = '';
+            document.getElementById('otFooterStep2').style.display = 'flex';
           });
 
           list.appendChild(rowEl);
