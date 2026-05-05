@@ -296,7 +296,30 @@
 }
 
 /* ---------- Modal scrollbar ---------- */
-#leaveModalOverlay ::-webkit-scrollbar       { width: 6px; }
-#leaveModalOverlay ::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); border-radius: 10px; }
-#leaveModalOverlay ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 10px; }
-#leaveModalOverlay ::-webkit-scrollbar-thumb:hover { background: #97be41; }
+#leaveModal .modal-body::-webkit-scrollbar       { width: 6px; }
+#leaveModal .modal-body::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); border-radius: 10px; }
+#leaveModal .modal-body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 10px; }
+#leaveModal .modal-body::-webkit-scrollbar-thumb:hover { background: #97be41; }
+
+/* ---------- Calendar internal scrollbar ---------- */
+#leaveCalendar .fc-scroller::-webkit-scrollbar       { width: 5px; }
+#leaveCalendar .fc-scroller::-webkit-scrollbar-track { background: rgba(255,255,255,0.03); border-radius: 10px; }
+#leaveCalendar .fc-scroller::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 10px; }
+#leaveCalendar .fc-scroller::-webkit-scrollbar-thumb:hover { background: #97be41; }
+
+/* ---------- Reason textarea dark theme ---------- */
+#leaveModal .form-control {
+    background: rgba(0, 0, 0, 0.3) !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    color: #fff !important;
+    font-family: 'Poppins', sans-serif;
+    font-size: 0.875rem;
+    border-radius: 8px;
+    resize: none;
+}
+#leaveModal .form-control::placeholder { color: rgba(255, 255, 255, 0.3); }
+#leaveModal .form-control:focus {
+    border-color: #97be41 !important;
+    box-shadow: none !important;
+    background: rgba(0, 0, 0, 0.3) !important;
+}

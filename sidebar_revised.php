@@ -74,11 +74,45 @@ $requestsOpen = in_array($currentPage, ['employee_requests', 'schedule_requests'
 
         <!-- WORKFORCE MENU -->
         <?php if ($role === 'workforce'): ?>
-            <?php navLink('employee_dashboard.php', 'bi-columns-gap',      'Dashboard',        $currentPage === 'dashboard');         ?>
-            <?php navLink('employee_records.php',   'bi-bar-chart-steps',  'Records',          $currentPage === 'records');           ?>
-            <?php navLink('employee_schedule.php',  'bi-calendar-week',    'Schedules',        $currentPage === 'schedule');          ?>
-            <?php navLink('employee_logs.php',      'bi-clipboard-minus',  'Logs',             $currentPage === 'logs');              ?>
-            <?php navLink('workforce_schedule.php', 'bi-calendar-plus',    'Manage Schedules', $currentPage === 'workforce_schedule'); ?>
+            <?php navLink('employee_dashboard.php', 'bi-columns-gap',     'Dashboard', $currentPage === 'dashboard'); ?>
+            <?php navLink('employee_records.php',   'bi-bar-chart-steps', 'Records',   $currentPage === 'records'); ?>
+            <?php navLink('employee_schedule.php',  'bi-calendar-week',   'Schedules', $currentPage === 'schedule'); ?>
+            <?php navLink('employee_logs.php',      'bi-clipboard-minus', 'Logs',      $currentPage === 'logs'); ?>
+
+    <?php 
+        $manageEmpOpen = in_array($currentPage, ['workforce_schedule', 'workforce_logs']); 
+    ?>
+
+    <!-- Manage Employees dropdown (ADMIN STYLE) -->
+    <div class="sidebar-dropdown">
+        <button
+            class="sidebar-link sidebar-dropdown-toggle <?= $manageEmpOpen ? 'active' : '' ?>"
+            data-bs-toggle="collapse"
+            data-bs-target="#workforce-submenu"
+            aria-expanded="<?= $manageEmpOpen ? 'true' : 'false' ?>"
+            title="Manage Employees"
+        >
+            <i class="bi bi-people-fill"></i>
+            <span>Manage Employees</span>
+            <i class="bi bi-chevron-down transition-chevron"></i>
+        </button>
+
+        <div id="workforce-submenu" class="collapse <?= $manageEmpOpen ? 'show' : '' ?>">
+            <a href="workforce_schedule.php"
+               class="sidebar-sub-link <?= ($currentPage === 'workforce_schedule') ? 'active' : '' ?>"
+               title="Employee Schedules">
+                <i class="bi bi-calendar-plus"></i>
+                <span>Employee Schedules</span>
+            </a>
+
+            <a href="workforce_logs.php"
+               class="sidebar-sub-link <?= ($currentPage === 'workforce_logs') ? 'active' : '' ?>"
+               title="Employee Logs">
+                <i class="bi bi-journal-text"></i>
+                <span>Employee Logs</span>
+            </a>
+            </div>
+        </div>
         <?php endif; ?>
 
         <!-- ADMIN MENU -->

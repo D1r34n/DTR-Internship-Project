@@ -37,7 +37,7 @@ if ($myDept) {
     $deptEmployees = $empStmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
-$current_page = 'workforce_logs';
+$currentPage = 'workforce_logs';
 ?>
 <!doctype html>
 <html lang="en">
@@ -46,16 +46,37 @@ $current_page = 'workforce_logs';
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Employee Logs</title>
 
-    <link rel="stylesheet" href="../root.css">
-    <link rel="stylesheet" href="../admin_pages/admin_logs.css">
-    <link rel="stylesheet" href="../navbars_revised.css">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <link rel="stylesheet" href="../assets/css/root.css">
+    <link rel="stylesheet" href="../assets/css/typography.css">
+    <link rel="stylesheet" href="../assets/css/components.css">
+    <link rel="stylesheet" href="../navbars_revised.css">
+    <link rel="stylesheet" href="../admin_pages/admin_logs.css">
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
 
     <style>
+        /* Override admin_logs.css — match workforce_schedule layout */
+        body::before {
+            background: url('../assets/images/drt_bg.jpg') center / cover no-repeat;
+            filter: none;
+            transform: none;
+        }
+        body::after { display: none; }
+        body { display: flex; min-height: 100vh; margin: 0; overflow-x: hidden; }
+
+        #main-wrapper {
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+            min-width: 0;
+            height: 100vh;
+            overflow: hidden;
+        }
+
         /* Edit button */
         .wfLogEditBtn {
             background: rgba(13, 110, 253, 0.22);
@@ -168,8 +189,10 @@ $current_page = 'workforce_logs';
 </head>
 <body>
 
-    <?php include '../sidebar.php'; ?>
-    <?php include '../topbar.php'; ?>
+    <?php include '../sidebar_revised.php'; ?>
+
+    <div id="main-wrapper">
+        <?php include '../topbar_revised.php'; ?>
 
     <div class="logsWrapper">
         <div class="logsBox">
@@ -268,6 +291,8 @@ $current_page = 'workforce_logs';
 
         </div>
     </div>
+
+    </div><!-- #main-wrapper -->
 
     <!-- Map Hover Popup -->
     <div class="mapPopUpContainer" id="map_pop_up_container">
@@ -544,6 +569,80 @@ $current_page = 'workforce_logs';
         toast.className   = `wfToast ${type} show`;
         setTimeout(() => toast.classList.remove('show'), 3500);
     }
+
+    // ---- MAP HOVER POPUP ----
+    let popupMap    = null;
+    let hideTimeout = null;
+    const mapPopup  = document.getElementById('map_pop_up_container');
+
+    document.addEventListener('mouseover', e => {
+        const trigger = e.target.closest('.loc-trigger');
+        if (!trigger) return;
+
+        clearTimeout(hideTimeout);
+
+        const lat   = parseFloat(trigger.dataset.lat);
+        const lng   = parseFloat(trigger.dataset.lng);
+        const label = trigger.dataset.label;
+        const acc   = trigger.dataset.acc;
+        const dist  = trigger.dataset.dist;
+
+        document.getElementById('open_gmaps_btn').href = `https://www.google.com/maps?q=${lat},${lng}`;
+
+        const rect        = trigger.getBoundingClientRect();
+        const popupHeight = 320;
+        const popupWidth  = 300;
+        const spaceBelow  = window.innerHeight - rect.bottom;
+        const spaceAbove  = rect.top;
+        const spaceRight  = window.innerWidth  - rect.left;
+
+        const topPos  = (spaceBelow < popupHeight && spaceAbove > spaceBelow)
+            ? rect.top    + window.scrollY - popupHeight - 3
+            : rect.bottom + window.scrollY + 3;
+
+        const leftPos = spaceRight < popupWidth
+            ? rect.right + window.scrollX - popupWidth - 310
+            : rect.left  + window.scrollX - 310;
+
+        mapPopup.style.top     = `${topPos}px`;
+        mapPopup.style.left    = `${leftPos}px`;
+        mapPopup.style.display = 'block';
+
+        document.getElementById('map_pop_up_info').innerHTML = `
+            <b>${label}</b><br>
+            Latitude: ${lat} &nbsp;&nbsp; Longitude: ${lng}<br>
+            Accuracy: ±${acc} m &nbsp; Distance: ${dist} m
+        `;
+
+        setTimeout(() => {
+            if (!popupMap) {
+                popupMap = L.map('map_pop_up', { zoomControl: false, attributionControl: false });
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(popupMap);
+                popupMap._marker = null;
+            }
+            popupMap.invalidateSize();
+            popupMap.setView([lat, lng], 17);
+            if (popupMap._marker) popupMap.removeLayer(popupMap._marker);
+            popupMap._marker = L.marker([lat, lng]).addTo(popupMap);
+        }, 50);
+    });
+
+    document.addEventListener('mouseout', e => {
+        const trigger = e.target.closest('.loc-trigger');
+        if (!trigger) return;
+        hideTimeout = setTimeout(() => {
+            mapPopup.style.display = 'none';
+            if (popupMap) { popupMap.remove(); popupMap = null; }
+        }, 200);
+    });
+
+    mapPopup.addEventListener('mouseover', () => clearTimeout(hideTimeout));
+    mapPopup.addEventListener('mouseout',  () => {
+        hideTimeout = setTimeout(() => {
+            mapPopup.style.display = 'none';
+            if (popupMap) { popupMap.remove(); popupMap = null; }
+        }, 200);
+    });
 </script>
 </body>
 </html>

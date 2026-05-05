@@ -324,7 +324,29 @@
 }
 
 /* ---------- Scrollbar ---------- */
-.ob-modal-box::-webkit-scrollbar       { width: 6px; }
-.ob-modal-box::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); border-radius: 10px; }
-.ob-modal-box::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 10px; }
-.ob-modal-box::-webkit-scrollbar-thumb:hover { background: #97be41; }
+#obModal .modal-body::-webkit-scrollbar       { width: 6px; }
+#obModal .modal-body::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); border-radius: 10px; }
+#obModal .modal-body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 10px; }
+#obModal .modal-body::-webkit-scrollbar-thumb:hover { background: #97be41; }
+
+/* ---------- Calendar internal scrollbar ---------- */
+#obCalendar .fc-scroller::-webkit-scrollbar       { width: 5px; }
+#obCalendar .fc-scroller::-webkit-scrollbar-track { background: rgba(255,255,255,0.03); border-radius: 10px; }
+#obCalendar .fc-scroller::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 10px; }
+#obCalendar .fc-scroller::-webkit-scrollbar-thumb:hover { background: #97be41; }
+
+/* ---------- Input / textarea dark theme ---------- */
+#obModal .form-control {
+    background: rgba(0, 0, 0, 0.3) !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    color: #fff !important;
+    font-family: 'Poppins', sans-serif;
+    font-size: 0.875rem;
+    border-radius: 8px;
+}
+#obModal .form-control::placeholder { color: rgba(255, 255, 255, 0.3); }
+#obModal .form-control:focus {
+    border-color: #97be41 !important;
+    box-shadow: none !important;
+    background: rgba(0, 0, 0, 0.3) !important;
+}

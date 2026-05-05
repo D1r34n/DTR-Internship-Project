@@ -371,7 +371,6 @@ $schedules = getSchedulesByDateRange($pdo, $employeeId, $startDate, $endDate);
 
 <!-- Bootstrap JS bundle (includes Popper) -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
-<script src="../system_functions/gantt.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', () => {
         // Wire up cursor tracking and tooltip behavior for all Gantt rows
