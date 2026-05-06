@@ -73,7 +73,7 @@ $employees = $pdo->query("
     <link rel="stylesheet" href="../navbars_revised.css">
 
     <!-- 3. Page-specific CSS -->
-    <link rel="stylesheet" href="admin_employees_list.css">
+    <link rel="stylesheet" href="admin_manage_employees.css">
 
     <!-- 4. Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/flatpickr" defer></script>
@@ -85,9 +85,9 @@ $employees = $pdo->query("
     <div id="main-wrapper">
 
         <?php include '../topbar_revised.php'; ?>
-
-        <div class="card card-glass logs-card">
-            <div class="card-body d-flex flex-column logs-card-body">
+        
+        <div class="card card-glass employee-list-card">
+            <div class="card-body d-flex flex-column employee-list-card-body">
 
                 <!-- Filter Section -->
                 <div class="filter-wrapper">
@@ -111,7 +111,7 @@ $employees = $pdo->query("
                         </div>
                         <input type="hidden" id="role-filter" value="">
 
-                        <!-- DEPARTMENT SEARCH DROPDOWN --> 
+                        <!-- DEPARTMENT FILTER DROPDOWN -->
                         <div class="dropdown w-30">
 
                             <div class="input-group" style="max-width: 220px;">
@@ -119,31 +119,16 @@ $employees = $pdo->query("
                                     <i class="bi bi-search"></i>
                                 </span>
 
-                                <!-- INPUT (NO data-bs-toggle) -->
                                 <input
                                     type="text"
                                     id="dept-search-input"
                                     class="form-control"
-                                    placeholder="Sort Department"
-                                    onclick="openDeptDropdown()"
-                                    oninput="filterDeptOptions()"
+                                    placeholder="All Departments"
                                     autocomplete="off"
                                 >
                             </div>
 
-                            <!-- DROPDOWN MUST BE DIRECT CHILD OF .dropdown -->
-                            <ul class="dropdown-menu p-2 w-100" id="filter-dept-menu">
-
-                                <li>
-                                    <button class="dropdown-item" type="button"
-                                        onclick="selectFilter('dept','','All Departments')">
-                                        All Departments
-                                    </button>
-                                </li>
-
-                                <li><hr class="dropdown-divider"></li>
-
-                            </ul>
+                            <ul class="dropdown-menu p-2 w-100" id="filter-dept-menu"></ul>
 
                         </div>
 
@@ -162,9 +147,25 @@ $employees = $pdo->query("
                                 oninput="applyFilters()">
                         </div>
 
-                        <button class="btn btn-success" onclick="openAddModal()" title="Add Employee">
-                            <i class="bi bi-plus-lg"></i> Add Employee
-                        </button>
+                        <div class="dropdown">
+                            <button class="btn btn-success dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Add">
+                                <i class="bi bi-plus-lg"></i> Manage
+                            </button>
+
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li>
+                                    <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#empModal">
+                                        <i class="bi bi-person-plus"></i> Add Employee
+                                    </a>
+                                </li>
+
+                                <li>
+                                    <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#importScheduleModal">
+                                        <i class="bi bi-upload"></i> Import Schedule
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
                     </div>
                 </div>
 
@@ -226,28 +227,11 @@ $employees = $pdo->query("
                                         </span>
                                     </td>
                                     <td><?= htmlspecialchars($emp['department_name'] ?? 'No Department') ?></td>
-                                    <td class="text-end" onclick="event.stopPropagation()">
+                                    <td class="text-end">
 
-                                        <!-- VIEW -->
-                                        <a class="empActionBtn empViewBtn"
-                                        href="admin_employee_view.php?id=<?= $emp['id'] ?>"
-                                        title="View Employee">
-                                            <i class="bi bi-eye-fill"></i>
-                                        </a>
-
-                                        <!-- EDIT -->
-                                        <button class="empActionBtn empEditBtn"
-                                                onclick="openEditModal(this.closest('tr'))"
-                                                title="Edit">
-                                            <i class="bi bi-pencil-fill"></i>
-                                        </button>
-
-                                        <!-- DELETE -->
-                                        <a class="empActionBtn empDeleteBtn"
-                                        href="admin_employees.php?delete=<?= $emp['id'] ?>"
-                                        onclick="return confirm('Delete <?= htmlspecialchars($emp['name'], ENT_QUOTES) ?>?')"
-                                        title="Delete">
-                                            <i class="bi bi-trash-fill"></i>
+                                        <a class="btn btn-success d-flex align-items-center gap-2"
+                                        href="admin_employee_view.php?id=<?= $emp['id'] ?>">
+                                            <i class="bi bi-eye-fill"></i> View
                                         </a>
 
                                     </td>
@@ -274,11 +258,7 @@ $employees = $pdo->query("
 
             </div>
         </div>
-        
-        <!-- Card glass here that show info of employee -->
-        <!-- Card glass left schedule of employee calendar --> 
-        <!-- Card glass shows gantt chart record for that selected calendar shift -->
-         
+
         <!-- Gantt Tooltip -->
         <div id="gantt_tooltip">
             <div class="ganttToolTipRow">
@@ -315,68 +295,213 @@ $employees = $pdo->query("
             </div>
         </div>
 
-        <!-- Add / Edit Modal -->
-        <div class="empModalOverlay" id="empModalOverlay" style="display:none;" onclick="closeModal(event)">
-            <div class="empModal">
-                <div class="empModalHeader">
-                    <h6 id="empModalTitle">Add Employee</h6>
-                    <button onclick="closeModalBtn()"><i class="bi bi-x-lg"></i></button>
-                </div>
-                <div class="empModalBody">
+        <!-- Add / Edit Employee Modal (Bootstrap) -->
+        <div class="modal fade" id="empModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-lg modal-dialog-centered">
+                <div class="modal-content">
+
+                    <!-- Header -->
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="empModalTitle">Add Employee</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+
+                    <!-- Body -->
                     <form method="POST" action="admin_employees.php">
+
                         <input type="hidden" name="employee_id" id="modalEmpId">
 
-                        <div class="formGrid">
-                            <div class="formGroup">
-                                <label>Name</label>
-                                <input type="text" name="name" id="modalName" class="formControl" required>
-                            </div>
-                            <div class="formGroup">
-                                <label>Email</label>
-                                <input type="email" name="email" id="modalEmail" class="formControl" required>
-                            </div>
-                            <div class="formGroup">
-                                <label id="modalPwdLabel">Password</label>
-                                <input type="password" name="password" id="modalPassword" class="formControl">
-                            </div>
-                            <div class="formGroup">
-                                <label>Role</label>
-                                <div class="customSelectWrapper">
-                                    <div class="customSelectToggle" onclick="toggleModalDropdown('roleDropdown')">
-                                        <span id="roleLabel">Employee</span>
-                                        <i class="bi bi-chevron-down"></i>
-                                    </div>
-                                    <div class="customSelectMenu" id="roleDropdown">
-                                        <div class="customSelectItem" onclick="selectRole('employee','Employee')">Employee</div>
-                                        <div class="customSelectItem" onclick="selectRole('workforce','Workforce')">Workforce</div>
-                                        <div class="customSelectItem" onclick="selectRole('admin','Admin')">Admin</div>
-                                    </div>
+                        <div class="modal-body">
+
+                            <div class="row g-3">
+
+                                <!-- Name -->
+                                <div class="col-md-6">
+                                    <label class="form-label">Name</label>
+                                    <input type="text" name="name" id="modalName" class="form-control" required>
                                 </div>
-                                <input type="hidden" name="role" id="roleInput" value="employee">
-                            </div>
-                            <div class="formGroup">
-                                <label>Department</label>
-                                <div class="customSelectWrapper">
-                                    <div class="customSelectToggle" onclick="toggleModalDropdown('deptDropdown')">
-                                        <span id="deptLabel">Select Department</span>
-                                        <i class="bi bi-chevron-down"></i>
-                                    </div>
-                                    <div class="customSelectMenu" id="deptDropdown">
-                                        <div class="customSelectItem" onclick="selectDept('','Select Department')">None</div>
+
+                                <!-- Email -->
+                                <div class="col-md-6">
+                                    <label class="form-label">Email</label>
+                                    <input type="email" name="email" id="modalEmail" class="form-control" required>
+                                </div>
+
+                                <!-- Password -->
+                                <div class="col-md-6">
+                                    <label class="form-label" id="modalPwdLabel">Password</label>
+                                    <input type="password" name="password" id="modalPassword" class="form-control">
+                                </div>
+
+                                <!-- Role -->
+                                <div class="col-md-6">
+                                    <label class="form-label">Role</label>
+                                    <select name="role" id="roleInput" class="form-select">
+                                        <option value="employee">Employee</option>
+                                        <option value="workforce">Workforce</option>
+                                        <option value="admin">Admin</option>
+                                    </select>
+                                </div>
+
+                                <!-- Department (Searchable Dropdown) -->
+                                <div class="col-md-6">
+
+                                    <label class="form-label">Department</label>
+
+                                    <div class="dropdown w-100">
+
+                                        <div class="input-group">
+                                            <span class="input-group-text">
+                                                <i class="bi bi-search"></i>
+                                            </span>
+
+                                            <input
+                                                type="text"
+                                                id="dept-search-input-modal"
+                                                class="form-control"
+                                                placeholder="Select Department"
+                                                autocomplete="off"
+                                            >
+                                        </div>
+
+                                        <ul class="dropdown-menu p-2 w-100" id="dept-modal-menu"></ul>
 
                                     </div>
+
+                                    <input type="hidden" name="department_id" id="deptInput">
+
                                 </div>
-                                <input type="hidden" name="department_id" id="deptInput" value="">
+
                             </div>
+
                         </div>
 
-                        <div class="formActions">
-                            <button type="submit" class="btnSave" id="modalSubmitBtn">
+                        <!-- Footer -->
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                Cancel
+                            </button>
+
+                            <button type="submit" class="btn btn-success" id="modalSubmitBtn">
                                 <i class="bi bi-check-circle-fill"></i> Save Employee
                             </button>
-                            <button type="button" class="btnCancel" onclick="closeModalBtn()">Cancel</button>
                         </div>
+
                     </form>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- Bulk Schedule Modal -->
+        <div class="modal fade" id="importScheduleModal" tabindex="-1">
+            <div class="modal-dialog modal-lg modal-dialog-centered">
+                <div class="modal-content">
+
+                <!-- Header -->
+                <div class="modal-header">
+                    <h5 class="modal-title">Import Employee Schedule</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+
+                <!-- Body -->
+                <form id="importScheduleForm"
+                    action="bulk_schedule_api.php?action=import"
+                    method="POST"
+                    enctype="multipart/form-data">
+
+                    <div class="modal-body">
+
+                        <!-- Instructions -->
+                        <div class="rounded p-3 mb-3" style="background:var(--primary-glass);border:1px solid var(--primary-border);color:var(--text-light);">
+                            Upload an <strong>xlsx</strong> file with the following columns:
+                            <br>
+                            <small>
+                            <b>employee_id</b>, employee_name (optional), start_date, end_date, time, is_rest_day
+                            </small>
+                        </div>
+
+                        <!-- File Input -->
+                        <div class="mb-3">
+                            <label class="form-label">Select Excel File</label>
+                            <input 
+                                type="file" 
+                                name="schedule_file" 
+                                id="scheduleFileInput"
+                                class="form-control"
+                                accept=".xlsx"
+                                required
+                            >
+
+                            <small class="text-secondary d-block mt-1">
+                                Preview will appear below after selecting file.
+                            </small>
+                        </div>
+
+                        <!-- FILE PREVIEW -->
+                        <div id="filePreview" class="mt-3" style="display:none;">
+                            <div class="rounded p-2" style="background:var(--frosted-bg);border:1px solid var(--frosted-border);">
+
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <strong style="color:var(--text-lightest);">File Preview</strong>
+                                    <span id="fileName" class="small" style="color:var(--text-muted);"></span>
+                                </div>
+
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-bordered mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th>employee_id</th>
+                                                <th>employee_name</th>
+                                                <th>start_date</th>
+                                                <th>end_date</th>
+                                                <th>time</th>
+                                                <th>is_rest_day</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="previewBody">
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                <small class="d-block mt-2" style="color:var(--text-muted);">
+                                    Showing first 5 rows only
+                                </small>
+                            </div>
+                        </div>
+
+                        <!-- Template Download -->
+                        <div class="d-flex justify-content-between align-items-center rounded p-3 mt-3" style="background:var(--frosted-bg);border:1px solid var(--frosted-border);">
+
+                            <div>
+                                <small class="d-block" style="color:var(--text-muted);">
+                                    Download the official Excel template to ensure correct format.
+                                </small>
+                                <small style="color:var(--text-muted);">
+                                    Columns: employee_id, employee_name (optional), start_date, end_date, time, is_rest_day
+                                </small>
+                            </div>
+
+                            <a href="bulk_schedule_api.php?action=download_template"
+                            class="btn btn-sm ms-3">
+                                <i class="bi bi-download"></i> Template
+                            </a>
+
+                        </div>
+
+                    </div>
+
+                    <!-- Footer -->
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            Cancel
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            Import Schedule
+                        </button>
+                    </div>
+                </form>
+
                 </div>
             </div>
         </div>
@@ -384,6 +509,7 @@ $employees = $pdo->query("
     </div><!-- #main-wrapper -->
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
     <script src="../system_functions/gantt.js"></script>
     <script>
 
@@ -651,6 +777,79 @@ $employees = $pdo->query("
             document.getElementById('empModalOverlay').style.display = 'none';
         }
 
+        function createDropdown({
+            inputId,
+            menuId,
+            hiddenInputId = null,
+            items = [],
+            placeholder = 'Select',
+            onSelect = null,
+            allowSearch = true
+        }) {
+            const input = document.getElementById(inputId);
+            const menu = document.getElementById(menuId);
+            const hidden = hiddenInputId ? document.getElementById(hiddenInputId) : null;
+
+            if (!input || !menu) return;
+
+            function render(list) {
+                menu.innerHTML = '';
+
+                list.forEach(item => {
+                    const li = document.createElement('li');
+
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'dropdown-item';
+                    btn.textContent = item.label;
+
+                    btn.onclick = () => select(item);
+
+                    li.appendChild(btn);
+                    menu.appendChild(li);
+                });
+            }
+
+            function select(item) {
+                input.value = item.label;
+
+                if (hidden) hidden.value = item.value;
+
+                if (onSelect) onSelect(item);
+
+                menu.classList.remove('show');
+            }
+
+            function filter() {
+                const q = input.value.toLowerCase().trim();
+                const filtered = items.filter(i =>
+                    i.label.toLowerCase().includes(q)
+                );
+                render(filtered);
+            }
+
+            function open() {
+                menu.classList.add('show');
+            }
+
+            // events
+            input.addEventListener('click', open);
+
+            if (allowSearch) {
+                input.addEventListener('input', filter);
+            }
+
+            document.addEventListener('click', e => {
+                if (!e.target.closest(`#${menuId}`) &&
+                    !e.target.closest(`#${inputId}`)) {
+                    menu.classList.remove('show');
+                }
+            });
+
+            // initial render
+            render(items);
+        }
+
         // ---- ROLE / DEPT SELECTS ----
         function toggleModalDropdown(id) {
             const all = ['roleDropdown', 'deptDropdown'];
@@ -667,9 +866,12 @@ $employees = $pdo->query("
         }
 
         function selectDept(value, label) {
-            document.getElementById('deptInput').value       = value;
-            document.getElementById('deptLabel').textContent = label || 'Select Department';
-            document.getElementById('deptDropdown').classList.remove('show');
+            document.getElementById('deptInput').value = value;
+            document.getElementById('dept-search-input-modal').value = label;
+
+            // close modal dropdown only
+            const modalMenu = document.getElementById('dept-modal-menu');
+            if (modalMenu) modalMenu.classList.remove('show');
         }
 
         document.addEventListener('click', e => {
@@ -678,66 +880,54 @@ $employees = $pdo->query("
             }
         });
 
-        // ---- DEPARTMENTS ----
         function loadDepartments() {
             fetch('/DTR-Internship-Project/admin_pages/department_api.php?action=list')
                 .then(r => r.json())
                 .then(depts => {
-                    // Populate modal dropdown
-                    const menu = document.getElementById('deptDropdown');
-                    menu.innerHTML = '<div class="customSelectItem" onclick="selectDept(\'\',\'Select Department\')">None</div>';
-                    depts.forEach(d => {
-                        const item = document.createElement('div');
-                        item.className = 'customSelectItem';
-                        item.textContent = d.department_name;
-                        item.onclick = () => selectDept(d.id, d.department_name);
-                        menu.appendChild(item);
+
+                    const formatted = depts.map(d => ({
+                        value: String(d.id),
+                        label: d.department_name
+                    }));
+
+                    // =========================
+                    // FILTER DROPDOWN
+                    // =========================
+                    createDropdown({
+                        inputId: 'dept-search-input',
+                        menuId: 'filter-dept-menu',
+                        hiddenInputId: 'dept-filter',
+                        items: [
+                            { value: '', label: 'All Departments' },
+                            ...formatted
+                        ],
+                        onSelect: () => applyFilters()
                     });
 
-                    // Populate filter dropdown
-                    const filterMenu = document.getElementById('filter-dept-menu');
-                    depts.forEach(d => {
-                        const li = document.createElement('li');
-                        const btn = document.createElement('button');
-                        btn.type      = 'button';
-                        btn.className = 'dropdown-item';
-                        btn.textContent = d.department_name;
-                        btn.onclick = () => selectFilter('dept', String(d.id), d.department_name);
-                        li.appendChild(btn);
-                        filterMenu.appendChild(li);
+                    // =========================
+                    // MODAL DROPDOWN
+                    // =========================
+                    createDropdown({
+                        inputId: 'dept-search-input-modal',
+                        menuId: 'dept-modal-menu',
+                        hiddenInputId: 'deptInput',
+                        items: [
+                            { value: '', label: 'None' },
+                            ...formatted
+                        ],
+                        allowSearch: true
                     });
+
                 })
                 .catch(() => {});
         }
-
         loadDepartments();
-
-        function openDeptDropdown() {
-            document.getElementById('filter-dept-menu').classList.add('show');
-        }
-
-        function filterDeptOptions() {
-            const q = document.getElementById('dept-search-input').value.toLowerCase().trim();
-
-            // ← Reset filter when input is cleared
-            if (q === '') {
-                document.getElementById('dept-filter').value = '';
-                applyFilters();
-                document.querySelectorAll('#filter-dept-menu li').forEach(li => {
-                    li.style.display = '';
-                });
-                return;
-            }
-
-            document.querySelectorAll('#filter-dept-menu li').forEach(li => {
-                li.style.display = li.textContent.toLowerCase().includes(q) ? '' : 'none';
-            });
-        }
 
         // Close on outside click
         document.addEventListener('click', e => {
             if (!e.target.closest('.dropdown')) {
-                document.getElementById('filter-dept-menu').classList.remove('show');
+                document.querySelectorAll('.dropdown-menu.show')
+                    .forEach(m => m.classList.remove('show'));
             }
         });
 
@@ -749,6 +939,106 @@ $employees = $pdo->query("
                 setTimeout(() => a.remove(), 500);
             });
         }, 3000);
+
+        // ---- BULK SCHEDULE: FILE PREVIEW ----
+        document.getElementById('scheduleFileInput').addEventListener('change', function () {
+            const file = this.files[0];
+            if (!file) return;
+
+            document.getElementById('fileName').textContent = file.name;
+
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                const data     = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const sheet    = workbook.Sheets[workbook.SheetNames[0]];
+                const rows     = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+
+                const tbody    = document.getElementById('previewBody');
+                tbody.innerHTML = '';
+
+                const dataRows = rows.slice(1, 6);
+                if (dataRows.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" class="text-center" style="color:var(--text-muted);">No data rows found</td></tr>';
+                } else {
+                    dataRows.forEach(row => {
+                        const tr = document.createElement('tr');
+                        for (let i = 0; i < 6; i++) {
+                            const td = document.createElement('td');
+                            td.textContent = row[i] ?? '';
+                            tr.appendChild(td);
+                        }
+                        tbody.appendChild(tr);
+                    });
+                }
+
+                document.getElementById('filePreview').style.display = '';
+            };
+            reader.readAsArrayBuffer(file);
+        });
+
+        // Reset preview when modal is closed
+        document.getElementById('importScheduleModal').addEventListener('hidden.bs.modal', function () {
+            document.getElementById('scheduleFileInput').value = '';
+            document.getElementById('filePreview').style.display = 'none';
+            document.getElementById('previewBody').innerHTML = '';
+            document.getElementById('fileName').textContent = '';
+            const submitBtn = document.querySelector('#importScheduleForm [type="submit"]');
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = 'Import Schedule';
+        });
+
+        // ---- BULK SCHEDULE: AJAX SUBMIT ----
+        document.getElementById('importScheduleForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+
+            const btn = this.querySelector('[type="submit"]');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="empSpinner"></span> Importing...';
+
+            fetch('bulk_schedule_api.php?action=import', {
+                method: 'POST',
+                body: new FormData(this)
+            })
+            .then(r => r.json())
+            .then(result => {
+                bootstrap.Modal.getInstance(document.getElementById('importScheduleModal')).hide();
+
+                const isError = result.status !== 'success';
+                let msg = isError
+                    ? (result.message || 'Import failed.')
+                    : `Imported ${result.inserted} schedule entries successfully.`;
+                if (!isError && result.errors && result.errors.length > 0) {
+                    msg += ` (${result.errors.length} row(s) skipped)`;
+                }
+                showImportAlert(msg, isError);
+            })
+            .catch(() => {
+                btn.disabled = false;
+                btn.innerHTML = 'Import Schedule';
+                showImportAlert('Import failed. Please try again.', true);
+            });
+        });
+
+        function showImportAlert(message, isError = false) {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = 'empAlert';
+            if (isError) {
+                alertDiv.style.background   = 'rgba(220,53,69,0.15)';
+                alertDiv.style.borderColor  = 'rgba(220,53,69,0.3)';
+                alertDiv.style.color        = '#ff8a8a';
+            }
+            alertDiv.textContent = message;
+
+            const filterWrapper = document.querySelector('.filter-wrapper');
+            filterWrapper.insertAdjacentElement('afterend', alertDiv);
+
+            setTimeout(() => {
+                alertDiv.style.transition = 'opacity 0.5s';
+                alertDiv.style.opacity    = '0';
+                setTimeout(() => alertDiv.remove(), 500);
+            }, 4000);
+        }
 
     </script>
 </body>

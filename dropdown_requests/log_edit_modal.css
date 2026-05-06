@@ -376,3 +376,94 @@
 #logEditModal .modal-body::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); border-radius: 10px; }
 #logEditModal .modal-body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 10px; }
 #logEditModal .modal-body::-webkit-scrollbar-thumb:hover { background: #97be41; }
+
+/* ---------- Step 1 — Logs Table ---------- */
+.le-logs-table-wrap {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.le-logs-table-wrap::-webkit-scrollbar       { width: 6px; }
+.le-logs-table-wrap::-webkit-scrollbar-track { background: rgba(255,255,255,0.04); }
+.le-logs-table-wrap::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.18); border-radius: 10px; }
+
+.le-logs-table {
+    color: var(--text-light, rgba(255,255,255,0.85));
+    border-collapse: collapse;
+    width: 100%;
+}
+
+.le-logs-table thead th {
+    position: sticky;
+    top: 0;
+    background: rgba(10,10,10,0.85);
+    backdrop-filter: blur(6px);
+    color: rgba(255,255,255,0.45);
+    font-size: 0.8rem;
+    font-weight: 500;
+    padding: 0.6rem 0.75rem;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    border-top: none;
+}
+
+.le-logs-table tbody td {
+    padding: 0.65rem 0.75rem;
+    font-size: 0.85rem;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    vertical-align: middle;
+}
+
+.le-logs-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.le-logs-loading {
+    text-align: center;
+    padding: 2.5rem !important;
+    color: rgba(255,255,255,0.35);
+    font-size: 0.875rem;
+}
+
+/* Pencil edit button */
+.leEditRowBtn {
+    background: rgba(13, 110, 253, 0.2);
+    border: none;
+    color: #6db8ff;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.68rem;
+    transition: background 0.2s;
+}
+
+.leEditRowBtn:hover {
+    background: rgba(13, 110, 253, 0.42);
+}
+
+/* ---------- Step 2 — Info Rows ---------- */
+.le-modal-info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.55rem 0;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    font-size: 0.85rem;
+}
+
+.le-modal-info-row:last-of-type {
+    border-bottom: none;
+    margin-bottom: 0.25rem;
+}
+
+.le-modal-label {
+    color: rgba(255,255,255,0.4);
+}
+
+.le-modal-value {
+    color: #fff;
+    font-weight: 500;
+}

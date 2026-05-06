@@ -62,29 +62,19 @@ body {
     overflow-x: hidden;
 }
 
-.logs-card-body::-webkit-scrollbar       { width: 6px; }
-.logs-card-body::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.05); border-radius: 10px; }
-.logs-card-body::-webkit-scrollbar-thumb { background: var(--overlay-muted); border-radius: 10px; }
-.logs-card-body::-webkit-scrollbar-thumb:hover { background: var(--primary-color); }
-
-
-.schedule-box::-webkit-scrollbar       { width: 6px; }
-.schedule-box::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.05); border-radius: 10px; }
-.schedule-box::-webkit-scrollbar-thumb { background: var(--overlay-muted); border-radius: 10px; }
-.schedule-box::-webkit-scrollbar-thumb:hover { background: var(--primary-color); }
 /* Department container */
 
-.deptHeader {
+.dept-header {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 10px;
+    gap: 1rem;
+    padding-bottom: 1rem;
     flex-wrap: wrap;
-    margin-bottom: 1rem;
+    margin: 0.5rem 0.5rem 0rem 0.5rem;
 }
 
 /* LEFT GROUP */
-.deptHeaderLeft {
+.dept-header-left {
     display: flex;
     align-items: center;
     gap: 10px;
@@ -93,19 +83,19 @@ body {
 }
 
 /* RIGHT GROUP */
-.deptHeaderRight {
+.dept-header-right {
     display: flex;
     align-items: center;
     justify-content: flex-end;
 }
 
-.deptSearchWrapper {
+.dept-search-wrapper {
     position: relative;
     flex: 1;
     max-width: 250px;
 }
 
-.deptSearchInput {
+.dept-search-input {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -137,10 +127,11 @@ body {
         box-shadow 0.25s ease;
 }
 
-.deptSearchInput::placeholder {
+.dept-search-input::placeholder {
     color: var(--text-muted);
 }
-.searchIcon {
+
+.search-icon {
     position: absolute;
     right: 1rem;
     top: 50%;
@@ -152,35 +143,35 @@ body {
     transition: color 0.25s ease, transform 0.25s ease;
 }
 
-.deptSearchWrapper:hover .deptSearchInput{
+.dept-search-wrapper:hover .dept-search-input {
     color: var(--text-lightest);
     background: rgba(255, 255, 255, 0.12);
     border-color: rgba(255, 255, 255, 0.25);
     transform: translateY(-1px);
-    box-shadow: 
+    box-shadow:
         inset 0 1px 0 rgba(255, 255, 255, 0.12),
         0 4px 12px rgba(0, 0, 0, 0.25);
 }
 
-.deptSearchWrapper:hover .searchIcon {
+.dept-search-wrapper:hover .search-icon {
     color: var(--text-lightest);
     transform: translateY(-50%) translateX(3px);
 }
 
-.deptSearchInput:focus,
-.deptSearchInput:active {
+.dept-search-input:focus,
+.dept-search-input:active {
     color: var(--text-lightest);
     background: rgba(255, 255, 255, 0.12);
     border-color: rgba(255, 255, 255, 0.25);
     transform: translateY(-1px);
-    box-shadow: 
+    box-shadow:
         inset 0 1px 0 rgba(255, 255, 255, 0.12),
         0 4px 12px rgba(0, 0, 0, 0.25);
     outline: none;
 }
 
 /* Department sort */
-#deptSortToggle {
+#dept-sort-toggle {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -214,25 +205,25 @@ body {
         box-shadow 0.25s ease;
 }
 
-#deptSortToggle:hover {
+#dept-sort-toggle:hover {
     color: var(--text-lightest);
     background: rgba(255, 255, 255, 0.12);
     border-color: rgba(255, 255, 255, 0.25);
     transform: translateY(-1px);
-    box-shadow: 
+    box-shadow:
         inset 0 1px 0 rgba(255, 255, 255, 0.12),
         0 4px 12px rgba(0, 0, 0, 0.25);
 }
 
-.logArrow {
+.log-arrow {
     transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-#deptSortToggle:hover .logArrow {
+#dept-sort-toggle:hover .log-arrow {
     transform: rotate(180deg);
 }
 
-.logTypeSection {
+.log-type-section {
     padding: 0.5rem;
 
     /* semi-transparent base (required for glass effect) */
@@ -251,62 +242,22 @@ body {
     transition: clip-path 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.userDropdownMenu.show .logTypeSection {
+.user-dropdown-menu.show .log-type-section {
     clip-path: inset(0 0 0% 0 round 12px);
 }
 
-.createDeptBtn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
 
-    width: auto;
-    padding: 0.8rem 1rem;
-
-    font-family: 'Poppins', sans-serif;
-    font-size: 0.95rem;
-
-    color: var(--primary-color);
-    background: rgba(151, 190, 65, 0.1);
-    border: 1px solid rgba(151, 190, 65, 0.2);
-    border-radius: 12px;
-
-    cursor: pointer;
-    user-select: none;
-    -webkit-user-select: none;
-
-    transition: 
-        color 0.2s ease,
-        background-color 0.3s ease,
-        transform 0.2s ease,
-        box-shadow 0.2s ease;
-}
-
-.createDeptBtn:hover {
-    background: rgba(151, 190, 65, 0.18);
-    transform: translateY(-2px);
-    box-shadow: inset 0 1px 0 rgba(151, 190, 65, 0.15);
-    color: var(--primary-color);
-    border-color: transparent !important;
-}
-
-.deptGrid {
+.dept-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
     gap: 20px;
-    padding: 10px;
-
+    padding: 0px;
+    
     flex: 1;
     overflow-y: auto;
 }
 
-.deptGrid::-webkit-scrollbar { width: 4px; }
-.deptGrid::-webkit-scrollbar-track { background: transparent; }
-.deptGrid::-webkit-scrollbar-thumb { background: var(--text-dark); border-radius: 10px; }
-.deptGrid::-webkit-scrollbar-thumb:hover { background: var(--text-dark-muted); }
-
-.deptCard {
+.dept-card {
     background: var(--glass-bg);
     backdrop-filter: blur(32px) saturate(160%) brightness(0.3);
     -webkit-backdrop-filter: blur(32px) saturate(160%) brightness(0.3);
@@ -323,7 +274,6 @@ body {
     justify-content: flex-start;
     gap: 6px;
 
-    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.5);
     cursor: pointer;
 
     transition:
@@ -334,26 +284,23 @@ body {
         box-shadow 0.25s ease;
 }
 
-.deptCard:hover {
+.dept-card:hover {
     color: var(--text-lightest);
     background: rgba(255, 255, 255, 0.12);
     border-color: rgba(255, 255, 255, 0.25);
     transform: translateY(-1px);
-    box-shadow: 
-        inset 0 1px 0 rgba(255, 255, 255, 0.12),
-        0 4px 12px rgba(0, 0, 0, 0.25);
 }
 
-.deptCard:hover .deptName {
+.dept-card:hover .dept-name {
     color: var(--text-lightest);
 }
 
-.deptCard:hover .editDeptIcon {
+.dept-card:hover .edit-dept-icon {
     opacity: 1;
     transform: scale(1.1);
 }
 
-.deptIcon {
+.dept-icon {
     width: 60px;
     height: 60px;
     flex-shrink: 0;
@@ -367,16 +314,15 @@ body {
     font-size: 14px;
     text-align: center;
 
-    border-radius: 50%; /* TRUE CIRCLE */
+    border-radius: 50%;
 
     margin-bottom: 12px;
 
-    /* optional polish */
     overflow: hidden;
     box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
 }
 
-.deptActions {
+.dept-actions {
     position: absolute;
     top: 10px;
     right: 10px;
@@ -384,27 +330,27 @@ body {
     gap: 6px;
 }
 
-.editDeptIcon {
+.edit-dept-icon {
     cursor: pointer;
     font-size: 1.1rem;
     opacity: 0;
     transition: 0.2s;
 }
 
-.deptIdentity {
+.dept-identity {
     display: flex;
     align-items: center;
     gap: 12px;
     width: 100%;
 }
 
-.createDeptLayout {
+.create-dept-layout {
     display: flex;
     gap: 20px;
     align-items: flex-start;
 }
 
-.createDeptPreview {
+.create-dept-preview {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -413,7 +359,7 @@ body {
     width: 120px;
 }
 
-.createDeptPreviewIcon {
+.create-dept-preview-icon {
     width: 100%;
     aspect-ratio: 1;
     border-radius: 50%;
@@ -431,14 +377,14 @@ body {
     transition: background 0.2s ease, color 0.2s ease;
 }
 
-.createDeptPreviewName {
+.create-dept-preview-name {
     font-size: 0.75rem;
     color: var(--text-muted);
     text-align: center;
     word-break: break-word;
 }
 
-.colorPickWrapper {
+.color-pick-wrapper {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -474,148 +420,71 @@ body {
         box-shadow 0.25s ease;
 }
 
-.colorPickWrapper:hover {
+.color-pick-wrapper:hover {
     color: var(--text-lightest);
     background: rgba(255, 255, 255, 0.12);
     border-color: rgba(255, 255, 255, 0.25);
     transform: translateY(-1px);
-    box-shadow: 
+    box-shadow:
         inset 0 1px 0 rgba(255, 255, 255, 0.12),
         0 4px 12px rgba(0, 0, 0, 0.25);
 }
 
-.colorPickInput {
+.color-pick-input {
     width: 1.5rem;
     height: 1.5rem;
     border-radius: 50%;
-    overflow: hidden; /* important */
+    overflow: hidden;
     padding: 0;
     border: none;
     cursor: pointer;
 
-    box-shadow: 
+    box-shadow:
         inset 0 0 4px rgba(255,255,255,0.2),
         0 2px 8px rgba(0,0,0,0.3);
 }
 
 /* remove default inner styling */
-.colorPickInput::-webkit-color-swatch-wrapper {
+.color-pick-input::-webkit-color-swatch-wrapper {
     padding: 0;
 }
 
-.colorPickInput::-webkit-color-swatch {
+.color-pick-input::-webkit-color-swatch {
     border: none;
     border-radius: 50%;
 }
 
-.createDeptFields {
+.create-dept-fields {
     flex: 1;
     display: flex;
     flex-direction: column;
 }
 
-.deptName {
-    font-size: 1.25rem;
+.dept-name {
+    font-size: clamp(1rem, 1vw, 1.25rem);
     font-weight: 500;
     color: var(--text-light);
     text-align: left;
     align-items: center;
 }
 
-.deptModal {
-    background: var(--glass-bg);
-    backdrop-filter: blur(32px) saturate(160%) brightness(0.3);
-    -webkit-backdrop-filter: blur(32px) saturate(160%) brightness(0.3);
-
-    border: 1px solid var(--glass-border);
-    border-radius: 14px;
-    color: var(--text-light);
-}
-
-.deptModal .form-control {
-    background: rgba(255,255,255,0.06);
-    border: 1px solid var(--glass-border);
-    color: var(--text-muted);
-    font-size: 0.875rem;
-    font-weight: 300;
-}
-
-.deptModal .form-control:hover {
-    color: var(--text-lightest);
-    background: rgba(255, 255, 255, 0.12);
-    border-color: rgba(255, 255, 255, 0.25);
-    transform: translateY(-1px);
-    box-shadow: 
-        inset 0 1px 0 rgba(255, 255, 255, 0.12),
-        0 4px 12px rgba(0, 0, 0, 0.25);
-}
-
-.deptModal .form-control:focus {
-    color: var(--text-lightest);
-    background: rgba(255, 255, 255, 0.12);
-    border-color: rgba(255, 255, 255, 0.25);
-    transform: translateY(-1px);
-    box-shadow: 
-        inset 0 1px 0 rgba(255, 255, 255, 0.12),
-        0 4px 12px rgba(0, 0, 0, 0.25);
-    outline: none;
-}
-
-.selectWrapper {
-    position: relative;
-}
-
-.customSelect {
-    appearance: none;
-    -webkit-appearance: none;
-    -moz-appearance: none;
-
-    width: 100%;
-    padding-right: 2.5rem; /* space for arrow */
-
-    background: rgba(255,255,255,0.06);
-    border: 1px solid var(--glass-border);
-    color: white;
-    border-radius: 10px;
-}
-
-/* Arrow */
-.selectArrow {
-    position: absolute;
-    right: 12px;
-    top: 20%;
-
-    pointer-events: none; /* clicks go to select */
-    font-size: 0.9rem;
-    opacity: 0.6;
-    transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.selectWrapper.active .selectArrow {
-    transform: rotate(180deg);
-}
 
 .modal-header {
     position: relative;
-    border-bottom: none; /* remove original */
+    border-bottom: none;
 }
 
 .modal-header::after {
     content: '';
     position: absolute;
     bottom: 0;
-    left: 20px;   /* controls left spacing */
-    right: 20px;  /* controls right spacing */
+    left: 20px;
+    right: 20px;
 
     height: 0.5px;
     background: var(--text-muted);
 }
 
-.modal-title {
-    color: var(--text-light);
-    font-size: 1.25rem;
-    font-weight: 500;
-}
 
 .form-label {
     color: var(--text-muted);
@@ -623,7 +492,7 @@ body {
     font-weight: 300;
 }
 
-.deptListItem {
+.dept-list-item {
     display: flex;
     align-items: center;
     gap: 12px;
@@ -640,23 +509,23 @@ body {
     transition: 0.2s ease;
 }
 
-.deptListItem + .deptListItem {
+.dept-list-item + .dept-list-item {
     margin-top: 8px;
 }
 
-.deptListItem .deptIcon {
+.dept-list-item .dept-icon {
     width: 36px;
     height: 36px;
     font-size: 0.65rem;
     flex-shrink: 0;
 }
 
-.deptListItem .deptName {
+.dept-list-item .dept-name {
     font-size: 0.9rem;
     font-weight: 500;
 }
 
-.deptParent {
+.dept-parent {
     margin-top: 6px;
     font-size: 11px;
     opacity: 0.7;
@@ -664,7 +533,7 @@ body {
     color: var(--text-muted);
 }
 
-.deptParentLink {
+.dept-parent-link {
     display: inline-flex;
     align-items: center;
     gap: 6px;
@@ -683,13 +552,12 @@ body {
     transition: 0.2s ease;
 }
 
-.deptParentLink:hover {
+.dept-parent-link:hover {
     background: var(--glass-border);
     color: var(--primary-color);
 }
 
-
-.deptSubBtn {
+.dept-sub-btn {
     display: inline-flex;
     align-items: center;
     gap: 6px;
@@ -708,12 +576,12 @@ body {
     transition: 0.2s ease;
 }
 
-.deptSubBtn:hover {
+.dept-sub-btn:hover {
     background: var(--glass-border);
     color: var(--primary-color);
 }
 
-.deptMeta {
+.dept-meta {
     display: inline-flex;
     align-items: center;
     gap: 6px;

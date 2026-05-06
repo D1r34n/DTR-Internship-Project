@@ -166,6 +166,71 @@
 }
 
 /* ================================================
+   FORM CONTROL — MODAL INPUTS (frosted glass)
+   Mirrors the .btn / .input-group frosted treatment.
+   ================================================ */
+
+.modal-body .form-control {
+    height: var(--control-height);
+    background: var(--neutral-glass) linear-gradient(
+        to right,
+        rgba(255, 255, 255, 0.10) 0%,
+        rgba(255, 255, 255, 0.05) 40%,
+        rgba(255, 255, 255, 0.02) 70%,
+        transparent 100%
+    ) !important;
+    border: 1px solid var(--neutral-border) !important;
+    border-radius: 12px !important;
+    color: var(--text-light) !important;
+    font-size: 0.875rem !important;
+    font-weight: 400 !important;
+    backdrop-filter: var(--frosted-blur) !important;
+    -webkit-backdrop-filter: var(--frosted-blur) !important;
+    box-shadow: var(--glass-inset) !important;
+    transition:
+        transform 0.2s ease,
+        color 0.2s ease,
+        background 0.25s ease,
+        box-shadow 0.2s ease !important;
+}
+
+.modal-body .form-control::placeholder {
+    color: var(--text-muted) !important;
+}
+
+/* When a form-control is inside an input-group inside the modal,
+   revert to the input-group's transparent inner-field style. */
+.modal-body .input-group .form-control {
+    height: 100% !important;
+    background: transparent !important;
+    border: none !important;
+    border-radius: 0 !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    box-shadow: none !important;
+    transform: none !important;
+}
+
+.modal-body .form-control:hover {
+    color: var(--text-lightest) !important;
+    background: var(--neutral-glass-hover) !important;
+    box-shadow: var(--glass-shadow) !important;
+    transform: scale(1.02) !important;
+}
+
+.modal-body .form-control:focus {
+    color: var(--text-lightest) !important;
+    background: var(--neutral-glass-hover) !important;
+    border-color: var(--primary-border) !important;
+    box-shadow:
+        var(--glass-shadow),
+        0 0 0 1px var(--primary-border),
+        0 0 18px var(--primary-glow) !important;
+    transform: translateY(-1px) !important;
+    outline: none !important;
+}
+
+/* ================================================
    OPTIONAL: GLOW PULSE ANIMATION
    ================================================ */
 
@@ -212,6 +277,158 @@
 .modal-title {
     color: #fff !important;
 }
+
+/* ================================================
+   PILL OVERRIDE — EMPLOYEE / ROLE BADGES
+   (BRIGHT GLASS SYSTEM — NO GLOW)
+   ================================================ */
+
+.pill,
+.badge,
+[class*="empRole-"] {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+
+    gap: 0.35rem !important;
+
+    padding: 0.25rem 0.65rem !important;
+
+    font-size: 0.75rem !important;
+    font-weight: 400 !important;
+    line-height: 1 !important;
+
+    border-radius: 999px !important;
+
+    color: var(--text-light) !important;
+
+    background: var(--neutral-glass) linear-gradient(
+        to right,
+        rgba(255, 255, 255, 0.12) 0%,
+        rgba(255, 255, 255, 0.06) 45%,
+        rgba(255, 255, 255, 0.03) 75%,
+        transparent 100%
+    ) !important;
+
+    border: 1px solid var(--neutral-border) !important;
+
+    backdrop-filter: var(--frosted-blur) !important;
+    -webkit-backdrop-filter: var(--frosted-blur) !important;
+
+    box-shadow: var(--glass-inset) !important;
+
+    position: relative !important;
+    overflow: hidden !important;
+
+    transition:
+        transform 0.2s ease,
+        background 0.25s ease,
+        border-color 0.2s ease,
+        color 0.2s ease !important;
+}
+
+/* ------------------------------------------------
+   TOP HIGHLIGHT (BRIGHTER BUT SUBTLE)
+   ------------------------------------------------ */
+
+.pill::before,
+.badge::before,
+[class*="empRole-"]::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(
+        to bottom,
+        rgba(255, 255, 255, 0.10),
+        transparent 60%
+    );
+    opacity: 0.4;
+    pointer-events: none;
+}
+
+/* ------------------------------------------------
+   ROLE VARIANTS (BRIGHT GLASS — NO GLOW)
+   ------------------------------------------------ */
+
+.empRole-employee {
+    background: var(--employee-bg) !important;
+    border-color: var(--employee-border) !important;
+    color: var(--employee) !important;
+}
+
+.empRole-workforce {
+    background: var(--workforce-bg) !important;
+    border-color: var(--workforce-border) !important;
+    color: var(--workforce) !important;
+}
+
+.empRole-admin {
+    background: var(--admin-bg) !important;
+    border-color: var(--admin-border) !important;
+    color: var(--admin) !important;
+}
+
+.empRole-manager {
+    background: var(--manager-bg) !important;
+    border-color: var(--manager-border) !important;
+    color: var(--manager) !important;
+}
+
+.empRole-superadmin {
+    background: var(--superadmin-bg) !important;
+    border-color: var(--superadmin-border) !important;
+    color: var(--superadmin) !important;
+}
+
+/* ------------------------------------------------
+   STATUS VARIANTS (BASED ON EXISTING ROOT TOKENS)
+   ------------------------------------------------ */
+
+/* PENDING → WARNING */
+.status-pending {
+    background: var(--warning-bg) !important;
+    border-color: var(--warning-border) !important;
+    color: var(--warning) !important;
+}
+
+/* APPROVED → PRIMARY (GREEN SYSTEM) */
+.status-approved {
+    background: var(--primary-glass) !important;
+    border-color: var(--primary-border) !important;
+    color: var(--primary-color) !important;
+}
+
+/* REJECTED → DANGER */
+.status-rejected {
+    background: var(--danger-glass) !important;
+    border-color: var(--danger-border) !important;
+    color: var(--danger-color) !important;
+}
+
+/* ------------------------------------------------
+   HOVER (SLIGHT BRIGHTEN ONLY)
+   ------------------------------------------------ */
+
+.pill:hover,
+.badge:hover,
+[class*="empRole-"]:hover {
+    transform: scale(1.04) !important;
+    background: var(--neutral-glass-hover) !important;
+}
+
+/* ================================================
+   BTN-SELECT — dropdown button acting as a select
+   ================================================ */
+
+.btn-select {
+    justify-content: space-between !important;
+    text-align: left !important;
+}
+
+/* ================================================
+   BTN GROUP SWAP ANIMATION
+   ================================================ */
 
 .btn-close {
     filter: invert(1) !important;
@@ -414,6 +631,53 @@ button.btn {
 }
 
 /* ================================================
+   INFO
+   ================================================ */
+
+.btn-info,
+.btn.btn-info {
+    color: var(--info) !important;
+    background: var(--info-bg) linear-gradient(
+        to right,
+        rgba(255, 255, 255, 0.10) 0%,
+        rgba(255, 255, 255, 0.05) 40%,
+        rgba(255, 255, 255, 0.02) 70%,
+        transparent 100%
+    ) !important;
+
+    border: 1px solid var(--info-border) !important;
+
+    box-shadow: var(--glass-inset) !important;
+
+    transition:
+        transform 0.25s ease-out,
+        opacity 0.25s ease-out,
+        box-shadow 0.25s ease-out,
+        background 0.25s ease-out,
+        color 0.25s ease-out !important;
+}
+
+/* ------------------------------------------------
+   HOVER / FOCUS
+   ------------------------------------------------ */
+
+.btn-info:hover,
+.btn-info:focus,
+.btn-info:focus-visible {
+    color: var(--text-lightest) !important;
+
+    background: rgba(96, 165, 250, 0.18) linear-gradient(
+        to right,
+        rgba(255, 255, 255, 0.10) 0%,
+        rgba(255, 255, 255, 0.05) 40%,
+        rgba(255, 255, 255, 0.02) 70%,
+        transparent 100%
+    ) !important;
+
+    box-shadow: 0 4px 16px rgba(96, 165, 250, 0.35) !important;
+}
+
+/* ================================================
    BOOTSTRAP EDGE CASES
    ================================================ */
 
@@ -484,6 +748,10 @@ button.btn {
     max-height: 260px;
     overflow-y: auto;
     overflow-x: hidden;
+}
+
+.dropdown-menu.show {
+    z-index: 9999;
 }
 
 .dropdown-item {

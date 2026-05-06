@@ -545,7 +545,7 @@ $currentPage = 'workforce_logs';
             reason:       reasonVal
         });
 
-        fetch('submit_workforce_log_edit.php', {
+        fetch('log_edit_request.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body

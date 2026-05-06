@@ -42,6 +42,7 @@ if ($sort && isset($allowedSort[$sort])) {
 ========================= */
 $sql = "
     SELECT
+        id AS log_id,
         log_time,
         log_type,
         latitude,
@@ -79,21 +80,40 @@ $records = $stmt->fetchAll(PDO::FETCH_ASSOC);
    LOG EDIT REQUEST STATUS MAP
    work_date → request_type → status (most recent)
 ========================= */
-$editMap = [];
-$erStmt = $pdo->prepare("
-    SELECT a.work_date, ler.request_type, ler.status
+// editMap keyed by log_id → edit request entry
+$editMap    = [];
+$editSql    = "
+    SELECT ler.log_id, ler.status,
+           ler.initiated_by_id, e_init.role AS initiator_role, e_init.name AS initiator_name
     FROM log_edit_requests ler
-    JOIN attendances a ON ler.attendance_id = a.id
-    WHERE ler.employee_id = ?
-      AND a.work_date BETWEEN ? AND ?
-    ORDER BY ler.created_at DESC
-");
-$erStmt->execute([$employeeId, $startDate, $endDate]);
+    LEFT JOIN employees e_init ON ler.initiated_by_id = e_init.id
+    WHERE ler.employee_id = ? AND ler.log_id IS NOT NULL
+";
+$editParams = [$employeeId];
+
+if ($startDate !== '') {
+    $editSql    .= " AND ler.log_id IN (SELECT id FROM logs WHERE employee_id = ? AND log_time >= ?)";
+    $editParams[] = $employeeId;
+    $editParams[] = $startDate;
+}
+if ($endDate !== '') {
+    $editSql    .= " AND ler.log_id IN (SELECT id FROM logs WHERE employee_id = ? AND log_time < DATE_ADD(?, INTERVAL 1 DAY))";
+    $editParams[] = $employeeId;
+    $editParams[] = $endDate;
+}
+$editSql .= " ORDER BY ler.created_at DESC";
+
+$erStmt = $pdo->prepare($editSql);
+$erStmt->execute($editParams);
 foreach ($erStmt->fetchAll(PDO::FETCH_ASSOC) as $er) {
-    $d = $er['work_date'];
-    $t = $er['request_type'];
-    if (!isset($editMap[$d][$t])) {
-        $editMap[$d][$t] = $er['status'];
+    $logId = $er['log_id'];
+    if ($logId && !isset($editMap[$logId])) {
+        $editMap[$logId] = [
+            'status'          => $er['status'],
+            'initiated_by_id' => $er['initiated_by_id'],
+            'initiator_role'  => $er['initiator_role'],
+            'initiator_name'  => $er['initiator_name'],
+        ];
     }
 }
 
@@ -103,7 +123,7 @@ foreach ($erStmt->fetchAll(PDO::FETCH_ASSOC) as $er) {
 if (!$records) {
     echo '
     <tr class="emptyRow">
-        <td colspan="5">
+        <td colspan="6">
             <div class="logsEmpty">
                 <i class="bi bi-calendar-x logsEmptyIcon"></i>
                 <div>No logs found for this period.</div>
@@ -117,12 +137,18 @@ if (!$records) {
    OUTPUT ROWS
 ========================= */
 foreach ($records as $row):
-    $workDate   = date('Y-m-d', strtotime($row['log_time']));
-    $editStatus = null;
-    if ($row['log_type'] === 'IN') {
-        $editStatus = $editMap[$workDate]['time_in'] ?? $editMap[$workDate]['both'] ?? null;
-    } elseif ($row['log_type'] === 'OUT') {
-        $editStatus = $editMap[$workDate]['time_out'] ?? $editMap[$workDate]['both'] ?? null;
+    $editEntry = $editMap[$row['log_id']] ?? null;
+    $editStatus      = $editEntry['status']          ?? null;
+    $initiatedById   = $editEntry['initiated_by_id'] ?? null;
+    $initiatorRole   = $editEntry['initiator_role']  ?? null;
+    $initiatorName   = $editEntry['initiator_name']  ?? null;
+
+    if ($initiatedById === null) {
+        $editRole = null;
+    } elseif ((int)$initiatedById === (int)$employeeId) {
+        $editRole = 'self';
+    } else {
+        $editRole = $initiatorRole;
     }
 
     $isInside = $row['is_within_office'];
@@ -179,6 +205,26 @@ foreach ($records as $row):
             <i class="bi bi-geo-alt-fill locationIcon"></i>
             <?= $label ?>
         </a>
+    </td>
+
+    <td>
+        <?php if ($editRole === 'workforce'): ?>
+            <span class="leRequestorName"><?= htmlspecialchars($initiatorName ?? '') ?></span>
+            <span class="leRequestor le-requestor-workforce">
+                <i class="bi bi-person-badge-fill"></i> Workforce
+            </span>
+        <?php elseif ($editRole === 'admin'): ?>
+            <span class="leRequestorName"><?= htmlspecialchars($initiatorName ?? '') ?></span>
+            <span class="leRequestor le-requestor-admin">
+                <i class="bi bi-shield-fill"></i> Admin
+            </span>
+        <?php elseif ($editRole === 'self'): ?>
+            <span class="leRequestor le-requestor-self">
+                <i class="bi bi-person-fill"></i> You
+            </span>
+        <?php else: ?>
+            <span style="color:rgba(255,255,255,0.15);font-size:0.75rem;">—</span>
+        <?php endif; ?>
     </td>
 
     <td>

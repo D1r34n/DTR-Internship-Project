@@ -108,82 +108,78 @@ $departmentList = $stmt2->fetchAll(PDO::FETCH_ASSOC);
     <div class="card card-glass logs-card">
         <div class="card-body d-flex flex-column logs-card-body">
 
-            <!-- HEADER -->
-            <div class="deptHeader">
+            <!-- Filter Section -->
+            <div class="dept-header">
+                <span class="employee-title text-primary">
+                    <i class="bi bi-buildings"></i>
+                    Total Departments: <span id="emp-count"><?= count($departments) ?></span>
+                </span>
+                <div class="d-flex gap-2 align-items-center ms-auto flex-wrap">
 
-                <!-- LEFT SIDE -->
-                <div class="deptHeaderLeft">
-
-                    <!-- SEARCH -->
-                    <div class="deptSearchWrapper">
-                        <input type="text" id="deptSearch" class="deptSearchInput" placeholder="Search departments...">
-                        <i class="bi bi-search searchIcon"></i>
+                    <!-- Sort dropdown -->
+                    <div class="dropdown w-30">
+                        <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <span id="sort-btn-label">Name (A → Z)</span>
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><button class="dropdown-item" type="button" onclick="selectSort('name_asc','Name (A → Z)')">Name (A → Z)</button></li>
+                            <li><button class="dropdown-item" type="button" onclick="selectSort('name_desc','Name (Z → A)')">Name (Z → A)</button></li>
+                            <li><button class="dropdown-item" type="button" onclick="selectSort('code_asc','Code (A → Z)')">Code (A → Z)</button></li>
+                            <li><button class="dropdown-item" type="button" onclick="selectSort('code_desc','Code (Z → A)')">Code (Z → A)</button></li>
+                        </ul>
                     </div>
+                    <input type="hidden" id="dept-sort-value" value="name_asc">
 
-                    <!-- SORT -->
-                    <div class="userDropdownWrapper deptSortDropdown">
-                        <span class="userEmail dropdown-toggle" id="deptSortToggle">
-                            Name (A → Z)
-                            <i class="bi bi-chevron-down logArrow"></i>
+                    <!-- Search -->
+                    <div class="input-group" style="max-width: 220px;">
+                        <span class="input-group-text">
+                            <i class="bi bi-search"></i>
                         </span>
-
-                        <div class="userDropdownMenu" id="deptSortMenu">
-                            <div class="logTypeSection">
-                                <a href="#" class="userDropdownItem" data-value="name_asc">Name (A → Z)</a>
-                                <a href="#" class="userDropdownItem" data-value="name_desc">Name (Z → A)</a>
-                                <a href="#" class="userDropdownItem" data-value="code_asc">Code (A → Z)</a>
-                                <a href="#" class="userDropdownItem" data-value="code_desc">Code (Z → A)</a>
-                            </div>
-                        </div>
+                        <input
+                            type="text"
+                            id="dept-search"
+                            class="form-control"
+                            placeholder="Search..."
+                            oninput="applyFilterSort()">
                     </div>
 
-                    <input type="hidden" id="deptSortValue" value="name_asc">
-
-                </div>
-
-                <!-- RIGHT SIDE -->
-                <div class="deptHeaderRight">
-
-                    <!-- CREATE -->
-                    <button class="createDeptBtn" data-bs-toggle="modal" data-bs-target="#createDeptModal">
-                        <i class="bi bi-plus-lg"></i>
+                    <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#create-dept-modal">
+                        <i class="bi bi-plus-lg"></i> Add Department
                     </button>
-
                 </div>
-
             </div>
 
             <!-- GRID -->
-            <div class="deptGrid">
+            <div class="dept-grid">
 
                 <?php foreach ($departments as $dept): ?>
-                    <div class="deptCard">
+                    <div class="dept-card">
 
                         <?php $color = $dept['color'] ?? '#4e73df'; ?>
 
-                        <div class="deptActions">
-                            <i class="bi bi-pencil-square editDeptIcon"
+                        <div class="dept-actions">
+                            <i class="bi bi-pencil-square edit-dept-icon"
                             onclick='openEditDept(<?= json_encode($dept) ?>)'></i>
                         </div>
 
-                        <div class="deptIdentity">
-                            <div class="deptIcon"
+                        <div class="dept-identity">
+                            <div class="dept-icon"
                                 style="background: <?= htmlspecialchars($color) ?>;
                                         color: <?= getContrastColor($color) ?>;">
                                 <?= htmlspecialchars($dept['department_code']) ?>
                             </div>
 
-                            <div class="deptName">
+                            <div class="dept-name">
                                 <?= htmlspecialchars($dept['department_name']) ?>
                             </div>
                         </div>
 
                         <?php if (!empty($dept['parent_name']) || $dept['child_count'] > 0): ?>
-                            <div class="deptPills">
+                            <div class="dept-pills">
 
                                 <?php if (!empty($dept['parent_name'])): ?>
                                     <button
-                                        class="deptParentLink"
+                                        class="dept-parent-link"
                                         onclick="viewParentDepartment(<?= $dept['parent_id'] ?>)">
                                         <i class="bi bi-diagram-3"></i>
                                         Under <?= htmlspecialchars($dept['parent_name']) ?>
@@ -192,7 +188,7 @@ $departmentList = $stmt2->fetchAll(PDO::FETCH_ASSOC);
 
                                 <?php if ($dept['child_count'] > 0): ?>
                                     <button
-                                        class="deptSubBtn"
+                                        class="dept-sub-btn"
                                         onclick="viewSubDepartments(
                                             <?= $dept['id'] ?>,
                                             '<?= htmlspecialchars($dept['department_name'], ENT_QUOTES) ?>'
@@ -205,7 +201,7 @@ $departmentList = $stmt2->fetchAll(PDO::FETCH_ASSOC);
                             </div>
                         <?php endif; ?>
 
-                        <button class="deptMeta">
+                        <button class="dept-meta">
                             <i class="bi bi-people"></i>
                             <?= $dept['employee_count'] ?> <?= $dept['employee_count'] != 1 ? 'Employees' : 'Employee' ?>
                         </button>
@@ -218,10 +214,10 @@ $departmentList = $stmt2->fetchAll(PDO::FETCH_ASSOC);
         </div>
     </div>
 
-    <!-- CREATE MODAL -->
-    <div class="modal fade" id="createDeptModal" tabindex="-1" aria-hidden="true">
+    <!-- CREATE DEPARTMENT MODAL -->
+    <div class="modal fade" id="create-dept-modal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content deptModal">
+            <div class="modal-content">
 
                 <div class="modal-header">
                     <h5 class="modal-title">Create Department</h5>
@@ -230,56 +226,65 @@ $departmentList = $stmt2->fetchAll(PDO::FETCH_ASSOC);
 
                 <div class="modal-body">
 
-                    <form id="createDeptForm">
+                    <form id="create-dept-form">
 
-                        <div class="createDeptLayout">
+                        <div class="create-dept-layout">
 
-                            <!-- LEFT: PREVIEW CARD -->
-                            <div class="createDeptPreview">
-                                <div class="createDeptPreviewIcon" id="previewIcon">
-                                </div>
-                                <div class="createDeptPreviewName" id="previewName">
-                                    Department Name
-                                </div>
-
-                                <label class="colorPickWrapper">
-                                    <input type="color" class="colorPickInput" name="color" id="colorPicker" value="#4e73df">
+                            <!-- LEFT: PREVIEW -->
+                            <div class="create-dept-preview">
+                                <div class="create-dept-preview-icon" id="preview-icon"></div>
+                                <div class="create-dept-preview-name" id="preview-name">Department Name</div>
+                                <label class="color-pick-wrapper">
+                                    <input type="color" class="color-pick-input" name="color" id="color-picker" value="#4e73df">
                                     Color
                                 </label>
                             </div>
 
                             <!-- RIGHT: FIELDS -->
-                            <div class="createDeptFields">
+                            <div class="create-dept-fields">
 
                                 <div class="mb-3">
                                     <label class="form-label">Department Code</label>
-                                    <input type="text" class="form-control" name="department_code" id="inputCode" required>
+                                    <input type="text" class="form-control" name="department_code" id="input-code" placeholder="e.g. IT" required>
                                 </div>
 
                                 <div class="mb-3">
                                     <label class="form-label">Department Name</label>
-                                    <input type="text" class="form-control" name="department_name" id="inputName" required>
+                                    <input type="text" class="form-control" name="department_name" id="input-name" placeholder="e.g. Information Technology" required>
                                 </div>
 
                                 <div class="mb-3">
-                                    <label class="form-label">Parent Department (Optional)</label>
-
-                                    <div class="selectWrapper">
-                                        <select class="form-control customSelect" name="parent_id">
-                                            <option value="">None</option>
+                                    <label class="form-label">
+                                        Parent Department
+                                        <small class="text-muted">(Optional)</small>
+                                    </label>
+                                    <input type="hidden" name="parent_id" id="create-parent-id" value="">
+                                    <div class="dropdown w-100">
+                                        <button class="btn dropdown-toggle btn-select w-100"
+                                                type="button"
+                                                data-bs-toggle="dropdown"
+                                                aria-expanded="false">
+                                            <span id="create-parent-label">None</span>
+                                        </button>
+                                        <ul class="dropdown-menu w-100">
+                                            <li>
+                                                <button class="dropdown-item" type="button"
+                                                    onclick="selectCreateParent('', 'None')">None</button>
+                                            </li>
                                             <?php foreach ($departmentList as $row): ?>
-                                                <option value="<?= $row['id'] ?>">
-                                                    <?= htmlspecialchars($row['department_name']) ?>
-                                                </option>
+                                                <li>
+                                                    <button class="dropdown-item" type="button"
+                                                        onclick="selectCreateParent('<?= $row['id'] ?>', '<?= htmlspecialchars($row['department_name'], ENT_QUOTES) ?>')">
+                                                        <?= htmlspecialchars($row['department_name']) ?>
+                                                    </button>
+                                                </li>
                                             <?php endforeach; ?>
-                                        </select>
-
-                                        <i class="bi bi-chevron-down selectArrow"></i>
+                                        </ul>
                                     </div>
                                 </div>
 
-                                <button type="submit" class="btn btn-primary w-100 createDeptBtn">
-                                    Create Department
+                                <button type="submit" class="btn btn-success w-100">
+                                    <i class="bi bi-plus-lg"></i> Create Department
                                 </button>
 
                             </div>
@@ -288,17 +293,18 @@ $departmentList = $stmt2->fetchAll(PDO::FETCH_ASSOC);
 
                     </form>
 
-                    <div id="deptMsg" class="mt-2 text-center"></div>
+                    <div id="dept-msg" class="mt-2 text-center"></div>
 
                 </div>
 
             </div>
         </div>
     </div>
-
-    <div class="modal fade" id="editDeptModal" tabindex="-1">
+    
+    <!-- EDIT DEPARTMENT MODAL -->
+    <div class="modal fade" id="edit-dept-modal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content deptModal">
+            <div class="modal-content">
 
                 <div class="modal-header">
                     <h5 class="modal-title">Edit Department</h5>
@@ -307,48 +313,80 @@ $departmentList = $stmt2->fetchAll(PDO::FETCH_ASSOC);
 
                 <div class="modal-body">
 
-                    <form id="editDeptForm">
+                    <form id="edit-dept-form">
 
-                        <input type="hidden" name="id">
+                        <input type="hidden" name="id" id="edit-dept-id">
 
-                        <div class="mb-3">
-                            <label class="form-label">Department Code</label>
-                            <input type="text" class="form-control" name="department_code" required>
+                        <div class="create-dept-layout">
+
+                            <!-- LEFT: PREVIEW -->
+                            <div class="create-dept-preview">
+                                <div class="create-dept-preview-icon" id="edit-preview-icon"></div>
+                                <div class="create-dept-preview-name" id="edit-preview-name">Department Name</div>
+                                <label class="color-pick-wrapper">
+                                    <input type="color" class="color-pick-input" name="color" id="edit-color-picker" value="#4e73df">
+                                    Color
+                                </label>
+                            </div>
+
+                            <!-- RIGHT: FIELDS -->
+                            <div class="create-dept-fields">
+
+                                <div class="mb-3">
+                                    <label class="form-label">Department Code</label>
+                                    <input type="text" class="form-control" name="department_code" id="edit-input-code" required>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label">Department Name</label>
+                                    <input type="text" class="form-control" name="department_name" id="edit-input-name" required>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label">
+                                        Parent Department
+                                        <small class="text-muted">(Optional)</small>
+                                    </label>
+                                    <input type="hidden" name="parent_id" id="edit-parent-id" value="">
+                                    <div class="dropdown w-100">
+                                        <button class="btn dropdown-toggle btn-select w-100"
+                                                type="button"
+                                                data-bs-toggle="dropdown"
+                                                aria-expanded="false">
+                                            <span id="edit-parent-label">None</span>
+                                        </button>
+                                        <ul class="dropdown-menu w-100">
+                                            <li>
+                                                <button class="dropdown-item" type="button"
+                                                    onclick="selectEditParent('', 'None')">None</button>
+                                            </li>
+                                            <?php foreach ($departmentList as $row): ?>
+                                                <li>
+                                                    <button class="dropdown-item" type="button"
+                                                        onclick="selectEditParent('<?= $row['id'] ?>', '<?= htmlspecialchars($row['department_name'], ENT_QUOTES) ?>')">
+                                                        <?= htmlspecialchars($row['department_name']) ?>
+                                                    </button>
+                                                </li>
+                                            <?php endforeach; ?>
+                                        </ul>
+                                    </div>
+                                </div>
+                                <div class="d-flex gap-2 flex-row">                      
+                                    <button type="submit" class="btn btn-success w-100">
+                                        <i class="bi bi-floppy"></i> Save
+                                    </button>
+
+                                    <button type="button" class="btn btn-danger w-100" onclick="deleteDept()">
+                                        <i class="bi bi-trash"></i> Delete
+                                    </button>
+                                </div>
+                            </div>
+
                         </div>
-
-                        <div class="mb-3">
-                            <label class="form-label">Department Name</label>
-                            <input type="text" class="form-control" name="department_name" required>
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label">Department Color</label>
-                            <input type="color" class="form-control form-control-color" name="color">
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label">Parent Department</label>
-                            <select class="form-control" name="parent_id">
-                                <option value="">None</option>
-                                <?php foreach ($departmentList as $row): ?>
-                                    <option value="<?= $row['id'] ?>">
-                                        <?= htmlspecialchars($row['department_name']) ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-
-                        <button type="submit" class="btn btn-primary w-100">
-                            Save Changes
-                        </button>
-
-                        <button type="button" class="btn btn-danger w-100 mt-2" onclick="deleteDept()">
-                            Delete Department
-                        </button>
 
                     </form>
 
-                    <div id="editMsg" class="mt-2 text-center"></div>
+                    <div id="edit-msg" class="mt-2 text-center"></div>
 
                 </div>
 
@@ -357,16 +395,16 @@ $departmentList = $stmt2->fetchAll(PDO::FETCH_ASSOC);
     </div>
 
     <!-- PARENT DEPT MODAL -->
-    <div class="modal fade" id="parentDeptModal" tabindex="-1">
+    <div class="modal fade" id="parent-dept-modal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content deptModal">
+            <div class="modal-content">
 
                 <div class="modal-header">
                     <h5 class="modal-title">Parent Department</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
 
-                <div class="modal-body" id="parentDeptBody">
+                <div class="modal-body" id="parent-dept-body">
                     Loading...
                 </div>
 
@@ -375,17 +413,17 @@ $departmentList = $stmt2->fetchAll(PDO::FETCH_ASSOC);
     </div>
 
     <!-- SUB DEPT MODAL -->
-    <div class="modal fade" id="subDeptModal" tabindex="-1">
+    <div class="modal fade" id="sub-dept-modal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content deptModal">
+            <div class="modal-content">
 
                 <div class="modal-header">
-                    <h5 class="modal-title" id="subDeptTitle">Sub Departments</h5>
+                    <h5 class="modal-title" id="sub-dept-title">Sub Departments</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
 
                 <div class="modal-body">
-                    <div id="subDeptList" class="subDeptList"></div>
+                    <div id="sub-dept-list" class="sub-dept-list"></div>
                 </div>
 
             </div>
@@ -396,22 +434,25 @@ $departmentList = $stmt2->fetchAll(PDO::FETCH_ASSOC);
 
 <!-- JS -->
 <script>
-const form = document.getElementById('createDeptForm');
-const msg  = document.getElementById('deptMsg');
-const grid = document.querySelector('.deptGrid');
+const form = document.getElementById('create-dept-form');
+const msg  = document.getElementById('dept-msg');
+const grid = document.querySelector('.dept-grid');
 
 document.addEventListener('DOMContentLoaded', () => {
 
-    const inputCode   = document.getElementById('inputCode');
-    const inputName   = document.getElementById('inputName');
-    const colorPicker = document.getElementById('colorPicker');
-    const previewIcon = document.getElementById('previewIcon');
-    const previewName = document.getElementById('previewName');
+    /* ------------------------------------------------
+       CREATE MODAL — LIVE PREVIEW
+       ------------------------------------------------ */
+    const inputCode   = document.getElementById('input-code');
+    const inputName   = document.getElementById('input-name');
+    const colorPicker = document.getElementById('color-picker');
+    const previewIcon = document.getElementById('preview-icon');
+    const previewName = document.getElementById('preview-name');
 
     function updatePreview() {
-        const code  = inputCode.value.trim()  || '';
-        const name  = inputName.value.trim()  || 'Department Name';
-        const color = colorPicker.value       || '#4e73df';
+        const code  = inputCode.value.trim() || '';
+        const name  = inputName.value.trim() || 'Department Name';
+        const color = colorPicker.value      || '#4e73df';
 
         previewIcon.textContent      = code;
         previewIcon.style.background = color;
@@ -424,21 +465,42 @@ document.addEventListener('DOMContentLoaded', () => {
     colorPicker.addEventListener('input', updatePreview);
 
     updatePreview();
-});
 
-const wrapper = document.querySelector('.selectWrapper');
+    /* ------------------------------------------------
+       EDIT MODAL — LIVE PREVIEW
+       ------------------------------------------------ */
+    const editCode  = document.getElementById('edit-input-code');
+    const editName  = document.getElementById('edit-input-name');
+    const editColor = document.getElementById('edit-color-picker');
+    const editIcon  = document.getElementById('edit-preview-icon');
+    const editPrev  = document.getElementById('edit-preview-name');
 
-wrapper.addEventListener('click', function (e) {
-    this.classList.toggle('active');
-});
+    function updateEditPreview() {
+        const code  = editCode.value.trim() || '';
+        const name  = editName.value.trim() || 'Department Name';
+        const color = editColor.value       || '#4e73df';
 
-document.addEventListener('click', function (e) {
-    const wrapper = document.querySelector('.selectWrapper');
-
-    if (!wrapper.contains(e.target)) {
-        wrapper.classList.remove('active');
+        editIcon.textContent      = code;
+        editIcon.style.background = color;
+        editIcon.style.color      = getContrastColor(color);
+        editPrev.textContent      = name;
     }
+
+    editCode.addEventListener('input',  updateEditPreview);
+    editName.addEventListener('input',  updateEditPreview);
+    editColor.addEventListener('input', updateEditPreview);
+
 });
+
+function selectCreateParent(value, label) {
+    document.getElementById('create-parent-id').value = value;
+    document.getElementById('create-parent-label').textContent = label;
+}
+
+function selectEditParent(value, label) {
+    document.getElementById('edit-parent-id').value = value;
+    document.getElementById('edit-parent-label').textContent = label;
+}
 
 form.addEventListener('submit', function(e) {
     e.preventDefault();
@@ -456,33 +518,33 @@ form.addEventListener('submit', function(e) {
             form.reset();
 
             const div = document.createElement('div');
-            div.className = 'deptCard';
+            div.className = 'dept-card';
 
             const color = data.color || '#4e73df';
 
             div.innerHTML = `
-                <div class="deptActions">
-                    <i class="bi bi-pencil-square editDeptIcon"
+                <div class="dept-actions">
+                    <i class="bi bi-pencil-square edit-dept-icon"
                         onclick='openEditDept(${JSON.stringify(data)})'></i>
                 </div>
 
-                <div class="deptIdentity">
-                    <div class="deptIcon" style="background:${color}; color:${getContrastColor(color)};">
+                <div class="dept-identity">
+                    <div class="dept-icon" style="background:${color}; color:${getContrastColor(color)};">
                         ${data.department_code}
                     </div>
-                    <div class="deptName">${data.department_name}</div>
+                    <div class="dept-name">${data.department_name}</div>
                 </div>
 
                 ${data.parent_id && data.parent_name ? `
-                    <div class="deptPills">
-                        <button class="deptParentLink" onclick="viewParentDepartment(${data.parent_id})">
+                    <div class="dept-pills">
+                        <button class="dept-parent-link" onclick="viewParentDepartment(${data.parent_id})">
                             <i class="bi bi-diagram-3"></i>
                             Under ${data.parent_name}
                         </button>
                     </div>
                 ` : ''}
 
-                <button class="deptMeta">
+                <button class="dept-meta">
                     <i class="bi bi-people"></i>
                     0 Employees
                 </button>
@@ -491,18 +553,16 @@ form.addEventListener('submit', function(e) {
             grid.appendChild(div);
 
             setTimeout(() => {
-                bootstrap.Modal.getInstance(document.getElementById('createDeptModal')).hide();
+                bootstrap.Modal.getInstance(document.getElementById('create-dept-modal')).hide();
                 msg.innerHTML = '';
             }, 800);
 
         } else {
             msg.innerHTML = `<span class="text-danger">${data.message}</span>`;
 
-            // reset validation first
             form.department_code.classList.remove('is-invalid');
             form.department_name.classList.remove('is-invalid');
 
-            // highlight based on message
             if (data.message.toLowerCase().includes('code')) {
                 form.department_code.classList.add('is-invalid');
             }
@@ -514,94 +574,32 @@ form.addEventListener('submit', function(e) {
     });
 });
 
-/* PARENT DEPT CUSTOM DROPDOWNS */
-function toggleDeptDropdown(id) {
-    const menu = document.getElementById(id);
-    const isOpen = menu.classList.contains('show');
-    document.querySelectorAll('.customSelectMenu').forEach(m => m.classList.remove('show'));
-    if (!isOpen) menu.classList.add('show');
+/* SORT */
+const deptSortHidden = document.getElementById('dept-sort-value');
+
+function selectSort(value, label) {
+    deptSortHidden.value = value;
+    document.getElementById('sort-btn-label').textContent = label;
+    applyFilterSort();
 }
-
-function selectParentDept(modal, value, label) {
-    if (modal === 'create') {
-        document.getElementById('createParentInput').value = value;
-        document.getElementById('createParentLabel').textContent = label;
-        document.getElementById('createParentMenu').classList.remove('show');
-    } else {
-        document.getElementById('editParentInput').value = value;
-        document.getElementById('editParentLabel').textContent = label;
-        document.getElementById('editParentMenu').classList.remove('show');
-    }
-}
-
-document.getElementById('createDeptModal').addEventListener('hidden.bs.modal', () => {
-    document.getElementById('createParentInput').value = '';
-    document.getElementById('createParentLabel').textContent = '-- None (Top Level) --';
-});
-
-document.addEventListener('click', e => {
-    if (!e.target.closest('.customSelectWrapper')) {
-        document.querySelectorAll('.customSelectMenu').forEach(m => m.classList.remove('show'));
-    }
-});
-
-/* SORT DROPDOWN (log-type style) */
-const deptSortWrapper = document.querySelector('.deptSortDropdown');
-const deptSortToggle  = document.getElementById('deptSortToggle');
-const deptSortMenu    = document.getElementById('deptSortMenu');
-const deptSortHidden  = document.getElementById('deptSortValue');
-
-let deptSortOpen = false;
-
-deptSortToggle.addEventListener('mouseenter', () => deptSortMenu.classList.add('show'));
-deptSortToggle.addEventListener('mouseleave', () => { if (!deptSortOpen) deptSortMenu.classList.remove('show'); });
-deptSortMenu.addEventListener('mouseenter',   () => deptSortMenu.classList.add('show'));
-deptSortMenu.addEventListener('mouseleave',   () => { if (!deptSortOpen) deptSortMenu.classList.remove('show'); });
-
-deptSortToggle.addEventListener('click', e => {
-    e.stopPropagation();
-    deptSortOpen = !deptSortOpen;
-    deptSortMenu.classList.toggle('show', deptSortOpen);
-});
-
-document.addEventListener('click', e => {
-    if (!deptSortWrapper.contains(e.target)) {
-        deptSortMenu.classList.remove('show');
-        deptSortOpen = false;
-    }
-});
-
-document.querySelectorAll('#deptSortMenu .userDropdownItem').forEach(item => {
-    item.addEventListener('click', e => {
-        e.preventDefault();
-        deptSortToggle.innerHTML = `${item.textContent} <i class="bi bi-chevron-down logArrow"></i>`;
-        deptSortHidden.value = item.dataset.value;
-        deptSortMenu.classList.remove('show');
-        deptSortOpen = false;
-        applyFilterSort();
-    });
-});
-
-/* SEARCH + SORT */
-const searchInput = document.getElementById('deptSearch');
 
 function applyFilterSort() {
-    let cards = Array.from(document.querySelectorAll('.deptCard'));
-    const query = searchInput.value.toLowerCase().trim();
+    let cards = Array.from(document.querySelectorAll('.dept-card'));
+    const query = document.getElementById('dept-search').value.toLowerCase().trim();
 
     cards.forEach(card => {
-        const name = card.querySelector('.deptName')?.textContent.toLowerCase() || '';
-        const code = card.querySelector('.deptIcon')?.textContent.toLowerCase() || '';
+        const name = card.querySelector('.dept-name')?.textContent.toLowerCase() || '';
+        const code = card.querySelector('.dept-icon')?.textContent.toLowerCase() || '';
         card.style.display = (name.includes(query) || code.includes(query)) ? '' : 'none';
     });
 
-    const container = document.querySelector('.deptGrid');
+    const container = document.querySelector('.dept-grid');
 
     cards.sort((a, b) => {
-        const aName = a.querySelector('.deptName').textContent.trim().toLowerCase();
-        const bName = b.querySelector('.deptName').textContent.trim().toLowerCase();
-        const aCode = a.querySelector('.deptIcon').textContent.trim().toLowerCase();
-        const bCode = b.querySelector('.deptIcon').textContent.trim().toLowerCase();
+        const aName = a.querySelector('.dept-name').textContent.trim().toLowerCase();
+        const bName = b.querySelector('.dept-name').textContent.trim().toLowerCase();
+        const aCode = a.querySelector('.dept-icon').textContent.trim().toLowerCase();
+        const bCode = b.querySelector('.dept-icon').textContent.trim().toLowerCase();
 
         switch (deptSortHidden.value) {
             case 'name_asc':  return aName.localeCompare(bName);
@@ -614,7 +612,6 @@ function applyFilterSort() {
     cards.forEach(c => container.appendChild(c));
 }
 
-searchInput.addEventListener('input', applyFilterSort);
 form.department_code.addEventListener('input', () => {
     form.department_code.classList.remove('is-invalid');
 });
@@ -626,7 +623,7 @@ form.department_name.addEventListener('input', () => {
 // PARENT DEPARTMENT
 function viewParentDepartment(parentId) {
 
-    const body = document.getElementById('parentDeptBody');
+    const body = document.getElementById('parent-dept-body');
     body.innerHTML = 'Loading...';
 
     fetch(`department_api.php?action=get_parent&id=${parentId}`)
@@ -639,25 +636,25 @@ function viewParentDepartment(parentId) {
             }
 
             body.innerHTML = `
-                <div class="deptListItem">
-                    <div class="deptIcon" style="background:${data.color || '#4e73df'}; color:${getContrastColor(data.color || '#4e73df')};">
+                <div class="dept-list-item">
+                    <div class="dept-icon" style="background:${data.color || '#4e73df'}; color:${getContrastColor(data.color || '#4e73df')};">
                         ${data.department_code}
                     </div>
-                    <div class="deptName">${data.department_name}</div>
+                    <div class="dept-name">${data.department_name}</div>
                 </div>
             `;
         });
 
-    new bootstrap.Modal(document.getElementById('parentDeptModal')).show();
+    new bootstrap.Modal(document.getElementById('parent-dept-modal')).show();
 }
 
 /* SUB DEPARTMENTS */
 function viewSubDepartments(id, name) {
 
-    document.getElementById('subDeptTitle').innerText =
+    document.getElementById('sub-dept-title').innerText =
         `Sub Departments of ${name}`;
 
-    const list = document.getElementById('subDeptList');
+    const list = document.getElementById('sub-dept-list');
     list.innerHTML = 'Loading...';
 
     fetch(`department_api.php?action=get_sub&id=${id}`)
@@ -670,43 +667,38 @@ function viewSubDepartments(id, name) {
             }
 
             list.innerHTML = data.map(d => `
-                <div class="deptListItem">
-                    <div class="deptIcon" style="background:${d.color || '#4e73df'}; color:${getContrastColor(d.color || '#4e73df')};">
+                <div class="dept-list-item">
+                    <div class="dept-icon" style="background:${d.color || '#4e73df'}; color:${getContrastColor(d.color || '#4e73df')};">
                         ${d.department_code}
                     </div>
-                    <div class="deptName">${d.department_name}</div>
+                    <div class="dept-name">${d.department_name}</div>
                 </div>
             `).join('');
         });
 
-    new bootstrap.Modal(document.getElementById('subDeptModal')).show();
+    new bootstrap.Modal(document.getElementById('sub-dept-modal')).show();
 }
 
 let currentEditId = null;
 
 function openEditDept(dept) {
-
     currentEditId = dept.id;
 
-    const form = document.getElementById('editDeptForm');
+    document.getElementById('edit-dept-id').value          = dept.id;
+    document.getElementById('edit-input-code').value       = dept.department_code;
+    document.getElementById('edit-input-name').value       = dept.department_name;
+    document.getElementById('edit-color-picker').value     = dept.color || '#4e73df';
+    document.getElementById('edit-preview-icon').textContent   = dept.department_code;
+    document.getElementById('edit-preview-icon').style.background = dept.color || '#4e73df';
+    document.getElementById('edit-preview-icon').style.color      = getContrastColor(dept.color || '#4e73df');
+    document.getElementById('edit-preview-name').textContent  = dept.department_name;
 
-    form.id.value = dept.id;
-    form.department_code.value = dept.department_code;
-    form.department_name.value = dept.department_name;
-    form.color.value = dept.color || '#4e73df';
+    selectEditParent(dept.parent_id || '', dept.parent_name || 'None');
 
-    const parentId = String(dept.parent_id || '');
-    document.getElementById('editParentInput').value = parentId;
-    const matchedItem = [...document.querySelectorAll('#editParentMenu .customSelectItem')]
-        .find(el => el.getAttribute('onclick').includes(`'${parentId}'`));
-    document.getElementById('editParentLabel').textContent = parentId && matchedItem
-        ? matchedItem.textContent.trim()
-        : '-- None --';
-
-    new bootstrap.Modal(document.getElementById('editDeptModal')).show();
+    new bootstrap.Modal(document.getElementById('edit-dept-modal')).show();
 }
 
-document.getElementById('editDeptForm').addEventListener('submit', function(e) {
+document.getElementById('edit-dept-form').addEventListener('submit', function(e) {
     e.preventDefault();
 
     fetch('department_api.php?action=update', {
@@ -716,7 +708,7 @@ document.getElementById('editDeptForm').addEventListener('submit', function(e) {
     .then(res => res.json())
     .then(data => {
 
-        const msg = document.getElementById('editMsg');
+        const msg = document.getElementById('edit-msg');
 
         if (data.success) {
             msg.innerHTML = `<span class="text-success">${data.message}</span>`;
@@ -756,7 +748,6 @@ function getContrastColor(hex) {
     const g = parseInt(hex.substr(2, 2), 16);
     const b = parseInt(hex.substr(4, 2), 16);
 
-    // luminance formula
     const luminance = (0.299 * r + 0.587 * g + 0.114 * b);
 
     return luminance > 186 ? '#000000' : '#ffffff';

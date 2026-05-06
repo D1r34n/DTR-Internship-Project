@@ -152,7 +152,7 @@
 
 <!-- LOG EDIT REQUEST MODAL -->
 <div class="modal fade" id="logEditModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-lg modal-dialog-centered">
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
     <div class="modal-content">
 
       <div class="modal-header">
@@ -160,69 +160,60 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
 
-      <div class="modal-body">
+      <div class="modal-body p-0">
 
+        <!-- Step 1: logs table -->
         <div id="leStep1">
-          <p class="text-lightest">Select a record to correct your attendance log:</p>
-          <div id="leGanttList">
-            <p class="text-muted">Loading...</p>
+          <p style="padding:1rem 1.25rem 0.5rem;margin:0;color:rgba(255,255,255,0.6);font-size:0.85rem;">
+            Select a Time In or Time Out log to request a correction:
+          </p>
+          <div class="le-logs-table-wrap">
+            <table class="table le-logs-table mb-0">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Date &amp; Time</th>
+                  <th>Log Type</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="leLogsBody">
+                <tr>
+                  <td colspan="4" class="le-logs-loading">Loading...</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
 
-        <div id="leStep2" style="display:none;">
+        <!-- Step 2: edit form -->
+        <div id="leStep2" style="display:none;padding:1.25rem;">
 
           <button type="button" class="le-back-btn" onclick="leBackToStep1()">
             <i class="bi bi-arrow-left"></i> Back
           </button>
 
-          <div class="le-summary-card">
-            <p class="le-summary-label">Date</p>
-            <p class="le-summary-value" id="leSelectedDate"></p>
-            <div class="le-summary-row">
-              <div>
-                <p class="le-summary-label">Scheduled</p>
-                <p class="le-summary-value" id="leSelectedSched"></p>
-              </div>
-              <div>
-                <p class="le-summary-label">Current Log</p>
-                <p class="le-summary-value" id="leCurrentLog"></p>
-              </div>
-            </div>
-            <p class="le-summary-label" style="margin-top:.75rem;">Status</p>
-            <div id="leStatusBadges"></div>
+          <div class="le-modal-info-row">
+            <span class="le-modal-label">Log Type</span>
+            <span id="leLogTypeBadge">—</span>
+          </div>
+          <div class="le-modal-info-row">
+            <span class="le-modal-label">Current Time</span>
+            <span class="le-modal-value" id="leCurrentTime">—</span>
           </div>
 
-          <label class="le-input-label">Edit Type</label>
-          <div class="le-custom-select" id="leEditTypeWrapper">
-            <div class="le-custom-select-trigger" id="leEditTypeTrigger" onclick="toggleLeSelect()">
-              <span id="leEditTypeLabel">Select type...</span>
-              <i class="bi bi-chevron-down le-select-chevron"></i>
-            </div>
-            <div class="le-custom-select-options" id="leEditTypeOptions"></div>
-          </div>
+          <label class="le-input-label mt-3">New Date &amp; Time</label>
+          <input type="datetime-local" id="leNewDatetime" class="le-time-input">
 
-          <div id="leTimeInGroup" style="display:none;" class="mt-3">
-            <label class="le-input-label">Requested Time In</label>
-            <input type="time" id="leRequestedTimeIn" class="le-time-input" oninput="updateLePreview()">
-          </div>
+          <label class="le-input-label mt-3">Reason <span style="color:rgba(255,255,255,0.3);font-weight:400;">(optional)</span></label>
+          <textarea id="leReason" rows="3" placeholder="Briefly explain the reason for this correction..."></textarea>
 
-          <div id="leTimeOutGroup" style="display:none;" class="mt-3">
-            <label class="le-input-label">Requested Time Out</label>
-            <input type="time" id="leRequestedTimeOut" class="le-time-input" oninput="updateLePreview()">
-          </div>
-
-          <div class="mt-3">
-            <label class="le-input-label">Reason</label>
-            <textarea id="leReason" rows="3" placeholder="Explain the reason for this correction..."></textarea>
-          </div>
-
-          <div class="le-preview-box" id="lePreviewBox">
-            <p class="le-preview-label">Preview</p>
-            <p class="le-preview-text" id="lePreviewText">—</p>
-          </div>
+          <p style="font-size:0.75rem;color:rgba(255,255,255,0.3);margin-top:0.4rem;">
+            <i class="bi bi-info-circle"></i> This will be submitted for admin review before taking effect.
+          </p>
 
           <button type="button" class="le-submit-btn w-100 mt-3" onclick="submitLogEditRequest()">
-            <i class="bi bi-check-circle-fill"></i> Submit Request
+            <i class="bi bi-send-fill"></i> Submit for Approval
           </button>
 
         </div>
@@ -879,50 +870,32 @@
 
   // ===== LOG EDIT MODAL =====
 
-  let leSelectedRecord = null;
-  let leEditTypeValue  = '';
-
-  function toggleLeSelect() {
-    document.getElementById('leEditTypeWrapper').classList.toggle('open');
-  }
-
-  function selectLeEditType(val, label) {
-    leEditTypeValue = val;
-    document.getElementById('leEditTypeLabel').textContent = label;
-    document.getElementById('leEditTypeWrapper').classList.remove('open');
-    document.querySelectorAll('.le-custom-select-option').forEach(o => {
-      o.classList.toggle('selected', o.dataset.value === val);
-    });
-    onLeEditTypeChange();
-  }
-
-  document.addEventListener('click', e => {
-    const wrapper = document.getElementById('leEditTypeWrapper');
-    if (wrapper && !wrapper.contains(e.target)) {
-      wrapper.classList.remove('open');
-    }
-  });
+  let reqLeLogId   = null;
+  let reqLeLogType = null;
 
   function openLogEditModal() {
     const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('logEditModal'));
     modal.show();
 
-    document.getElementById('leStep1').style.display    = 'block';
-    document.getElementById('leStep2').style.display    = 'none';
+    document.getElementById('leStep1').style.display = 'block';
+    document.getElementById('leStep2').style.display = 'none';
 
-    leSelectedRecord = null;
-    loadLeGantt();
+    reqLeLogId   = null;
+    reqLeLogType = null;
+    loadLeLogs();
   }
 
   function closeLogEditModal() {
     const modalEl = document.getElementById('logEditModal');
     const modal   = bootstrap.Modal.getInstance(modalEl);
     if (modal) modal.hide();
-    leSelectedRecord = null;
+    reqLeLogId   = null;
+    reqLeLogType = null;
   }
 
   document.getElementById('logEditModal').addEventListener('hidden.bs.modal', function() {
-    leSelectedRecord = null;
+    reqLeLogId   = null;
+    reqLeLogType = null;
     document.getElementById('leStep1').style.display = 'block';
     document.getElementById('leStep2').style.display = 'none';
     document.getElementById('leReason').value        = '';
@@ -933,219 +906,98 @@
     document.getElementById('leStep1').style.display = 'block';
   }
 
-  function loadLeGantt() {
-    const list = document.getElementById('leGanttList');
-    list.innerHTML = '<p class="le-gantt-loading">Loading...</p>';
+  function loadLeLogs() {
+    const tbody = document.getElementById('leLogsBody');
+    tbody.innerHTML = '<tr><td colspan="4" class="le-logs-loading">Loading...</td></tr>';
 
-    fetch('/DTR-Internship-Project/employee_pages/get_no_timeout_records.php')
-      .then(res => res.json())
-      .then(records => {
-        if (!records.length) {
-          list.innerHTML = '<p class="le-gantt-loading">No records found.</p>';
+    fetch('/DTR-Internship-Project/employee_pages/get_employee_logs_json.php')
+      .then(r => r.json())
+      .then(logs => {
+        if (!logs.length) {
+          tbody.innerHTML = '<tr><td colspan="4" class="le-logs-loading">No logs found.</td></tr>';
           return;
         }
 
-        list.innerHTML = '';
+        const logClass = { IN: 'log-in', OUT: 'log-out', BREAK_IN: 'log-break-in', BREAK_OUT: 'log-break-out' };
+        const logLabel = { IN: 'Time In', OUT: 'Time Out', BREAK_IN: 'Break In', BREAK_OUT: 'Break Out' };
 
-        records.forEach(row => {
-          const schedStart  = row.scheduled_start;
-          const schedEnd    = row.scheduled_end;
-          const actualIn    = row.actual_time_in;
-          const actualOut   = row.actual_time_out;
-          const workDate    = row.work_date;
-          const recordType  = row.record_type;
-          const utMin       = parseInt(row.undertime_minutes) || 0;
-          const lateMin     = parseInt(row.late_minutes)      || 0;
+        tbody.innerHTML = logs.map((log, i) => {
+          const dt      = new Date(log.log_time);
+          const dateStr = dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+          const timeStr = dt.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+          const cls     = logClass[log.log_type] || 'log-out';
+          const lbl     = logLabel[log.log_type] || log.log_type;
+          const canEdit = (log.log_type === 'IN' || log.log_type === 'OUT');
 
-          const tsSchedIn   = new Date(schedStart.replace(' ', 'T')).getTime() / 1000;
-          const tsSchedOut  = new Date(schedEnd.replace(' ', 'T')).getTime()   / 1000;
-          const tsActualIn  = new Date(actualIn.replace(' ', 'T')).getTime()   / 1000;
-          const tsActualOut = actualOut ? new Date(actualOut.replace(' ', 'T')).getTime() / 1000 : null;
+          const actionCell = canEdit
+            ? `<button class="leEditRowBtn" title="Request Edit"
+                       onclick="leSelectLog(${log.log_id}, '${log.log_type}', '${log.log_time}')">
+                   <i class="bi bi-pencil-fill"></i>
+               </button>`
+            : '<span style="color:rgba(255,255,255,0.2);">—</span>';
 
-          const rangeStart = tsSchedIn - 7200;
-          const rangeEnd   = tsSchedOut + 7200;
-          const range      = rangeEnd - rangeStart;
-
-          const schedLeft  = ((tsSchedIn  - rangeStart) / range) * 100;
-          const schedWidth = ((tsSchedOut - tsSchedIn)  / range) * 100;
-          const actualLeft = ((tsActualIn - rangeStart) / range) * 100;
-          const inPos      = ((tsActualIn - rangeStart) / range) * 100;
-
-          let barsHtml   = '';
-          let rightLabel = '';
-
-          if (recordType === 'no_timeout') {
-            const noOutWidth = ((rangeEnd - tsActualIn) / range) * 100;
-            barsHtml = `
-              <div class="gantt-sched-bar"     style="left:${schedLeft}%;  width:${schedWidth}%;"></div>
-              <div class="le-no-out-bar"       style="left:${actualLeft}%; width:${noOutWidth}%;"></div>
-              <div class="gantt-timein-marker" style="left:${inPos}%;"></div>
-            `;
-            rightLabel = `<div class="le-no-out-label">No Time Out</div>`;
-
-          } else if (recordType === 'undertime') {
-            const workedWidth = ((tsActualOut - tsActualIn)  / range) * 100;
-            const utLeft      = ((tsActualOut - rangeStart)  / range) * 100;
-            const utWidth     = ((tsSchedOut  - tsActualOut) / range) * 100;
-            const outPos      = ((tsActualOut - rangeStart)  / range) * 100;
-            const utH         = Math.floor(utMin / 60);
-            const utM         = utMin % 60;
-            const utLabel     = utH > 0 ? `${utH}h ${utM}m` : `${utM}m`;
-            barsHtml = `
-              <div class="gantt-sched-bar"      style="left:${schedLeft}%;  width:${schedWidth}%;"></div>
-              <div class="gantt-actual-bar"     style="left:${actualLeft}%; width:${workedWidth}%;"></div>
-              <div class="le-undertime-bar"     style="left:${utLeft}%;     width:${utWidth}%;"></div>
-              <div class="gantt-timein-marker"  style="left:${inPos}%;"></div>
-              <div class="gantt-timeout-marker" style="left:${outPos}%;"></div>
-            `;
-            rightLabel = `<div class="le-undertime-label">-${utLabel}</div>`;
-
-          } else {
-            const lateWidth   = ((tsActualIn  - tsSchedIn)  / range) * 100;
-            const workedWidth = tsActualOut
-              ? ((tsActualOut - tsActualIn) / range) * 100
-              : ((tsSchedOut  - tsActualIn) / range) * 100;
-            const outPos    = tsActualOut ? ((tsActualOut - rangeStart) / range) * 100 : null;
-            const lateH     = Math.floor(lateMin / 60);
-            const lateM     = lateMin % 60;
-            const lateLabel = lateH > 0 ? `${lateH}h ${lateM}m` : `${lateM}m`;
-            barsHtml = `
-              <div class="gantt-sched-bar"     style="left:${schedLeft}%;  width:${schedWidth}%;"></div>
-              <div class="le-late-bar"         style="left:${schedLeft}%;  width:${lateWidth}%;"></div>
-              <div class="gantt-actual-bar"    style="left:${actualLeft}%; width:${workedWidth}%;"></div>
-              <div class="gantt-timein-marker" style="left:${inPos}%;"></div>
-              ${outPos !== null ? `<div class="gantt-timeout-marker" style="left:${outPos}%;"></div>` : ''}
-            `;
-            rightLabel = `<div class="le-late-label">+${lateLabel} late</div>`;
-          }
-
-          const rowEl = document.createElement('div');
-          rowEl.className = `le-gantt-row le-gantt-${recordType}`;
-          rowEl.innerHTML = `
-            <div class="ot-gantt-row-inner">
-              <div class="ot-date-label">
-                <div class="ot-date-label-day">${fmtDate(workDate).split(',')[0]}</div>
-                <div class="ot-date-label-short">${fmtShort(workDate)}</div>
-              </div>
-              <div class="gantt-bar-container">${barsHtml}</div>
-              ${rightLabel}
-            </div>
-          `;
-
-          rowEl.addEventListener('click', () => {
-            leSelectedRecord = {
-              attendance_id:      row.attendance_id,
-              applicable_types:   row.applicable_types,
-              scheduled_start_ts: tsSchedIn,
-              scheduled_end_ts:   tsSchedOut,
-              actual_time_in_ts:  tsActualIn,
-              actual_time_out_ts: tsActualOut,
-            };
-
-            document.getElementById('leSelectedDate').textContent  = fmtDate(workDate);
-            document.getElementById('leSelectedSched').textContent = fmtTime(tsSchedIn) + ' – ' + fmtTime(tsSchedOut);
-            document.getElementById('leCurrentLog').textContent    = fmtTime(tsActualIn) + ' – ' + (tsActualOut ? fmtTime(tsActualOut) : 'No Time Out');
-
-            const badgesEl = document.getElementById('leStatusBadges');
-            badgesEl.innerHTML = row.applicable_types.map(t => {
-              if (t === 'no_timeout') return '<span class="le-status-badge le-badge-no-timeout">No Time Out</span>';
-              if (t === 'undertime')  return '<span class="le-status-badge le-badge-undertime">Undertime</span>';
-              if (t === 'late')       return '<span class="le-status-badge le-badge-late">Late Arrival</span>';
-              return '';
-            }).join('');
-
-            const hasLate = row.applicable_types.includes('late');
-            const hasOut  = row.applicable_types.includes('no_timeout') || row.applicable_types.includes('undertime');
-            const opts    = [];
-            if (hasLate)           opts.push({ val: 'time_in',  label: 'Correct Time In' });
-            if (hasOut)            opts.push({ val: 'time_out', label: 'Correct Time Out' });
-            if (hasLate && hasOut) opts.push({ val: 'both',     label: 'Correct Both' });
-
-            document.getElementById('leEditTypeOptions').innerHTML = opts.map(o =>
-              `<div class="le-custom-select-option" data-value="${o.val}" onclick="selectLeEditType('${o.val}','${o.label}')">${o.label}</div>`
-            ).join('');
-
-            document.getElementById('leRequestedTimeIn').value  = '';
-            document.getElementById('leRequestedTimeOut').value = '';
-
-            if (opts.length > 0) selectLeEditType(opts[0].val, opts[0].label);
-
-            document.getElementById('leStep1').style.display = 'none';
-            document.getElementById('leStep2').style.display = 'block';
-          });
-
-          list.appendChild(rowEl);
-        });
+          return `
+            <tr>
+              <td>${i + 1}</td>
+              <td>
+                <div style="font-size:0.82rem;">${dateStr}</div>
+                <div style="font-size:0.78rem;color:rgba(255,255,255,0.5);">${timeStr}</div>
+              </td>
+              <td><span class="${cls}" style="width:auto;padding:0.2rem 0.65rem;">${lbl}</span></td>
+              <td>${actionCell}</td>
+            </tr>`;
+        }).join('');
       })
       .catch(() => {
-        showToast('Failed to load records. Please try again.');
+        showToast('Failed to load logs. Please try again.');
       });
   }
 
-  function onLeEditTypeChange() {
-    const type = leEditTypeValue;
-    document.getElementById('leTimeInGroup').style.display  = (type === 'time_in'  || type === 'both') ? 'block' : 'none';
-    document.getElementById('leTimeOutGroup').style.display = (type === 'time_out' || type === 'both') ? 'block' : 'none';
-    updateLePreview();
-  }
+  function leSelectLog(logId, logType, logTime) {
+    reqLeLogId   = logId;
+    reqLeLogType = logType;
 
-  function updateLePreview() {
-    if (!leSelectedRecord) return;
+    const logLabel = { IN: 'Time In', OUT: 'Time Out' };
+    const logClass = { IN: 'log-in',  OUT: 'log-out'  };
 
-    const fmtInput = val => {
-      if (!val) return '<span style="opacity:.5">—</span>';
-      const [h, m] = val.split(':').map(Number);
-      const d = new Date();
-      d.setHours(h, m, 0, 0);
-      return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-    };
+    document.getElementById('leLogTypeBadge').innerHTML =
+      `<span class="${logClass[logType]}" style="width:auto;padding:0.2rem 0.65rem;">${logLabel[logType]}</span>`;
 
-    const type   = leEditTypeValue;
-    const reqIn  = document.getElementById('leRequestedTimeIn').value.trim();
-    const reqOut = document.getElementById('leRequestedTimeOut').value.trim();
-    const curIn  = fmtTime(leSelectedRecord.actual_time_in_ts);
-    const curOut = leSelectedRecord.actual_time_out_ts
-      ? fmtTime(leSelectedRecord.actual_time_out_ts)
-      : 'No Time Out';
+    const dt = new Date(logTime);
+    document.getElementById('leCurrentTime').textContent =
+      dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) + ' ' +
+      dt.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
-    const lines = [];
-    if (type === 'time_in'  || type === 'both') lines.push(`<b>Time In:</b>  ${curIn} &rarr; ${fmtInput(reqIn)}`);
-    if (type === 'time_out' || type === 'both') lines.push(`<b>Time Out:</b> ${curOut} &rarr; ${fmtInput(reqOut)}`);
+    const pad = n => String(n).padStart(2, '0');
+    document.getElementById('leNewDatetime').value =
+      `${dt.getFullYear()}-${pad(dt.getMonth()+1)}-${pad(dt.getDate())}T${pad(dt.getHours())}:${pad(dt.getMinutes())}`;
 
-    document.getElementById('lePreviewText').innerHTML = lines.join('<br>');
+    document.getElementById('leReason').value = '';
+
+    document.getElementById('leStep1').style.display = 'none';
+    document.getElementById('leStep2').style.display = 'block';
   }
 
   function submitLogEditRequest() {
-    const editType = leEditTypeValue;
-    const reqIn    = document.getElementById('leRequestedTimeIn').value.trim();
-    const reqOut   = document.getElementById('leRequestedTimeOut').value.trim();
+    if (!reqLeLogId || !reqLeLogType) return;
+
+    const newDatetime = document.getElementById('leNewDatetime').value;
+    if (!newDatetime) {
+      showToast('Please enter a new date and time.');
+      return;
+    }
+
     const reason   = document.getElementById('leReason').value.trim();
-
-    if (!leSelectedRecord || !editType || !reason) {
-      showToast('Please fill in all required fields.');
-      return;
-    }
-    if ((editType === 'time_in'  || editType === 'both') && !reqIn) {
-      showToast('Please enter a requested time in.');
-      return;
-    }
-    if ((editType === 'time_out' || editType === 'both') && !reqOut) {
-      showToast('Please enter a requested time out.');
-      return;
-    }
-
     const formData = new FormData();
-    formData.append('attendance_id', leSelectedRecord.attendance_id);
-    formData.append('request_type',  editType);
-    formData.append('reason',        reason);
-    if (editType === 'time_in'  || editType === 'both') formData.append('requested_time_in',  reqIn);
-    if (editType === 'time_out' || editType === 'both') formData.append('requested_time_out', reqOut);
+    formData.append('log_id',       reqLeLogId);
+    formData.append('new_datetime', newDatetime.replace('T', ' ') + ':00');
+    formData.append('reason',       reason);
 
-    fetch('/DTR-Internship-Project/employee_pages/submit_log_edit_request.php', {
+    fetch('/DTR-Internship-Project/employee_pages/log_edit_request.php', {
       method: 'POST',
       body: formData
     })
-      .then(res => res.json())
+      .then(r => r.json())
       .then(data => {
         if (data.success) {
           showToast(data.message, 'success');

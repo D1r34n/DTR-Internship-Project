@@ -40,8 +40,8 @@ $current_page = 'logs';
     <link rel="stylesheet" href="employee_logs.css">
 
     <!-- 4. Scripts -->
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr" defer></script>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
 
 <body>
@@ -102,6 +102,7 @@ $current_page = 'logs';
                             <th class="sortable" data-sort="location">
                                 Location <i class="bi bi-chevron-down sort-icon"></i>
                             </th>
+                            <th>Requested By</th>
                             <th>Edit Status</th>
                         </tr>
                     </thead>

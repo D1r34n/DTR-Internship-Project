@@ -65,6 +65,40 @@
     --info-bg:     rgba(96, 165, 250, 0.1);
     --info-border: rgba(96, 165, 250, 0.2);
 
+    /* ================================================
+    ROLE COLORS (BRIGHT GLASS SYSTEM)
+    ================================================ */
+
+    /* EMPLOYEE */
+    --employee:        #9fe2bf;
+    --employee-bg:     rgba(159, 226, 191, 0.16);
+    --employee-border: rgba(159, 226, 191, 0.35);
+    --employee-soft:   rgba(159, 226, 191, 0.10);
+
+    /* WORKFORCE */
+    --workforce:        #60a5fa;
+    --workforce-bg:     rgba(96, 165, 250, 0.16);
+    --workforce-border: rgba(96, 165, 250, 0.35);
+    --workforce-soft:   rgba(96, 165, 250, 0.10);
+
+    /* ADMIN */
+    --admin:        #f87171;
+    --admin-bg:     rgba(248, 113, 113, 0.14);
+    --admin-border: rgba(248, 113, 113, 0.30);
+    --admin-soft:   rgba(248, 113, 113, 0.10);
+
+    /* MANAGER */
+    --manager:        #fbbf24;
+    --manager-bg:     rgba(251, 191, 36, 0.16);
+    --manager-border: rgba(251, 191, 36, 0.35);
+    --manager-soft:   rgba(251, 191, 36, 0.10);
+
+    /* SUPERADMIN */
+    --superadmin:        #a855f7;
+    --superadmin-bg:     rgba(168, 85, 247, 0.16);
+    --superadmin-border: rgba(168, 85, 247, 0.38);
+    --superadmin-soft:   rgba(168, 85, 247, 0.12);
+
     /* BORDERS */
     --border: rgba(0, 0, 0, 0.1);
 

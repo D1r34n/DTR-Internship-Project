@@ -57,14 +57,14 @@ body {
    CARD WRAPPER
 ========================= */
 
-.logs-card {
+.employee-list-card {
     flex: 1;
     min-height: 0;
     margin: 0.5rem 1rem 1rem;
     overflow: visible !important;
 }
 
-.logs-card-body {
+.employee-list-card-body {
     padding: 1.5rem;
     height: 100%;
     overflow: visible;
@@ -223,7 +223,6 @@ body {
 
 .table tbody tr:not(.emptyRow):hover {
     background: var(--overlay-soft);
-    backdrop-filter: blur(6px);
     box-shadow: 0 4px 20px var(--shadow);
 }
 
@@ -288,6 +287,16 @@ body {
     font-size: 0.75rem;
     text-decoration: none;
     transition: background 0.2s;
+}
+
+.empViewBtn {
+    background: rgba(151,190,65,0.15);
+    color: #97be41;
+}
+
+.empViewBtn:hover {
+    background: rgba(151,190,65,0.3);
+    color: #97be41;
 }
 
 .empEditBtn {
