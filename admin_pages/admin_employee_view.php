@@ -9,6 +9,8 @@ if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'admin') {
 }
 
 require_once '../db.php';
+require_once '../system_functions/system_service.php';
+require_once '../system_functions/system_library.php';
 date_default_timezone_set('Asia/Manila');
 
 if (!isset($_GET['id'])) {
@@ -184,6 +186,46 @@ if (!$emp) {
     header("Location: admin_employees_list.php");
     exit();
 }
+
+// ---- VIEW MONTH ----
+$rawMonth = $_GET['month'] ?? date('Y-m');
+if (!preg_match('/^\d{4}-\d{2}$/', $rawMonth)) {
+    $rawMonth = date('Y-m');
+}
+[$viewYear, $viewMonthNum] = array_map('intval', explode('-', $rawMonth));
+$monthStart = sprintf('%04d-%02d-01', $viewYear, $viewMonthNum);
+$monthEnd   = date('Y-m-t', strtotime($monthStart));
+$prevMonth  = date('Y-m', strtotime($monthStart . ' -1 month'));
+$nextMonth  = date('Y-m', strtotime($monthStart . ' +1 month'));
+$monthLabel = date('F Y', strtotime($monthStart));
+$todayStr   = date('Y-m-d');
+
+// ---- SCHEDULES (calendar) ----
+$schedStmt = $pdo->prepare("
+    SELECT schedule_date, scheduled_start, scheduled_end, is_rest_day, status
+    FROM schedules
+    WHERE employee_id = ? AND schedule_date BETWEEN ? AND ?
+    ORDER BY schedule_date ASC
+");
+$schedStmt->execute([$employeeId, $monthStart, $monthEnd]);
+$schedulesByDate = [];
+foreach ($schedStmt->fetchAll(PDO::FETCH_ASSOC) as $s) {
+    $schedulesByDate[$s['schedule_date']] = $s;
+}
+
+// ---- RECORDS (gantt) ----
+$records       = getAttendanceRecords($pdo, $employeeId, $monthStart, $monthEnd);
+$schedForGantt = getSchedulesByDateRange($pdo, $employeeId, $monthStart, $monthEnd);
+
+// ---- LOGS ----
+$logsStmt = $pdo->prepare("
+    SELECT log_type, log_time, is_within_office, distance_meters
+    FROM logs
+    WHERE employee_id = ? AND DATE(log_time) BETWEEN ? AND ?
+    ORDER BY log_time DESC
+");
+$logsStmt->execute([$employeeId, $monthStart, $monthEnd]);
+$tapLogs = $logsStmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
 <!doctype html>
 <html lang="en">
@@ -212,7 +254,7 @@ if (!$emp) {
 
 <div id="main-wrapper">
 
-    <?php include '../topbar_revised.php'; ?>
+    <?php include '../topbar_revised.php'; $employeeId = $emp['id']; ?>
 
     <!-- Employee header strip -->
     <div class="card card-glass employee-view-card">
@@ -301,15 +343,365 @@ if (!$emp) {
             <div class="tab-content">
 
                 <div class="tab-pane fade show active" id="tab1" role="tabpanel">
-                    Schedules content here
+
+                    <!-- Month nav + Add button -->
+                    <div class="tab-section-header">
+                        <div class="d-flex align-items-center gap-2">
+                            <button class="sched-nav-btn"
+                                onclick="location.href='?id=<?= $employeeId ?>&month=<?= $prevMonth ?>'">
+                                <i class="bi bi-chevron-left"></i>
+                            </button>
+                            <span class="sched-month-label"><?= htmlspecialchars($monthLabel) ?></span>
+                            <button class="sched-nav-btn"
+                                onclick="location.href='?id=<?= $employeeId ?>&month=<?= $nextMonth ?>'">
+                                <i class="bi bi-chevron-right"></i>
+                            </button>
+                        </div>
+                        <div class="tab-summary-chips">
+                            <span class="tab-summary-chip" style="color:var(--text-muted);">
+                                <?= count($schedulesByDate) ?> scheduled day<?= count($schedulesByDate) !== 1 ? 's' : '' ?>
+                            </span>
+                            <button class="sched-add-btn" onclick="openAddModal()"
+                                data-bs-toggle="modal" data-bs-target="#schedModal">
+                                <i class="bi bi-plus-lg"></i> Add Schedule
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Calendar grid -->
+                    <div class="sched-cal-container">
+                        <div class="sched-cal-grid">
+
+                            <!-- Weekday headers -->
+                            <?php foreach (['Sun','Mon','Tue','Wed','Thu','Fri','Sat'] as $h): ?>
+                                <div class="sched-cal-day-header"><?= $h ?></div>
+                            <?php endforeach; ?>
+
+                            <!-- Leading empty cells -->
+                            <?php
+                            $firstDow    = (int) date('w', strtotime($monthStart));
+                            $daysInMonth = (int) date('t', strtotime($monthStart));
+                            for ($i = 0; $i < $firstDow; $i++): ?>
+                                <div class="sched-cal-day empty"></div>
+                            <?php endfor; ?>
+
+                            <!-- Day cells -->
+                            <?php for ($d = 1; $d <= $daysInMonth; $d++):
+                                $ds    = sprintf('%04d-%02d-%02d', $viewYear, $viewMonthNum, $d);
+                                $sched = $schedulesByDate[$ds] ?? null;
+                                $isToday = $ds === $todayStr;
+                                $isPast  = $ds < $todayStr;
+                                $cls = 'sched-cal-day';
+                                if ($isToday) $cls .= ' is-today';
+                                elseif ($isPast) $cls .= ' is-past';
+                                if ($sched) {
+                                    $cls .= ' has-sched';
+                                    $st = $sched['status'] ?? 'approved';
+                                    if ($st === 'pending')  $cls .= ' sched-pending';
+                                    if ($st === 'rejected') $cls .= ' sched-rejected';
+                                }
+                            ?>
+                            <div class="<?= $cls ?>">
+                                <div class="sched-cal-day-num <?= $isToday ? 'is-today-num' : '' ?>">
+                                    <?= $d ?>
+                                </div>
+
+                                <?php if ($sched):
+                                    $startTs = strtotime($sched['scheduled_start']);
+                                    $endTs   = strtotime($sched['scheduled_end']);
+                                    $hour    = (int) date('H', $startTs);
+                                    $isNight = $hour >= 18 || $hour < 6;
+                                    $tIn     = date('g:i A', $startTs);
+                                    $tOut    = date('g:i A', $endTs);
+                                    $tInVal  = date('H:i', $startTs);
+                                    $tOutVal = date('H:i', $endTs);
+                                    $status  = $sched['status'] ?? 'approved';
+                                ?>
+                                    <span class="sched-cal-shift-badge <?= $isNight ? 'night' : 'day' ?>">
+                                        <?= $isNight ? 'Night' : 'Day' ?>
+                                    </span>
+                                    <div class="sched-cal-times"><?= $tIn ?><br><?= $tOut ?></div>
+                                    <span class="sched-cal-status-badge sched-status-<?= htmlspecialchars($status) ?>">
+                                        <?= ucfirst($status) ?>
+                                    </span>
+                                    <div class="sched-cal-day-actions">
+                                        <button class="sched-cal-action-btn edit" title="Edit"
+                                            onclick='openEditModal(<?= json_encode($ds) ?>, <?= json_encode($tInVal) ?>, <?= json_encode($tOutVal) ?>); event.stopPropagation();'>
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                        <button class="sched-cal-action-btn delete" title="Delete"
+                                            onclick='deleteSchedule(<?= json_encode($ds) ?>); event.stopPropagation();'>
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
+                            <?php endfor; ?>
+
+                        </div><!-- .sched-cal-grid -->
+                    </div><!-- .sched-cal-container -->
+
                 </div>
 
                 <div class="tab-pane fade" id="tab2" role="tabpanel">
-                    Records content here
+
+                    <!-- Month nav + summary counts -->
+                    <?php
+                    $cPresent = $cAbsent = $cIncomplete = 0;
+                    foreach ($records as $r) {
+                        if ($r['status'] === 'present')    $cPresent++;
+                        elseif ($r['status'] === 'absent') $cAbsent++;
+                        else                               $cIncomplete++;
+                    }
+                    ?>
+                    <div class="tab-section-header">
+                        <div class="d-flex align-items-center gap-2">
+                            <button class="sched-nav-btn"
+                                onclick="location.href='?id=<?= $employeeId ?>&month=<?= $prevMonth ?>#tab2'">
+                                <i class="bi bi-chevron-left"></i>
+                            </button>
+                            <span class="sched-month-label"><?= htmlspecialchars($monthLabel) ?></span>
+                            <button class="sched-nav-btn"
+                                onclick="location.href='?id=<?= $employeeId ?>&month=<?= $nextMonth ?>#tab2'">
+                                <i class="bi bi-chevron-right"></i>
+                            </button>
+                        </div>
+                        <div class="tab-summary-chips">
+                            <span class="tab-summary-chip" style="color:var(--primary-color);">
+                                <i class="bi bi-check-circle-fill"></i> <?= $cPresent ?> Present
+                            </span>
+                            <span class="tab-summary-chip" style="color:var(--warning);">
+                                <i class="bi bi-clock-fill"></i> <?= $cIncomplete ?> Incomplete
+                            </span>
+                            <span class="tab-summary-chip" style="color:var(--danger-color);">
+                                <i class="bi bi-x-circle-fill"></i> <?= $cAbsent ?> Absent
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Gantt chart -->
+                    <div class="ganttContainer">
+                        <?php
+                        $hasRows = false;
+                        foreach ($records as $row):
+                            $sched    = $schedForGantt[$row['work_date']] ?? null;
+                            $ganttBar = computeGanttRow($row, $sched);
+                            if ($ganttBar === null) continue;
+                            $hasRows = true;
+                        ?>
+
+                        <?php if ($ganttBar['type'] === 'absent_or_future'): ?>
+                        <div class="ganttRow">
+                            <div class="ganttLabel">
+                                <div><?= $ganttBar['dayLabel'] ?></div>
+                                <div class="ganttSubLabel"><?= $ganttBar['dateNum'] ?></div>
+                            </div>
+                            <div class="ganttBarContainer"
+                                data-range-start="<?= $ganttBar['rangeStart'] ?>"
+                                data-range-end="<?= $ganttBar['rangeEnd'] ?>">
+                                <?= gantt_cursor() ?>
+                                <?= gantt_scale($ganttBar['rangeStart'], $ganttBar['rangeEnd']) ?>
+                                <div class="ganttBar <?= $ganttBar['barClass'] ?>"
+                                    style="left:<?= $ganttBar['barLeft'] ?>%; width:<?= $ganttBar['barWidth'] ?>%;">
+                                    <span class="<?= $ganttBar['labelClass'] ?>"
+                                        style="left:<?= $ganttBar['midLeft'] ?>%;">
+                                        <?= $ganttBar['labelText'] ?>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <?php else: ?>
+                        <div class="ganttRow">
+                            <div class="ganttLabel">
+                                <div><?= $ganttBar['dayLabel'] ?></div>
+                                <div class="ganttSubLabel"><?= $ganttBar['dateNum'] ?></div>
+                            </div>
+                            <div class="ganttBarContainer"
+                                data-is-today="<?= $ganttBar['isToday'] ? '1' : '0' ?>"
+                                data-range-start="<?= $ganttBar['rangeStart'] ?>"
+                                data-range-end="<?= $ganttBar['rangeEnd'] ?>"
+                                data-sched-in="<?= $ganttBar['schedInLabel'] ?>"
+                                data-sched-out="<?= $ganttBar['schedOutLabel'] ?>"
+                                data-actual-in="<?= $ganttBar['actualInLabel'] ?>"
+                                data-actual-out="<?= $ganttBar['actualOutLabel'] ?>"
+                                data-early="<?= $ganttBar['earlyLabel'] ?>"
+                                data-late="<?= $ganttBar['lateLabel'] ?>"
+                                data-overtime="<?= $ganttBar['overtimeLabel'] ?>"
+                                data-overtime-status="<?= $ganttBar['overtimeStatusLabel'] ?>"
+                                data-undertime="<?= $ganttBar['undertimeLabel'] ?>"
+                                data-overbreak="<?= $ganttBar['overbreakLabel'] ?>">
+
+                                <?= gantt_cursor() ?>
+                                <?= gantt_scale($ganttBar['rangeStart'], $ganttBar['rangeEnd']) ?>
+
+                                <?php if ($ganttBar['schedIn'] !== null): ?>
+                                    <div class="ganttBar ganttBarScheduled"
+                                        style="left:<?= $ganttBar['schedLeft'] ?>%; width:<?= $ganttBar['schedWidth'] ?>%;"></div>
+                                <?php endif; ?>
+
+                                <?php if ($ganttBar['isEarly'] && $ganttBar['schedIn']): ?>
+                                    <div class="ganttBar ganttBarEarly"
+                                        style="left:<?= $ganttBar['earlyLeft'] ?>%; width:<?= $ganttBar['earlyWidth'] ?>%;">
+                                        <span class="ganttBarLabel">Early</span>
+                                    </div>
+                                <?php endif; ?>
+
+                                <?php if ($ganttBar['isTardy']): ?>
+                                    <div class="ganttBar ganttBarTardy"
+                                        style="left:<?= $ganttBar['tardyLeft'] ?>%; width:<?= $ganttBar['tardyWidth'] ?>%;">
+                                        <span class="ganttBarLabel">Late</span>
+                                    </div>
+                                <?php endif; ?>
+
+                                <?php if ($ganttBar['hasClockedIn']): ?>
+                                    <?php if ($ganttBar['onTimeSplit']): ?>
+                                        <div class="ganttBar <?= $ganttBar['noTimeOut'] ? 'ganttBarNoTimeOut' : 'ganttBarOnTime' ?>"
+                                            style="left:<?= $ganttBar['actualLeft'] ?>%; width:<?= $ganttBar['onTimeLeftWidth'] ?>%;">
+                                            <span class="ganttBarLabel"><?= $ganttBar['noTimeOut'] ? 'No Time Out' : 'On Time' ?></span>
+                                        </div>
+                                        <div class="ganttBar ganttBarBreak"
+                                            style="left:<?= $ganttBar['breakLeft'] ?>%; width:<?= $ganttBar['breakWidth'] ?>%;">
+                                            <span class="ganttBarLabel">Break</span>
+                                        </div>
+                                        <div class="ganttBar <?= $ganttBar['noTimeOut'] ? 'ganttBarNoTimeOut' : 'ganttBarOnTime' ?>"
+                                            style="left:<?= $ganttBar['onTimeRightLeft'] ?>%; width:<?= $ganttBar['onTimeRightWidth'] ?>%;">
+                                            <?php if ($ganttBar['onTimeRightWidth'] > 5): ?>
+                                                <span class="ganttBarLabel"><?= $ganttBar['noTimeOut'] ? 'No Time Out' : 'On Time' ?></span>
+                                            <?php endif; ?>
+                                        </div>
+                                    <?php else: ?>
+                                        <div class="ganttBar <?= $ganttBar['noTimeOut'] ? 'ganttBarNoTimeOut' : 'ganttBarOnTime' ?>"
+                                            style="left:<?= $ganttBar['actualLeft'] ?>%; width:<?= $ganttBar['onTimeWidth'] ?>%;">
+                                            <span class="ganttBarLabel"><?= $ganttBar['noTimeOut'] ? 'No Time Out' : 'On Time' ?></span>
+                                        </div>
+                                    <?php endif; ?>
+
+                                    <?php if ($ganttBar['isUndertime'] && $ganttBar['schedOut']): ?>
+                                        <div class="ganttBar ganttBarUndertime"
+                                            style="left:<?= $ganttBar['undertimeLeft'] ?>%; width:<?= $ganttBar['undertimeWidth'] ?>%;">
+                                            <span class="ganttBarLabel">Undertime</span>
+                                        </div>
+                                    <?php endif; ?>
+                                <?php endif; ?>
+
+                                <?php if ($ganttBar['overtimeMinutes'] > 0 && $ganttBar['schedOut']): ?>
+                                    <div class="ganttBar <?= $ganttBar['otColorClass'] ?>"
+                                        style="left:<?= $ganttBar['overtimeLeft'] ?>%; width:<?= $ganttBar['overtimeWidth'] ?>%;">
+                                        <span class="ganttBarLabel">Overtime</span>
+                                    </div>
+                                <?php endif; ?>
+
+                                <?php if ($ganttBar['actualInPos'] !== null): ?>
+                                    <div class="ganttMarker ganttMarkerActualStart"
+                                        style="left:<?= $ganttBar['actualInPos'] ?>%"></div>
+                                <?php endif; ?>
+                                <?php if ($ganttBar['actualOutPos'] !== null): ?>
+                                    <div class="ganttMarker ganttMarkerActualEnd"
+                                        style="left:<?= $ganttBar['actualOutPos'] ?>%"></div>
+                                <?php endif; ?>
+
+                            </div>
+                        </div>
+                        <?php endif; ?>
+                        <?php endforeach; ?>
+
+                        <?php if (!$hasRows): ?>
+                            <div class="ganttEmpty">
+                                <i class="bi bi-calendar-x ganttEmptyIcon"></i>
+                                <div>No records found for <?= htmlspecialchars($monthLabel) ?>.</div>
+                            </div>
+                        <?php endif; ?>
+                    </div><!-- .ganttContainer -->
+
                 </div>
 
                 <div class="tab-pane fade" id="tab3" role="tabpanel">
-                    Logs content here
+
+                    <!-- Month nav + count -->
+                    <div class="tab-section-header">
+                        <div class="d-flex align-items-center gap-2">
+                            <button class="sched-nav-btn"
+                                onclick="location.href='?id=<?= $employeeId ?>&month=<?= $prevMonth ?>#tab3'">
+                                <i class="bi bi-chevron-left"></i>
+                            </button>
+                            <span class="sched-month-label"><?= htmlspecialchars($monthLabel) ?></span>
+                            <button class="sched-nav-btn"
+                                onclick="location.href='?id=<?= $employeeId ?>&month=<?= $nextMonth ?>#tab3'">
+                                <i class="bi bi-chevron-right"></i>
+                            </button>
+                        </div>
+                        <span class="tab-summary-chip" style="color:var(--text-muted);">
+                            <?= count($tapLogs) ?> log<?= count($tapLogs) !== 1 ? 's' : '' ?>
+                        </span>
+                    </div>
+
+                    <!-- Logs table -->
+                    <div class="logs-table-wrapper">
+                        <table class="table table-borderless table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th style="position:sticky;top:0;background:var(--bg-dark);color:var(--text-muted);z-index:1;border-bottom:1px solid var(--glass-border);font-size:0.78rem;font-weight:400;">Date &amp; Time</th>
+                                    <th style="position:sticky;top:0;background:var(--bg-dark);color:var(--text-muted);z-index:1;border-bottom:1px solid var(--glass-border);font-size:0.78rem;font-weight:400;">Type</th>
+                                    <th style="position:sticky;top:0;background:var(--bg-dark);color:var(--text-muted);z-index:1;border-bottom:1px solid var(--glass-border);font-size:0.78rem;font-weight:400;">Within Office</th>
+                                    <th style="position:sticky;top:0;background:var(--bg-dark);color:var(--text-muted);z-index:1;border-bottom:1px solid var(--glass-border);font-size:0.78rem;font-weight:400;">Distance</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php if (empty($tapLogs)): ?>
+                                    <tr>
+                                        <td colspan="4" class="text-center py-5"
+                                            style="color:var(--text-muted); background:rgba(0,0,0,0.2);">
+                                            <i class="bi bi-clock-history"
+                                                style="font-size:1.8rem; display:block; margin-bottom:0.4rem; opacity:0.4;"></i>
+                                            No logs found for <?= htmlspecialchars($monthLabel) ?>.
+                                        </td>
+                                    </tr>
+                                <?php else: ?>
+                                    <?php
+                                    $typeMap = [
+                                        'IN'        => ['label' => 'Time In',   'cls' => 'in'],
+                                        'OUT'       => ['label' => 'Time Out',  'cls' => 'out'],
+                                        'BREAK_IN'  => ['label' => 'Break In',  'cls' => 'break-in'],
+                                        'BREAK_OUT' => ['label' => 'Break Out', 'cls' => 'break-out'],
+                                    ];
+                                    foreach ($tapLogs as $log):
+                                        $typeInfo = $typeMap[$log['log_type']] ?? ['label' => $log['log_type'], 'cls' => ''];
+                                    ?>
+                                    <tr>
+                                        <td style="background:rgba(0,0,0,0.2); color:var(--text-light); border-color:var(--glass-border); vertical-align:middle;">
+                                            <div style="font-size:0.85rem;"><?= date('D, M j, Y', strtotime($log['log_time'])) ?></div>
+                                            <div style="font-size:0.73rem; color:var(--text-muted);"><?= date('g:i:s A', strtotime($log['log_time'])) ?></div>
+                                        </td>
+                                        <td style="background:rgba(0,0,0,0.2); border-color:var(--glass-border); vertical-align:middle;">
+                                            <span class="log-type-badge <?= $typeInfo['cls'] ?>">
+                                                <i class="bi bi-circle-fill" style="font-size:0.45rem;"></i>
+                                                <?= $typeInfo['label'] ?>
+                                            </span>
+                                        </td>
+                                        <td style="background:rgba(0,0,0,0.2); border-color:var(--glass-border); vertical-align:middle;">
+                                            <?php if ($log['is_within_office']): ?>
+                                                <span style="color:var(--primary-color); font-size:0.82rem;">
+                                                    <i class="bi bi-check-circle-fill"></i> Yes
+                                                </span>
+                                            <?php else: ?>
+                                                <span style="color:var(--danger-color); font-size:0.82rem;">
+                                                    <i class="bi bi-x-circle-fill"></i> No
+                                                </span>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td style="background:rgba(0,0,0,0.2); color:var(--text-muted); border-color:var(--glass-border); vertical-align:middle; font-size:0.82rem;">
+                                            <?= $log['distance_meters'] !== null
+                                                ? number_format((float) $log['distance_meters'], 0) . ' m'
+                                                : '—' ?>
+                                        </td>
+                                    </tr>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
+                            </tbody>
+                        </table>
+                    </div><!-- .logs-table-wrapper -->
+
                 </div>
 
             </div>
@@ -319,6 +711,40 @@ if (!$emp) {
 </div><!-- #main-wrapper -->
 
 <!-- ===== GANTT TOOLTIP ===== -->
+<div id="gantt_tooltip">
+    <div class="ganttToolTipRow">
+        <span class="ganttToolTipLabel">Scheduled</span>
+        <span class="ganttToolTipValue" id="gt-sched"></span>
+    </div>
+    <div class="ganttToolTipRow">
+        <span class="ganttToolTipLabel">Time In</span>
+        <span class="ganttToolTipValue" id="gt-actual-in"></span>
+    </div>
+    <div class="ganttToolTipRow">
+        <span class="ganttToolTipLabel">Time Out</span>
+        <span class="ganttToolTipValue" id="gt-actual-out"></span>
+    </div>
+    <div class="ganttToolTipRow ganttToolTipEarly" id="gt-early-row">
+        <span class="ganttToolTipLabel">Early</span>
+        <span class="ganttToolTipValue" id="gt-early"></span>
+    </div>
+    <div class="ganttToolTipRow ganttToolTipLate" id="gt-late-row">
+        <span class="ganttToolTipLabel">Late</span>
+        <span class="ganttToolTipValue" id="gt-late"></span>
+    </div>
+    <div class="ganttToolTipRow ganttToolTipOverBreak" id="gt-ob-row">
+        <span class="ganttToolTipLabel">Overbreak</span>
+        <span class="ganttToolTipValue" id="gt-ob"></span>
+    </div>
+    <div class="ganttToolTipRow ganttToolTipOverTime" id="gt-ot-row">
+        <span class="ganttToolTipLabel">Overtime</span>
+        <span class="ganttToolTipValue" id="gt-ot"></span>
+    </div>
+    <div class="ganttToolTipRow ganttToolTipUnderTime" id="gt-ut-row">
+        <span class="ganttToolTipLabel">Undertime</span>
+        <span class="ganttToolTipValue" id="gt-ut"></span>
+    </div>
+</div>
 
 <!-- ===== SCHEDULE ADD / EDIT MODAL ===== -->
 <div class="modal fade" id="schedModal" tabindex="-1" aria-hidden="true">
@@ -484,50 +910,146 @@ if (!$emp) {
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script src="../system_functions/gantt.js"></script>
 <script>
-    // Department dropdown for the Edit Employee modal
-    (function () {
-        fetch('/DTR-Internship-Project/admin_pages/department_api.php?action=list')
-            .then(r => r.json())
-            .then(depts => {
-                const items = [
-                    { value: '', label: 'None' },
-                    ...depts.map(d => ({ value: String(d.id), label: d.department_name }))
-                ];
-                const input  = document.getElementById('edit-dept-search');
-                const menu   = document.getElementById('edit-dept-menu');
-                const hidden = document.getElementById('edit-dept-id');
+// ---- Department dropdown (Edit Employee modal) ----
+(function () {
+    fetch('/DTR-Internship-Project/admin_pages/department_api.php?action=list')
+        .then(r => r.json())
+        .then(depts => {
+            const items = [
+                { value: '', label: 'None' },
+                ...depts.map(d => ({ value: String(d.id), label: d.department_name }))
+            ];
+            const input  = document.getElementById('edit-dept-search');
+            const menu   = document.getElementById('edit-dept-menu');
+            const hidden = document.getElementById('edit-dept-id');
 
-                function render(list) {
-                    menu.innerHTML = '';
-                    list.forEach(item => {
-                        const li  = document.createElement('li');
-                        const btn = document.createElement('button');
-                        btn.type        = 'button';
-                        btn.className   = 'dropdown-item';
-                        btn.textContent = item.label;
-                        btn.onclick = () => {
-                            input.value  = item.label === 'None' ? '' : item.label;
-                            hidden.value = item.value;
-                            menu.classList.remove('show');
-                        };
-                        li.appendChild(btn);
-                        menu.appendChild(li);
-                    });
-                }
-
-                input.addEventListener('click', () => menu.classList.add('show'));
-                input.addEventListener('input', () => {
-                    const q = input.value.toLowerCase();
-                    render(items.filter(i => i.label.toLowerCase().includes(q)));
-                });
-                document.addEventListener('click', e => {
-                    if (!e.target.closest('#edit-dept-menu') && !e.target.closest('#edit-dept-search'))
+            function render(list) {
+                menu.innerHTML = '';
+                list.forEach(item => {
+                    const li  = document.createElement('li');
+                    const btn = document.createElement('button');
+                    btn.type        = 'button';
+                    btn.className   = 'dropdown-item';
+                    btn.textContent = item.label;
+                    btn.onclick = () => {
+                        input.value  = item.label === 'None' ? '' : item.label;
+                        hidden.value = item.value;
                         menu.classList.remove('show');
+                    };
+                    li.appendChild(btn);
+                    menu.appendChild(li);
                 });
-                render(items);
-            })
-            .catch(() => {});
-    })();
+            }
+
+            input.addEventListener('click', () => menu.classList.add('show'));
+            input.addEventListener('input', () => {
+                const q = input.value.toLowerCase();
+                render(items.filter(i => i.label.toLowerCase().includes(q)));
+            });
+            document.addEventListener('click', e => {
+                if (!e.target.closest('#edit-dept-menu') && !e.target.closest('#edit-dept-search'))
+                    menu.classList.remove('show');
+            });
+            render(items);
+        })
+        .catch(() => {});
+})();
+
+// ---- Schedule modal state ----
+let selectedDates = [];
+let fp            = null;
+
+// Restore active tab (hash from month-nav links takes priority over localStorage)
+document.addEventListener('DOMContentLoaded', () => {
+    const empId  = <?= $employeeId ?>;
+    const key    = 'empViewTab_' + empId;
+    const hash   = location.hash;   // e.g. '#tab2'
+    const stored = localStorage.getItem(key);
+    const target = hash || stored;
+    if (target) {
+        const tabEl = document.querySelector(`[data-bs-target="${target}"]`);
+        if (tabEl) bootstrap.Tab.getOrCreateInstance(tabEl).show();
+    }
+    document.querySelectorAll('#myTab [data-bs-toggle="tab"]').forEach(btn => {
+        btn.addEventListener('shown.bs.tab', e => {
+            localStorage.setItem(key, e.target.dataset.bsTarget);
+        });
+    });
+
+    // Gantt cursor + tooltip
+    initGanttCursors();
+
+    // Flatpickr multi-date picker inside the schedule modal
+    fp = flatpickr('#schedDatePicker', {
+        mode: 'multiple',
+        dateFormat: 'Y-m-d',
+        onChange(dates) {
+            selectedDates = dates.map(d => {
+                const y   = d.getFullYear();
+                const m   = String(d.getMonth() + 1).padStart(2, '0');
+                const day = String(d.getDate()).padStart(2, '0');
+                return `${y}-${m}-${day}`;
+            });
+            renderDateTags();
+        }
+    });
+});
+
+function renderDateTags() {
+    document.getElementById('selectedDatesList').innerHTML = selectedDates
+        .map(d => `<span class="selected-date-tag">${d}
+            <span class="selected-date-remove" onclick="removeDate('${d}')">&times;</span>
+        </span>`)
+        .join('');
+}
+
+function removeDate(d) {
+    selectedDates = selectedDates.filter(x => x !== d);
+    if (fp) fp.setDate(selectedDates, false);
+    renderDateTags();
+}
+
+function openAddModal() {
+    document.getElementById('schedModalTitle').textContent  = 'Add Schedule';
+    document.getElementById('schedSubmitLabel').textContent = 'Save Schedule';
+    document.getElementById('isEditMode').value             = '0';
+    document.getElementById('modalTimeIn').value            = '';
+    document.getElementById('modalTimeOut').value           = '';
+    selectedDates = [];
+    renderDateTags();
+    if (fp) fp.clear();
+}
+
+function openEditModal(date, timeIn, timeOut) {
+    document.getElementById('schedModalTitle').textContent  = 'Edit Schedule';
+    document.getElementById('schedSubmitLabel').textContent = 'Update Schedule';
+    document.getElementById('isEditMode').value             = '1';
+    document.getElementById('modalTimeIn').value            = timeIn;
+    document.getElementById('modalTimeOut').value           = timeOut;
+    selectedDates = [date];
+    renderDateTags();
+    if (fp) fp.setDate([date], false);
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('schedModal')).show();
+}
+
+function closeSchedModal() {
+    bootstrap.Modal.getInstance(document.getElementById('schedModal'))?.hide();
+}
+
+function prepareSubmit() {
+    document.getElementById('selectedDatesInput').value = JSON.stringify(selectedDates);
+    if (selectedDates.length === 0) {
+        alert('Please select at least one date.');
+        return false;
+    }
+    return true;
+}
+
+function deleteSchedule(date) {
+    if (!confirm('Delete schedule for ' + date + '?')) return;
+    fetch(`admin_employee_view.php?id=<?= $employeeId ?>&ajax_delete=1&emp=<?= $employeeId ?>&date=${date}`)
+        .then(() => location.reload());
+}
 </script>
 
 </body>
