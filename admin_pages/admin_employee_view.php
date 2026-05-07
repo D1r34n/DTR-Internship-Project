@@ -359,7 +359,7 @@ $tapLogs = $logsStmt->fetchAll(PDO::FETCH_ASSOC);
                             <span id="chip-sched-count" class="tab-summary-chip" style="color:var(--text-muted);">
                                 <?= count($schedulesByDate) ?> scheduled day<?= count($schedulesByDate) !== 1 ? 's' : '' ?>
                             </span>
-                            <button class="sched-add-btn" onclick="openAddModal()"
+                            <button class="btn btn-success sched-add-btn" onclick="openAddModal()"
                                 data-bs-toggle="modal" data-bs-target="#schedModal">
                                 <i class="bi bi-plus-lg"></i> Add Schedule
                             </button>

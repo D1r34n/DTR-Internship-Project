@@ -75,9 +75,9 @@ $scheduleRequests = $pdo->query("
 
 function getStatusBadge(string $status): string {
     $badges = [
-        'pending'  => '<span class="badge statusPending">Pending</span>',
-        'approved' => '<span class="badge statusApproved">Approved</span>',
-        'rejected' => '<span class="badge statusRejected">Rejected</span>',
+        'pending'  => '<span class="badge status-pending">Pending</span>',
+        'approved' => '<span class="badge status-approved">Approved</span>',
+        'rejected' => '<span class="badge status-rejected">Rejected</span>',
     ];
     return $badges[$status] ?? '<span class="badge">Unknown</span>';
 }
@@ -113,9 +113,57 @@ function getStatusBadge(string $status): string {
         <div class="card card-glass requests-card">
             <div class="card-body d-flex flex-column requests-card-body">
 
+                <!-- SUMMARY CARDS -->
+                <div class="row g-2 mb-4">
+                    <!-- Pending -->
+                    <div class="col-6 col-md-4 col-xl-2">
+                        <div class="card card-glass card-pending h-100">
+                            <div class="card-body d-flex align-items-center justify-content-between">
+                                <div class="icon-wrap">
+                                    <i class="bi bi-hourglass-split fs-4"></i>
+                                </div>
+                                <div class="d-flex flex-column text-end">
+                                    <p class="mb-0 text-meta">Pending</p>
+                                    <h5 class="mb-0 stats-number"><?= $pendingCount ?></h5>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Approved -->
+                    <div class="col-6 col-md-4 col-xl-2">
+                        <div class="card card-glass card-success h-100">
+                            <div class="card-body d-flex align-items-center justify-content-between">
+                                <div class="icon-wrap icon-success">
+                                    <i class="bi bi-check-circle-fill fs-4"></i>
+                                </div>
+                                <div class="d-flex flex-column text-end">
+                                    <p class="mb-0 text-meta">Approved</p>
+                                    <h5 class="mb-0 stats-number"><?= $approvedCount ?></h5>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Rejected -->
+                    <div class="col-6 col-md-4 col-xl-2">
+                        <div class="card card-glass card-danger h-100">
+                            <div class="card-body d-flex align-items-center justify-content-between">
+                                <div class="icon-wrap icon-danger">
+                                    <i class="bi bi-x-circle-fill fs-4"></i>
+                                </div>
+                                <div class="d-flex flex-column text-end">
+                                    <p class="mb-0 text-meta">Rejected</p>
+                                    <h5 class="mb-0 stats-number"><?= $rejectedCount ?></h5>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- TITLE ROW -->
                 <div class="adminTitleRow">
-                    <h5 class="adminTitle">Schedule Requests</h5>
+                    <span class="text-primary">Schedule Requests</span>
                     <input type="text" id="searchInput" class="searchInput" placeholder="Search employee..." onkeyup="searchTable()">
                 </div>
 
@@ -126,31 +174,6 @@ function getStatusBadge(string $status): string {
                 <?php if ($error): ?>
                     <div class="alert alert-danger"><?= $error ?></div>
                 <?php endif; ?>
-
-                <!-- SUMMARY CARDS -->
-                <div class="summaryCards">
-                    <div class="reqCard pending">
-                        <i class="bi bi-hourglass-split"></i>
-                        <div>
-                            <p>Pending</p>
-                            <h5><?= $pendingCount ?></h5>
-                        </div>
-                    </div>
-                    <div class="reqCard approved">
-                        <i class="bi bi-check-circle-fill"></i>
-                        <div>
-                            <p>Approved</p>
-                            <h5><?= $approvedCount ?></h5>
-                        </div>
-                    </div>
-                    <div class="reqCard rejected">
-                        <i class="bi bi-x-circle-fill"></i>
-                        <div>
-                            <p>Rejected</p>
-                            <h5><?= $rejectedCount ?></h5>
-                        </div>
-                    </div>
-                </div>
 
                 <!-- TABLE -->
                 <div class="tableScrollWrapper">
@@ -191,12 +214,12 @@ function getStatusBadge(string $status): string {
                                         <td class="actionsCol">
                                             <?php if ($row['status'] === 'pending'): ?>
                                                 <a href="admin_schedule_requests.php?action=approve&id=<?= $row['id'] ?>"
-                                                   class="btn btn-sm approveBtn"
+                                                   class="btn btn-sm btn-success"
                                                    onclick="return confirm('Approve this schedule?')">
                                                     <i class="bi bi-check-lg"></i> Approve
                                                 </a>
                                                 <a href="admin_schedule_requests.php?action=reject&id=<?= $row['id'] ?>"
-                                                   class="btn btn-sm rejectBtn"
+                                                   class="btn btn-sm btn-danger"
                                                    onclick="return confirm('Reject this schedule?')">
                                                     <i class="bi bi-x-lg"></i> Reject
                                                 </a>
@@ -207,9 +230,7 @@ function getStatusBadge(string $status): string {
                                     </tr>
                                 <?php endforeach; ?>
                             <?php else: ?>
-                                <tr><td colspan="8" class="text-center" style="color:rgba(255,255,255,0.4);padding:2rem;">
-                                    No schedule requests found.
-                                </td></tr>
+                                <tr><td colspan="8" class="text-center">No schedule requests found.</td></tr>
                             <?php endif; ?>
                         </tbody>
                     </table>

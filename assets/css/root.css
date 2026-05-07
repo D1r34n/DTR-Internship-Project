@@ -1,33 +1,4 @@
 :root {
-    /* BREADCRUMB */
-    --breadcrumb-divider-color: rgba(255, 255, 255, 0.4);
-
-    /* DEFAULT / NEUTRAL (TRUE GLASS BASE) */
-    --neutral-color:        #cfcfcf;
-    --neutral-hover:        #b8b8b8;
-
-    --neutral-glass:        rgba(255, 255, 255, 0.06);
-    --neutral-glass-hover:  rgba(255, 255, 255, 0.10);
-
-    --neutral-border:       rgba(255, 255, 255, 0.12);
-    --neutral-range:        rgba(255, 255, 255, 0.12);
-    --neutral-soft:         rgba(255, 255, 255, 0.08);
-
-    --neutral-glow:         rgba(0, 0, 0, 0.35);
-
-    /* PRIMARY (ALIGNED TO NEUTRAL GLASS SYSTEM) */
-    --primary-color:        #97be41;
-    --primary-hover:        #7fae2f;
-
-    --primary-glass:        rgba(151, 190, 65, 0.10);
-    --primary-glass-hover:  rgba(151, 190, 65, 0.16);
-
-    --primary-border:       rgba(151, 190, 65, 0.22);
-    --primary-range:        rgba(151, 190, 65, 0.18);
-    --primary-soft:         rgba(151, 190, 65, 0.12);
-
-    --primary-glow:         rgba(151, 190, 65, 0.45);
-
     /* TEXT */
     --text-darkest:    #000000;
     --text-dark:       #575656;
@@ -42,7 +13,36 @@
     --bg-dark:    #1e1e1e;
     --bg-darkest: #121212;
 
-    /* DANGER (ALIGNED TO NEUTRAL GLASS SYSTEM) */
+    /* BREADCRUMB */
+    --breadcrumb-divider-color: rgba(255, 255, 255, 0.4);
+
+    /* DEFAULT / NEUTRAL*/
+    --neutral-color:        #cfcfcf;
+    --neutral-hover:        #b8b8b8;
+
+    --neutral-glass:        rgba(255, 255, 255, 0.06);
+    --neutral-glass-hover:  rgba(255, 255, 255, 0.10);
+
+    --neutral-border:       rgba(255, 255, 255, 0.12);
+    --neutral-range:        rgba(255, 255, 255, 0.12);
+    --neutral-soft:         rgba(255, 255, 255, 0.08);
+
+    --neutral-glow:         rgba(0, 0, 0, 0.35);
+
+    /* PRIMARY */
+    --primary-color:        #97be41;
+    --primary-hover:        #7fae2f;
+
+    --primary-glass:        rgba(151, 190, 65, 0.10);
+    --primary-glass-hover:  rgba(151, 190, 65, 0.16);
+
+    --primary-border:       rgba(151, 190, 65, 0.22);
+    --primary-range:        rgba(151, 190, 65, 0.18);
+    --primary-soft:         rgba(151, 190, 65, 0.12);
+
+    --primary-glow:         rgba(151, 190, 65, 0.45);
+
+    /* DANGER */
     --danger-color:        #ef4444;
     --danger-hover:        #dc3545;
 
@@ -56,48 +56,79 @@
     --danger-glow:         rgba(239, 68, 68, 0.45);
 
     /* WARNING */
-    --warning:        #fbbf24;
-    --warning-bg:     rgba(251, 191, 36, 0.1);
-    --warning-border: rgba(251, 191, 36, 0.2);
+    --warning-color:        #fbbf24;
+    --warning-hover:        #eab308;
+
+    --warning-glass:        rgba(251, 191, 36, 0.10);
+    --warning-glass-hover:  rgba(234, 179, 8, 0.15);
+
+    --warning-border:       rgba(251, 191, 36, 0.22);
+    --warning-range:        rgba(251, 191, 36, 0.18);
+    --warning-soft:         rgba(251, 191, 36, 0.12);
+
+    --warning-glow:         rgba(234, 179, 8, 0.45);
 
     /* INFO */
-    --info:        #60a5fa;
-    --info-bg:     rgba(96, 165, 250, 0.1);
-    --info-border: rgba(96, 165, 250, 0.2);
+    --info-color:        #60a5fa;
+    --info-hover:        #3b82f6;
+
+    --info-glass:        rgba(96, 165, 250, 0.10);
+    --info-glass-hover:  rgba(96, 165, 250, 0.18);
+
+    --info-border:       rgba(96, 165, 250, 0.22);
+    --info-range:        rgba(96, 165, 250, 0.18);
+    --info-soft:         rgba(96, 165, 250, 0.12);
+
+    --info-glow:         rgba(96, 165, 250, 0.45);
 
     /* ================================================
     ROLE COLORS (BRIGHT GLASS SYSTEM)
     ================================================ */
 
+/* ================================================
+   EMPLOYEE ROLE TOKENS
+   (aligned with neutral glass system)
+   ================================================ */
+
     /* EMPLOYEE */
     --employee:        #9fe2bf;
-    --employee-bg:     rgba(159, 226, 191, 0.16);
-    --employee-border: rgba(159, 226, 191, 0.35);
+    --employee-bg:     rgba(159, 226, 191, 0.12);
+    --employee-border: rgba(159, 226, 191, 0.28);
+    --employee-hover:  rgba(159, 226, 191, 0.18);
     --employee-soft:   rgba(159, 226, 191, 0.10);
+    --employee-glow:   rgba(159, 226, 191, 0.35);
 
     /* WORKFORCE */
     --workforce:        #60a5fa;
-    --workforce-bg:     rgba(96, 165, 250, 0.16);
-    --workforce-border: rgba(96, 165, 250, 0.35);
+    --workforce-bg:     rgba(96, 165, 250, 0.12);
+    --workforce-border: rgba(96, 165, 250, 0.28);
+    --workforce-hover:  rgba(96, 165, 250, 0.18);
     --workforce-soft:   rgba(96, 165, 250, 0.10);
+    --workforce-glow:   rgba(96, 165, 250, 0.35);
 
     /* ADMIN */
     --admin:        #f87171;
-    --admin-bg:     rgba(248, 113, 113, 0.14);
-    --admin-border: rgba(248, 113, 113, 0.30);
+    --admin-bg:     rgba(248, 113, 113, 0.12);
+    --admin-border: rgba(248, 113, 113, 0.28);
+    --admin-hover:  rgba(248, 113, 113, 0.18);
     --admin-soft:   rgba(248, 113, 113, 0.10);
+    --admin-glow:   rgba(248, 113, 113, 0.35);
 
     /* MANAGER */
-    --manager:        #fbbf24;
-    --manager-bg:     rgba(251, 191, 36, 0.16);
-    --manager-border: rgba(251, 191, 36, 0.35);
-    --manager-soft:   rgba(251, 191, 36, 0.10);
+    --manager:        #f472b6;
+    --manager-bg:     rgba(244, 114, 182, 0.12);
+    --manager-border: rgba(244, 114, 182, 0.28);
+    --manager-hover:  rgba(244, 114, 182, 0.18);
+    --manager-soft:   rgba(244, 114, 182, 0.10);
+    --manager-glow:   rgba(244, 114, 182, 0.35);
 
     /* SUPERADMIN */
     --superadmin:        #a855f7;
-    --superadmin-bg:     rgba(168, 85, 247, 0.16);
-    --superadmin-border: rgba(168, 85, 247, 0.38);
-    --superadmin-soft:   rgba(168, 85, 247, 0.12);
+    --superadmin-bg:     rgba(168, 85, 247, 0.12);
+    --superadmin-border: rgba(168, 85, 247, 0.30);
+    --superadmin-hover:  rgba(168, 85, 247, 0.18);
+    --superadmin-soft:   rgba(168, 85, 247, 0.10);
+    --superadmin-glow:   rgba(168, 85, 247, 0.40);
 
     /* BORDERS */
     --border: rgba(0, 0, 0, 0.1);

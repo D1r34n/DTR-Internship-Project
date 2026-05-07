@@ -89,12 +89,6 @@ body {
     margin-bottom: 1rem;
 }
 
-.adminTitle {
-    font-weight: 600;
-    margin: 0;
-    color: #fff;
-}
-
 /* ============================================================
    SEARCH INPUT
    ============================================================ */
@@ -129,33 +123,106 @@ body {
     flex-wrap: wrap;
 }
 
-.reqCard {
+.icon-wrap {
+    width: 42px;
+    height: 42px;
     display: flex;
     align-items: center;
-    gap: 0.6rem;
-    padding: 0.6rem 0.85rem;
+    justify-content: center;
+
     border-radius: 10px;
-    flex: 1;
-    min-width: 110px;
-    color: white;
+
+    background: var(--neutral-glass);
+    border: 1px solid var(--neutral-border);
+
+    color: var(--text-light);
 }
 
-.reqCard i {
-    font-size: 1.5rem;
-    flex-shrink: 0;
+/* ============================================================
+   CUSTOM CARD COLOR
+   ============================================================ */
+/* OVERTIME CARD */
+.card-glass.card-overtime {
+    background: var(--superadmin-bg) linear-gradient(
+        to right,
+        rgba(255, 255, 255, 0.06) 0%,
+        rgba(255, 255, 255, 0.03) 40%,
+        rgba(255, 255, 255, 0.015) 70%,
+        transparent 100%
+    ) !important;
+
+    border: 1px solid var(--superadmin-border) !important;
+
+    box-shadow: 0 4px 16px var(--superadmin-soft) !important;
 }
 
-.reqCard p {
-    margin: 0;
-    font-size: 0.72rem;
-    opacity: 0.9;
-    line-height: 1.3;
+.card-glass.card-overtime:hover,
+.card-glass.card-overtime:focus,
+.card-glass.card-overtime:focus-visible {
+    color: var(--text-lightest) !important;
+    background: var(--superadmin-hover) linear-gradient(
+        to right,
+        rgba(255, 255, 255, 0.10) 0%,
+        rgba(255, 255, 255, 0.05) 40%,
+        rgba(255, 255, 255, 0.02) 70%,
+        transparent 100%
+    ) !important;
 }
 
-.reqCard h5 {
-    margin: 0;
-    font-size: 1.2rem;
-    font-weight: 700;
+/* OFFICIAL BUSINESS CARD */
+.card-glass.card-ob {
+    background: var(--status-info-bg) linear-gradient(
+        to right,
+        rgba(255, 255, 255, 0.06) 0%,
+        rgba(255, 255, 255, 0.03) 40%,
+        rgba(255, 255, 255, 0.015) 70%,
+        transparent 100%
+    ) !important;
+
+    border: 1px solid var(--status-info-border) !important;
+
+    box-shadow: 0 4px 16px var(--info-soft) !important;
+}
+
+.card-glass.card-ob:hover,
+.card-glass.card-ob:focus,
+.card-glass.card-ob:focus-visible {
+    color: var(--text-lightest) !important;
+    background: var(--status-info-hover) linear-gradient(
+        to right,
+        rgba(255, 255, 255, 0.10) 0%,
+        rgba(255, 255, 255, 0.05) 40%,
+        rgba(255, 255, 255, 0.02) 70%,
+        transparent 100%
+    ) !important;
+}
+
+/* LOG EDIT CARD */
+.card-glass.card-log-edit {
+    background: var(--manager-bg) linear-gradient(
+        to right,
+        rgba(255, 255, 255, 0.06) 0%,
+        rgba(255, 255, 255, 0.03) 40%,
+        rgba(255, 255, 255, 0.015) 70%,
+        transparent 100%
+    ) !important;
+
+    border: 1px solid var(--manager-border) !important;
+
+    box-shadow: var(--manager-soft) !important;
+}
+
+.card-glass.card-log-edit:hover,
+.card-glass.card-log-edit:focus,
+.card-glass.card-log-edit:focus-visible {
+    color: var(--text-lightest) !important;
+    background: var(--manager-hover) linear-gradient(
+        to right,
+        rgba(255, 255, 255, 0.10) 0%,
+        rgba(255, 255, 255, 0.05) 40%,
+        rgba(255, 255, 255, 0.02) 70%,
+        transparent 100%
+    ) !important;
 }
 
 .reqCard.pending  { background-color: #f0ad4e; }

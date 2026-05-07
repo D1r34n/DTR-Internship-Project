@@ -236,9 +236,124 @@ function getActionButtons($type, $id, $status) {
         <div class="card card-glass requests-card">
             <div class="card-body d-flex flex-column requests-card-body">
 
+                <!-- SUMMARY CARDS -->
+                
+                <div class="row g-2 mb-4">
+                    <!-- Pending -->
+                    <div class="col-6 col-md-4 col-xl-2">
+                        <div class="card card-glass card-pending h-100">
+                            <div class="card-body d-flex align-items-center justify-content-between">
+
+                                <!-- ICON -->
+                                <div class="icon-wrap">
+                                    <i class="bi bi-hourglass-split fs-4"></i>
+                                </div>
+
+                                <!-- TEXT -->
+                                <div class="d-flex flex-column text-end">
+                                    <p class="mb-0 text-meta">Pending</p>
+                                    <h5 class="mb-0 stats-number"><?= $totalPending ?></h5>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Approved -->
+                    <div class="col-6 col-md-4 col-xl-2">
+                        <div class="card card-glass card-success h-100">
+                            <div class="card-body d-flex align-items-center justify-content-between">
+
+                                <div class="icon-wrap icon-success">
+                                    <i class="bi bi-check-circle-fill fs-4"></i>
+                                </div>
+
+                                <div class="d-flex flex-column text-end">
+                                    <p class="mb-0 text-meta">Approved</p>
+                                    <h5 class="mb-0 stats-number"><?= $totalApproved ?></h5>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Rejected -->
+                    <div class="col-6 col-md-4 col-xl-2">
+                        <div class="card card-glass card-danger h-100">
+                            <div class="card-body d-flex align-items-center justify-content-between">
+
+                                <div class="icon-wrap icon-danger">
+                                    <i class="bi bi-x-circle-fill fs-4"></i>
+                                </div>
+
+                                <div class="d-flex flex-column text-end">
+                                    <p class="mb-0 text-meta">Rejected</p>
+                                    <h5 class="mb-0 stats-number"><?= $totalRejected ?></h5>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Overtime -->
+                    <div class="col-6 col-md-4 col-xl-2">
+                        <div class="card card-glass card-overtime h-100">
+                            <div class="card-body d-flex align-items-center justify-content-between">
+
+                                <div class="icon-wrap icon-info">
+                                    <i class="bi bi-clock-history fs-4"></i>
+                                </div>
+
+                                <div class="d-flex flex-column text-end">
+                                    <p class="mb-0 text-meta">Overtime</p>
+                                    <h5 class="mb-0 stats-number"><?= $totalOvertime ?></h5>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Official Business -->
+                    <div class="col-6 col-md-4 col-xl-2">
+                        <div class="card card-glass card-ob h-100">
+                            <div class="card-body d-flex align-items-center justify-content-between">
+
+                                <div class="icon-wrap icon-info">
+                                    <i class="bi bi-briefcase-fill fs-4"></i>
+                                </div>
+
+                                <div class="d-flex flex-column text-end">
+                                    <p class="mb-0 text-meta">OB</p>
+                                    <h5 class="mb-0 stats-number"><?= $totalOB ?></h5>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Log Edits -->
+                    <div class="col-6 col-md-4 col-xl-2">
+                        <div class="card card-glass card-log-edit h-100">
+                            <div class="card-body d-flex align-items-center justify-content-between">
+
+                                <div class="icon-wrap icon-warning">
+                                    <i class="bi bi-pencil-square fs-4"></i>
+                                </div>
+
+                                <div class="d-flex flex-column text-end">
+                                    <p class="mb-0 text-meta">Log Edits</p>
+                                    <h5 class="mb-0 stats-number"><?= $totalLogEdit ?></h5>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
                 <!-- TITLE ROW -->
                 <div class="adminTitleRow">
-                    <h5 class="adminTitle">Request Management</h5>
+                    <span class="text-primary">Request Management</span>
                     <input type="text" id="searchInput" class="searchInput" placeholder="Search employee..." onkeyup="searchTable()">
                 </div>
 
@@ -246,52 +361,6 @@ function getActionButtons($type, $id, $status) {
                 <?php if ($success): ?>
                     <div class="alert alert-success"><?= $success ?></div>
                 <?php endif; ?>
-
-                <!-- SUMMARY CARDS -->
-                <div class="summaryCards">
-                    <div class="reqCard pending">
-                        <i class="bi bi-hourglass-split"></i>
-                        <div>
-                            <p>Pending</p>
-                            <h5><?= $totalPending ?></h5>
-                        </div>
-                    </div>
-                    <div class="reqCard approved">
-                        <i class="bi bi-check-circle-fill"></i>
-                        <div>
-                            <p>Approved</p>
-                            <h5><?= $totalApproved ?></h5>
-                        </div>
-                    </div>
-                    <div class="reqCard rejected">
-                        <i class="bi bi-x-circle-fill"></i>
-                        <div>
-                            <p>Rejected</p>
-                            <h5><?= $totalRejected ?></h5>
-                        </div>
-                    </div>
-                    <div class="reqCard overtime">
-                        <i class="bi bi-clock-history"></i>
-                        <div>
-                            <p>Overtime</p>
-                            <h5><?= $totalOvertime ?></h5>
-                        </div>
-                    </div>
-                    <div class="reqCard ob">
-                        <i class="bi bi-briefcase-fill"></i>
-                        <div>
-                            <p>Official Business</p>
-                            <h5><?= $totalOB ?></h5>
-                        </div>
-                    </div>
-                    <div class="reqCard log-edit">
-                        <i class="bi bi-pencil-square"></i>
-                        <div>
-                            <p>Log Edits</p>
-                            <h5><?= $totalLogEdit ?></h5>
-                        </div>
-                    </div>
-                </div>
 
                 <!-- TABS -->
                 <div class="reqTabButtons">
@@ -320,7 +389,7 @@ function getActionButtons($type, $id, $status) {
                                 <?php foreach ($leaveRequests as $row): ?>
                                     <tr>
                                         <td><?= htmlspecialchars($row['employee_name']) ?></td>
-                                        <td><span class="badge leaveBadge"><?= ucfirst($row['leave_type']) ?></span></td>
+                                        <td><span class="badge request-leave"><?= ucfirst($row['leave_type']) ?></span></td>
                                         <td><?= date('M d', strtotime($row['start_date'])) ?> - <?= date('M d, Y', strtotime($row['end_date'])) ?></td>
                                         <td class="reasonCol"><?= htmlspecialchars($row['reason']) ?></td>
                                         <td><?= getStatusBadge($row['status']) ?></td>
@@ -330,7 +399,7 @@ function getActionButtons($type, $id, $status) {
                                 <?php foreach ($overtimeRequests as $row): ?>
                                     <tr>
                                         <td><?= htmlspecialchars($row['employee_name']) ?></td>
-                                        <td><span class="badge overtimeBadge">Overtime</span></td>
+                                        <td><span class="badge request-overtime">Overtime</span></td>
                                         <td><?= date('M d, Y', strtotime($row['date'])) ?> | <?= date('h:i A', strtotime($row['time_in'])) ?> - <?= date('h:i A', strtotime($row['time_out'])) ?></td>
                                         <td class="reasonCol"><?= htmlspecialchars($row['reason']) ?></td>
                                         <td><?= getStatusBadge($row['status']) ?></td>
@@ -340,7 +409,7 @@ function getActionButtons($type, $id, $status) {
                                 <?php foreach ($obRequests as $row): ?>
                                     <tr>
                                         <td><?= htmlspecialchars($row['employee_name']) ?></td>
-                                        <td><span class="badge obBadge">Official Business</span></td>
+                                        <td><span class="badge request-official-business">Official Business</span></td>
                                         <td><?= date('M d, Y', strtotime($row['ob_date'])) ?> | <?= htmlspecialchars($row['client_name']) ?></td>
                                         <td class="reasonCol"><?= htmlspecialchars($row['reason']) ?></td>
                                         <td><?= getStatusBadge($row['status']) ?></td>
@@ -350,7 +419,7 @@ function getActionButtons($type, $id, $status) {
                                 <?php foreach ($logEditRequests as $row): ?>
                                     <tr>
                                         <td><?= htmlspecialchars($row['employee_name']) ?></td>
-                                        <td><span class="badge logEditBadge">Log Edit</span></td>
+                                        <td><span class="badge request-log-edit">Log Edit</span></td>
                                         <td><?= date('M d, Y', strtotime($row['work_date'])) ?> |
                                             <?php if ($row['request_type'] === 'time_in'): ?>
                                                 In: <?= date('h:i A', strtotime($row['actual_time_in'])) ?> &rarr; <?= date('h:i A', strtotime($row['requested_time_in'])) ?>

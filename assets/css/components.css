@@ -5,6 +5,38 @@
 
 :root {
     --control-height: 38px;
+
+    /* ================================================
+       STATUS TOKEN GROUPS — single source of truth
+       ================================================ */
+
+    /* success */
+    --status-success-bg:     var(--primary-glass);
+    --status-success-border: var(--primary-border);
+    --status-success-color:  var(--primary-color);
+    --status-success-glow:   var(--primary-glow);
+    --status-success-hover:  var(--primary-glass-hover);
+
+    /* warning */
+    --status-warning-bg:     var(--warning-glass);
+    --status-warning-border: var(--warning-border);
+    --status-warning-color:  var(--warning-color);
+    --status-warning-glow:   var(--warning-glow);
+    --status-warning-hover:  var(--warning-glass-hover);
+
+    /* danger */
+    --status-danger-bg:      var(--danger-glass);
+    --status-danger-border:  var(--danger-border);
+    --status-danger-color:   var(--danger-color);
+    --status-danger-glow:    var(--danger-glow);
+    --status-danger-hover:   var(--danger-glass-hover);
+
+    /* info */
+    --status-info-bg:        var(--info-glass);
+    --status-info-border:    var(--info-border);
+    --status-info-color:     var(--info-color);
+    --status-info-glow:      var(--info-glow);
+    --status-info-hover:     var(--info-glass-hover);
 }
 
    /* ================================================
@@ -170,6 +202,12 @@
    Mirrors the .btn / .input-group frosted treatment.
    ================================================ */
 
+.modal-body {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    min-height: 0; /* critical for flex scrolling */
+}
+
 .modal-body .form-control {
     height: var(--control-height);
     background: var(--neutral-glass) linear-gradient(
@@ -259,6 +297,10 @@
    MODAL
    ================================================ */
 
+.modal-dialog {
+    max-height: 90vh;
+}
+
 .modal-content {
     background: var(--glass-bg) !important;
     backdrop-filter: blur(32px) saturate(160%) brightness(0.3) !important;
@@ -267,6 +309,20 @@
     border-radius: 16px !important;
     box-shadow: 0 12px 35px rgba(0, 0, 0, 0.5) !important;
     color: var(--text-light) !important;
+
+    display: flex;
+    flex-direction: column;
+    max-height: 90vh;
+    overflow: hidden; /* prevents outer scroll */
+}
+
+/* form inside modal breaks the flex scroll chain — restore it */
+.modal-content > form {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
 }
 
 .modal-header,
@@ -351,13 +407,15 @@
    ROLE VARIANTS (BRIGHT GLASS — NO GLOW)
    ------------------------------------------------ */
 
-.empRole-employee {
+.empRole-employee,
+.request-leave {
     background: var(--employee-bg) !important;
     border-color: var(--employee-border) !important;
     color: var(--employee) !important;
 }
 
-.empRole-workforce {
+.empRole-workforce,
+.request-official-business {
     background: var(--workforce-bg) !important;
     border-color: var(--workforce-border) !important;
     color: var(--workforce) !important;
@@ -369,41 +427,46 @@
     color: var(--admin) !important;
 }
 
-.empRole-manager {
+.empRole-manager,
+.request-log-edit {
     background: var(--manager-bg) !important;
     border-color: var(--manager-border) !important;
     color: var(--manager) !important;
 }
 
-.empRole-superadmin {
+.empRole-superadmin,
+.request-overtime {
     background: var(--superadmin-bg) !important;
     border-color: var(--superadmin-border) !important;
     color: var(--superadmin) !important;
 }
 
 /* ------------------------------------------------
-   STATUS VARIANTS (BASED ON EXISTING ROOT TOKENS)
+   STATUS VARIANTS — unified via token groups
    ------------------------------------------------ */
 
-/* PENDING → WARNING */
-.status-pending {
-    background: var(--warning-bg) !important;
-    border-color: var(--warning-border) !important;
-    color: var(--warning) !important;
-}
-
-/* APPROVED → PRIMARY (GREEN SYSTEM) */
 .status-approved {
-    background: var(--primary-glass) !important;
-    border-color: var(--primary-border) !important;
-    color: var(--primary-color) !important;
+    background: var(--status-success-bg) !important;
+    border-color: var(--status-success-border) !important;
+    color: var(--status-success-color) !important;
 }
 
-/* REJECTED → DANGER */
+.status-pending {
+    background: var(--status-warning-bg) !important;
+    border-color: var(--status-warning-border) !important;
+    color: var(--status-warning-color) !important;
+}
+
 .status-rejected {
-    background: var(--danger-glass) !important;
-    border-color: var(--danger-border) !important;
-    color: var(--danger-color) !important;
+    background: var(--status-danger-bg) !important;
+    border-color: var(--status-danger-border) !important;
+    color: var(--status-danger-color) !important;
+}
+
+.status-info {
+    background: var(--status-info-bg) !important;
+    border-color: var(--status-info-border) !important;
+    color: var(--status-info-color) !important;
 }
 
 /* ------------------------------------------------
@@ -458,7 +521,7 @@ button.btn {
     justify-content: center !important;
     gap: 0.4rem !important;
 
-    padding: 0 1rem !important;          /* ← vertical padding removed */
+    padding: 0 1rem !important;
 
     color: var(--text-light) !important;
 
@@ -493,8 +556,8 @@ button.btn {
         background 0.25s ease,
         box-shadow 0.2s ease !important;
 
-    height: var(--control-height) !important;   /* ← explicit height */
-    min-height: unset !important;               /* ← clear old rule */
+    height: var(--control-height) !important;
+    min-height: unset !important;
     line-height: 1 !important;
 }
 
@@ -566,15 +629,15 @@ button.btn {
 
 .btn-success,
 .btn.btn-success {
-    color: var(--primary-color) !important;
-    background: var(--primary-glass) linear-gradient(
+    color: var(--status-success-color) !important;
+    background: var(--status-success-bg) linear-gradient(
         to right,
         rgba(255, 255, 255, 0.10) 0%,
         rgba(255, 255, 255, 0.05) 40%,
         rgba(255, 255, 255, 0.02) 70%,
         transparent 100%
     ) !important;
-    border: 1px solid var(--primary-border) !important;
+    border: 1px solid var(--status-success-border) !important;
     box-shadow: var(--primary-soft) !important;
 }
 
@@ -582,14 +645,52 @@ button.btn {
 .btn-success:focus,
 .btn-success:focus-visible {
     color: var(--text-lightest) !important;
-    background: var(--primary-glass-hover) linear-gradient(
+    background: var(--status-success-hover) linear-gradient(
         to right,
         rgba(255, 255, 255, 0.10) 0%,
         rgba(255, 255, 255, 0.05) 40%,
         rgba(255, 255, 255, 0.02) 70%,
         transparent 100%
     ) !important;
-    box-shadow: 0 4px 16px var(--primary-glow) !important;
+    box-shadow: 0 4px 16px var(--status-success-glow) !important;
+}
+
+/* ================================================
+   WARNING
+   ================================================ */
+
+.btn-warning,
+.btn.btn-warning {
+    color: var(--status-warning-color) !important;
+    background: var(--status-warning-bg) linear-gradient(
+        to right,
+        rgba(255, 255, 255, 0.10) 0%,
+        rgba(255, 255, 255, 0.05) 40%,
+        rgba(255, 255, 255, 0.02) 70%,
+        transparent 100%
+    ) !important;
+    border: 1px solid var(--status-warning-border) !important;
+    box-shadow: var(--glass-inset) !important;
+    transition:
+        transform 0.25s ease-out,
+        opacity 0.25s ease-out,
+        box-shadow 0.25s ease-out,
+        background 0.25s ease-out,
+        color 0.25s ease-out !important;
+}
+
+.btn-warning:hover,
+.btn-warning:focus,
+.btn-warning:focus-visible {
+    color: var(--text-lightest) !important;
+    background: var(--status-warning-hover) linear-gradient(
+        to right,
+        rgba(255, 255, 255, 0.10) 0%,
+        rgba(255, 255, 255, 0.05) 40%,
+        rgba(255, 255, 255, 0.02) 70%,
+        transparent 100%
+    ) !important;
+    box-shadow: 0 4px 16px var(--status-warning-glow) !important;
 }
 
 /* ================================================
@@ -598,15 +699,15 @@ button.btn {
 
 .btn-danger,
 .btn.btn-danger {
-    color: var(--danger-color) !important;
-    background: var(--danger-glass) linear-gradient(
+    color: var(--status-danger-color) !important;
+    background: var(--status-danger-bg) linear-gradient(
         to right,
         rgba(255, 255, 255, 0.10) 0%,
         rgba(255, 255, 255, 0.05) 40%,
         rgba(255, 255, 255, 0.02) 70%,
         transparent 100%
     ) !important;
-    border: 1px solid var(--danger-border) !important;
+    border: 1px solid var(--status-danger-border) !important;
     box-shadow: var(--danger-soft) !important;
     transition:
         transform 0.25s ease-out,
@@ -620,14 +721,14 @@ button.btn {
 .btn-danger:focus,
 .btn-danger:focus-visible {
     color: var(--text-lightest) !important;
-    background: var(--danger-glass-hover) linear-gradient(
+    background: var(--status-danger-hover) linear-gradient(
         to right,
         rgba(255, 255, 255, 0.10) 0%,
         rgba(255, 255, 255, 0.05) 40%,
         rgba(255, 255, 255, 0.02) 70%,
         transparent 100%
     ) !important;
-    box-shadow: 0 4px 16px var(--danger-glow) !important;
+    box-shadow: 0 4px 16px var(--status-danger-glow) !important;
 }
 
 /* ================================================
@@ -636,19 +737,16 @@ button.btn {
 
 .btn-info,
 .btn.btn-info {
-    color: var(--info) !important;
-    background: var(--info-bg) linear-gradient(
+    color: var(--status-info-color) !important;
+    background: var(--status-info-bg) linear-gradient(
         to right,
         rgba(255, 255, 255, 0.10) 0%,
         rgba(255, 255, 255, 0.05) 40%,
         rgba(255, 255, 255, 0.02) 70%,
         transparent 100%
     ) !important;
-
-    border: 1px solid var(--info-border) !important;
-
+    border: 1px solid var(--status-info-border) !important;
     box-shadow: var(--glass-inset) !important;
-
     transition:
         transform 0.25s ease-out,
         opacity 0.25s ease-out,
@@ -657,24 +755,18 @@ button.btn {
         color 0.25s ease-out !important;
 }
 
-/* ------------------------------------------------
-   HOVER / FOCUS
-   ------------------------------------------------ */
-
 .btn-info:hover,
 .btn-info:focus,
 .btn-info:focus-visible {
     color: var(--text-lightest) !important;
-
-    background: rgba(96, 165, 250, 0.18) linear-gradient(
+    background: var(--status-info-hover) linear-gradient(
         to right,
         rgba(255, 255, 255, 0.10) 0%,
         rgba(255, 255, 255, 0.05) 40%,
         rgba(255, 255, 255, 0.02) 70%,
         transparent 100%
     ) !important;
-
-    box-shadow: 0 4px 16px rgba(96, 165, 250, 0.35) !important;
+    box-shadow: 0 4px 16px var(--status-info-glow) !important;
 }
 
 /* ================================================
@@ -860,6 +952,92 @@ button.btn-sm {
 .card-glass > .card-body {
     position: relative;
     z-index: 1;
+}
+
+/* ================================================
+   CARD GLASS VARIANTS — NO GLOW (BUTTON-LIKE STYLE)
+   ================================================ */
+
+.card-success {
+    background: var(--status-success-bg) linear-gradient(
+        to right,
+        rgba(255, 255, 255, 0.06) 0%,
+        rgba(255, 255, 255, 0.03) 40%,
+        rgba(255, 255, 255, 0.015) 70%,
+        transparent 100%
+    ) !important;
+
+    border: 1px solid var(--status-success-border) !important;
+
+    box-shadow: 0 4px 16px var(--primary-soft) !important;
+}
+
+.card-success:hover,
+.card-success:focus,
+.card-success:focus-visible {
+    color: var(--text-lightest) !important;
+    background: var(--status-success-hover) linear-gradient(
+        to right,
+        rgba(255, 255, 255, 0.10) 0%,
+        rgba(255, 255, 255, 0.05) 40%,
+        rgba(255, 255, 255, 0.02) 70%,
+        transparent 100%
+    ) !important;
+}
+
+.card-pending {
+    background: var(--status-warning-bg) linear-gradient(
+        to right,
+        rgba(255, 255, 255, 0.06) 0%,
+        rgba(255, 255, 255, 0.03) 40%,
+        rgba(255, 255, 255, 0.015) 70%,
+        transparent 100%
+    ) !important;
+
+    border: 1px solid var(--status-warning-border) !important;
+
+    box-shadow: var(--warning-soft) !important;
+}
+
+.card-pending:hover,
+.card-pending:focus,
+.card-pending:focus-visible {
+    color: var(--text-lightest) !important;
+    background: var(--status-warning-hover) linear-gradient(
+        to right,
+        rgba(255, 255, 255, 0.10) 0%,
+        rgba(255, 255, 255, 0.05) 40%,
+        rgba(255, 255, 255, 0.02) 70%,
+        transparent 100%
+    ) !important;
+}
+
+
+.card-danger {
+    background: var(--status-danger-bg) linear-gradient(
+        to right,
+        rgba(255, 255, 255, 0.06) 0%,
+        rgba(255, 255, 255, 0.03) 40%,
+        rgba(255, 255, 255, 0.015) 70%,
+        transparent 100%
+    ) !important;
+
+    border: 1px solid var(--status-danger-border) !important;
+
+    box-shadow: var(--danger-soft) !important;
+}
+
+.card-danger:hover,
+.card-danger:focus,
+.card-danger:focus-visible {
+    color: var(--text-lightest) !important;
+    background: var(--status-danger-hover) linear-gradient(
+        to right,
+        rgba(255, 255, 255, 0.10) 0%,
+        rgba(255, 255, 255, 0.05) 40%,
+        rgba(255, 255, 255, 0.02) 70%,
+        transparent 100%
+    ) !important;
 }
 
 /* ================================================

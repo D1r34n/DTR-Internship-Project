@@ -295,13 +295,34 @@ $employees = $pdo->query("
                                 </div>
 
                                 <!-- Role -->
-                                <div class="col-md-6">
+                                <div class="col-md-3">
                                     <label class="form-label">Role</label>
-                                    <select name="role" id="roleInput" class="form-select">
-                                        <option value="employee">Employee</option>
-                                        <option value="workforce">Workforce</option>
-                                        <option value="admin">Admin</option>
-                                    </select>
+
+                                    <div class="dropdown w-100">
+                                        <button class="btn btn-outline-light dropdown-toggle w-100 text-start" type="button" id="roleDropdownBtn" data-bs-toggle="dropdown" aria-expanded="false">
+                                            <span id="roleLabel">Employee</span>
+                                        </button>
+
+                                        <ul class="dropdown-menu w-100">
+                                            <li>
+                                                <button class="dropdown-item" type="button" onclick="selectRole('employee', 'Employee')">
+                                                    Employee
+                                                </button>
+                                            </li>
+                                            <li>
+                                                <button class="dropdown-item" type="button" onclick="selectRole('workforce', 'Workforce')">
+                                                    Workforce
+                                                </button>
+                                            </li>
+                                            <li>
+                                                <button class="dropdown-item" type="button" onclick="selectRole('admin', 'Admin')">
+                                                    Admin
+                                                </button>
+                                            </li>
+                                        </ul>
+                                    </div>
+
+                                    <input type="hidden" name="role" id="roleInput" value="employee">
                                 </div>
 
                                 <!-- Department (Searchable Dropdown) -->
@@ -356,7 +377,7 @@ $employees = $pdo->query("
 
         <!-- Bulk Schedule Modal -->
         <div class="modal fade" id="importScheduleModal" tabindex="-1">
-            <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
                 <div class="modal-content">
 
                 <!-- Header -->
