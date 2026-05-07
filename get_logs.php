@@ -7,7 +7,8 @@ if (!isset($_SESSION['user_id'])) {
     exit();
 }
 
-$employeeId = $_SESSION['user_id'];
+$userRole = $_SESSION['user_role'] ?? 'employee';
+$employeeId = $_SESSION['user_id'] ?? null;
 date_default_timezone_set('Asia/Manila');
 
 $startDate = !empty($_GET['start']) ? date('Y-m-d', strtotime($_GET['start'])) : '';
@@ -42,19 +43,32 @@ if ($sort && isset($allowedSort[$sort])) {
 ========================= */
 $sql = "
     SELECT
-        id AS log_id,
-        log_time,
-        log_type,
-        latitude,
-        longitude,
-        accuracy,
-        is_within_office,
-        distance_meters
-    FROM logs
-    WHERE employee_id = ?
+        l.id AS log_id,
+        l.log_time,
+        l.log_type,
+        l.latitude,
+        l.longitude,
+        l.accuracy,
+        l.is_within_office,
+        l.distance_meters,
+
+        e.id AS employee_id,
+        e.name AS employee_name,
+        e.role AS employee_role,
+        d.department_name
+    FROM logs l
+    LEFT JOIN employees e ON l.employee_id = e.id
+    LEFT JOIN departments d ON e.department_id = d.id
+    WHERE 1=1
 ";
 
-$params = [$employeeId];
+$params = [];
+
+// if NOT admin, restrict to own logs
+if ($userRole !== 'admin') {
+    $sql .= " AND employee_id = ?";
+    $params[] = $employeeId;
+}
 
 if ($startDate !== '') {
     $sql .= " AND log_time >= ?";
@@ -82,15 +96,19 @@ $records = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ========================= */
 // editMap keyed by log_id → edit request entry
 $editMap    = [];
-$editSql    = "
+$editSql = "
     SELECT ler.log_id, ler.status,
            ler.initiated_by_id, e_init.role AS initiator_role, e_init.name AS initiator_name
     FROM log_edit_requests ler
     LEFT JOIN employees e_init ON ler.initiated_by_id = e_init.id
-    WHERE ler.employee_id = ? AND ler.log_id IS NOT NULL
+    WHERE 1=1
 ";
-$editParams = [$employeeId];
+$editParams = [];
 
+if ($userRole !== 'admin') {
+    $editSql .= " AND ler.employee_id = ?";
+    $editParams[] = $employeeId;
+}
 if ($startDate !== '') {
     $editSql    .= " AND ler.log_id IN (SELECT id FROM logs WHERE employee_id = ? AND log_time >= ?)";
     $editParams[] = $employeeId;
@@ -121,15 +139,16 @@ foreach ($erStmt->fetchAll(PDO::FETCH_ASSOC) as $er) {
    EMPTY STATE
 ========================= */
 if (!$records) {
-    echo '
-    <tr class="emptyRow">
-        <td colspan="6">
-            <div class="logsEmpty">
-                <i class="bi bi-calendar-x logsEmptyIcon"></i>
+    $colspan = $userRole === 'admin' ? 9 : 6;
+    echo "
+    <tr class='emptyRow'>
+        <td colspan='{$colspan}'>
+            <div class='logsEmpty'>
+                <i class='bi bi-calendar-x logsEmptyIcon'></i>
                 <div>No logs found for this period.</div>
             </div>
         </td>
-    </tr>';
+    </tr>";
     exit();
 }
 
@@ -142,6 +161,10 @@ foreach ($records as $row):
     $initiatedById   = $editEntry['initiated_by_id'] ?? null;
     $initiatorRole   = $editEntry['initiator_role']  ?? null;
     $initiatorName   = $editEntry['initiator_name']  ?? null;
+    $empId   = $row['employee_id'];
+    $empName = $row['employee_name'];
+    $empRole = $row['employee_role'];
+    $dept    = $row['department_name'] ?? '—';
 
     if ($initiatedById === null) {
         $editRole = null;
@@ -173,28 +196,26 @@ foreach ($records as $row):
     <td><?= date('h:i A', strtotime($row['log_time'])) ?></td>
 
     <td>
-        <div class="logBackground <?= match($row['log_type']) {
-            'IN'        => 'log-in',
-            'OUT'       => 'log-out',
-            'BREAK_IN'  => 'log-break-in',
-            'BREAK_OUT' => 'log-break-out',
-            default     => 'log-out'
+        <span class="pill <?= match($row['log_type']) {
+            'IN'        => 'btn-success',
+            'OUT'       => 'btn-danger',
+            'BREAK_IN'  => 'status-pending',
+            'BREAK_OUT' => 'btn-info',
+            default     => ''
         } ?>">
-            <span class="logLabel">
-                <?= match($row['log_type']) {
-                    'IN'        => 'Time In',
-                    'OUT'       => 'Time Out',
-                    'BREAK_IN'  => 'Break In',
-                    'BREAK_OUT' => 'Break Out',
-                    default     => $row['log_type']
-                } ?>
-            </span>
-        </div>
+            <?= match($row['log_type']) {
+                'IN'        => 'Time In',
+                'OUT'       => 'Time Out',
+                'BREAK_IN'  => 'Break In',
+                'BREAK_OUT' => 'Break Out',
+                default     => $row['log_type']
+            } ?>
+        </span>
     </td>
 
     <td>
         <a href="<?= $mapUrl ?>" target="_blank"
-            class="<?= $class ?> loc-trigger"
+            class="pill <?= $isInside ? 'btn-success' : 'btn-danger' ?> loc-trigger"
             style="text-decoration: none;"
             data-lat="<?= htmlspecialchars($lat, ENT_QUOTES) ?>"
             data-lng="<?= htmlspecialchars($lng, ENT_QUOTES) ?>"
@@ -202,24 +223,39 @@ foreach ($records as $row):
             data-acc="<?= htmlspecialchars($acc, ENT_QUOTES) ?>"
             data-dist="<?= htmlspecialchars($dist, ENT_QUOTES) ?>">
 
-            <i class="bi bi-geo-alt-fill locationIcon"></i>
+            <i class="bi bi-geo-alt-fill"></i>
             <?= $label ?>
         </a>
     </td>
 
+    <?php if ($userRole === 'admin'): ?>
+    <td>
+        <span class="empIdBadge">#<?= $empId ?></span>
+        <?= htmlspecialchars($empName) ?>
+    </td>
+
+    <td>
+        <span class="empRoleBadge empRole-<?= htmlspecialchars($empRole) ?>">
+            <?= ucfirst($empRole) ?>
+        </span>
+    </td>
+
+    <td>
+        <?= htmlspecialchars($dept) ?>
+    </td>
+    <?php endif; ?>
+
     <td>
         <?php if ($editRole === 'workforce'): ?>
-            <span class="leRequestorName"><?= htmlspecialchars($initiatorName ?? '') ?></span>
-            <span class="leRequestor le-requestor-workforce">
-                <i class="bi bi-person-badge-fill"></i> Workforce
+            <span class="pill empRole-workforce">
+                <i class="bi bi-person-badge-fill"></i> <?= htmlspecialchars($initiatorName ?? 'Workforce') ?>
             </span>
         <?php elseif ($editRole === 'admin'): ?>
-            <span class="leRequestorName"><?= htmlspecialchars($initiatorName ?? '') ?></span>
-            <span class="leRequestor le-requestor-admin">
-                <i class="bi bi-shield-fill"></i> Admin
+            <span class="pill empRole-admin">
+                <i class="bi bi-shield-fill"></i> <?= htmlspecialchars($initiatorName ?? 'Admin') ?>
             </span>
         <?php elseif ($editRole === 'self'): ?>
-            <span class="leRequestor le-requestor-self">
+            <span class="pill">
                 <i class="bi bi-person-fill"></i> You
             </span>
         <?php else: ?>
@@ -229,16 +265,16 @@ foreach ($records as $row):
 
     <td>
         <?php if ($editStatus === 'pending'): ?>
-            <span class="leEditStatus le-status-pending">
-                <i class="bi bi-hourglass-split"></i> Edit Pending
+            <span class="pill btn-info">
+                <i class="bi bi-hourglass-split"></i> Pending
             </span>
         <?php elseif ($editStatus === 'approved'): ?>
-            <span class="leEditStatus le-status-approved">
-                <i class="bi bi-check-circle-fill"></i> Edit Approved
+            <span class="pill btn-success">
+                <i class="bi bi-check-circle-fill"></i> Approved
             </span>
         <?php elseif ($editStatus === 'rejected'): ?>
-            <span class="leEditStatus le-status-rejected">
-                <i class="bi bi-x-circle-fill"></i> Edit Rejected
+            <span class="pill btn-danger">
+                <i class="bi bi-x-circle-fill"></i> Rejected
             </span>
         <?php else: ?>
             <span style="color:rgba(255,255,255,0.2);font-size:0.75rem;">—</span>
