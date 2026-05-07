@@ -1,61 +1,82 @@
+/* ================================================
+   ADMIN LOGS
+   ================================================
+   Page-specific styles for the admin logs page.
+   Depends on: root.css, typography.css,
+               components.css, navbars.css
+   ================================================ */
+
 /* ============================================================
    BACKGROUND
    ============================================================ */
+
 body::before {
     content: '';
     position: fixed;
-    top: -20px;
-    left: -20px;
-    width: calc(100% + 40px);
-    height: calc(100% + 40px);
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-    filter: blur(6px);
-    z-index: -1;
+    inset: 0;
+    background: url('../assets/images/drt_bg.jpg') center / cover no-repeat;
+    z-index: -2;
+}
+
+/* ------------------------------------------------
+   BODY BASE
+   ------------------------------------------------ */
+
+html {
+    height: 100%;
 }
 
 body {
-    font-family: 'Poppins', sans-serif;
-    min-height: 100vh;
-}
-
-/* ============================================================
-   PAGE WRAPPER
-   ============================================================ */
-.requestsWrapper {
-    position: fixed;
-    top: 60px;
-    left: calc(10px + var(--sidebar-width));
-    width: calc(100% - (10px + var(--sidebar-width)));
-    height: calc(100vh - 60px);
     display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 10;
-    padding: 20px;
-    box-sizing: border-box;
-    transition: left 0.38s cubic-bezier(0.4, 0, 0.2, 1), width 0.38s cubic-bezier(0.4, 0, 0.2, 1);
+    min-height: 100vh;
+    margin: 0;
+
+    font-family: 'Poppins', sans-serif;
+
+    /* keep horizontal clean, allow vertical scroll */
+    overflow-x: hidden;
+
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
-/* ============================================================
-   MAIN BOX (Glass Dark Style)
-   ============================================================ */
-.requestsBox {
-    font-family: 'Poppins', sans-serif;
-    background: var(--glass-bg);
-    backdrop-filter: blur(32px) saturate(160%) brightness(0.3);
-    -webkit-backdrop-filter: blur(32px) saturate(160%) brightness(0.3);
-    border: 1px solid var(--glass-border);
-    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.5);
-    padding: 30px;
-    border-radius: 16px;
-    width: 100%;
-    height: calc(100vh - 100px);
-    overflow: hidden;
-    box-sizing: border-box;
+/* =========================
+   LAYOUT
+========================= */
+
+#main-wrapper {
     display: flex;
     flex-direction: column;
+    flex-grow: 1;
+    min-width: 0;
+    height: 100vh;
+    overflow: hidden;
+}
+
+/* =========================
+   CARD WRAPPER
+========================= */
+
+.requests-card {
+    flex: 1;
+    min-height: 0;
+    margin: 0.5rem 1rem 1rem;
+    overflow: visible !important;
+}
+
+.requests-card-body {
+    padding: 1.5rem;
+    height: 100%;
+    overflow: visible;
+}
+
+/* Filter Wrapper */
+.filterWrapper {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding-bottom: 1rem;
+    flex-wrap: wrap;
 }
 
 /* ============================================================

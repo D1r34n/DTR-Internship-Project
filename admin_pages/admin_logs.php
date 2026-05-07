@@ -1,3 +1,4 @@
+<!-- PHP -->
 <?php
 session_start();
 
@@ -10,12 +11,20 @@ require_once '../db.php';
 
 date_default_timezone_set('Asia/Manila');
 
-$startDate = !empty($_GET['start']) ? date('Y-m-d', strtotime($_GET['start'])) : '';
-$endDate   = !empty($_GET['end'])   ? date('Y-m-d', strtotime($_GET['end']))   : '';
+$today = date('Y-m-d');
 
+$startDate = !empty($_GET['start']) 
+    ? date('Y-m-d', strtotime($_GET['start'])) 
+    : $today;
+
+$endDate = !empty($_GET['end']) 
+    ? date('Y-m-d', strtotime($_GET['end'])) 
+    : $today;
+    
 $current_page = 'logs';
 ?>
 
+<!-- HTML -->
 <!doctype html>
 <html lang="en">
 
@@ -146,17 +155,17 @@ $current_page = 'logs';
             </div>
         </div>
 
-    <!-- Map Hover Popup -->
-    <div class="mapPopUpContainer" id="map_pop_up_container">
-        <div class="mapPopUp" id="map_pop_up"></div>
-        <div class="mapPopUpInfo" id="map_pop_up_info"></div>
-        <div style="padding: 10px;">
-            <a class="openGoogleMapsBtn" id="open_gmaps_btn" href="#" target="_blank">
-                Open in Google Maps
-            </a>
+        <!-- Map Hover Popup -->
+        <div class="mapPopUpContainer" id="map_pop_up_container">
+            <div class="mapPopUp" id="map_pop_up"></div>
+            <div class="mapPopUpInfo" id="map_pop_up_info"></div>
+            <div style="padding: 10px;">
+                <a class="openGoogleMapsBtn" id="open_gmaps_btn" href="#" target="_blank">
+                    Open in Google Maps
+                </a>
+            </div>
         </div>
-    </div>
-</div><!-- #main-wrapper -->
+    </div><!-- #main-wrapper -->
 
  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
 <script>
@@ -188,11 +197,25 @@ function fmtDate(d) {
 }
 
 function updateDateLabel(dates) {
-    if (!dates.length) { dateRangeLabel.textContent = 'All Logs'; return; }
+    if (!dates || dates.length === 0) {
+        dateRangeLabel.textContent = 'Today';
+        return;
+    }
+
+    const today = new Date();
+    const todayStr = today.toDateString();
+
     const isSameDay = dates.length > 1 && dates[0].toDateString() === dates[1].toDateString();
-    dateRangeLabel.textContent = (dates.length === 1 || isSameDay)
-        ? fmtDate(dates[0])
-        : fmtDate(dates[0]) + ' – ' + fmtDate(dates[1]);
+    const isToday   = dates[0].toDateString() === todayStr && (dates.length === 1 || isSameDay);
+
+    if (isToday) {
+        dateRangeLabel.textContent = 'Today';
+    } else {
+        dateRangeLabel.textContent =
+            (dates.length === 1 || isSameDay)
+                ? fmtDate(dates[0])
+                : fmtDate(dates[0]) + ' – ' + fmtDate(dates[1]);
+    }
 }
 
 flatpickr(datePickerBtn, {
@@ -367,8 +390,18 @@ mapPopup.addEventListener('mouseout', () => {
 document.addEventListener('DOMContentLoaded', () => {
     applyHeaderUI();
     fetchLogs();
-});
 
+    const start = startInput.value;
+    const end   = endInput.value;
+
+    if (start && end) {
+        const s = new Date(start);
+        const e = new Date(end);
+        updateDateLabel([s, e]);
+    } else {
+        updateDateLabel([]);
+    }
+});
 /* =========================
    REAL-TIME UPDATE
    Re-fetch when topbar fires a tap (same tab)

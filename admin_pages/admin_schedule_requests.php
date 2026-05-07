@@ -110,8 +110,8 @@ function getStatusBadge(string $status): string {
 
         <?php include '../topbar_revised.php'; ?>
 
-        <div class="requestsWrapper">
-            <div class="requestsBox">
+        <div class="card card-glass requests-card">
+            <div class="card-body d-flex flex-column requests-card-body">
 
                 <!-- TITLE ROW -->
                 <div class="adminTitleRow">

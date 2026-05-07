@@ -1,7 +1,7 @@
 /* ================================================
-   EMPLOYEE LOG
+   ADMIN LOGS
    ================================================
-   Page-specific styles for the employee dashboard.
+   Page-specific styles for the admin logs page.
    Depends on: root.css, typography.css,
                components.css, navbars.css
    ================================================ */
@@ -159,7 +159,7 @@ body {
 .table thead th {
     background: transparent;
     font-weight: 300;
-    font-size: 0.875rem;
+    font-size: 0.75rem;
     user-select: none;
     text-align: left;
     color: var(--text-muted);

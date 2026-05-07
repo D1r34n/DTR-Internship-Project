@@ -24,10 +24,10 @@ $employeeId   = $_SESSION['user_id'];
 $startDate = $_GET['start'] ?? null;
 $endDate   = $_GET['end'] ?? null;
 
-// Default to the current calendar month if no date range is provided
+// Default to today if no date range is provided
 if (!$startDate && !$endDate) {
-    $startDate = date('Y-m-01'); // First day of the current month
-    $endDate   = date('Y-m-t');  // Last day of the current month
+    $startDate = date('Y-m-d');
+    $endDate   = date('Y-m-d');
 }
 
 // Fetch attendance records and schedules for the employee within the selected range
@@ -89,7 +89,14 @@ $schedules = getSchedulesByDateRange($pdo, $employeeId, $startDate, $endDate);
                         <button class="btn dropdown-toggle" id="datePickerBtn" type="button">
                             <i class="bi bi-calendar3"></i>
                             <span id="dateRangeLabel">
-                                <?= date('F j', strtotime($startDate)) ?> – <?= date('F j, Y', strtotime($endDate)) ?>
+                                <?php
+                                $today = date('Y-m-d');
+                                if ($startDate === $today && $endDate === $today) {
+                                    echo 'Today';
+                                } else {
+                                    echo date('F j', strtotime($startDate)) . ' – ' . date('F j, Y', strtotime($endDate));
+                                }
+                                ?>
                             </span>
                         </button>
                     </div>
@@ -125,12 +132,11 @@ $schedules = getSchedulesByDateRange($pdo, $employeeId, $startDate, $endDate);
 
                                     const start = instance.formatDate(selectedDates[0], "Y-m-d");
                                     const end   = instance.formatDate(selectedDates[1], "Y-m-d");
+                                    const todayStr = instance.formatDate(new Date(), "Y-m-d");
 
-                                    // update label instantly (no need to wait reload)
-                                    dateLabel.textContent =
-                                        instance.formatDate(selectedDates[0], "F j") +
-                                        " – " +
-                                        instance.formatDate(selectedDates[1], "F j, Y");
+                                    dateLabel.textContent = (start === end && start === todayStr)
+                                        ? 'Today'
+                                        : instance.formatDate(selectedDates[0], "F j") + " – " + instance.formatDate(selectedDates[1], "F j, Y");
 
                                     window.location.href = `?start=${start}&end=${end}`;
                                 }

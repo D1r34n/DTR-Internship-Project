@@ -182,9 +182,9 @@ $logEditRequests = $pdo->query("
 // ---- HELPER FUNCTIONS ----
 function getStatusBadge($status) {
     $badges = [
-        'pending'  => '<span class="badge statusPending">Pending</span>',
-        'approved' => '<span class="badge statusApproved">Approved</span>',
-        'rejected' => '<span class="badge statusRejected">Rejected</span>',
+        'pending'  => '<span class="badge status-pending">Pending</span>',
+        'approved' => '<span class="badge status-approved">Approved</span>',
+        'rejected' => '<span class="badge status-rejected">Rejected</span>',
     ];
     return $badges[$status] ?? '<span class="badge">Unknown</span>';
 }
@@ -192,10 +192,10 @@ function getStatusBadge($status) {
 function getActionButtons($type, $id, $status) {
     if ($status === 'pending') {
         return '
-            <a href="admin_requests.php?action=approve&type=' . $type . '&id=' . $id . '" class="btn btn-sm approveBtn" onclick="return confirm(\'Approve this request?\')">
+            <a href="admin_requests.php?action=approve&type=' . $type . '&id=' . $id . '" class="btn btn-sm btn-success" onclick="return confirm(\'Approve this request?\')">
                 <i class="bi bi-check-lg"></i> Approve
             </a>
-            <a href="admin_requests.php?action=reject&type=' . $type . '&id=' . $id . '" class="btn btn-sm rejectBtn" onclick="return confirm(\'Reject this request?\')">
+            <a href="admin_requests.php?action=reject&type=' . $type . '&id=' . $id . '" class="btn btn-sm btn-danger" onclick="return confirm(\'Reject this request?\')">
                 <i class="bi bi-x-lg"></i> Reject
             </a>
         ';
@@ -233,8 +233,8 @@ function getActionButtons($type, $id, $status) {
         <?php include '../topbar_revised.php'; ?>
 
         <!-- PAGE WRAPPER -->
-        <div class="requestsWrapper">
-            <div class="requestsBox">
+        <div class="card card-glass requests-card">
+            <div class="card-body d-flex flex-column requests-card-body">
 
                 <!-- TITLE ROW -->
                 <div class="adminTitleRow">
