@@ -175,7 +175,7 @@ function computeGanttRow(array $row, ?array $sched): ?array
         if ($isFuturePending) {
             $barClass   = 'ganttBarPending';
             $labelClass = 'ganttPendingLabel';
-            $labelText  = 'Pending Schedule';
+            $labelText  = 'Upcoming';
         } else {
             // absent
             $barClass   = 'ganttBarAbsent';

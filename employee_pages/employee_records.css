@@ -449,6 +449,9 @@ body {
     border: 1px dashed var(--danger);
 }
 
+.ganttBarLeave { background: rgba(253,126,20,0.18); border: 1px dashed #fd7e14; }
+.ganttBarOB    { background: rgba(111,66,193,0.18); border: 1px dashed #a07de0; }
+
 /* Employee forgot to time out */
 .ganttBarNoTimeOut {
     background: var(--gantt-no-timeout);

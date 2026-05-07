@@ -347,18 +347,16 @@ $tapLogs = $logsStmt->fetchAll(PDO::FETCH_ASSOC);
                     <!-- Month nav + Add button -->
                     <div class="tab-section-header">
                         <div class="d-flex align-items-center gap-2">
-                            <button class="sched-nav-btn"
-                                onclick="location.href='?id=<?= $employeeId ?>&month=<?= $prevMonth ?>'">
+                            <button class="sched-nav-btn" onclick="navigatePrev()">
                                 <i class="bi bi-chevron-left"></i>
                             </button>
                             <span class="sched-month-label"><?= htmlspecialchars($monthLabel) ?></span>
-                            <button class="sched-nav-btn"
-                                onclick="location.href='?id=<?= $employeeId ?>&month=<?= $nextMonth ?>'">
+                            <button class="sched-nav-btn" onclick="navigateNext()">
                                 <i class="bi bi-chevron-right"></i>
                             </button>
                         </div>
                         <div class="tab-summary-chips">
-                            <span class="tab-summary-chip" style="color:var(--text-muted);">
+                            <span id="chip-sched-count" class="tab-summary-chip" style="color:var(--text-muted);">
                                 <?= count($schedulesByDate) ?> scheduled day<?= count($schedulesByDate) !== 1 ? 's' : '' ?>
                             </span>
                             <button class="sched-add-btn" onclick="openAddModal()"
@@ -456,24 +454,22 @@ $tapLogs = $logsStmt->fetchAll(PDO::FETCH_ASSOC);
                     ?>
                     <div class="tab-section-header">
                         <div class="d-flex align-items-center gap-2">
-                            <button class="sched-nav-btn"
-                                onclick="location.href='?id=<?= $employeeId ?>&month=<?= $prevMonth ?>#tab2'">
+                            <button class="sched-nav-btn" onclick="navigatePrev()">
                                 <i class="bi bi-chevron-left"></i>
                             </button>
                             <span class="sched-month-label"><?= htmlspecialchars($monthLabel) ?></span>
-                            <button class="sched-nav-btn"
-                                onclick="location.href='?id=<?= $employeeId ?>&month=<?= $nextMonth ?>#tab2'">
+                            <button class="sched-nav-btn" onclick="navigateNext()">
                                 <i class="bi bi-chevron-right"></i>
                             </button>
                         </div>
                         <div class="tab-summary-chips">
-                            <span class="tab-summary-chip" style="color:var(--primary-color);">
+                            <span id="chip-present" class="tab-summary-chip" style="color:var(--primary-color);">
                                 <i class="bi bi-check-circle-fill"></i> <?= $cPresent ?> Present
                             </span>
-                            <span class="tab-summary-chip" style="color:var(--warning);">
+                            <span id="chip-incomplete" class="tab-summary-chip" style="color:var(--warning);">
                                 <i class="bi bi-clock-fill"></i> <?= $cIncomplete ?> Incomplete
                             </span>
-                            <span class="tab-summary-chip" style="color:var(--danger-color);">
+                            <span id="chip-absent" class="tab-summary-chip" style="color:var(--danger-color);">
                                 <i class="bi bi-x-circle-fill"></i> <?= $cAbsent ?> Absent
                             </span>
                         </div>
@@ -621,17 +617,15 @@ $tapLogs = $logsStmt->fetchAll(PDO::FETCH_ASSOC);
                     <!-- Month nav + count -->
                     <div class="tab-section-header">
                         <div class="d-flex align-items-center gap-2">
-                            <button class="sched-nav-btn"
-                                onclick="location.href='?id=<?= $employeeId ?>&month=<?= $prevMonth ?>#tab3'">
+                            <button class="sched-nav-btn" onclick="navigatePrev()">
                                 <i class="bi bi-chevron-left"></i>
                             </button>
                             <span class="sched-month-label"><?= htmlspecialchars($monthLabel) ?></span>
-                            <button class="sched-nav-btn"
-                                onclick="location.href='?id=<?= $employeeId ?>&month=<?= $nextMonth ?>#tab3'">
+                            <button class="sched-nav-btn" onclick="navigateNext()">
                                 <i class="bi bi-chevron-right"></i>
                             </button>
                         </div>
-                        <span class="tab-summary-chip" style="color:var(--text-muted);">
+                        <span id="chip-logs-count" class="tab-summary-chip" style="color:var(--text-muted);">
                             <?= count($tapLogs) ?> log<?= count($tapLogs) !== 1 ? 's' : '' ?>
                         </span>
                     </div>
@@ -756,7 +750,7 @@ $tapLogs = $logsStmt->fetchAll(PDO::FETCH_ASSOC);
                 <button type="button" class="btn-close btn-close-white" onclick="closeSchedModal()"></button>
             </div>
 
-            <form method="POST" action="admin_employee_view.php?id=<?= $employeeId ?>" onsubmit="return prepareSubmit()">
+            <form method="POST" action="admin_employee_view.php?id=<?= $employeeId ?>" id="schedForm">
                 <input type="hidden" name="action" value="save_schedule">
                 <div class="modal-body">
 
@@ -955,31 +949,191 @@ $tapLogs = $logsStmt->fetchAll(PDO::FETCH_ASSOC);
         .catch(() => {});
 })();
 
-// ---- Schedule modal state ----
+// ---- State ----
 let selectedDates = [];
 let fp            = null;
+const EMP_ID      = <?= $employeeId ?>;
+let currentMonth  = '<?= $rawMonth ?>';
+const tabLoadedMonth = { '#tab1': null, '#tab2': null, '#tab3': null };
 
-// Restore active tab (hash from month-nav links takes priority over localStorage)
+// ---- Helpers ----
+function pad(n) { return String(n).padStart(2, '0'); }
+function parseYM(ym) {
+    const [y, m] = ym.split('-').map(Number);
+    return { year: y, month: m };
+}
+function monthDates(ym) {
+    const { year, month } = parseYM(ym);
+    const last = new Date(year, month, 0).getDate();
+    return { startDate: `${year}-${pad(month)}-01`, endDate: `${year}-${pad(month)}-${pad(last)}` };
+}
+function monthLabel(ym) {
+    const { year, month } = parseYM(ym);
+    return new Date(year, month - 1, 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+}
+function loadingHTML() {
+    return '<div class="text-center py-5" style="color:var(--text-muted);"><i class="bi bi-arrow-clockwise" style="font-size:1.5rem;"></i></div>';
+}
+
+// ---- Month navigation ----
+function navigateMonth(ym) {
+    currentMonth = ym;
+
+    document.querySelectorAll('.sched-month-label').forEach(el => el.textContent = monthLabel(ym));
+    history.pushState({ month: ym }, '', `?id=${EMP_ID}&month=${ym}`);
+
+    const activeBtn = document.querySelector('#myTab .nav-link.active');
+    const activeTab = activeBtn ? activeBtn.dataset.bsTarget : '#tab1';
+    loadTab(activeTab, ym);
+
+    Object.keys(tabLoadedMonth).forEach(k => { tabLoadedMonth[k] = k === activeTab ? ym : null; });
+}
+function navigatePrev() {
+    const { year, month } = parseYM(currentMonth);
+    const d = new Date(year, month - 2, 1);
+    navigateMonth(`${d.getFullYear()}-${pad(d.getMonth() + 1)}`);
+}
+function navigateNext() {
+    const { year, month } = parseYM(currentMonth);
+    const d = new Date(year, month, 1);
+    navigateMonth(`${d.getFullYear()}-${pad(d.getMonth() + 1)}`);
+}
+
+// ---- Load tab by target ----
+function loadTab(tabTarget, ym) {
+    const { year, month }        = parseYM(ym);
+    const { startDate, endDate } = monthDates(ym);
+    if      (tabTarget === '#tab1') loadCalendar(year, month);
+    else if (tabTarget === '#tab2') loadRecords(startDate, endDate);
+    else if (tabTarget === '#tab3') loadLogs(startDate, endDate);
+}
+
+// ---- Tab 1: Calendar ----
+function loadCalendar(year, month) {
+    const container = document.querySelector('.sched-cal-container');
+    container.innerHTML = loadingHTML();
+    fetch(`get_admin_employee_calendar.php?employee_id=${EMP_ID}&year=${year}&month=${month}`)
+        .then(r => r.text())
+        .then(html => {
+            container.innerHTML = html;
+            const count = container.querySelectorAll('.sched-cal-day.has-sched').length;
+            const chip  = document.getElementById('chip-sched-count');
+            if (chip) chip.textContent = count + ' scheduled day' + (count !== 1 ? 's' : '');
+        })
+        .catch(() => {
+            container.innerHTML = '<div class="text-center py-4" style="color:var(--danger-color);">Failed to load calendar.</div>';
+        });
+}
+
+// ---- Tab 2: Records / Gantt ----
+function loadRecords(startDate, endDate) {
+    const container = document.querySelector('.ganttContainer');
+    container.innerHTML = loadingHTML();
+    fetch(`get_admin_employee_records.php?employee_id=${EMP_ID}&start=${startDate}&end=${endDate}`)
+        .then(r => r.text())
+        .then(html => {
+            const match = html.match(/<!--SUMMARY:({.*?})-->/);
+            if (match) {
+                try {
+                    const c = JSON.parse(match[1]);
+                    document.getElementById('chip-present').innerHTML    = `<i class="bi bi-check-circle-fill"></i> ${c.present} Present`;
+                    document.getElementById('chip-incomplete').innerHTML = `<i class="bi bi-clock-fill"></i> ${c.incomplete} Incomplete`;
+                    document.getElementById('chip-absent').innerHTML     = `<i class="bi bi-x-circle-fill"></i> ${c.absent} Absent`;
+                } catch (e) {}
+            }
+            container.innerHTML = html;
+            initGanttCursors();
+        })
+        .catch(() => {
+            container.innerHTML = '<div class="ganttEmpty"><i class="bi bi-exclamation-circle ganttEmptyIcon"></i><div>Failed to load records.</div></div>';
+        });
+}
+
+// ---- Tab 3: Logs ----
+function loadLogs(startDate, endDate) {
+    const tbody = document.querySelector('#tab3 .logs-table-wrapper tbody');
+    tbody.innerHTML = `<tr><td colspan="4" class="text-center py-4" style="color:var(--text-muted);background:rgba(0,0,0,0.2);">${loadingHTML()}</td></tr>`;
+
+    fetch(`get_employee_logs.php?employee_id=${EMP_ID}&date_from=${startDate}&date_to=${endDate}`)
+        .then(r => r.json())
+        .then(logs => {
+            const chip = document.getElementById('chip-logs-count');
+            if (chip) chip.textContent = logs.length + ' log' + (logs.length !== 1 ? 's' : '');
+
+            if (logs.length === 0) {
+                const lbl = document.querySelector('#tab3 .sched-month-label')?.textContent ?? '';
+                tbody.innerHTML = `<tr><td colspan="4" class="text-center py-5" style="color:var(--text-muted);background:rgba(0,0,0,0.2);">
+                    <i class="bi bi-clock-history" style="font-size:1.8rem;display:block;margin-bottom:0.4rem;opacity:0.4;"></i>
+                    No logs found for ${lbl}.
+                </td></tr>`;
+                return;
+            }
+
+            const typeMap = {
+                IN:        ['Time In',   'in'],
+                OUT:       ['Time Out',  'out'],
+                BREAK_IN:  ['Break In',  'break-in'],
+                BREAK_OUT: ['Break Out', 'break-out'],
+            };
+
+            tbody.innerHTML = logs.map(log => {
+                const [label, cls] = typeMap[log.log_type] ?? [log.log_type, ''];
+                const dt     = new Date(log.log_time.replace(' ', 'T'));
+                const dtStr  = dt.toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric', year:'numeric' });
+                const tmStr  = dt.toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit', second:'2-digit', hour12:true });
+                const dist   = log.distance_meters != null
+                    ? Number(log.distance_meters).toLocaleString('en-US', { maximumFractionDigits: 0 }) + ' m'
+                    : '—';
+                const office = log.is_within_office
+                    ? `<span style="color:var(--primary-color);font-size:0.82rem;"><i class="bi bi-check-circle-fill"></i> Yes</span>`
+                    : `<span style="color:var(--danger-color);font-size:0.82rem;"><i class="bi bi-x-circle-fill"></i> No</span>`;
+                return `<tr>
+                    <td style="background:rgba(0,0,0,0.2);color:var(--text-light);border-color:var(--glass-border);vertical-align:middle;">
+                        <div style="font-size:0.85rem;">${dtStr}</div>
+                        <div style="font-size:0.73rem;color:var(--text-muted);">${tmStr}</div>
+                    </td>
+                    <td style="background:rgba(0,0,0,0.2);border-color:var(--glass-border);vertical-align:middle;">
+                        <span class="log-type-badge ${cls}"><i class="bi bi-circle-fill" style="font-size:0.45rem;"></i> ${label}</span>
+                    </td>
+                    <td style="background:rgba(0,0,0,0.2);border-color:var(--glass-border);vertical-align:middle;">${office}</td>
+                    <td style="background:rgba(0,0,0,0.2);color:var(--text-muted);border-color:var(--glass-border);vertical-align:middle;font-size:0.82rem;">${dist}</td>
+                </tr>`;
+            }).join('');
+        })
+        .catch(() => {
+            tbody.innerHTML = `<tr><td colspan="4" class="text-center py-4" style="color:var(--danger-color);">Failed to load logs.</td></tr>`;
+        });
+}
+
+// ---- DOMContentLoaded ----
 document.addEventListener('DOMContentLoaded', () => {
-    const empId  = <?= $employeeId ?>;
-    const key    = 'empViewTab_' + empId;
-    const hash   = location.hash;   // e.g. '#tab2'
+    const key    = 'empViewTab_' + EMP_ID;
     const stored = localStorage.getItem(key);
-    const target = hash || stored;
-    if (target) {
-        const tabEl = document.querySelector(`[data-bs-target="${target}"]`);
+    if (stored) {
+        const tabEl = document.querySelector(`[data-bs-target="${stored}"]`);
         if (tabEl) bootstrap.Tab.getOrCreateInstance(tabEl).show();
     }
+
     document.querySelectorAll('#myTab [data-bs-toggle="tab"]').forEach(btn => {
         btn.addEventListener('shown.bs.tab', e => {
-            localStorage.setItem(key, e.target.dataset.bsTarget);
+            const target = e.target.dataset.bsTarget;
+            localStorage.setItem(key, target);
+            if (tabLoadedMonth[target] !== currentMonth) {
+                loadTab(target, currentMonth);
+                tabLoadedMonth[target] = currentMonth;
+            }
         });
     });
 
-    // Gantt cursor + tooltip
     initGanttCursors();
 
-    // Flatpickr multi-date picker inside the schedule modal
+    // Load whichever tab is currently active via AJAX on first paint,
+    // so server-rendered content (which lacks leave/OB awareness) is replaced immediately
+    const activeBtn = document.querySelector('#myTab .nav-link.active');
+    const activeTab = activeBtn ? activeBtn.dataset.bsTarget : '#tab1';
+    loadTab(activeTab, currentMonth);
+    tabLoadedMonth[activeTab] = currentMonth;
+
     fp = flatpickr('#schedDatePicker', {
         mode: 'multiple',
         dateFormat: 'Y-m-d',
@@ -993,8 +1147,36 @@ document.addEventListener('DOMContentLoaded', () => {
             renderDateTags();
         }
     });
+
+    // Schedule form: AJAX submit → reload only the calendar
+    document.getElementById('schedForm').addEventListener('submit', function (e) {
+        e.preventDefault();
+        if (!prepareSubmit()) return;
+        fetch(this.action, { method: 'POST', body: new FormData(this) })
+            .then(() => {
+                closeSchedModal();
+                const { year, month } = parseYM(currentMonth);
+                loadCalendar(year, month);
+                tabLoadedMonth['#tab1'] = currentMonth;
+            })
+            .catch(() => alert('Failed to save schedule. Please try again.'));
+    });
+
+    // Browser back / forward
+    window.addEventListener('popstate', e => {
+        if (e.state && e.state.month) {
+            currentMonth = e.state.month;
+            document.querySelectorAll('.sched-month-label').forEach(el => el.textContent = monthLabel(currentMonth));
+            const activeBtn = document.querySelector('#myTab .nav-link.active');
+            const activeTab = activeBtn ? activeBtn.dataset.bsTarget : '#tab1';
+            loadTab(activeTab, currentMonth);
+        }
+    });
+
+    history.replaceState({ month: currentMonth }, '', `?id=${EMP_ID}&month=${currentMonth}`);
 });
 
+// ---- Schedule modal helpers ----
 function renderDateTags() {
     document.getElementById('selectedDatesList').innerHTML = selectedDates
         .map(d => `<span class="selected-date-tag">${d}
@@ -1020,7 +1202,12 @@ function openAddModal() {
     if (fp) fp.clear();
 }
 
-function openEditModal(date, timeIn, timeOut) {
+// Accepts both (date, timeIn, timeOut) and (empId, date, timeIn, timeOut) — empId ignored
+function openEditModal(empIdOrDate, dateOrTimeIn, timeInOrTimeOut, timeOutOrUndef) {
+    const date    = timeOutOrUndef !== undefined ? dateOrTimeIn    : empIdOrDate;
+    const timeIn  = timeOutOrUndef !== undefined ? timeInOrTimeOut : dateOrTimeIn;
+    const timeOut = timeOutOrUndef !== undefined ? timeOutOrUndef  : timeInOrTimeOut;
+
     document.getElementById('schedModalTitle').textContent  = 'Edit Schedule';
     document.getElementById('schedSubmitLabel').textContent = 'Update Schedule';
     document.getElementById('isEditMode').value             = '1';
@@ -1031,6 +1218,10 @@ function openEditModal(date, timeIn, timeOut) {
     if (fp) fp.setDate([date], false);
     bootstrap.Modal.getOrCreateInstance(document.getElementById('schedModal')).show();
 }
+
+// Shim for get_admin_schedule_calendar.php
+function deleteScheduleDay(empId, date) { deleteSchedule(date); }
+function openEditAttModal() { /* not available on this page */ }
 
 function closeSchedModal() {
     bootstrap.Modal.getInstance(document.getElementById('schedModal'))?.hide();
@@ -1047,8 +1238,11 @@ function prepareSubmit() {
 
 function deleteSchedule(date) {
     if (!confirm('Delete schedule for ' + date + '?')) return;
-    fetch(`admin_employee_view.php?id=<?= $employeeId ?>&ajax_delete=1&emp=<?= $employeeId ?>&date=${date}`)
-        .then(() => location.reload());
+    fetch(`admin_employee_view.php?id=${EMP_ID}&ajax_delete=1&emp=${EMP_ID}&date=${date}`)
+        .then(() => {
+            const { year, month } = parseYM(currentMonth);
+            loadCalendar(year, month);
+        });
 }
 </script>
 

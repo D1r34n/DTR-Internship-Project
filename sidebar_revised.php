@@ -123,8 +123,6 @@ $requestsOpen = in_array($currentPage, ['employee_requests', 'schedule_requests'
             <!-- Manage Employees -->
             <?php navLink('admin_manage_employees.php',    'bi-people-fill', 'Manage Employees',   $currentPage === 'manage employees');   ?>
 
-            <?php navLink('admin_schedule.php',    'bi-calendar-week', 'Schedules',   $currentPage === 'schedule');   ?>
-
             <!-- Requests dropdown -->
             <div class="sidebar-dropdown">
                 <button

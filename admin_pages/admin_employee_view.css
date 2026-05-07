@@ -783,8 +783,14 @@ body {
     letter-spacing: 0.02em;
 }
 
-.sched-cal-shift-badge.day   { background: var(--primary-bg);    color: var(--primary-color); }
-.sched-cal-shift-badge.night { background: var(--shift-night-bg); color: var(--shift-night); }
+.sched-cal-shift-badge.day        { background: var(--primary-bg);    color: var(--primary-color); }
+.sched-cal-shift-badge.night      { background: var(--shift-night-bg); color: var(--shift-night); }
+.sched-cal-shift-badge.night-cont { background: rgba(77,163,255,0.15); color: #4da3ff; }
+.sched-cal-shift-badge.rest       { background: rgba(108,117,125,0.2); color: #adb5bd; }
+.sched-cal-shift-badge.on-leave   { background: rgba(253,126,20,0.2);  color: #fd7e14; }
+.sched-cal-shift-badge.on-ob      { background: rgba(111,66,193,0.2);  color: #a07de0; }
+.sched-cal-shift-badge.leave-pending  { background: rgba(240,173,78,0.2);  color: #f0ad4e; }
+.sched-cal-shift-badge.leave-rejected { background: rgba(220,53,69,0.2);   color: #ff6b7a; }
 
 .sched-cal-times {
     font-size: 0.65rem;
@@ -1058,6 +1064,8 @@ body {
 .ganttBarBreak     { background: var(--gantt-break); opacity: 0.85; z-index: 5; }
 .ganttBarPending   { background: var(--gantt-pending); border: 1px dashed var(--gantt-pending-border); }
 .ganttBarAbsent    { background: var(--gantt-absent); border: 1px dashed var(--danger-color); }
+.ganttBarLeave     { background: rgba(253,126,20,0.18); border: 1px dashed #fd7e14; }
+.ganttBarOB        { background: rgba(111,66,193,0.18); border: 1px dashed #a07de0; }
 .ganttBarNoTimeOut { background: var(--gantt-no-timeout); opacity: 0.85; }
 
 .ganttBarOvertimePending  { background: var(--gantt-ot-pending); }

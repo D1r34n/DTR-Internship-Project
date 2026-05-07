@@ -33,6 +33,42 @@ if (!$startDate && !$endDate) {
 // Fetch attendance records and schedules for the employee within the selected range
 $records   = getAttendanceRecords($pdo, $employeeId, $startDate, $endDate);
 $schedules = getSchedulesByDateRange($pdo, $employeeId, $startDate, $endDate);
+
+// ---- Leave requests ----
+$leaveStmt = $pdo->prepare("
+    SELECT start_date, end_date, selected_dates, status
+    FROM leave_requests
+    WHERE employee_id = ?
+    AND (start_date BETWEEN ? AND ? OR end_date BETWEEN ? AND ? OR (start_date <= ? AND end_date >= ?))
+");
+$leaveStmt->execute([$employeeId, $startDate, $endDate, $startDate, $endDate, $startDate, $endDate]);
+$leaveMap = [];
+foreach ($leaveStmt->fetchAll(PDO::FETCH_ASSOC) as $leave) {
+    $dates = json_decode($leave['selected_dates'], true);
+    if (is_array($dates) && !empty($dates)) {
+        foreach ($dates as $d) {
+            if ($d >= $startDate && $d <= $endDate) $leaveMap[$d] = $leave['status'];
+        }
+    } else {
+        $cur = new DateTime($leave['start_date']);
+        $lEnd = new DateTime($leave['end_date']);
+        while ($cur <= $lEnd) {
+            $d = $cur->format('Y-m-d');
+            if ($d >= $startDate && $d <= $endDate) $leaveMap[$d] = $leave['status'];
+            $cur->modify('+1 day');
+        }
+    }
+}
+
+// ---- OB requests ----
+$obStmt = $pdo->prepare("
+    SELECT ob_date, status FROM ob_requests WHERE employee_id = ? AND ob_date BETWEEN ? AND ?
+");
+$obStmt->execute([$employeeId, $startDate, $endDate]);
+$obMap = [];
+foreach ($obStmt->fetchAll(PDO::FETCH_ASSOC) as $ob) {
+    $obMap[$ob['ob_date']] = $ob['status'];
+}
 ?>
 
 <!doctype html>
@@ -160,6 +196,27 @@ $schedules = getSchedulesByDateRange($pdo, $employeeId, $startDate, $endDate);
                     // Skip rows that have no renderable data
                     if ($ganttBar === null) continue;
                     $hasRows = true;
+
+                    // Override bar for approved leave / OB
+                    $leaveStatus = $leaveMap[$row['work_date']] ?? null;
+                    $obStatus    = $obMap[$row['work_date']]    ?? null;
+                    if ($leaveStatus === 'approved') {
+                        $ganttBar['type']       = 'absent_or_future';
+                        $ganttBar['barClass']   = 'ganttBarLeave';
+                        $ganttBar['labelClass'] = 'ganttAbsentLabel';
+                        $ganttBar['labelText']  = 'On Leave';
+                        $ganttBar['barLeft']    = 0;
+                        $ganttBar['barWidth']   = 100;
+                        $ganttBar['midLeft']    = 50;
+                    } elseif ($obStatus === 'approved') {
+                        $ganttBar['type']       = 'absent_or_future';
+                        $ganttBar['barClass']   = 'ganttBarOB';
+                        $ganttBar['labelClass'] = 'ganttAbsentLabel';
+                        $ganttBar['labelText']  = 'On OB';
+                        $ganttBar['barLeft']    = 0;
+                        $ganttBar['barWidth']   = 100;
+                        $ganttBar['midLeft']    = 50;
+                    }
                     ?>
 
                     <?php if ($ganttBar['type'] === 'absent_or_future'): ?>
