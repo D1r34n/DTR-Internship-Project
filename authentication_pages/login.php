@@ -173,6 +173,13 @@ unset($_SESSION['error_email'], $_SESSION['error_password'], $_SESSION['old_emai
         </div>
     </div>
 
+    <div class="copyright-bar">
+        <p class="copyright">
+            &copy; 2026 &nbsp;|&nbsp; Designed by Edrian R. Evangelista &amp;<br>
+            Earl David A. Jordan
+        </p>
+    </div>
+
     <script>
         const container     = document.querySelector('.container');
         const shine         = document.querySelector('.shine');

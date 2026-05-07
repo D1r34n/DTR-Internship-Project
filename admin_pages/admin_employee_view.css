@@ -799,6 +799,11 @@ body {
     margin-bottom: 3px;
 }
 
+.sched-cal-day.has-sched.night-cont-day {
+    background: rgba(77,163,255,0.06);
+    border: 1px dashed #4da3ff;
+}
+
 .sched-cal-status-badge         { font-size: 0.58rem; font-weight: 500; display: inline-block; }
 .sched-cal-status-badge.sched-status-approved { color: var(--primary-color); }
 .sched-cal-status-badge.sched-status-pending  { color: var(--warning); }

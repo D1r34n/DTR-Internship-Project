@@ -11,6 +11,30 @@ if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'admin') {
 require_once '../db.php';
 date_default_timezone_set('Asia/Manila');
 
+// ---- HANDLE ADD / EDIT ----
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $name       = trim($_POST['name'] ?? '');
+    $email      = trim($_POST['email'] ?? '');
+    $password   = trim($_POST['password'] ?? '');
+    $role       = $_POST['role'] ?? 'employee';
+    $department = !empty($_POST['department_id']) ? $_POST['department_id'] : null;
+
+    if (!empty($_POST['employee_id'])) {
+        if (!empty($password)) {
+            $pdo->prepare("UPDATE employees SET name=?, email=?, password=?, role=?, department_id=? WHERE id=?")
+                ->execute([$name, $email, $password, $role, $department, $_POST['employee_id']]);
+        } else {
+            $pdo->prepare("UPDATE employees SET name=?, email=?, role=?, department_id=? WHERE id=?")
+                ->execute([$name, $email, $role, $department, $_POST['employee_id']]);
+        }
+    } else {
+        $pdo->prepare("INSERT INTO employees (name, email, password, role, department_id) VALUES (?, ?, ?, ?, ?)")
+            ->execute([$name, $email, $password, $role, $department]);
+    }
+    header("Location: admin_manage_employees.php");
+    exit();
+}
+
 // ---- GET ALL EMPLOYEES ----
 $employees = $pdo->query("
     SELECT e.*, d.department_name, d.department_code
@@ -268,8 +292,8 @@ $employees = $pdo->query("
                     </div>
 
                     <!-- Body -->
-                    <form method="POST" action="admin_employees.php">
-
+                    <form method="POST" action="admin_manage_employees.php">
+                                
                         <input type="hidden" name="employee_id" id="modalEmpId">
 
                         <div class="modal-body">

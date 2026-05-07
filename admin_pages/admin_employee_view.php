@@ -120,47 +120,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' &&
     $is_overnight = $time_out < $time_in;
 
     if (!empty($dates) && $postEmpId) {
-        if ($is_edit) {
-            $existsStmt       = $pdo->prepare("SELECT id FROM schedules WHERE employee_id = ? AND schedule_date = ?");
-            $updateStmt       = $pdo->prepare("UPDATE schedules SET scheduled_start = ?, scheduled_end = ? WHERE employee_id = ? AND schedule_date = ?");
-            $updateAttendance = $pdo->prepare("UPDATE attendances SET scheduled_start = ?, scheduled_end = ? WHERE employee_id = ? AND work_date = ? AND actual_time_in IS NULL");
-            $insertSchedule   = $pdo->prepare("INSERT INTO schedules (employee_id, schedule_date, scheduled_start, scheduled_end, is_rest_day) VALUES (?, ?, ?, ?, 0)");
-            $insertAttendance = $pdo->prepare("
-                INSERT INTO attendances (employee_id, schedule_id, work_date, scheduled_start, scheduled_end, actual_time_in, actual_time_out, total_work_minutes, late_minutes, undertime_minutes, overtime_minutes, status, missed_time_out)
-                VALUES (?, ?, ?, ?, ?, NULL, NULL, 0, 0, 0, 0, 'incomplete', 0)
-                ON DUPLICATE KEY UPDATE scheduled_start = VALUES(scheduled_start), scheduled_end = VALUES(scheduled_end)
-            ");
+        $existsStmt       = $pdo->prepare("SELECT id FROM schedules WHERE employee_id = ? AND schedule_date = ?");
+        $updateStmt       = $pdo->prepare("UPDATE schedules SET scheduled_start = ?, scheduled_end = ? WHERE employee_id = ? AND schedule_date = ?");
+        $updateAttendance = $pdo->prepare("UPDATE attendances SET scheduled_start = ?, scheduled_end = ? WHERE employee_id = ? AND work_date = ? AND actual_time_in IS NULL");
+        $insertSchedule   = $pdo->prepare("INSERT INTO schedules (employee_id, schedule_date, scheduled_start, scheduled_end, is_rest_day) VALUES (?, ?, ?, ?, 0)");
+        $insertAttendance = $pdo->prepare("
+            INSERT INTO attendances (employee_id, schedule_id, work_date, scheduled_start, scheduled_end, actual_time_in, actual_time_out, total_work_minutes, late_minutes, undertime_minutes, overtime_minutes, status, missed_time_out)
+            VALUES (?, ?, ?, ?, ?, NULL, NULL, 0, 0, 0, 0, 'incomplete', 0)
+            ON DUPLICATE KEY UPDATE scheduled_start = VALUES(scheduled_start), scheduled_end = VALUES(scheduled_end)
+        ");
 
-            foreach ($dates as $date) {
-                $startDT = $date . ' ' . $time_in  . ':00';
-                $endDT   = $is_overnight
-                    ? date('Y-m-d', strtotime($date . ' +1 day')) . ' ' . $time_out . ':00'
-                    : $date . ' ' . $time_out . ':00';
+        foreach ($dates as $date) {
+            $startDT = $date . ' ' . $time_in  . ':00';
+            $endDT   = $is_overnight
+                ? date('Y-m-d', strtotime($date . ' +1 day')) . ' ' . $time_out . ':00'
+                : $date . ' ' . $time_out . ':00';
 
-                $existsStmt->execute([$postEmpId, $date]);
-                if ($existsStmt->fetch()) {
-                    $updateStmt->execute([$startDT, $endDT, $postEmpId, $date]);
-                    $updateAttendance->execute([$startDT, $endDT, $postEmpId, $date]);
-                } else {
-                    $insertSchedule->execute([$postEmpId, $date, $startDT, $endDT]);
-                    $schedId = $pdo->lastInsertId() ?: null;
-                    $insertAttendance->execute([$postEmpId, $schedId, $date, $startDT, $endDT]);
-                }
-            }
-        } else {
-            $insertSchedule   = $pdo->prepare("INSERT INTO schedules (employee_id, schedule_date, scheduled_start, scheduled_end, is_rest_day) VALUES (?, ?, ?, ?, 0)");
-            $insertAttendance = $pdo->prepare("
-                INSERT INTO attendances (employee_id, schedule_id, work_date, scheduled_start, scheduled_end, actual_time_in, actual_time_out, total_work_minutes, late_minutes, undertime_minutes, overtime_minutes, status, missed_time_out)
-                VALUES (?, ?, ?, ?, ?, NULL, NULL, 0, 0, 0, 0, 'incomplete', 0)
-                ON DUPLICATE KEY UPDATE scheduled_start = VALUES(scheduled_start), scheduled_end = VALUES(scheduled_end)
-            ");
-
-            foreach ($dates as $date) {
-                $startDT = $date . ' ' . $time_in  . ':00';
-                $endDT   = $is_overnight
-                    ? date('Y-m-d', strtotime($date . ' +1 day')) . ' ' . $time_out . ':00'
-                    : $date . ' ' . $time_out . ':00';
-
+            $existsStmt->execute([$postEmpId, $date]);
+            if ($existsStmt->fetch()) {
+                $updateStmt->execute([$startDT, $endDT, $postEmpId, $date]);
+                $updateAttendance->execute([$startDT, $endDT, $postEmpId, $date]);
+            } else {
                 $insertSchedule->execute([$postEmpId, $date, $startDT, $endDT]);
                 $schedId = $pdo->lastInsertId() ?: null;
                 $insertAttendance->execute([$postEmpId, $schedId, $date, $startDT, $endDT]);
@@ -171,6 +151,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' &&
     header("Location: admin_employee_view.php?id=$employeeId");
     exit();
 }
+// ---- HANDLE EMPLOYEE DELETE ----
+if (isset($_GET['action']) && $_GET['action'] === 'delete_employee') {
+
+    // delete related records first
+    $pdo->prepare("DELETE FROM logs WHERE employee_id = ?")->execute([$employeeId]);
+    $pdo->prepare("DELETE FROM attendances WHERE employee_id = ?")->execute([$employeeId]);
+    $pdo->prepare("DELETE FROM schedules WHERE employee_id = ?")->execute([$employeeId]);
+
+    // delete employee
+    $pdo->prepare("DELETE FROM employees WHERE id = ?")->execute([$employeeId]);
+
+    header("Location: admin_manage_employees.php");
+    exit();
+}
+
 
 // ---- GET EMPLOYEE ----
 $stmt = $pdo->prepare("
@@ -1152,7 +1147,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('schedForm').addEventListener('submit', function (e) {
         e.preventDefault();
         if (!prepareSubmit()) return;
-        fetch(this.action, { method: 'POST', body: new FormData(this) })
+        fetch(this.getAttribute('action'), { method: 'POST', body: new FormData(this) })
             .then(() => {
                 closeSchedModal();
                 const { year, month } = parseYM(currentMonth);
@@ -1232,6 +1227,20 @@ function prepareSubmit() {
     if (selectedDates.length === 0) {
         alert('Please select at least one date.');
         return false;
+    }
+    const isEdit = document.getElementById('isEditMode').value === '1';
+    if (!isEdit) {
+        const existing = new Set(
+            [...document.querySelectorAll('.sched-cal-day.has-sched[data-date]')]
+                .map(el => el.dataset.date)
+        );
+        const conflicts = selectedDates.filter(d => existing.has(d));
+        if (conflicts.length > 0) {
+            const msg = conflicts.length === 1
+                ? `A schedule for ${conflicts[0]} already exists. Replace it?`
+                : `Schedules for ${conflicts.length} selected dates already exist. Replace them?`;
+            if (!confirm(msg)) return false;
+        }
     }
     return true;
 }

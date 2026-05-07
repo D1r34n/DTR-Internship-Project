@@ -94,99 +94,120 @@ foreach ($schedMap as $date => $sched) {
         $sched       = $schedMap[$dateStr] ?? null;
         $leaveStatus = $leaveMap[$dateStr] ?? null;
         $obStatus    = $obMap[$dateStr]    ?? null;
-        $isNightCont = isset($nightContDates[$dateStr]) && !$sched;
+        $isNightCont = isset($nightContDates[$dateStr]);
         $isToday     = ($dateStr === $today);
         $isPast      = ($dateStr < $today);
 
-        // ---- Determine badge ----
-        $badgeClass  = '';
-        $badgeText   = '';
-        $showTimes   = false;
-        $timeInStr   = '';
-        $timeOutStr  = '';
+        // ---- Determine display ----
         $schedInVal  = '';
         $schedOutVal = '';
+
+        // Night-continuation block (always shown first if applicable)
+        $contBadgeClass = '';
+        $contTimeStr    = '';
+        if ($isNightCont) {
+            $contBadgeClass = 'night-cont';
+            foreach ($schedMap as $_sd => $_s) {
+                if (!empty($_s['scheduled_end']) && date('Y-m-d', strtotime($_s['scheduled_end'])) === $dateStr) {
+                    $contTimeStr = 'until ' . date('g:i A', strtotime($_s['scheduled_end']));
+                    break;
+                }
+            }
+        }
+
+        // Own schedule / leave / OB block
+        $badgeClass          = '';
+        $badgeText           = '';
+        $showTimes           = false;
+        $timeInStr           = '';
+        $timeOutStr          = '';
         $isRejectedLeaveOrOB = false;
 
-        if ($sched && $sched['is_rest_day']) {
-            $badgeClass = 'rest';
-            $badgeText  = 'Rest Day';
-
-        } elseif ($leaveStatus === 'approved') {
+        if ($leaveStatus === 'approved') {
             $badgeClass = 'on-leave';
             $badgeText  = 'On Leave';
-
         } elseif ($obStatus === 'approved') {
             $badgeClass = 'on-ob';
             $badgeText  = 'On OB';
-
-        } elseif ($leaveStatus === 'pending' || $obStatus === 'pending') {
+        } elseif ($leaveStatus === 'pending') {
             $badgeClass = 'leave-pending';
-            $badgeText  = 'Leave/OB Pending';
-
-        } elseif ($leaveStatus === 'rejected' || $obStatus === 'rejected') {
-            $badgeClass = 'leave-rejected';
-            $badgeText  = 'Leave/OB Rejected';
+            $badgeText  = 'Leave Pending';
+        } elseif ($obStatus === 'pending') {
+            $badgeClass = 'leave-pending';
+            $badgeText  = 'OB Pending';
+        } elseif ($leaveStatus === 'rejected') {
+            $badgeClass          = 'leave-rejected';
+            $badgeText           = 'Leave Rejected';
             $isRejectedLeaveOrOB = true;
-
-        } elseif ($isNightCont) {
-            $badgeClass = 'night-cont';
-            $badgeText  = 'Night Shift (cont.)';
-
+        } elseif ($obStatus === 'rejected') {
+            $badgeClass          = 'leave-rejected';
+            $badgeText           = 'OB Rejected';
+            $isRejectedLeaveOrOB = true;
+        } elseif ($sched && $sched['is_rest_day']) {
+            $badgeClass = 'rest';
+            $badgeText  = 'Rest Day';
         } elseif ($sched) {
-            $startHour = (int) date('H', strtotime($sched['scheduled_start']));
-            $isNight   = ($startHour >= 18 || $startHour < 6);
-            $badgeClass = $isNight ? 'night' : 'day';
-            $badgeText  = $isNight ? 'Night Shift' : 'Day Shift';
+            $endTs       = strtotime($sched['scheduled_end']);
+            $isOvernight = date('Y-m-d', $endTs) > $dateStr;
+            $sh          = (int) date('H', strtotime($sched['scheduled_start']));
+            $badgeClass  = ($sh >= 18 || $sh < 6) ? 'night' : 'day';
+            $badgeText   = ($sh >= 18 || $sh < 6) ? 'Night' : 'Day';
             $showTimes   = true;
             $timeInStr   = date('g:i A', strtotime($sched['scheduled_start']));
-            $timeOutStr  = date('g:i A', strtotime($sched['scheduled_end']));
-            $schedInVal  = date('H:i',   strtotime($sched['scheduled_start']));
-            $schedOutVal = date('H:i',   strtotime($sched['scheduled_end']));
+            $timeOutStr  = date('g:i A', $endTs) . ($isOvernight ? ' ↪' : '');
+            $schedInVal  = date('H:i', strtotime($sched['scheduled_start']));
+            $schedOutVal = date('H:i', $endTs);
         }
 
-        // For rejected leave/OB, also show the underlying shift if available
+        // For rejected leave/OB also show the underlying shift times
         if ($isRejectedLeaveOrOB && $sched && !$sched['is_rest_day']) {
+            $endTs       = strtotime($sched['scheduled_end']);
+            $isOvernight = date('Y-m-d', $endTs) > $dateStr;
             $showTimes   = true;
             $timeInStr   = date('g:i A', strtotime($sched['scheduled_start']));
-            $timeOutStr  = date('g:i A', strtotime($sched['scheduled_end']));
-            $schedInVal  = date('H:i',   strtotime($sched['scheduled_start']));
-            $schedOutVal = date('H:i',   strtotime($sched['scheduled_end']));
+            $timeOutStr  = date('g:i A', $endTs) . ($isOvernight ? ' ↪' : '');
+            $schedInVal  = date('H:i', strtotime($sched['scheduled_start']));
+            $schedOutVal = date('H:i', $endTs);
         }
 
-        $hasContent = !empty($badgeText);
+        $hasContent = $isNightCont || !empty($badgeText);
         $classes    = 'sched-cal-day';
         if ($hasContent)   $classes .= ' has-sched';
+        if ($isNightCont && empty($badgeText)) $classes .= ' night-cont-day';
         if ($isToday)      $classes .= ' is-today';
         if ($isPast && !$hasContent) $classes .= ' is-past';
     ?>
-    <div class="<?= $classes ?>">
+    <div class="<?= $classes ?>" data-date="<?= $dateStr ?>">
         <div class="sched-cal-day-num <?= $isToday ? 'is-today-num' : '' ?>"><?= $day ?></div>
 
-        <?php if ($hasContent): ?>
-            <span class="sched-cal-shift-badge <?= $badgeClass ?>"><?= $badgeText ?></span>
+        <?php if ($isNightCont): ?>
+            <span class="sched-cal-shift-badge night-cont"><?= $contTimeStr ?></span>
+        <?php endif; ?>
 
+        <?php if (!empty($badgeText)): ?>
+            <span class="sched-cal-shift-badge <?= $badgeClass ?>"><?= $badgeText ?></span>
             <?php if ($showTimes): ?>
                 <div class="sched-cal-times"><?= $timeInStr ?><br><?= $timeOutStr ?></div>
             <?php endif; ?>
+        <?php endif; ?>
 
-            <?php if ($sched && !$sched['is_rest_day'] && !$isNightCont): ?>
-                <div class="sched-cal-day-actions">
-                    <button class="sched-cal-action-btn edit" title="Edit"
-                        onclick="openEditModal(
-                            <?= $employeeId ?>,
-                            '<?= $dateStr ?>',
-                            '<?= $schedInVal ?>',
-                            '<?= $schedOutVal ?>'
-                        ); event.stopPropagation();">
-                        <i class="bi bi-pencil"></i>
-                    </button>
-                    <button class="sched-cal-action-btn delete" title="Delete"
-                        onclick="deleteScheduleDay(<?= $employeeId ?>, '<?= $dateStr ?>'); event.stopPropagation();">
-                        <i class="bi bi-trash"></i>
-                    </button>
-                </div>
-            <?php endif; ?>
+        <?php $hasActiveLeaveOrOB = in_array($leaveStatus, ['approved','pending']) || in_array($obStatus, ['approved','pending']); ?>
+        <?php if ($sched && !$sched['is_rest_day'] && !($isNightCont && empty($badgeText)) && !$hasActiveLeaveOrOB): ?>
+            <div class="sched-cal-day-actions">
+                <button class="sched-cal-action-btn edit" title="Edit"
+                    onclick="openEditModal(
+                        <?= $employeeId ?>,
+                        '<?= $dateStr ?>',
+                        '<?= $schedInVal ?>',
+                        '<?= $schedOutVal ?>'
+                    ); event.stopPropagation();">
+                    <i class="bi bi-pencil"></i>
+                </button>
+                <button class="sched-cal-action-btn delete" title="Delete"
+                    onclick="deleteScheduleDay(<?= $employeeId ?>, '<?= $dateStr ?>'); event.stopPropagation();">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </div>
         <?php endif; ?>
     </div>
     <?php endfor; ?>
