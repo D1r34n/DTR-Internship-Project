@@ -233,6 +233,7 @@ $tapLogs = $logsStmt->fetchAll(PDO::FETCH_ASSOC);
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 
     <!-- Global CSS -->
     <link rel="stylesheet" href="../assets/css/root.css">
@@ -609,87 +610,69 @@ $tapLogs = $logsStmt->fetchAll(PDO::FETCH_ASSOC);
 
                 <div class="tab-pane fade" id="tab3" role="tabpanel">
 
-                    <!-- Month nav + count -->
-                    <div class="tab-section-header">
-                        <div class="d-flex align-items-center gap-2">
-                            <button class="sched-nav-btn" onclick="navigatePrev()">
-                                <i class="bi bi-chevron-left"></i>
-                            </button>
-                            <span class="sched-month-label"><?= htmlspecialchars($monthLabel) ?></span>
-                            <button class="sched-nav-btn" onclick="navigateNext()">
-                                <i class="bi bi-chevron-right"></i>
+                    <!-- Filter bar -->
+                    <div class="ev-logs-filter">
+                        <div class="dropdown">
+                            <button class="btn dropdown-toggle" id="logsDatePickerBtn" type="button">
+                                <i class="bi bi-calendar3"></i>
+                                <span id="logsDateRangeLabel"><?= htmlspecialchars($monthLabel) ?></span>
                             </button>
                         </div>
-                        <span id="chip-logs-count" class="tab-summary-chip" style="color:var(--text-muted);">
-                            <?= count($tapLogs) ?> log<?= count($tapLogs) !== 1 ? 's' : '' ?>
-                        </span>
+                        <div class="dropdown">
+                            <button class="btn dropdown-toggle" type="button" id="logsTypeToggle"
+                                    data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="bi bi-funnel"></i>
+                                <span id="logsTypeLabel">All Types</span>
+                            </button>
+                            <ul class="dropdown-menu" id="logsTypeMenu">
+                                <li><a class="dropdown-item" href="#" data-value="ALL">All Types</a></li>
+                                <li><a class="dropdown-item" href="#" data-value="IN">Time In</a></li>
+                                <li><a class="dropdown-item" href="#" data-value="OUT">Time Out</a></li>
+                                <li><a class="dropdown-item" href="#" data-value="BREAK_IN">Break In</a></li>
+                                <li><a class="dropdown-item" href="#" data-value="BREAK_OUT">Break Out</a></li>
+                            </ul>
+                        </div>
+                        <span id="chip-logs-count" class="tab-summary-chip ms-auto" style="color:var(--text-muted);">—</span>
                     </div>
 
-                    <!-- Logs table -->
-                    <div class="logs-table-wrapper">
-                        <table class="table table-borderless table-hover mb-0">
+                    <!-- Sticky header -->
+                    <div class="ev-logs-header-glass">
+                        <table class="table table-borderless mb-0">
+                            <colgroup>
+                                <col style="width:18%">
+                                <col style="width:12%">
+                                <col style="width:15%">
+                                <col style="width:20%">
+                                <col style="width:18%">
+                                <col style="width:17%">
+                            </colgroup>
                             <thead>
                                 <tr>
-                                    <th style="position:sticky;top:0;background:var(--bg-dark);color:var(--text-muted);z-index:1;border-bottom:1px solid var(--glass-border);font-size:0.78rem;font-weight:400;">Date &amp; Time</th>
-                                    <th style="position:sticky;top:0;background:var(--bg-dark);color:var(--text-muted);z-index:1;border-bottom:1px solid var(--glass-border);font-size:0.78rem;font-weight:400;">Type</th>
-                                    <th style="position:sticky;top:0;background:var(--bg-dark);color:var(--text-muted);z-index:1;border-bottom:1px solid var(--glass-border);font-size:0.78rem;font-weight:400;">Within Office</th>
-                                    <th style="position:sticky;top:0;background:var(--bg-dark);color:var(--text-muted);z-index:1;border-bottom:1px solid var(--glass-border);font-size:0.78rem;font-weight:400;">Distance</th>
+                                    <th class="logs-sortable" data-sort="date">Date <i class="bi bi-arrow-down-up logs-sort-icon" id="lsort-date"></i></th>
+                                    <th class="logs-sortable" data-sort="time">Time <i class="bi bi-arrow-down-up logs-sort-icon" id="lsort-time"></i></th>
+                                    <th class="logs-sortable" data-sort="type">Log Type <i class="bi bi-arrow-down-up logs-sort-icon" id="lsort-type"></i></th>
+                                    <th class="logs-sortable" data-sort="location">Location <i class="bi bi-arrow-down-up logs-sort-icon" id="lsort-location"></i></th>
+                                    <th>Requested By</th>
+                                    <th>Edit Status</th>
                                 </tr>
                             </thead>
-                            <tbody>
-                                <?php if (empty($tapLogs)): ?>
-                                    <tr>
-                                        <td colspan="4" class="text-center py-5"
-                                            style="color:var(--text-muted); background:rgba(0,0,0,0.2);">
-                                            <i class="bi bi-clock-history"
-                                                style="font-size:1.8rem; display:block; margin-bottom:0.4rem; opacity:0.4;"></i>
-                                            No logs found for <?= htmlspecialchars($monthLabel) ?>.
-                                        </td>
-                                    </tr>
-                                <?php else: ?>
-                                    <?php
-                                    $typeMap = [
-                                        'IN'        => ['label' => 'Time In',   'cls' => 'in'],
-                                        'OUT'       => ['label' => 'Time Out',  'cls' => 'out'],
-                                        'BREAK_IN'  => ['label' => 'Break In',  'cls' => 'break-in'],
-                                        'BREAK_OUT' => ['label' => 'Break Out', 'cls' => 'break-out'],
-                                    ];
-                                    foreach ($tapLogs as $log):
-                                        $typeInfo = $typeMap[$log['log_type']] ?? ['label' => $log['log_type'], 'cls' => ''];
-                                    ?>
-                                    <tr>
-                                        <td style="background:rgba(0,0,0,0.2); color:var(--text-light); border-color:var(--glass-border); vertical-align:middle;">
-                                            <div style="font-size:0.85rem;"><?= date('D, M j, Y', strtotime($log['log_time'])) ?></div>
-                                            <div style="font-size:0.73rem; color:var(--text-muted);"><?= date('g:i:s A', strtotime($log['log_time'])) ?></div>
-                                        </td>
-                                        <td style="background:rgba(0,0,0,0.2); border-color:var(--glass-border); vertical-align:middle;">
-                                            <span class="log-type-badge <?= $typeInfo['cls'] ?>">
-                                                <i class="bi bi-circle-fill" style="font-size:0.45rem;"></i>
-                                                <?= $typeInfo['label'] ?>
-                                            </span>
-                                        </td>
-                                        <td style="background:rgba(0,0,0,0.2); border-color:var(--glass-border); vertical-align:middle;">
-                                            <?php if ($log['is_within_office']): ?>
-                                                <span style="color:var(--primary-color); font-size:0.82rem;">
-                                                    <i class="bi bi-check-circle-fill"></i> Yes
-                                                </span>
-                                            <?php else: ?>
-                                                <span style="color:var(--danger-color); font-size:0.82rem;">
-                                                    <i class="bi bi-x-circle-fill"></i> No
-                                                </span>
-                                            <?php endif; ?>
-                                        </td>
-                                        <td style="background:rgba(0,0,0,0.2); color:var(--text-muted); border-color:var(--glass-border); vertical-align:middle; font-size:0.82rem;">
-                                            <?= $log['distance_meters'] !== null
-                                                ? number_format((float) $log['distance_meters'], 0) . ' m'
-                                                : '—' ?>
-                                        </td>
-                                    </tr>
-                                    <?php endforeach; ?>
-                                <?php endif; ?>
-                            </tbody>
                         </table>
-                    </div><!-- .logs-table-wrapper -->
+                    </div>
+
+                    <!-- Scrollable body -->
+                    <div class="ev-logs-scroll">
+                        <table class="table table-hover mb-0">
+                            <colgroup>
+                                <col style="width:18%">
+                                <col style="width:12%">
+                                <col style="width:15%">
+                                <col style="width:20%">
+                                <col style="width:18%">
+                                <col style="width:17%">
+                            </colgroup>
+                            <tbody id="admin_logs_tbody"></tbody>
+                        </table>
+                    </div>
 
                 </div>
 
@@ -698,6 +681,15 @@ $tapLogs = $logsStmt->fetchAll(PDO::FETCH_ASSOC);
     </div>
 
 </div><!-- #main-wrapper -->
+
+<!-- ===== MAP POPUP ===== -->
+<div class="mapPopUpContainer" id="ev-map-popup-container">
+    <div class="mapPopUp" id="ev-map-popup"></div>
+    <div class="mapPopUpInfo" id="ev-map-popup-info"></div>
+    <div style="padding:10px;">
+        <a class="openGoogleMapsBtn" id="ev-map-gmaps-btn" href="#" target="_blank">Open in Google Maps</a>
+    </div>
+</div>
 
 <!-- ===== GANTT TOOLTIP ===== -->
 <div id="gantt_tooltip">
@@ -897,6 +889,7 @@ $tapLogs = $logsStmt->fetchAll(PDO::FETCH_ASSOC);
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="../system_functions/gantt.js"></script>
 <script>
 // ---- Department dropdown (Edit Employee modal) ----
@@ -1044,60 +1037,108 @@ function loadRecords(startDate, endDate) {
         });
 }
 
-// ---- Tab 3: Logs ----
-function loadLogs(startDate, endDate) {
-    const tbody = document.querySelector('#tab3 .logs-table-wrapper tbody');
-    tbody.innerHTML = `<tr><td colspan="4" class="text-center py-4" style="color:var(--text-muted);background:rgba(0,0,0,0.2);">${loadingHTML()}</td></tr>`;
+// ---- Tab 3: Logs state ----
+let logStartDate = '<?= $monthStart ?>';
+let logEndDate   = '<?= $monthEnd ?>';
+let logType      = 'ALL';
+let logSort      = 'date';
+let logSortDir   = 'desc';
+let fpLogs       = null;
 
-    fetch(`get_employee_logs.php?employee_id=${EMP_ID}&date_from=${startDate}&date_to=${endDate}`)
-        .then(r => r.json())
-        .then(logs => {
+function loadLogs(start, end) {
+    if (start) logStartDate = start;
+    if (end)   logEndDate   = end;
+    if (fpLogs) {
+        fpLogs.setDate([logStartDate, logEndDate], false);
+        updateLogsDateLabel([new Date(logStartDate + 'T00:00:00'), new Date(logEndDate + 'T00:00:00')]);
+    }
+    fetchAdminLogs();
+}
+
+function fetchAdminLogs() {
+    const tbody = document.getElementById('admin_logs_tbody');
+    tbody.innerHTML = `<tr class="emptyRow"><td colspan="6"><div class="logsEmpty"><i class="bi bi-arrow-clockwise" style="font-size:1.5rem;"></i></div></td></tr>`;
+    fetch(`get_employee_logs.php?employee_id=${EMP_ID}&start=${logStartDate}&end=${logEndDate}&type=${logType}&sort=${logSort}&dir=${logSortDir}`)
+        .then(r => r.text())
+        .then(html => {
+            tbody.innerHTML = html;
+            const rows = tbody.querySelectorAll('tr:not(.emptyRow)').length;
             const chip = document.getElementById('chip-logs-count');
-            if (chip) chip.textContent = logs.length + ' log' + (logs.length !== 1 ? 's' : '');
-
-            if (logs.length === 0) {
-                const lbl = document.querySelector('#tab3 .sched-month-label')?.textContent ?? '';
-                tbody.innerHTML = `<tr><td colspan="4" class="text-center py-5" style="color:var(--text-muted);background:rgba(0,0,0,0.2);">
-                    <i class="bi bi-clock-history" style="font-size:1.8rem;display:block;margin-bottom:0.4rem;opacity:0.4;"></i>
-                    No logs found for ${lbl}.
-                </td></tr>`;
-                return;
-            }
-
-            const typeMap = {
-                IN:        ['Time In',   'in'],
-                OUT:       ['Time Out',  'out'],
-                BREAK_IN:  ['Break In',  'break-in'],
-                BREAK_OUT: ['Break Out', 'break-out'],
-            };
-
-            tbody.innerHTML = logs.map(log => {
-                const [label, cls] = typeMap[log.log_type] ?? [log.log_type, ''];
-                const dt     = new Date(log.log_time.replace(' ', 'T'));
-                const dtStr  = dt.toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric', year:'numeric' });
-                const tmStr  = dt.toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit', second:'2-digit', hour12:true });
-                const dist   = log.distance_meters != null
-                    ? Number(log.distance_meters).toLocaleString('en-US', { maximumFractionDigits: 0 }) + ' m'
-                    : '—';
-                const office = log.is_within_office
-                    ? `<span style="color:var(--primary-color);font-size:0.82rem;"><i class="bi bi-check-circle-fill"></i> Yes</span>`
-                    : `<span style="color:var(--danger-color);font-size:0.82rem;"><i class="bi bi-x-circle-fill"></i> No</span>`;
-                return `<tr>
-                    <td style="background:rgba(0,0,0,0.2);color:var(--text-light);border-color:var(--glass-border);vertical-align:middle;">
-                        <div style="font-size:0.85rem;">${dtStr}</div>
-                        <div style="font-size:0.73rem;color:var(--text-muted);">${tmStr}</div>
-                    </td>
-                    <td style="background:rgba(0,0,0,0.2);border-color:var(--glass-border);vertical-align:middle;">
-                        <span class="log-type-badge ${cls}"><i class="bi bi-circle-fill" style="font-size:0.45rem;"></i> ${label}</span>
-                    </td>
-                    <td style="background:rgba(0,0,0,0.2);border-color:var(--glass-border);vertical-align:middle;">${office}</td>
-                    <td style="background:rgba(0,0,0,0.2);color:var(--text-muted);border-color:var(--glass-border);vertical-align:middle;font-size:0.82rem;">${dist}</td>
-                </tr>`;
-            }).join('');
+            if (chip) chip.textContent = rows + ' log' + (rows !== 1 ? 's' : '');
         })
         .catch(() => {
-            tbody.innerHTML = `<tr><td colspan="4" class="text-center py-4" style="color:var(--danger-color);">Failed to load logs.</td></tr>`;
+            tbody.innerHTML = `<tr class="emptyRow"><td colspan="6"><div class="logsEmpty"><i class="bi bi-exclamation-circle logsEmptyIcon"></i><div>Failed to load logs.</div></div></td></tr>`;
         });
+}
+
+function updateLogsDateLabel(dates) {
+    const el = document.getElementById('logsDateRangeLabel');
+    if (!el || !dates.length) return;
+    const fmt = d => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    const same = dates.length > 1 && dates[0].toDateString() === dates[1].toDateString();
+    el.textContent = (dates.length === 1 || same) ? fmt(dates[0]) : fmt(dates[0]) + ' – ' + fmt(dates[1]);
+}
+
+function applyLogsHeaderUI() {
+    document.querySelectorAll('.logs-sortable').forEach(el => el.classList.remove('sorted'));
+    document.querySelectorAll('.logs-sort-icon').forEach(el => { el.className = 'logs-sort-icon bi bi-arrow-down-up'; });
+    const activeTh = document.querySelector(`.logs-sortable[data-sort="${logSort}"]`);
+    if (activeTh) {
+        activeTh.classList.add('sorted');
+        const icon = activeTh.querySelector('.logs-sort-icon');
+        if (icon) icon.className = 'logs-sort-icon bi ' + (logSortDir === 'asc' ? 'bi-arrow-up' : 'bi-arrow-down');
+    }
+}
+
+// ---- Map popup ----
+let popupMap    = null;
+let hideTimeout = null;
+const mapPopup  = document.getElementById('ev-map-popup-container');
+
+document.addEventListener('mouseover', e => {
+    const trigger = e.target.closest('.loc-trigger');
+    if (!trigger || !mapPopup) return;
+    clearTimeout(hideTimeout);
+    const lat = parseFloat(trigger.dataset.lat), lng = parseFloat(trigger.dataset.lng);
+    document.getElementById('ev-map-gmaps-btn').href = `https://www.google.com/maps?q=${lat},${lng}`;
+    const rect = trigger.getBoundingClientRect();
+    const spaceBelow = window.innerHeight - rect.bottom, spaceAbove = rect.top;
+    const topPos  = (spaceBelow < 320 && spaceAbove > spaceBelow) ? rect.top + window.scrollY - 323 : rect.bottom + window.scrollY + 3;
+    const leftPos = (window.innerWidth - rect.left < 300) ? rect.right + window.scrollX - 610 : rect.left + window.scrollX - 310;
+    mapPopup.style.top     = `${topPos}px`;
+    mapPopup.style.left    = `${leftPos}px`;
+    mapPopup.style.display = 'block';
+    document.getElementById('ev-map-popup-info').innerHTML =
+        `<b>${trigger.dataset.label}</b><br>Lat: ${lat} &nbsp; Lng: ${lng}<br>Accuracy: ±${trigger.dataset.acc} m &nbsp; Distance: ${trigger.dataset.dist} m`;
+    setTimeout(() => {
+        if (!popupMap) {
+            popupMap = L.map('ev-map-popup', { zoomControl: false, attributionControl: false });
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(popupMap);
+            popupMap._marker = null;
+        }
+        popupMap.invalidateSize();
+        popupMap.setView([lat, lng], 17);
+        if (popupMap._marker) popupMap.removeLayer(popupMap._marker);
+        popupMap._marker = L.marker([lat, lng]).addTo(popupMap);
+    }, 50);
+});
+
+document.addEventListener('mouseout', e => {
+    if (!e.target.closest('.loc-trigger')) return;
+    hideTimeout = setTimeout(() => {
+        if (mapPopup) mapPopup.style.display = 'none';
+        if (popupMap) { popupMap.remove(); popupMap = null; }
+    }, 200);
+});
+
+if (mapPopup) {
+    mapPopup.addEventListener('mouseover', () => clearTimeout(hideTimeout));
+    mapPopup.addEventListener('mouseout', () => {
+        hideTimeout = setTimeout(() => {
+            mapPopup.style.display = 'none';
+            if (popupMap) { popupMap.remove(); popupMap = null; }
+        }, 200);
+    });
 }
 
 // ---- DOMContentLoaded ----
@@ -1128,6 +1169,48 @@ document.addEventListener('DOMContentLoaded', () => {
     const activeTab = activeBtn ? activeBtn.dataset.bsTarget : '#tab1';
     loadTab(activeTab, currentMonth);
     tabLoadedMonth[activeTab] = currentMonth;
+
+    // ---- Logs tab: flatpickr, type filter, sort headers ----
+    fpLogs = flatpickr('#logsDatePickerBtn', {
+        mode: 'range',
+        dateFormat: 'Y-m-d',
+        defaultDate: [logStartDate, logEndDate],
+        onReady(dates) { updateLogsDateLabel(dates); },
+        onChange(dates) {
+            updateLogsDateLabel(dates);
+            if (dates.length !== 2) return;
+            const pad = n => String(n).padStart(2, '0');
+            const toLocal = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+            logStartDate = toLocal(dates[0]);
+            logEndDate   = toLocal(dates[1]);
+            fetchAdminLogs();
+        }
+    });
+
+    document.querySelectorAll('#logsTypeMenu .dropdown-item').forEach(item => {
+        item.addEventListener('click', e => {
+            e.preventDefault();
+            document.getElementById('logsTypeLabel').textContent = item.textContent.trim();
+            logType = item.dataset.value;
+            fetchAdminLogs();
+        });
+    });
+
+    applyLogsHeaderUI();
+    document.querySelectorAll('.logs-sortable').forEach(th => {
+        th.addEventListener('click', () => {
+            const col = th.dataset.sort;
+            if (logSort === col) {
+                logSortDir = logSortDir === 'asc' ? 'desc' : 'asc';
+                if (logSortDir === 'asc' && col === logSort) { /* already flipped */ }
+            } else {
+                logSort    = col;
+                logSortDir = 'asc';
+            }
+            applyLogsHeaderUI();
+            fetchAdminLogs();
+        });
+    });
 
     fp = flatpickr('#schedDatePicker', {
         mode: 'multiple',

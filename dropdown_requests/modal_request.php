@@ -1010,4 +1010,5 @@
         showToast('Something went wrong. Please try again.');
       });
   }
+  
 </script>
