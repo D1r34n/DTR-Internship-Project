@@ -804,6 +804,23 @@ button.btn {
 }
 
 /* ================================================
+   SMALL BUTTON
+   ================================================ */
+
+.btn-sm,
+button.btn-sm {
+    height: calc(var(--control-height) - 10px) !important;
+
+    padding: 0 0.75rem !important;
+
+    font-size: 0.75rem !important;
+
+    border-radius: 10px !important;
+
+    gap: 0.3rem !important;
+}
+
+/* ================================================
    GLASS CARD — FROSTED
    ================================================ */
 

@@ -11,41 +11,6 @@ if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'admin') {
 require_once '../db.php';
 date_default_timezone_set('Asia/Manila');
 
-$success = "";
-
-// ---- HANDLE DELETE ----
-if (isset($_GET['delete'])) {
-    $employeeId = $_GET['delete'];
-    $pdo->prepare("DELETE FROM logs WHERE employee_id = ?")->execute([$employeeId]);
-    $pdo->prepare("DELETE FROM schedules WHERE employee_id = ?")->execute([$employeeId]);
-    $pdo->prepare("DELETE FROM employees WHERE id = ?")->execute([$employeeId]);
-    $success = "Employee deleted successfully!";
-}
-
-// ---- HANDLE ADD / EDIT ----
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $name       = trim($_POST['name']);
-    $email      = trim($_POST['email']);
-    $password   = trim($_POST['password']);
-    $role       = $_POST['role'];
-    $department = !empty($_POST['department_id']) ? $_POST['department_id'] : null;
-
-    if (!empty($_POST['employee_id'])) {
-        if (!empty($password)) {
-            $pdo->prepare("UPDATE employees SET name=?, email=?, password=?, role=?, department_id=? WHERE id=?")
-                ->execute([$name, $email, $password, $role, $department, $_POST['employee_id']]);
-        } else {
-            $pdo->prepare("UPDATE employees SET name=?, email=?, role=?, department_id=? WHERE id=?")
-                ->execute([$name, $email, $role, $department, $_POST['employee_id']]);
-        }
-        $success = "Employee updated successfully!";
-    } else {
-        $pdo->prepare("INSERT INTO employees (name, email, password, role, department_id) VALUES (?, ?, ?, ?, ?)")
-            ->execute([$name, $email, $password, $role, $department]);
-        $success = "Employee added successfully!";
-    }
-}
-
 // ---- GET ALL EMPLOYEES ----
 $employees = $pdo->query("
     SELECT e.*, d.department_name, d.department_code
@@ -169,10 +134,6 @@ $employees = $pdo->query("
                     </div>
                 </div>
 
-                <?php if ($success): ?>
-                    <div class="empAlert"><?= $success ?></div>
-                <?php endif; ?>
-
                 <!-- Table Header -->
                 <div class="tableHeaderGlass">
                     <table class="table table-borderless mb-0">
@@ -229,7 +190,7 @@ $employees = $pdo->query("
                                     <td><?= htmlspecialchars($emp['department_name'] ?? 'No Department') ?></td>
                                     <td class="text-end">
 
-                                        <a class="btn btn-success d-flex align-items-center gap-2"
+                                        <a class="btn btn-sm btn-success d-flex align-items-center gap-2"
                                         href="admin_employee_view.php?id=<?= $emp['id'] ?>">
                                             <i class="bi bi-eye-fill"></i> View
                                         </a>
@@ -295,7 +256,7 @@ $employees = $pdo->query("
             </div>
         </div>
 
-        <!-- Add / Edit Employee Modal (Bootstrap) -->
+        <!-- Add Employee Modal (Bootstrap) -->
         <div class="modal fade" id="empModal" tabindex="-1" aria-hidden="true">
             <div class="modal-dialog modal-lg modal-dialog-centered">
                 <div class="modal-content">

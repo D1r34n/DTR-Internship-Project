@@ -18,7 +18,83 @@ if (!isset($_GET['id'])) {
 
 $employeeId = intval($_GET['id']);
 
-// ---- HANDLE AJAX DELETE ----
+// ---- HANDLE EMPLOYEE EDIT ----
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'edit_employee') {
+
+    $name       = trim($_POST['name'] ?? '');
+    $email      = trim($_POST['email'] ?? '');
+    $password   = trim($_POST['password'] ?? '');
+    $role       = $_POST['role'] ?? 'employee';
+    $department = !empty($_POST['department_id']) ? $_POST['department_id'] : null;
+
+    /* --------------------------------------------
+       DUPLICATE EMAIL CHECK
+       Excludes current employee ID
+    -------------------------------------------- */
+
+    $dup = $pdo->prepare("
+        SELECT id
+        FROM employees
+        WHERE email = ?
+        AND id != ?
+        LIMIT 1
+    ");
+
+    $dup->execute([$email, $employeeId]);
+
+    if ($dup->fetch()) {
+        header("Location: admin_employee_view.php?id=$employeeId&edit_error=duplicate_email");
+        exit();
+    }
+
+    /* --------------------------------------------
+       UPDATE EMPLOYEE
+    -------------------------------------------- */
+
+    if (!empty($password)) {
+
+        $pdo->prepare("
+            UPDATE employees
+            SET
+                name = ?,
+                email = ?,
+                password = ?,
+                role = ?,
+                department_id = ?
+            WHERE id = ?
+        ")->execute([
+            $name,
+            $email,
+            $password,
+            $role,
+            $department,
+            $employeeId
+        ]);
+
+    } else {
+
+        $pdo->prepare("
+            UPDATE employees
+            SET
+                name = ?,
+                email = ?,
+                role = ?,
+                department_id = ?
+            WHERE id = ?
+        ")->execute([
+            $name,
+            $email,
+            $role,
+            $department,
+            $employeeId
+        ]);
+    }
+
+    header("Location: admin_employee_view.php?id=$employeeId");
+    exit();
+}
+
+// ---- HANDLE AJAX DELETE (schedule) ----
 if (isset($_GET['ajax_delete'])) {
     $empId = intval($_GET['emp'] ?? 0);
     $date  = $_GET['date'] ?? '';
@@ -32,7 +108,8 @@ if (isset($_GET['ajax_delete'])) {
 }
 
 // ---- HANDLE ADD / EDIT SCHEDULE ----
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' &&
+    ($_POST['action'] ?? '') === 'save_schedule'    ) {
     $postEmpId    = intval($_POST['employee_id'] ?? 0);
     $dates        = json_decode($_POST['selected_dates'] ?? '[]', true);
     $time_in      = $_POST['time_in']  ?? '';
@@ -174,7 +251,7 @@ if (!$emp) {
 
                 <!-- Actions -->
                 <div class="ev-actions">
-                    <a href="admin_edit_employee.php?id=<?= $employeeId ?>" class="btn btn-info">
+                    <a href="#" data-bs-toggle="modal" data-bs-target="#edit-employee-modal" class="btn btn-info">
                         <i class="bi bi-pencil"></i> Edit
                     </a>
                     <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal">
@@ -185,6 +262,14 @@ if (!$emp) {
             </div>
         </div>
     </div>
+
+    <?php if (($_GET['edit_error'] ?? '') === 'duplicate_email'): ?>
+        <div class="alert alert-danger alert-dismissible fade show mx-3" role="alert">
+            <i class="bi bi-exclamation-triangle-fill"></i>
+            That email is already in use by another employee.
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    <?php endif; ?>
 
     <!-- Tabs -->
     <div class="ev-tabs card-glass">
@@ -246,6 +331,7 @@ if (!$emp) {
             </div>
 
             <form method="POST" action="admin_employee_view.php?id=<?= $employeeId ?>" onsubmit="return prepareSubmit()">
+                <input type="hidden" name="action" value="save_schedule">
                 <div class="modal-body">
 
                     <input type="hidden" name="employee_id" id="modalEmpId" value="<?= $employeeId ?>">
@@ -294,9 +380,155 @@ if (!$emp) {
     </div>
 </div>
 
+
+<!-- Edit Employee Modal -->
+<div class="modal fade" id="edit-employee-modal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <h5 class="modal-title">Editing <?= htmlspecialchars($emp['name']) ?></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <form method="POST" action="admin_employee_view.php?id=<?= $employeeId ?>">
+
+                <input type="hidden" name="action" value="edit_employee">
+
+                <div class="modal-body">
+                    <div class="row g-3">
+
+                        <div class="col-md-6">
+                            <label class="form-label">Name</label>
+                            <input type="text" name="name" class="form-control"
+                                   value="<?= htmlspecialchars($emp['name']) ?>" required>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Email</label>
+                            <input type="email" name="email" class="form-control"
+                                   value="<?= htmlspecialchars($emp['email']) ?>" required>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">New Password <small class="text-muted">(leave blank to keep)</small></label>
+                            <input type="password" name="password" class="form-control">
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Role</label>
+                            <select name="role" class="form-select">
+                                <option value="employee"  <?= $emp['role'] === 'employee'  ? 'selected' : '' ?>>Employee</option>
+                                <option value="workforce" <?= $emp['role'] === 'workforce' ? 'selected' : '' ?>>Workforce</option>
+                                <option value="admin"     <?= $emp['role'] === 'admin'     ? 'selected' : '' ?>>Admin</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Department</label>
+                            <div class="dropdown w-100">
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                                    <input type="text" id="edit-dept-search" class="form-control"
+                                           value="<?= htmlspecialchars($emp['department_name'] ?? '') ?>"
+                                           placeholder="Select Department" autocomplete="off">
+                                </div>
+                                <ul class="dropdown-menu p-2 w-100" id="edit-dept-menu"></ul>
+                            </div>
+                            <input type="hidden" name="department_id" id="edit-dept-id"
+                                   value="<?= htmlspecialchars($emp['department_id'] ?? '') ?>">
+                        </div>
+
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-check-circle-fill"></i> Update Employee
+                    </button>
+                </div>
+
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <h5 class="modal-title">Delete Employee</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body">
+                Are you sure you want to delete <strong><?= htmlspecialchars($emp['name']) ?></strong>?
+                This will permanently remove their schedules and logs.
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <a href="admin_employee_view.php?id=<?= $employeeId ?>&action=delete_employee" class="btn btn-danger">
+                    <i class="bi bi-trash"></i> Delete
+                </a>
+            </div>
+
+        </div>
+    </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script src="../system_functions/gantt.js"></script>
+<script>
+    // Department dropdown for the Edit Employee modal
+    (function () {
+        fetch('/DTR-Internship-Project/admin_pages/department_api.php?action=list')
+            .then(r => r.json())
+            .then(depts => {
+                const items = [
+                    { value: '', label: 'None' },
+                    ...depts.map(d => ({ value: String(d.id), label: d.department_name }))
+                ];
+                const input  = document.getElementById('edit-dept-search');
+                const menu   = document.getElementById('edit-dept-menu');
+                const hidden = document.getElementById('edit-dept-id');
+
+                function render(list) {
+                    menu.innerHTML = '';
+                    list.forEach(item => {
+                        const li  = document.createElement('li');
+                        const btn = document.createElement('button');
+                        btn.type        = 'button';
+                        btn.className   = 'dropdown-item';
+                        btn.textContent = item.label;
+                        btn.onclick = () => {
+                            input.value  = item.label === 'None' ? '' : item.label;
+                            hidden.value = item.value;
+                            menu.classList.remove('show');
+                        };
+                        li.appendChild(btn);
+                        menu.appendChild(li);
+                    });
+                }
+
+                input.addEventListener('click', () => menu.classList.add('show'));
+                input.addEventListener('input', () => {
+                    const q = input.value.toLowerCase();
+                    render(items.filter(i => i.label.toLowerCase().includes(q)));
+                });
+                document.addEventListener('click', e => {
+                    if (!e.target.closest('#edit-dept-menu') && !e.target.closest('#edit-dept-search'))
+                        menu.classList.remove('show');
+                });
+                render(items);
+            })
+            .catch(() => {});
+    })();
+</script>
 
 </body>
 </html>

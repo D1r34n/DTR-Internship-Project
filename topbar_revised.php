@@ -196,7 +196,7 @@ $currentStatus = $timedIn ? 'Timed In' : 'Timed Out';
 
                 <!-- TIME IN STATE -->
                 <?php if (!$timedIn): ?>
-                    <button class="btn btn-success btn-sm" onclick="handleTimeIn()">
+                    <button class="btn btn-success" onclick="handleTimeIn()">
                         <i class="bi bi-stopwatch-fill"></i>
                         Time In
                     </button>
@@ -471,7 +471,7 @@ $currentStatus = $timedIn ? 'Timed In' : 'Timed Out';
 
                 } else if (response.tap === 'timed_out') {
                     setBtnGroup(btnGroup, `
-                    <button class="btn btn-success btn-sm" onclick="handleTimeIn()">
+                    <button class="btn btn-success" onclick="handleTimeIn()">
                         <i class="bi bi-stopwatch-fill"></i> Time In
                     </button>
                 `);
