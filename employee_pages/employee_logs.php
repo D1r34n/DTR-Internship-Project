@@ -88,19 +88,27 @@ $current_page = 'logs';
             <!-- Table Header -->
             <div class="tableHeaderGlass">
                 <table class="table table-borderless mb-0">
+                    <colgroup>
+                        <col style="width:18%">
+                        <col style="width:12%">
+                        <col style="width:15%">
+                        <col style="width:18%">
+                        <col style="width:20%">
+                        <col style="width:17%">
+                    </colgroup>
                     <thead>
                         <tr>
-                            <th class="sortable active desc" data-sort="date">
-                                Date <i class="bi bi-chevron-down sort-icon"></i>
+                            <th class="sortable" data-sort="date">
+                                Date <i class="bi bi-arrow-down-up sortIcon" id="sort-date"></i>
                             </th>
                             <th class="sortable" data-sort="time">
-                                Time <i class="bi bi-chevron-down sort-icon"></i>
+                                Time <i class="bi bi-arrow-down-up sortIcon" id="sort-time"></i>
                             </th>
                             <th class="sortable" data-sort="type">
-                                Log Type <i class="bi bi-chevron-down sort-icon"></i>
+                                Log Type <i class="bi bi-arrow-down-up sortIcon" id="sort-type"></i>
                             </th>
                             <th class="sortable" data-sort="location">
-                                Location <i class="bi bi-chevron-down sort-icon"></i>
+                                Location <i class="bi bi-arrow-down-up sortIcon" id="sort-location"></i>
                             </th>
                             <th>Requested By</th>
                             <th>Edit Status</th>
@@ -112,6 +120,14 @@ $current_page = 'logs';
             <!-- Body with scrolling -->
             <div class="tableScroll">
                 <table class="table table-hover mb-0">
+                    <colgroup>
+                        <col style="width:18%">
+                        <col style="width:12%">
+                        <col style="width:15%">
+                        <col style="width:18%">
+                        <col style="width:20%">
+                        <col style="width:17%">
+                    </colgroup>
                     <tbody id="logs_table_body">
                         <!-- populated by fetchLogs() -->
                     </tbody>
@@ -218,12 +234,17 @@ let sortColumn    = DEFAULT_SORT_COL;
 let sortDirection = DEFAULT_SORT_DIR;
 
 function applyHeaderUI() {
-    document.querySelectorAll('.sortable').forEach(el => {
-        el.classList.remove('active', 'asc', 'desc');
+    document.querySelectorAll('.sortable').forEach(el => el.classList.remove('sorted'));
+    document.querySelectorAll('.sortIcon').forEach(el => {
+        el.className = 'sortIcon bi bi-arrow-down-up';
     });
 
     const activeTh = document.querySelector(`.sortable[data-sort="${sortColumn}"]`);
-    if (activeTh) activeTh.classList.add('active', sortDirection);
+    if (activeTh) {
+        activeTh.classList.add('sorted');
+        const icon = activeTh.querySelector('.sortIcon');
+        if (icon) icon.className = 'sortIcon bi ' + (sortDirection === 'asc' ? 'bi-arrow-up' : 'bi-arrow-down');
+    }
 }
 
 document.querySelectorAll('.sortable').forEach(th => {
@@ -335,6 +356,7 @@ mapPopup.addEventListener('mouseout', () => {
    INITIAL LOAD
 ========================= */
 document.addEventListener('DOMContentLoaded', () => {
+    applyHeaderUI();
     fetchLogs();
 });
 
