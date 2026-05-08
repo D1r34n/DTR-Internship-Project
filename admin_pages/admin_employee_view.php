@@ -29,11 +29,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'edit_
     $role       = $_POST['role'] ?? 'employee';
     $department = !empty($_POST['department_id']) ? $_POST['department_id'] : null;
 
-    /* --------------------------------------------
-       DUPLICATE EMAIL CHECK
-       Excludes current employee ID
-    -------------------------------------------- */
-
     $dup = $pdo->prepare("
         SELECT id
         FROM employees
@@ -48,10 +43,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'edit_
         header("Location: admin_employee_view.php?id=$employeeId&edit_error=duplicate_email");
         exit();
     }
-
-    /* --------------------------------------------
-       UPDATE EMPLOYEE
-    -------------------------------------------- */
 
     if (!empty($password)) {
 
@@ -151,15 +142,58 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' &&
     header("Location: admin_employee_view.php?id=$employeeId");
     exit();
 }
+// ---- HANDLE SAVE REST DAY ----
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save_rest_day') {
+    $postEmpId = intval($_POST['employee_id'] ?? 0);
+    $restDays  = json_decode($_POST['rest_days'] ?? '[]', true);
+
+    if ($postEmpId && is_array($restDays)) {
+
+        $pdo->prepare("UPDATE schedules SET is_rest_day = 0 WHERE employee_id = ? AND is_rest_day = 1")
+            ->execute([$postEmpId]);
+
+        if (!empty($restDays)) {
+            $monthsStmt = $pdo->prepare("
+                SELECT DISTINCT DATE_FORMAT(schedule_date, '%Y-%m') AS ym
+                FROM schedules
+                WHERE employee_id = ?
+                ORDER BY ym
+            ");
+            $monthsStmt->execute([$postEmpId]);
+            $months = $monthsStmt->fetchAll(PDO::FETCH_COLUMN);
+
+            $setRestStmt = $pdo->prepare("
+                UPDATE schedules
+                SET is_rest_day = 1
+                WHERE employee_id = ? AND schedule_date = ?
+            ");
+
+            foreach ($months as $ym) {
+                [$y, $m]     = explode('-', $ym);
+                $firstDay    = sprintf('%04d-%02d-01', (int)$y, (int)$m);
+                $daysInMonth = (int) date('t', strtotime($firstDay));
+
+                for ($d = 1; $d <= $daysInMonth; $d++) {
+                    $dateStr = sprintf('%04d-%02d-%02d', (int)$y, (int)$m, $d);
+                    $dow     = (int) date('w', strtotime($dateStr));
+                    if (in_array($dow, $restDays)) {
+                        $setRestStmt->execute([$postEmpId, $dateStr]);
+                    }
+                }
+            }
+        }
+    }
+
+    header("Location: admin_employee_view.php?id=$employeeId");
+    exit();
+}
+
 // ---- HANDLE EMPLOYEE DELETE ----
 if (isset($_GET['action']) && $_GET['action'] === 'delete_employee') {
 
-    // delete related records first
     $pdo->prepare("DELETE FROM logs WHERE employee_id = ?")->execute([$employeeId]);
     $pdo->prepare("DELETE FROM attendances WHERE employee_id = ?")->execute([$employeeId]);
     $pdo->prepare("DELETE FROM schedules WHERE employee_id = ?")->execute([$employeeId]);
-
-    // delete employee
     $pdo->prepare("DELETE FROM employees WHERE id = ?")->execute([$employeeId]);
 
     header("Location: admin_manage_employees.php");
@@ -243,6 +277,7 @@ $tapLogs = $logsStmt->fetchAll(PDO::FETCH_ASSOC);
 
     <!-- Page component CSS (calendar + gantt styles) -->
     <link rel="stylesheet" href="admin_employee_view.css">
+    <link rel="stylesheet" href="../dropdown_requests/log_edit_modal.css">
 </head>
 <body>
 
@@ -355,10 +390,23 @@ $tapLogs = $logsStmt->fetchAll(PDO::FETCH_ASSOC);
                             <span id="chip-sched-count" class="tab-summary-chip" style="color:var(--text-muted);">
                                 <?= count($schedulesByDate) ?> scheduled day<?= count($schedulesByDate) !== 1 ? 's' : '' ?>
                             </span>
-                            <button class="btn btn-success sched-add-btn" onclick="openAddModal()"
-                                data-bs-toggle="modal" data-bs-target="#schedModal">
-                                <i class="bi bi-plus-lg"></i> Add Schedule
-                            </button>
+                            <div class="dropdown">
+                                <button class="btn btn-success sched-add-btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="bi bi-plus-lg"></i> Manage Schedule
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    <li>
+                                        <a class="dropdown-item" href="#" id="btn-add-schedule">
+                                            <i class="bi bi-calendar-plus me-2"></i>Add Schedule
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="#" id="btn-add-rest-day">
+                                            <i class="bi bi-moon-stars me-2"></i>Add Rest Day
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
                         </div>
                     </div>
 
@@ -639,12 +687,13 @@ $tapLogs = $logsStmt->fetchAll(PDO::FETCH_ASSOC);
                     <div class="ev-logs-header-glass">
                         <table class="table table-borderless mb-0">
                             <colgroup>
-                                <col style="width:18%">
-                                <col style="width:12%">
-                                <col style="width:15%">
-                                <col style="width:20%">
-                                <col style="width:18%">
                                 <col style="width:17%">
+                                <col style="width:11%">
+                                <col style="width:14%">
+                                <col style="width:18%">
+                                <col style="width:15%">
+                                <col style="width:13%">
+                                <col style="width:12%">
                             </colgroup>
                             <thead>
                                 <tr>
@@ -654,6 +703,7 @@ $tapLogs = $logsStmt->fetchAll(PDO::FETCH_ASSOC);
                                     <th class="logs-sortable" data-sort="location">Location <i class="bi bi-arrow-down-up logs-sort-icon" id="lsort-location"></i></th>
                                     <th>Requested By</th>
                                     <th>Edit Status</th>
+                                    <th>Action</th>
                                 </tr>
                             </thead>
                         </table>
@@ -663,12 +713,13 @@ $tapLogs = $logsStmt->fetchAll(PDO::FETCH_ASSOC);
                     <div class="ev-logs-scroll">
                         <table class="table table-hover mb-0">
                             <colgroup>
-                                <col style="width:18%">
-                                <col style="width:12%">
-                                <col style="width:15%">
-                                <col style="width:20%">
-                                <col style="width:18%">
                                 <col style="width:17%">
+                                <col style="width:11%">
+                                <col style="width:14%">
+                                <col style="width:18%">
+                                <col style="width:15%">
+                                <col style="width:13%">
+                                <col style="width:12%">
                             </colgroup>
                             <tbody id="admin_logs_tbody"></tbody>
                         </table>
@@ -724,6 +775,45 @@ $tapLogs = $logsStmt->fetchAll(PDO::FETCH_ASSOC);
     <div class="ganttToolTipRow ganttToolTipUnderTime" id="gt-ut-row">
         <span class="ganttToolTipLabel">Undertime</span>
         <span class="ganttToolTipValue" id="gt-ut"></span>
+    </div>
+</div>
+
+<!-- ===== REST DAY MODAL ===== -->
+<div class="modal fade" id="restDayModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content glass-modal">
+
+            <div class="modal-header">
+                <h5 class="modal-title">Add Rest Days</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body">
+                <p class="text-muted small mb-3">
+                    Select up to 2 days of the week. All matching dates in
+                    <strong id="restDayMonthLabel"></strong> will be marked as rest days,
+                    overriding any existing schedule on those dates.
+                </p>
+                <div class="rest-day-grid" id="restDayToggles">
+                    <button type="button" class="btn rest-day-toggle" data-dow="0">Sun</button>
+                    <button type="button" class="btn rest-day-toggle" data-dow="1">Mon</button>
+                    <button type="button" class="btn rest-day-toggle" data-dow="2">Tue</button>
+                    <button type="button" class="btn rest-day-toggle" data-dow="3">Wed</button>
+                    <button type="button" class="btn rest-day-toggle" data-dow="4">Thu</button>
+                    <button type="button" class="btn rest-day-toggle" data-dow="5">Fri</button>
+                    <button type="button" class="btn rest-day-toggle" data-dow="6">Sat</button>
+                </div>
+                <p class="text-muted small mt-3 mb-0 text-center" id="restDaySelectionHint">Select 1–2 days</p>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-warning" id="restDaySubmitBtn" disabled>
+                    <i class="bi bi-check-circle-fill"></i> Set Rest Days
+                </button>
+            </div>
+
+        </div>
     </div>
 </div>
 
@@ -887,6 +977,105 @@ $tapLogs = $logsStmt->fetchAll(PDO::FETCH_ASSOC);
     </div>
 </div>
 
+<!-- ===== EDIT LOG MODAL ===== -->
+<div class="modal fade" id="editLogModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content glass-modal">
+
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-pencil-square me-2"></i>Edit Log Entry
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Log Type</label>
+                    <input type="text" class="form-control" id="editLogTypeDisplay" readonly>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">New Date &amp; Time</label>
+                    <input type="datetime-local" class="form-control" id="editLogTime" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">
+                        Reason <small class="text-muted">(optional)</small>
+                    </label>
+                    <textarea class="form-control" id="editLogReason" rows="2"
+                        placeholder="e.g. System error, forgot to clock in..."></textarea>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-warning" id="editLogSubmitBtn">
+                    <i class="bi bi-check-circle-fill"></i> Update Log
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- ===== ADMIN LOG EDIT MODAL ===== -->
+<div class="modal fade" id="adminLogEditModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content glass-modal">
+
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-pencil-square me-2"></i>Edit Log Entry</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body">
+                <div class="le-modal-info-row">
+                    <span class="le-modal-label">Date</span>
+                    <span class="le-modal-value" id="ale-date">—</span>
+                </div>
+                <div class="le-modal-info-row">
+                    <span class="le-modal-label">Log Type</span>
+                    <span class="le-modal-value" id="ale-type">—</span>
+                </div>
+                <div class="le-modal-info-row">
+                    <span class="le-modal-label">Current Time</span>
+                    <span class="le-modal-value" id="ale-current-time">—</span>
+                </div>
+                <div class="mt-3">
+                    <label class="le-input-label">New Date &amp; Time</label>
+                    <input type="datetime-local" id="ale-new-datetime" class="le-time-input" required>
+                </div>
+                <div class="mt-3">
+                    <label class="le-input-label">Reason for Edit</label>
+                    <textarea id="ale-reason" class="le-time-input" rows="3"
+                        placeholder="Enter reason for edit..."
+                        style="resize:none;height:auto;"></textarea>
+                </div>
+                <div id="ale-error"   class="mt-2" style="color:#ff8a8a;font-size:0.875rem;display:none;"></div>
+                <div id="ale-success" class="mt-2" style="color:#97be41;font-size:0.875rem;display:none;"></div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="ale-submit-btn">
+                    <i class="bi bi-check-circle-fill"></i> Apply Edit
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- Toast notification -->
+<div class="position-fixed top-0 end-0 p-3" style="z-index:9999">
+    <div id="appToast" class="toast align-items-center border-0" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="d-flex">
+            <div class="toast-body" id="appToastMsg"></div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>
+    </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -938,9 +1127,10 @@ $tapLogs = $logsStmt->fetchAll(PDO::FETCH_ASSOC);
 })();
 
 // ---- State ----
-let selectedDates = [];
-let fp            = null;
-const EMP_ID      = <?= $employeeId ?>;
+let selectedDates    = [];
+let selectedRestDays = [];
+let fp               = null;
+const EMP_ID         = <?= $employeeId ?>;
 let currentMonth  = '<?= $rawMonth ?>';
 const tabLoadedMonth = { '#tab1': null, '#tab2': null, '#tab3': null };
 
@@ -1000,7 +1190,7 @@ function loadTab(tabTarget, ym) {
 function loadCalendar(year, month) {
     const container = document.querySelector('.sched-cal-container');
     container.innerHTML = loadingHTML();
-    fetch(`get_admin_employee_calendar.php?employee_id=${EMP_ID}&year=${year}&month=${month}`)
+    fetch(`get_admin_employee_calendar.php?employee_id=${EMP_ID}&year=${year}&month=${month}&_t=${Date.now()}`)
         .then(r => r.text())
         .then(html => {
             container.innerHTML = html;
@@ -1057,8 +1247,8 @@ function loadLogs(start, end) {
 
 function fetchAdminLogs() {
     const tbody = document.getElementById('admin_logs_tbody');
-    tbody.innerHTML = `<tr class="emptyRow"><td colspan="6"><div class="logsEmpty"><i class="bi bi-arrow-clockwise" style="font-size:1.5rem;"></i></div></td></tr>`;
-    fetch(`get_employee_logs.php?employee_id=${EMP_ID}&start=${logStartDate}&end=${logEndDate}&type=${logType}&sort=${logSort}&dir=${logSortDir}`)
+    tbody.innerHTML = `<tr class="emptyRow"><td colspan="7"><div class="logsEmpty"><i class="bi bi-arrow-clockwise" style="font-size:1.5rem;"></i></div></td></tr>`;
+    fetch(`../get_logs.php?employee_id=${EMP_ID}&start=${logStartDate}&end=${logEndDate}&type=${logType}&sort=${logSort}&dir=${logSortDir}`)
         .then(r => r.text())
         .then(html => {
             tbody.innerHTML = html;
@@ -1067,7 +1257,7 @@ function fetchAdminLogs() {
             if (chip) chip.textContent = rows + ' log' + (rows !== 1 ? 's' : '');
         })
         .catch(() => {
-            tbody.innerHTML = `<tr class="emptyRow"><td colspan="6"><div class="logsEmpty"><i class="bi bi-exclamation-circle logsEmptyIcon"></i><div>Failed to load logs.</div></div></td></tr>`;
+            tbody.innerHTML = `<tr class="emptyRow"><td colspan="7"><div class="logsEmpty"><i class="bi bi-exclamation-circle logsEmptyIcon"></i><div>Failed to load logs.</div></div></td></tr>`;
         });
 }
 
@@ -1163,8 +1353,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     initGanttCursors();
 
-    // Load whichever tab is currently active via AJAX on first paint,
-    // so server-rendered content (which lacks leave/OB awareness) is replaced immediately
     const activeBtn = document.querySelector('#myTab .nav-link.active');
     const activeTab = activeBtn ? activeBtn.dataset.bsTarget : '#tab1';
     loadTab(activeTab, currentMonth);
@@ -1202,7 +1390,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const col = th.dataset.sort;
             if (logSort === col) {
                 logSortDir = logSortDir === 'asc' ? 'desc' : 'asc';
-                if (logSortDir === 'asc' && col === logSort) { /* already flipped */ }
             } else {
                 logSort    = col;
                 logSortDir = 'asc';
@@ -1213,27 +1400,83 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     fp = flatpickr('#schedDatePicker', {
-        mode: 'multiple',
+        mode: 'range',
         dateFormat: 'Y-m-d',
         onChange(dates) {
-            selectedDates = dates.map(d => {
-                const y   = d.getFullYear();
-                const m   = String(d.getMonth() + 1).padStart(2, '0');
-                const day = String(d.getDate()).padStart(2, '0');
-                return `${y}-${m}-${day}`;
-            });
+            if (dates.length < 2) {
+                selectedDates = dates.length === 1
+                    ? [`${dates[0].getFullYear()}-${pad(dates[0].getMonth()+1)}-${pad(dates[0].getDate())}`]
+                    : [];
+                renderDateTags();
+                return;
+            }
+            selectedDates = [];
+            const cur = new Date(dates[0].getTime());
+            const end = new Date(dates[1].getTime());
+            while (cur <= end) {
+                selectedDates.push(`${cur.getFullYear()}-${pad(cur.getMonth()+1)}-${pad(cur.getDate())}`);
+                cur.setDate(cur.getDate() + 1);
+            }
             renderDateTags();
         }
+    });
+
+    // ---- Dropdown: Add Schedule / Add Rest Day ----
+    document.getElementById('btn-add-schedule').addEventListener('click', e => {
+        e.preventDefault();
+        openAddModal();
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('schedModal')).show();
+    });
+
+    document.getElementById('btn-add-rest-day').addEventListener('click', e => {
+        e.preventDefault();
+        openRestDayModal();
+    });
+
+    // ---- Rest day weekday toggles ----
+    document.querySelectorAll('.rest-day-toggle').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const dow = parseInt(btn.dataset.dow);
+            if (btn.classList.contains('active')) {
+                btn.classList.remove('active');
+                selectedRestDays = selectedRestDays.filter(d => d !== dow);
+            } else {
+                if (selectedRestDays.length >= 2) return;
+                btn.classList.add('active');
+                selectedRestDays.push(dow);
+            }
+            updateRestDaySubmitBtn();
+        });
+    });
+
+    document.getElementById('restDaySubmitBtn').addEventListener('click', () => {
+        if (selectedRestDays.length === 0) return;
+        const form = new FormData();
+        form.append('action', 'save_rest_day');
+        form.append('employee_id', EMP_ID);
+        form.append('rest_days', JSON.stringify(selectedRestDays));
+        form.append('month', currentMonth);
+        fetch(`admin_employee_view.php?id=${EMP_ID}`, { method: 'POST', body: form })
+            .then(() => {
+                bootstrap.Modal.getInstance(document.getElementById('restDayModal'))?.hide();
+                const { year, month } = parseYM(currentMonth);
+                loadCalendar(year, month);
+            })
+            .catch(() => alert('Failed to save rest days. Please try again.'));
     });
 
     // Schedule form: AJAX submit → reload only the calendar
     document.getElementById('schedForm').addEventListener('submit', function (e) {
         e.preventDefault();
         if (!prepareSubmit()) return;
-        fetch(this.getAttribute('action'), { method: 'POST', body: new FormData(this) })
-            .then(() => {
+        const action = this.getAttribute('action');
+        fetch(action, { method: 'POST', body: new FormData(this) })
+            .then(r => {
+                if (!r.ok && r.status !== 200) throw new Error('save failed');
                 closeSchedModal();
+                showToast('Schedule saved successfully');
                 const { year, month } = parseYM(currentMonth);
+                tabLoadedMonth['#tab1'] = null;
                 loadCalendar(year, month);
                 tabLoadedMonth['#tab1'] = currentMonth;
             })
@@ -1252,20 +1495,85 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     history.replaceState({ month: currentMonth }, '', `?id=${EMP_ID}&month=${currentMonth}`);
+
+    // ---- Edit Log ----
+    let editingLogId   = null;
+    let editingLogType = null;
+
+    document.addEventListener('click', e => {
+        const btn = e.target.closest('.log-edit-btn');
+        if (!btn) return;
+
+        editingLogId   = btn.dataset.logId;
+        editingLogType = btn.dataset.logType;
+
+        document.getElementById('editLogTypeDisplay').value =
+            editingLogType === 'IN' ? 'Time In' : 'Time Out';
+        document.getElementById('editLogTime').value   = btn.dataset.logTime;
+        document.getElementById('editLogReason').value = '';
+
+        bootstrap.Modal.getOrCreateInstance(
+            document.getElementById('editLogModal')
+        ).show();
+    });
+
+    document.getElementById('editLogSubmitBtn').addEventListener('click', () => {
+        const newDatetime = document.getElementById('editLogTime').value;
+        const reason      = document.getElementById('editLogReason').value.trim()
+                            || 'Edited by admin';
+
+        if (!newDatetime) {
+            showToast('Please select a date and time.', 'danger');
+            return;
+        }
+
+        const body = new FormData();
+        body.append('employee_id',  EMP_ID);
+        body.append('log_id',       editingLogId);
+        body.append('new_datetime', newDatetime.replace('T', ' ') + ':00');
+        body.append('reason',       reason);
+
+        fetch('/DTR-Internship-Project/system_functions/log_edit_request.php', {
+            method: 'POST',
+            body
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                bootstrap.Modal.getInstance(
+                    document.getElementById('editLogModal')
+                ).hide();
+                showToast('Log updated successfully');
+                fetchAdminLogs();
+            } else {
+                showToast(data.message || 'Failed to update log.', 'danger');
+            }
+        })
+        .catch(() => showToast('Network error. Please try again.', 'danger'));
+    });
+
 });
 
 // ---- Schedule modal helpers ----
 function renderDateTags() {
-    document.getElementById('selectedDatesList').innerHTML = selectedDates
-        .map(d => `<span class="selected-date-tag">${d}
-            <span class="selected-date-remove" onclick="removeDate('${d}')">&times;</span>
-        </span>`)
-        .join('');
+    const list = document.getElementById('selectedDatesList');
+    if (selectedDates.length === 0) { list.innerHTML = ''; return; }
+    if (selectedDates.length === 1) {
+        list.innerHTML = `<span class="selected-date-tag">${selectedDates[0]}
+            <span class="selected-date-remove" onclick="clearDateSelection()">&times;</span>
+        </span>`;
+    } else {
+        const first = selectedDates[0], last = selectedDates[selectedDates.length - 1];
+        list.innerHTML = `<span class="selected-date-tag">
+            ${first} &rarr; ${last} &nbsp;(${selectedDates.length} days)
+            <span class="selected-date-remove" onclick="clearDateSelection()">&times;</span>
+        </span>`;
+    }
 }
 
-function removeDate(d) {
-    selectedDates = selectedDates.filter(x => x !== d);
-    if (fp) fp.setDate(selectedDates, false);
+function clearDateSelection() {
+    selectedDates = [];
+    if (fp) fp.clear();
     renderDateTags();
 }
 
@@ -1280,7 +1588,6 @@ function openAddModal() {
     if (fp) fp.clear();
 }
 
-// Accepts both (date, timeIn, timeOut) and (empId, date, timeIn, timeOut) — empId ignored
 function openEditModal(empIdOrDate, dateOrTimeIn, timeInOrTimeOut, timeOutOrUndef) {
     const date    = timeOutOrUndef !== undefined ? dateOrTimeIn    : empIdOrDate;
     const timeIn  = timeOutOrUndef !== undefined ? timeInOrTimeOut : dateOrTimeIn;
@@ -1293,16 +1600,43 @@ function openEditModal(empIdOrDate, dateOrTimeIn, timeInOrTimeOut, timeOutOrUnde
     document.getElementById('modalTimeOut').value           = timeOut;
     selectedDates = [date];
     renderDateTags();
-    if (fp) fp.setDate([date], false);
+    if (fp) fp.setDate([date, date], false);
     bootstrap.Modal.getOrCreateInstance(document.getElementById('schedModal')).show();
+}
+
+// ---- Rest day modal helpers ----
+function openRestDayModal() {
+    selectedRestDays = [];
+    document.getElementById('restDayMonthLabel').textContent = monthLabel(currentMonth);
+    document.querySelectorAll('.rest-day-toggle').forEach(btn => btn.classList.remove('active'));
+    updateRestDaySubmitBtn();
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('restDayModal')).show();
+}
+
+function updateRestDaySubmitBtn() {
+    const btn  = document.getElementById('restDaySubmitBtn');
+    const hint = document.getElementById('restDaySelectionHint');
+    btn.disabled = selectedRestDays.length === 0;
+    hint.textContent = selectedRestDays.length === 0
+        ? 'Select 1–2 days'
+        : selectedRestDays.length === 1
+            ? '1 day selected'
+            : '2 days selected';
 }
 
 // Shim for get_admin_schedule_calendar.php
 function deleteScheduleDay(empId, date) { deleteSchedule(date); }
 function openEditAttModal() { /* not available on this page */ }
 
+function showToast(msg, type = 'success') {
+    const el = document.getElementById('appToast');
+    document.getElementById('appToastMsg').textContent = msg;
+    el.className = `toast align-items-center border-0 text-bg-${type}`;
+    bootstrap.Toast.getOrCreateInstance(el, { delay: 3000 }).show();
+}
+
 function closeSchedModal() {
-    bootstrap.Modal.getInstance(document.getElementById('schedModal'))?.hide();
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('schedModal')).hide();
 }
 
 function prepareSubmit() {
@@ -1328,6 +1662,72 @@ function prepareSubmit() {
     return true;
 }
 
+// ---- Admin Log Edit ----
+let currentAdminEditLogId = null;
+
+function openAdminLogEditModal(btn) {
+    currentAdminEditLogId = btn.dataset.logId;
+    const typeLabels = { 'IN': 'Time In', 'OUT': 'Time Out', 'BREAK_IN': 'Break In', 'BREAK_OUT': 'Break Out' };
+    document.getElementById('ale-date').textContent         = btn.dataset.logDateLabel;
+    document.getElementById('ale-type').textContent         = typeLabels[btn.dataset.logType] || btn.dataset.logType;
+    document.getElementById('ale-current-time').textContent = btn.dataset.logTimeLabel;
+    document.getElementById('ale-new-datetime').value       = btn.dataset.logDatetime;
+    document.getElementById('ale-reason').value             = '';
+    document.getElementById('ale-error').style.display      = 'none';
+    document.getElementById('ale-success').style.display    = 'none';
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('adminLogEditModal')).show();
+}
+
+document.getElementById('ale-submit-btn').addEventListener('click', () => {
+    const newDatetime = document.getElementById('ale-new-datetime').value;
+    const reason      = document.getElementById('ale-reason').value.trim();
+    const errEl       = document.getElementById('ale-error');
+    const okEl        = document.getElementById('ale-success');
+
+    errEl.style.display = 'none';
+    okEl.style.display  = 'none';
+
+    if (!newDatetime) {
+        errEl.textContent   = 'Please enter a new date and time.';
+        errEl.style.display = 'block';
+        return;
+    }
+
+    const btn = document.getElementById('ale-submit-btn');
+    btn.disabled  = true;
+    btn.innerHTML = '<i class="bi bi-arrow-clockwise"></i> Saving...';
+
+    const form = new FormData();
+    form.append('log_id',       currentAdminEditLogId);
+    form.append('employee_id',  EMP_ID);
+    form.append('new_datetime', newDatetime);
+    form.append('reason',       reason);
+
+    fetch('../employee_pages/log_edit_request.php', { method: 'POST', body: form })
+        .then(r => r.json())
+        .then(data => {
+            btn.disabled  = false;
+            btn.innerHTML = '<i class="bi bi-check-circle-fill"></i> Apply Edit';
+            if (data.success) {
+                okEl.textContent   = data.message;
+                okEl.style.display = 'block';
+                setTimeout(() => {
+                    bootstrap.Modal.getInstance(document.getElementById('adminLogEditModal'))?.hide();
+                    fetchAdminLogs();
+                }, 1200);
+            } else {
+                errEl.textContent   = data.message;
+                errEl.style.display = 'block';
+            }
+        })
+        .catch(() => {
+            btn.disabled  = false;
+            btn.innerHTML = '<i class="bi bi-check-circle-fill"></i> Apply Edit';
+            errEl.textContent   = 'An error occurred. Please try again.';
+            errEl.style.display = 'block';
+        });
+});
+
 function deleteSchedule(date) {
     if (!confirm('Delete schedule for ' + date + '?')) return;
     fetch(`admin_employee_view.php?id=${EMP_ID}&ajax_delete=1&emp=${EMP_ID}&date=${date}`)
@@ -1336,6 +1736,7 @@ function deleteSchedule(date) {
             loadCalendar(year, month);
         });
 }
+
 </script>
 
 </body>

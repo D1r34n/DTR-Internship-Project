@@ -732,6 +732,96 @@ body {
 
 .sched-add-btn:hover { background: var(--primary-hover); }
 
+/* ---- Glass modal (shared by sched + rest day modals) ---- */
+
+.glass-modal {
+    background:    var(--frosted-bg);
+    backdrop-filter: var(--frosted-blur);
+    -webkit-backdrop-filter: var(--frosted-blur);
+    border: 1px solid var(--frosted-border);
+    box-shadow: var(--frosted-shadow);
+    color: var(--text-light);
+}
+
+.glass-modal .modal-header {
+    border-bottom-color: var(--neutral-border);
+}
+
+.glass-modal .modal-footer {
+    border-top-color: var(--neutral-border);
+}
+
+.glass-modal .modal-title {
+    color: var(--text-lightest);
+    font-weight: 600;
+}
+
+.glass-modal .form-label {
+    color: var(--text-light);
+    font-size: 0.83rem;
+    font-weight: 500;
+    margin-bottom: 0.35rem;
+}
+
+.glass-modal small.text-muted,
+.glass-modal p.text-muted,
+.glass-modal .text-muted {
+    color: var(--text-muted) !important;
+}
+
+.glass-modal .form-control {
+    background: var(--neutral-glass);
+    border-color: var(--neutral-border);
+    color: var(--text-light);
+    font-size: 0.87rem;
+}
+
+.glass-modal .form-control:focus {
+    background: var(--neutral-glass-hover);
+    border-color: var(--primary-border);
+    color: var(--text-light);
+    box-shadow: 0 0 0 3px var(--primary-soft);
+}
+
+.glass-modal .form-control[readonly] {
+    color: var(--text-muted);
+    background: var(--neutral-soft);
+}
+
+/* ---- Rest-day weekday grid ---- */
+
+.rest-day-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 8px;
+}
+
+.rest-day-toggle {
+    border: 1px solid var(--neutral-border);
+    color: var(--text-muted);
+    background: transparent;
+    border-radius: 8px;
+    font-family: 'Poppins', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 500;
+    padding: 7px 4px;
+    text-align: center;
+    transition: all 0.15s;
+    width: 100%;
+}
+
+.rest-day-toggle:hover:not(.active) {
+    background: var(--neutral-glass-hover);
+    border-color: var(--neutral-border);
+    color: var(--text-light);
+}
+
+.rest-day-toggle.active {
+    background: var(--neutral-glass);
+    border-color: rgba(255, 255, 255, 0.35);
+    color: var(--text-lightest);
+}
+
 /* ---- Calendar grid ---- */
 
 .sched-cal-container { flex: 1; overflow-y: auto; padding: 0.6rem 0.75rem 0.75rem; }
@@ -1069,6 +1159,20 @@ body {
 .ganttBarBreak     { background: var(--gantt-break); opacity: 0.85; z-index: 5; }
 .ganttBarPending   { background: var(--gantt-pending); border: 1px dashed var(--gantt-pending-border); }
 .ganttBarAbsent    { background: var(--gantt-absent); border: 1px dashed var(--danger-color); }
+.ganttBarRestDay   { background: rgba(108, 117, 125, 0.22); border: 1px dashed rgba(173, 181, 189, 0.5); }
+
+.ganttRestDayLabel {
+    position: absolute;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    pointer-events: none;
+    white-space: nowrap;
+    z-index: 2;
+    color: #adb5bd;
+}
 .ganttBarLeave     { background: rgba(253,126,20,0.18); border: 1px dashed #fd7e14; }
 .ganttBarOB        { background: rgba(111,66,193,0.18); border: 1px dashed #a07de0; }
 .ganttBarNoTimeOut { background: var(--gantt-no-timeout); opacity: 0.85; }
@@ -1418,3 +1522,29 @@ body {
 }
 
 .openGoogleMapsBtn:hover { background: var(--bg-light); color: var(--map-link); }
+
+/* ------------------------------------------------
+   LOGS TAB — EDIT BUTTON
+   ------------------------------------------------ */
+
+.log-edit-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border: 1px solid var(--warning-border);
+    border-radius: 6px;
+    background: var(--warning-glass);
+    color: var(--warning-color);
+    font-size: 0.72rem;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s, color 0.2s;
+    padding: 0;
+}
+
+.log-edit-btn:hover {
+    background: var(--warning-glass-hover);
+    border-color: var(--warning-glow);
+    color: var(--text-lightest);
+}

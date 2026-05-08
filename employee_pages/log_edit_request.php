@@ -15,6 +15,106 @@ $myId   = $_SESSION['user_id'];
 $myRole = $_SESSION['user_role'] ?? '';
 
 // ================================================
+// ADMIN PATH — directly applies edit to any employee's log
+// ================================================
+if ($myRole === 'admin') {
+
+    $employeeId  = intval($_POST['employee_id'] ?? $myId);
+    $logId       = intval($_POST['log_id']       ?? 0);
+    $newDatetime = trim($_POST['new_datetime']   ?? '');
+    $reason      = trim($_POST['reason']         ?? '') ?: 'No reason provided';
+
+    if (!$logId || !$newDatetime) {
+        echo json_encode(['success' => false, 'message' => 'Missing required fields.']);
+        exit();
+    }
+
+    $logStmt = $pdo->prepare("SELECT log_time, log_type FROM logs WHERE id = ? AND employee_id = ?");
+    $logStmt->execute([$logId, $employeeId]);
+    $log = $logStmt->fetch(PDO::FETCH_ASSOC);
+
+    if (!$log) {
+        echo json_encode(['success' => false, 'message' => 'Log entry not found.']);
+        exit();
+    }
+
+    $newDT = date('Y-m-d H:i:s', strtotime($newDatetime));
+    if (!$newDT || $newDT === '1970-01-01 00:00:00') {
+        echo json_encode(['success' => false, 'message' => 'Invalid date/time format.']);
+        exit();
+    }
+
+    $workDate    = date('Y-m-d', strtotime($log['log_time']));
+    $requestType = match($log['log_type']) {
+        'IN'        => 'time_in',
+        'OUT'       => 'time_out',
+        'BREAK_IN'  => 'break_in',
+        'BREAK_OUT' => 'break_out',
+        default     => strtolower($log['log_type']),
+    };
+
+    $attStmt = $pdo->prepare("SELECT id, actual_time_in FROM attendances WHERE employee_id = ? AND work_date = ?");
+    $attStmt->execute([$employeeId, $workDate]);
+    $att = $attStmt->fetch(PDO::FETCH_ASSOC);
+
+    if (!$att) {
+        echo json_encode(['success' => false, 'message' => 'No attendance record found for this date.']);
+        exit();
+    }
+
+    $reqTimeIn  = ($requestType === 'time_in')  ? $newDT : null;
+    $reqTimeOut = ($requestType === 'time_out') ? $newDT : null;
+
+    try {
+        $pdo->beginTransaction();
+
+        $pdo->prepare("
+            INSERT INTO log_edit_requests
+                (employee_id, attendance_id, log_id, work_date, actual_time_in,
+                 request_type, requested_time_in, requested_time_out, reason, status, initiated_by_id, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'approved', ?, NOW())
+        ")->execute([
+            $employeeId, $att['id'], $logId, $workDate, $att['actual_time_in'],
+            $requestType, $reqTimeIn, $reqTimeOut, $reason, $myId,
+        ]);
+
+        if ($requestType === 'time_in') {
+            $pdo->prepare("
+                UPDATE attendances SET
+                    actual_time_in     = ?,
+                    late_minutes       = GREATEST(0, TIMESTAMPDIFF(MINUTE, scheduled_start, ?)),
+                    total_work_minutes = GREATEST(0, TIMESTAMPDIFF(MINUTE, ?, COALESCE(actual_time_out, scheduled_end)) - COALESCE(break_minutes, 0)),
+                    status             = 'present'
+                WHERE id = ?
+            ")->execute([$newDT, $newDT, $newDT, $att['id']]);
+        } elseif ($requestType === 'time_out') {
+            $pdo->prepare("
+                UPDATE attendances SET
+                    actual_time_out    = ?,
+                    missed_time_out    = 0,
+                    status             = 'present',
+                    total_work_minutes = GREATEST(0, TIMESTAMPDIFF(MINUTE, actual_time_in, ?) - COALESCE(break_minutes, 0)),
+                    undertime_minutes  = GREATEST(0, TIMESTAMPDIFF(MINUTE, ?, scheduled_end)),
+                    overtime_minutes   = GREATEST(0, TIMESTAMPDIFF(MINUTE, scheduled_end, ?))
+                WHERE id = ?
+            ")->execute([$newDT, $newDT, $newDT, $newDT, $att['id']]);
+        }
+        // break_in / break_out: only update the log timestamp, no attendance recalculation
+
+        $pdo->prepare("UPDATE logs SET log_time = ? WHERE id = ?")->execute([$newDT, $logId]);
+
+        $pdo->commit();
+        echo json_encode(['success' => true, 'message' => 'Log updated successfully.']);
+
+    } catch (Exception $e) {
+        $pdo->rollBack();
+        echo json_encode(['success' => false, 'message' => 'Database error. Please try again.']);
+    }
+    exit();
+}
+
+
+// ================================================
 // WORKFORCE PATH — editing another employee's log
 // ================================================
 if ($myRole === 'workforce') {
