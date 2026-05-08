@@ -502,12 +502,16 @@
    ================================================ */
 
 @keyframes btnSlideIn {
-    from { opacity: 0; transform: translateY(6px); }
-    to   { opacity: 1; transform: translateY(0); }
+    from {
+        transform: translateY(3px);
+    }
+    to {
+        transform: translateY(0);
+    }
 }
 
 .btn-group-animate {
-    animation: btnSlideIn 0.3s ease forwards;
+    animation: btnSlideIn 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
 /* ================================================
@@ -516,6 +520,7 @@
 
 .btn,
 button.btn {
+    opacity: 1 !important;
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
@@ -595,8 +600,15 @@ button.btn {
 
 .btn:active {
     transform: scale(0.98) !important;
-    background: var(--neutral-glass) !important;
     box-shadow: var(--glass-inset) !important;
+}
+
+.btn-success:active {
+    background: var(--status-success-bg) !important;
+}
+
+.btn-danger:active {
+    background: var(--status-danger-bg) !important;
 }
 
 .btn.show,
@@ -815,6 +827,18 @@ button.btn {
 .btn-group .btn:hover     { z-index: 1 !important; }
 .btn-group > .btn:only-child { border-radius: 12px !important; }
 
+/* btn-danger in a group: strip the per-button gradient so both halves share the same flat color */
+.btn-group .btn-danger,
+.btn-group .btn.btn-danger {
+    background: var(--status-danger-bg) !important;
+}
+
+.btn-group .btn-danger:hover,
+.btn-group .btn-danger:focus,
+.btn-group .btn-danger:focus-visible {
+    background: var(--status-danger-hover) !important;
+}
+
 /* ================================================
    DROPDOWN — FROSTED GLASS
    ================================================ */
@@ -935,7 +959,6 @@ button.btn-sm {
 
     position: relative;
     overflow: hidden;
-    z-index: 10;
 }
 
 .card-glass::before {

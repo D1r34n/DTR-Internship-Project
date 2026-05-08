@@ -71,6 +71,11 @@
         color 0.25s ease-out !important;
 }
 
+.btn-break:active {
+    background: var(--break-glass-hover) !important;
+    border-color: var(--break-border) !important;
+}
+
 .btn-break:hover,
 .btn-break:focus,
 .btn-break:focus-visible {
@@ -95,6 +100,19 @@
         transparent 100%
     ) !important;
     border: 1px solid var(--break-border) !important;
+}
+
+.btn-break[data-state="out"]:hover,
+.btn-break[data-state="out"]:focus,
+.btn-break[data-state="out"]:focus-visible {
+    background: var(--break-out-glass-hover) linear-gradient(
+        to right,
+        rgba(255, 255, 255, 0.10) 0%,
+        rgba(255, 255, 255, 0.05) 40%,
+        rgba(255, 255, 255, 0.02) 70%,
+        transparent 100%
+    ) !important;
+    box-shadow: 0 4px 16px var(--break-out-glow) !important;
 }
 
 .btn-break[data-state="out"] {

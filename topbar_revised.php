@@ -39,85 +39,49 @@ $titles = [
     ],
     'admin' => [
         'dashboard'         => 'Admin Dashboard',
-        'employees'         => 'Employees',
-        'schedule'          => 'Schedules',
+        'manage_employees'  => 'Manage Employees',
         'employee_requests' => 'Employee Requests',
         'schedule_requests' => 'Schedule Requests',
-        'logs'              => 'Logs',
         'employee_logs'     => 'Employee Logs',
         'departments'       => 'Departments',
-    ]
+    ],
 ];
 
-// Set current page title
-$currentPage = $currentPage ?? 'dashboard';
-$title       = $titles[$role][$currentPage] ?? 'Dashboard';
+$title = $titles[$role][$currentPage] ?? 'Dashboard';
 
 /* =========================================================
-   AUTO BREADCRUMB FROM URL (NO MANUAL ARRAYS)
+   AUTO BREADCRUMB FROM URL
 ========================================================= */
-
-$currentPath = $_SERVER['PHP_SELF'];
-$parts = array_values(array_filter(explode('/', $currentPath)));
+$parts = array_values(array_filter(explode('/', $_SERVER['PHP_SELF'])));
 
 $excludeSegments = [
-    'localhost',
-    'DTR-Internship-Project',
-    'DTR Internship Project',
-    'system_functions',
-    'dropdown_requests',
-    'assets',
-    'includes',
-    'db',
+    'localhost', 'DTR-Internship-Project', 'DTR Internship Project',
+    'admin_pages', 'employee_pages', 'workforce_pages',
+    'system_functions', 'dropdown_requests', 'assets', 'includes', 'db',
 ];
 
 $segments = [];
-
 foreach ($parts as $part) {
     $clean = str_replace('.php', '', $part);
-
-    if (in_array($clean, $excludeSegments)) continue;
-    if ($clean === '' || $clean === 'index') continue;
-
+    if (in_array($clean, $excludeSegments) || $clean === '' || $clean === 'index') continue;
     $segments[] = $clean;
 }
 
-$breadcrumbPath = [];
-
-// Always start with Dashboard
-$breadcrumbPath[] = [
-    'label' => 'HSN DTR System',
-    'url'   => '/dashboard.php'
-];
-
-$accumulated = '';
-
+$breadcrumbPath = [['label' => 'HSN DTR System']];
 foreach ($segments as $index => $seg) {
-
-    $accumulated .= '/' . $seg;
-
     $label = ucwords(str_replace('_', ' ', $seg));
-
-    if ($index === array_key_last($segments)) {
-        $breadcrumbPath[] = [
-            'label' => $label
-        ];
-    } else {
-        $breadcrumbPath[] = [
-            'label' => $label,
-            'url'   => $accumulated . '.php'
-        ];
-    }
+    $breadcrumbPath[] = $index === array_key_last($segments)
+        ? ['label' => $label]
+        : ['label' => $label, 'url' => '/' . $seg . '.php'];
 }
 
-// Set date timezone (Philippines)
+/* =========================================================
+   ATTENDANCE STATE
+========================================================= */
 date_default_timezone_set('Asia/Manila');
-$today = date('Y-m-d');
 
-// Get last log entry — also check for active break
 $stmt = $pdo->prepare("
-    SELECT log_type
-    FROM logs
+    SELECT log_type FROM logs
     WHERE employee_id = ?
     ORDER BY log_time DESC
     LIMIT 1
@@ -129,102 +93,70 @@ $hasTimeIn  = $lastLog && $lastLog['log_type'] === 'IN';
 $isOnBreak  = $lastLog && $lastLog['log_type'] === 'BREAK_IN';
 $isBreakOut = $lastLog && $lastLog['log_type'] === 'BREAK_OUT';
 $timedIn    = $hasTimeIn || $isOnBreak || $isBreakOut;
-
-$currentStatus = $timedIn ? 'Timed In' : 'Timed Out';
+// Once someone does BREAK_OUT they can take another break next time they're on break,
+// so we only disable the button if they've never timed in at all
+$breakDisabled = !$timedIn;
 ?>
 
-<!-- Topbar external libs -->
-<link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.css" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
-<script src="../system_functions/gantt.js"></script>
-
-<!-- Bootstrap -->
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-
-<!-- Shared CSS — loaded once via topbar for all pages -->
-<link rel="stylesheet" href="../assets/css/root.css">
-<link rel="stylesheet" href="../assets/css/typography.css">
-<link rel="stylesheet" href="../assets/css/components.css">
-<link rel="stylesheet" href="../navbars_revised.css">
-
-<!-- Modal CSS -->
+<!-- Modal CSS — topbar-specific, not duplicated in layout_start -->
 <link rel="stylesheet" href="../dropdown_requests/ot_modal.css">
 <link rel="stylesheet" href="../dropdown_requests/leave_modal.css">
 <link rel="stylesheet" href="../dropdown_requests/ob_modal.css">
 <link rel="stylesheet" href="../dropdown_requests/log_edit_modal.css">
 
-<!-- TOP BAR -->
 <nav class="navbar topbar">
     <div class="container-fluid d-flex align-items-center justify-content-between">
 
         <!-- LEFT: Breadcrumb + Title -->
         <div class="d-flex flex-column">
-
-            <!-- Breadcrumbs -->
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb text-breadcrumb">
-
                     <?php foreach ($breadcrumbPath as $index => $crumb): ?>
                         <?php $isLast = $index === array_key_last($breadcrumbPath); ?>
-
-                        <?php if ($isLast): ?>
-                            <li class="breadcrumb-item active" aria-current="page">
+                        <li class="breadcrumb-item <?= $isLast ? 'active' : '' ?>"
+                            <?= $isLast ? 'aria-current="page"' : '' ?>>
+                            <?php if (!$isLast && isset($crumb['url'])): ?>
+                                <a href="<?= htmlspecialchars($crumb['url']) ?>">
+                                    <?= htmlspecialchars($crumb['label']) ?>
+                                </a>
+                            <?php else: ?>
                                 <?= htmlspecialchars($crumb['label']) ?>
-                            </li>
-                        <?php else: ?>
-                            <li class="breadcrumb-item">
-                                <?= htmlspecialchars($crumb['label']) ?>
-                            </li>
-                        <?php endif; ?>
+                            <?php endif; ?>
+                        </li>
                     <?php endforeach; ?>
-
                 </ol>
             </nav>
 
-            <!-- Page Title -->
-            <div class="navbar-brand mb-0 h2 text-light">
-                <?= $title ?>
-            </div>
-
+            <div class="navbar-brand mb-0 h2 text-light"><?= htmlspecialchars($title) ?></div>
         </div>
 
         <!-- RIGHT: Actions -->
         <div class="d-flex align-items-center gap-3">
 
-            <!-- Time In/Out Button -->
-            <div class="btn-group">
-
-                <!-- TIME IN STATE -->
+            <!-- Time In/Out -->
+            <div class="btn-group" id="attendance-btn-group">
                 <?php if (!$timedIn): ?>
                     <button class="btn btn-success" onclick="handleTimeIn()">
-                        <i class="bi bi-stopwatch-fill"></i>
-                        Time In
+                        <i class="bi bi-stopwatch-fill"></i> Time In
                     </button>
-
                 <?php else: ?>
-
-                    <!-- TIME OUT + DROPDOWN -->
-                    <button class="btn btn-danger btn-sm" onclick="handleTimeIn()">
-                        <i class="bi bi-stopwatch-fill"></i>
-                        Time Out
+                    <button class="btn btn-danger" onclick="handleTimeIn()">
+                        <i class="bi bi-stopwatch-fill"></i> Time Out
                     </button>
-
                     <button type="button"
-                        class="btn btn-danger btn-sm dropdown-toggle dropdown-toggle-split"
-                        data-bs-toggle="dropdown"
-                        data-bs-auto-close="outside"
-                        aria-expanded="false">
+                            class="btn btn-danger dropdown-toggle dropdown-toggle-split"
+                            data-bs-toggle="dropdown"
+                            data-bs-auto-close="outside"
+                            aria-expanded="false">
+
                         <span class="visually-hidden">Toggle Dropdown</span>
                     </button>
-
                     <ul class="dropdown-menu break-menu">
                         <li>
-                            <button
-                                class="dropdown-item btn btn-break"
-                                id="break-action-btn"
-                                data-state="<?= $isOnBreak ? 'out' : 'in' ?>"
-                                onclick="handleBreak()"
-                                <?= $isBreakOut ? 'disabled' : '' ?>>
+                            <button class="btn btn-break"
+                                    id="break-action-btn"
+                                    data-state="<?= $isOnBreak ? 'out' : 'in' ?>"
+                                    onclick="handleBreak()">
                                 <?php if ($isOnBreak): ?>
                                     <i class="bi bi-arrow-return-right"></i> Resume Work
                                 <?php else: ?>
@@ -233,60 +165,57 @@ $currentStatus = $timedIn ? 'Timed In' : 'Timed Out';
                             </button>
                         </li>
                     </ul>
-
                 <?php endif; ?>
-
             </div>
 
-            <!-- Divider -->
             <div class="vr"></div>
 
             <!-- User Dropdown -->
             <div class="dropdown">
-                <button class="btn dropdown-toggle"
-                    type="button"
-                    data-bs-toggle="dropdown"
-                    aria-expanded="false">
-                    <i class="bi bi-person-circle"></i>
+                <button class="btn dropdown-toggle" type="button"
+                        data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="bi bi-person-circle"></i>
                     <?= htmlspecialchars($_SESSION['user_name'] ?? $_SESSION['user_email'] ?? 'User') ?>
+                    
+                    <div class="vr"></div>
+            
+                    <span class="empRole empRole-<?= $role ?>">
+                        <?= ucfirst($role) ?>
+                    </span>
                 </button>
-
                 <ul class="dropdown-menu dropdown-menu-end">
-                    <!-- Request Overtime -->
                     <li>
-                        <a class="dropdown-item" href="#" onclick="openOTModal()" data-bs-target="#otModal" data-bs-toggle="modal">
+                        <a class="dropdown-item" href="#"
+                           data-bs-toggle="modal" data-bs-target="#otModal"
+                           onclick="openOTModal()">
                             <i class="bi bi-clock-history"></i> Request OT
                         </a>
                     </li>
-
-                    <!-- Request Leave -->
                     <li>
-                        <a class="dropdown-item" href="#" onclick="openLeaveModal()" data-bs-target="#leaveModal" data-bs-toggle="modal">
+                        <a class="dropdown-item" href="#"
+                           data-bs-toggle="modal" data-bs-target="#leaveModal"
+                           onclick="openLeaveModal()">
                             <i class="bi bi-calendar-x"></i> Request Leave
                         </a>
                     </li>
-
-                    <!-- Request OB -->
                     <li>
-                        <a class="dropdown-item" href="#" onclick="openOBModal()" data-bs-target="#obModal" data-bs-toggle="modal">
+                        <a class="dropdown-item" href="#"
+                           data-bs-toggle="modal" data-bs-target="#obModal"
+                           onclick="openOBModal()">
                             <i class="bi bi-briefcase"></i> Request OB
                         </a>
                     </li>
-                    
-                    <!-- Request Log Edit -->
                     <li>
                         <a class="dropdown-item" href="#" onclick="openLogEditModal(); return false;">
                             <i class="bi bi-pencil-square"></i> Request Log Edit
                         </a>
                     </li>
-
+                    <li><hr class="dropdown-divider"></li>
                     <li>
-                        <hr class="dropdown-divider">
-                    </li>
-
-                    <li><a class="dropdown-item logout-item" href="../authentication_pages/logout.php">
+                        <a class="dropdown-item logout-item" href="../authentication_pages/logout.php">
                             <i class="bi bi-box-arrow-right"></i> Logout
-                        </a></li>
+                        </a>
+                    </li>
                 </ul>
             </div>
 
@@ -294,200 +223,149 @@ $currentStatus = $timedIn ? 'Timed In' : 'Timed Out';
     </div>
 </nav>
 
-<!-- MODALS -->
 <?php include '../dropdown_requests/modal_request.php'; ?>
+
 <script defer>
-    // ===============================
-    // GLOBAL STATES
-    // ===============================
-    let isProcessing = false;
+    let isProcessing      = false;
     let isBreakProcessing = false;
-    let cachedPosition = null;
+    let cachedPosition    = null;
 
     document.addEventListener('DOMContentLoaded', () => {
 
-        // CROSS TAB SYNC
-        window.addEventListener('storage', (event) => {
-            if (event.key !== 'attendance_update') return;
-
-            const status = localStorage.getItem('attendance_tap_result');
+        // Cross-tab attendance sync
+        window.addEventListener('storage', e => {
+            if (e.key !== 'attendance_update') return;
+            const status   = localStorage.getItem('attendance_tap_result');
             const statusEl = document.getElementById('dashboard-status');
-
             if (!statusEl) return;
-
-            if (status === 'timed_in') statusEl.textContent = 'Timed In';
-            else if (status === 'timed_out') statusEl.textContent = 'Timed Out';
+            statusEl.textContent = status === 'timed_in' ? 'Timed In' : 'Timed Out';
         });
 
-        // GPS CACHE
+        // GPS cache
         navigator.geolocation.watchPosition(
-            (pos) => cachedPosition = pos,
-            (err) => console.warn('GPS watch error:', err), {
-                enableHighAccuracy: false,
-                maximumAge: 60000,
-                timeout: 10000
-            }
+            pos => cachedPosition = pos,
+            err => console.warn('GPS watch error:', err),
+            { enableHighAccuracy: false, maximumAge: 60000, timeout: 10000 }
         );
-
     });
 
-
-    // ===============================
-    // UI HELPERS
-    // ===============================
-    const setLoading = (btn) => {
+    /* -------------------------------------------------------
+       UI HELPERS
+    ------------------------------------------------------- */
+    const setLoading = btn => {
         if (!btn) return;
-
         btn.disabled = true;
         btn.dataset.originalHtml = btn.innerHTML;
-
-        btn.innerHTML = `
-        <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-        Loading...
-    `;
+        btn.innerHTML = `<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Loading...`;
     };
 
-    const restoreButton = (btn) => {
+    const restoreButton = btn => {
         if (!btn) return;
-
         btn.disabled = false;
-
-        if (btn.dataset.originalHtml) {
-            btn.innerHTML = btn.dataset.originalHtml;
-        }
+        if (btn.dataset.originalHtml) btn.innerHTML = btn.dataset.originalHtml;
     };
 
-    // Button group swap — animate=true for result states, false for loading spinner
-    const setBtnGroup = (btnGroup, newHTML, animate = true) => {
-        btnGroup.innerHTML = newHTML;
-        if (animate) {
-            btnGroup.classList.remove('btn-group-animate');
-            void btnGroup.offsetWidth;
-            btnGroup.classList.add('btn-group-animate');
-        }
-        const dropdownEl = btnGroup.querySelector('[data-bs-toggle="dropdown"]');
-        if (dropdownEl && window.bootstrap?.Dropdown) {
-            bootstrap.Dropdown.getOrCreateInstance(dropdownEl);
-        }
+    const setBtnGroup = (group, html) => {
+        group.innerHTML = html;
+        group.classList.remove('btn-group-animate');
+        void group.offsetWidth; // force reflow
+        group.classList.add('btn-group-animate');
     };
 
+    const timeInHTML = () => `
+        <button class="btn btn-success" onclick="handleTimeIn()">
+            <i class="bi bi-stopwatch-fill"></i> Time In
+        </button>`;
 
-    // ===============================
-    // TIME IN / OUT
-    // ===============================
+    const timeOutHTML = () => `
+        <button class="btn btn-danger" onclick="handleTimeIn()">
+            <i class="bi bi-stopwatch-fill"></i> Time Out
+        </button>
+        <button type="button"
+                class="btn btn-danger dropdown-toggle dropdown-toggle-split"
+                data-bs-toggle="dropdown"
+                aria-expanded="false">
+            <span class="visually-hidden">Toggle Dropdown</span>
+        </button>
+        <ul class="dropdown-menu break-menu">
+            <li>
+                <button class="btn btn-break"
+                        id="break-action-btn"
+                        data-state="in"
+                        onclick="handleBreak()">
+                    <i class="bi bi-cup-hot-fill"></i> Take Break
+                </button>
+            </li>
+        </ul>`;
+
+    const spinnerHTML = () => `
+        <button class="btn" disabled>
+            <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+        </button>`;
+
+    const cooldownHTML = secs => `
+        <button class="btn" disabled>
+            <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+            <span id="cooldown-text">Wait ${secs}s...</span>
+        </button>`;
+
+    /* -------------------------------------------------------
+       TIME IN / OUT
+    ------------------------------------------------------- */
     const handleTimeIn = async () => {
         if (isProcessing) return;
 
-        const btnGroup = document.querySelector('.btn-group');
+        const btnGroup = document.getElementById('attendance-btn-group');
         const statusEl = document.getElementById('dashboard-status');
-
         if (!btnGroup) return;
 
-        const originalGroupHTML = btnGroup.innerHTML;
+        const originalHTML = btnGroup.innerHTML;
         isProcessing = true;
+        setBtnGroup(btnGroup, spinnerHTML());
 
-        // Spinner on the whole group — preserve current color so button doesn't go transparent
-        const colorClass = btnGroup.querySelector('button')?.classList.contains('btn-danger') ? 'btn-danger' : 'btn-success';
-        setBtnGroup(btnGroup, `
-        <button class="btn ${colorClass}" style="pointer-events:none;">
-            <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-        </button>
-    `, false);
+        const reset   = () => { setBtnGroup(btnGroup, originalHTML); isProcessing = false; };
+        const onError = () => { alert('Location permission required.'); reset(); };
 
-        const reset = () => {
-            setBtnGroup(btnGroup, originalGroupHTML);
-            isProcessing = false;
-        };
-
-        const onError = () => {
-            alert('Location permission required.');
-            reset();
-        };
-
-        const submit = async (pos) => {
+        const submit = async pos => {
             try {
                 const res = await fetch('../system_functions/attendance_tap.php', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        lat: pos.coords.latitude,
-                        lng: pos.coords.longitude,
+                        lat:      pos.coords.latitude,
+                        lng:      pos.coords.longitude,
                         accuracy: pos.coords.accuracy
                     })
                 });
 
-                const response = await res.json();
+                const data = await res.json();
 
-                if (response.error === 'too_fast') {
-                    let remaining = response.seconds_remaining;
-
+                if (data.error === 'too_fast') {
+                    let remaining = data.seconds_remaining;
                     const tick = () => {
-                        setBtnGroup(btnGroup, `
-                        <button class="btn ${colorClass}" style="pointer-events:none;">
-                            <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                            Wait ${remaining}s...
-                        </button>
-                    `, false);
-
-                        if (remaining <= 0) {
-                            setBtnGroup(btnGroup, originalGroupHTML);
-                            isProcessing = false;
-                            return;
-                        }
-
-                        remaining--;
+                        if (remaining <= 0) { setBtnGroup(btnGroup, originalHTML); isProcessing = false; return; }
+                        setBtnGroup(btnGroup, cooldownHTML(remaining--));
                         setTimeout(tick, 1000);
                     };
-
                     tick();
                     return;
                 }
 
-                if (response.error === 'shift_ended') {
+                if (data.error === 'shift_ended') {
                     alert('Shift ended. You are marked absent.');
                     reset();
                     return;
                 }
 
-                if (response.tap === 'timed_in') {
-                    setBtnGroup(btnGroup, `
-                    <button class="btn btn-danger btn-sm" onclick="handleTimeIn()">
-                        <i class="bi bi-stopwatch-fill"></i> Time Out
-                    </button>
-                    <button type="button"
-                            class="btn btn-danger btn-sm dropdown-toggle dropdown-toggle-split"
-                            data-bs-toggle="dropdown"
-                            data-bs-auto-close="outside"
-                            aria-expanded="false">
-                        <span class="visually-hidden">Toggle Dropdown</span>
-                    </button>
-                    <ul class="dropdown-menu break-menu">
-                        <li>
-                            <button
-                                class="dropdown-item btn btn-break"
-                                id="break-action-btn"
-                                data-state="in"
-                                onclick="handleBreak()"
-                            >
-                                <i class="bi bi-cup-hot-fill"></i> Take Break
-                            </button>
-                        </li>
-                    </ul>
-                `);
+                if (data.tap === 'timed_in') {
+                    setBtnGroup(btnGroup, timeOutHTML());
                     if (statusEl) statusEl.textContent = 'Timed In';
-
-                } else if (response.tap === 'timed_out') {
-                    setBtnGroup(btnGroup, `
-                    <button class="btn btn-success" onclick="handleTimeIn()">
-                        <i class="bi bi-stopwatch-fill"></i> Time In
-                    </button>
-                `);
+                } else if (data.tap === 'timed_out') {
+                    setBtnGroup(btnGroup, timeInHTML());
                     if (statusEl) statusEl.textContent = 'Timed Out';
                 }
 
-                localStorage.setItem('attendance_tap_result', response.tap);
+                localStorage.setItem('attendance_tap_result', data.tap);
                 localStorage.setItem('attendance_update', Date.now());
                 document.dispatchEvent(new CustomEvent('attendance_tapped'));
 
@@ -499,91 +377,67 @@ $currentStatus = $timedIn ? 'Timed In' : 'Timed Out';
             }
         };
 
-        if (cachedPosition) {
-            submit(cachedPosition);
-        } else {
-            navigator.geolocation.getCurrentPosition(submit, onError);
-        }
+        cachedPosition
+            ? submit(cachedPosition)
+            : navigator.geolocation.getCurrentPosition(submit, onError);
     };
 
-    // ===============================
-    // BREAK HANDLER
-    // ===============================
+    /* -------------------------------------------------------
+       BREAK HANDLER
+    ------------------------------------------------------- */
     const handleBreak = async () => {
         if (isBreakProcessing) return;
 
         const btn = document.getElementById('break-action-btn');
         if (!btn) return;
 
-        const btnGroup = document.querySelector('.btn-group');
-        const originalGroupHTML = btnGroup ? btnGroup.innerHTML : '';
-
         isBreakProcessing = true;
         setLoading(btn);
 
-        const reset = () => {
-            restoreButton(btn);
-            isBreakProcessing = false;
-        };
+        const reset   = () => { restoreButton(btn); isBreakProcessing = false; };
+        const onError = () => { alert('Location permission required.'); reset(); };
 
-        const submit = async (pos) => {
+        const submit = async pos => {
             try {
                 const res = await fetch('../system_functions/attendance_tap.php', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        lat: pos.coords.latitude,
-                        lng: pos.coords.longitude,
-                        accuracy: pos.coords.accuracy,
+                        lat:       pos.coords.latitude,
+                        lng:       pos.coords.longitude,
+                        accuracy:  pos.coords.accuracy,
                         break_tap: true
                     })
                 });
 
-                const response = await res.json();
+                const data = await res.json();
 
-                if (response.error === 'too_fast') {
-                    let remaining = response.seconds_remaining;
-
-                    // Animate once into cooldown state
-                    if (btnGroup) setBtnGroup(btnGroup, `
-                    <button class="btn btn-danger" style="pointer-events:none;">
-                        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                        <span id="cooldown-text">Wait ${remaining}s...</span>
-                    </button>
-                `, false);
-
+                if (data.error === 'too_fast') {
+                    // Break cooldown: just restore and show a brief message
+                    btn.disabled = true;
+                    btn.innerHTML = `<span id="cooldown-text">Wait ${data.seconds_remaining}s...</span>`;
+                    let remaining = data.seconds_remaining;
                     const tick = () => {
-                        if (remaining <= 0) {
-                            if (btnGroup) setBtnGroup(btnGroup, originalGroupHTML);
-                            isBreakProcessing = false;
-                            return;
-                        }
-
-                        remaining--;
-
-                        // Just update the text, no animation
-                        const countEl = btnGroup.querySelector('#cooldown-text');
-                        if (countEl) countEl.textContent = `Wait ${remaining}s...`;
-
+                        if (remaining <= 0) { restoreButton(btn); isBreakProcessing = false; return; }
+                        const el = document.getElementById('cooldown-text');
+                        if (el) el.textContent = `Wait ${--remaining}s...`;
                         setTimeout(tick, 1000);
                     };
-
                     setTimeout(tick, 1000);
                     return;
                 }
 
-                if (response.tap === 'break_in') {
-                    btn.disabled = false;
-                    btn.dataset.state = 'out'; // ← add this
+                if (data.tap === 'break_in') {
+                    btn.disabled  = false;
+                    btn.dataset.state = 'out';
                     btn.innerHTML = `<i class="bi bi-arrow-return-right"></i> Resume Work`;
                     document.dispatchEvent(new CustomEvent('attendance_tapped'));
                 }
 
-                if (response.tap === 'break_out') {
-                    btn.disabled = true;
-                    btn.dataset.state = 'in'; // ← add this
+                if (data.tap === 'break_out') {
+                    // Re-enable — they can take another break later if they need to
+                    btn.disabled  = false;
+                    btn.dataset.state = 'in';
                     btn.innerHTML = `<i class="bi bi-cup-hot-fill"></i> Take Break`;
                     document.dispatchEvent(new CustomEvent('attendance_tapped'));
                 }
@@ -596,20 +450,11 @@ $currentStatus = $timedIn ? 'Timed In' : 'Timed Out';
             }
         };
 
-        const onError = () => {
-            alert('Location permission required.');
-            reset();
-        };
-
-        if (cachedPosition) {
-            submit(cachedPosition);
-        } else {
-            navigator.geolocation.getCurrentPosition(submit, onError);
-        }
+        cachedPosition
+            ? submit(cachedPosition)
+            : navigator.geolocation.getCurrentPosition(submit, onError);
     };
 
-
-    // expose globally
     window.handleTimeIn = handleTimeIn;
-    window.handleBreak = handleBreak;
+    window.handleBreak  = handleBreak;
 </script>
