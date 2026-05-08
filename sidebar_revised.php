@@ -90,7 +90,7 @@ $requestsOpen = in_array($currentPage, ['employee_requests', 'schedule_requests'
             data-bs-toggle="collapse"
             data-bs-target="#workforce-submenu"
             aria-expanded="<?= $manageEmpOpen ? 'true' : 'false' ?>"
-            title="Manage Employees"
+            data-tooltip-title="Manage Employees"
         >
             <i class="bi bi-people-fill"></i>
             <span>Manage Employees</span>
@@ -99,15 +99,13 @@ $requestsOpen = in_array($currentPage, ['employee_requests', 'schedule_requests'
 
         <div id="workforce-submenu" class="collapse <?= $manageEmpOpen ? 'show' : '' ?>">
             <a href="workforce_schedule.php"
-               class="sidebar-sub-link <?= ($currentPage === 'workforce_schedule') ? 'active' : '' ?>"
-               title="Employee Schedules">
+               class="sidebar-sub-link <?= ($currentPage === 'workforce_schedule') ? 'active' : '' ?>">
                 <i class="bi bi-calendar-plus"></i>
                 <span>Employee Schedules</span>
             </a>
 
             <a href="workforce_logs.php"
-               class="sidebar-sub-link <?= ($currentPage === 'workforce_logs') ? 'active' : '' ?>"
-               title="Employee Logs">
+               class="sidebar-sub-link <?= ($currentPage === 'workforce_logs') ? 'active' : '' ?>">
                 <i class="bi bi-journal-text"></i>
                 <span>Employee Logs</span>
             </a>
@@ -130,7 +128,7 @@ $requestsOpen = in_array($currentPage, ['employee_requests', 'schedule_requests'
                     data-bs-toggle="collapse"
                     data-bs-target="#requests-submenu"
                     aria-expanded="<?= $requestsOpen ? 'true' : 'false' ?>"
-                    title="Requests"
+                    data-tooltip-title="Requests"
                 >
                     <i class="bi bi-envelope-paper"></i>
                     <span>Requests</span>
@@ -139,14 +137,12 @@ $requestsOpen = in_array($currentPage, ['employee_requests', 'schedule_requests'
 
                 <div id="requests-submenu" class="collapse <?= $requestsOpen ? 'show' : '' ?>">
                     <a href="admin_requests.php"
-                       class="sidebar-sub-link <?= ($currentPage === 'employee_requests') ? 'active' : '' ?>"
-                       title="Employee Requests">
+                       class="sidebar-sub-link <?= ($currentPage === 'employee_requests') ? 'active' : '' ?>">
                         <i class="bi bi-file-earmark-text"></i>
                         <span>Employee Requests</span>
                     </a>
                     <a href="admin_schedule_requests.php"
-                       class="sidebar-sub-link <?= ($currentPage === 'schedule_requests') ? 'active' : '' ?>"
-                       title="Schedule Requests">
+                       class="sidebar-sub-link <?= ($currentPage === 'schedule_requests') ? 'active' : '' ?>">
                         <i class="bi bi-calendar-check"></i>
                         <span>Schedule Requests</span>
                     </a>
@@ -174,10 +170,19 @@ $requestsOpen = in_array($currentPage, ['employee_requests', 'schedule_requests'
                     delay: { show: 100, hide: 100 }
                 });
             });
+            document.querySelectorAll('[data-tooltip-title]').forEach(el => {
+                bootstrap.Tooltip.getOrCreateInstance(el, {
+                    title: el.getAttribute('data-tooltip-title'),
+                    placement: 'right',
+                    trigger: 'hover',
+                    container: 'body',
+                    delay: { show: 100, hide: 100 }
+                });
+            });
         };
 
         const destroyTooltips = () => {
-            document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => {
+            document.querySelectorAll('[data-bs-toggle="tooltip"], [data-tooltip-title]').forEach(el => {
                 const instance = bootstrap.Tooltip.getInstance(el);
                 if (instance) instance.dispose();
             });
