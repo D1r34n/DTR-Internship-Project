@@ -1231,7 +1231,7 @@ function loadRecords(startDate, endDate) {
         .then(r => r.text())
         .then(html => {
             const match = html.match(/<!--SUMMARY:({.*?})-->/);
-            if (match) {
+            if (match && match[1]) {
                 try {
                     const c = JSON.parse(match[1]);
                     document.getElementById('chip-present').innerHTML    = `<i class="bi bi-check-circle-fill"></i> ${c.present} Present`;
