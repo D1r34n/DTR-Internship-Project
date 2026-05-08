@@ -65,6 +65,11 @@ if (isset($_GET['action'], $_GET['type'], $_GET['id'])) {
                     $le['attendance_id'],
                 ]);
 
+                if ($le['log_id']) {
+                    $pdo->prepare("UPDATE logs SET log_time = ? WHERE id = ?")
+                        ->execute([$le['requested_time_in'], $le['log_id']]);
+                }
+
             } elseif ($le['request_type'] === 'time_out') {
                 $pdo->prepare("
                     UPDATE attendances SET
@@ -82,6 +87,11 @@ if (isset($_GET['action'], $_GET['type'], $_GET['id'])) {
                     $le['requested_time_out'],
                     $le['attendance_id'],
                 ]);
+
+                if ($le['log_id']) {
+                    $pdo->prepare("UPDATE logs SET log_time = ? WHERE id = ?")
+                        ->execute([$le['requested_time_out'], $le['log_id']]);
+                }
 
             } else { // both
                 $pdo->prepare("
@@ -105,6 +115,23 @@ if (isset($_GET['action'], $_GET['type'], $_GET['id'])) {
                     $le['requested_time_out'],
                     $le['attendance_id'],
                 ]);
+
+                if ($le['log_id']) {
+                    $pdo->prepare("UPDATE logs SET log_time = ? WHERE id = ?")
+                        ->execute([$le['requested_time_in'], $le['log_id']]);
+                }
+
+                $outLog = $pdo->prepare("
+                    SELECT id FROM logs
+                    WHERE employee_id = ? AND log_type = 'OUT' AND DATE(log_time) = ?
+                    ORDER BY log_time ASC LIMIT 1
+                ");
+                $outLog->execute([$le['employee_id'], $le['work_date']]);
+                $outLogId = $outLog->fetchColumn();
+                if ($outLogId) {
+                    $pdo->prepare("UPDATE logs SET log_time = ? WHERE id = ?")
+                        ->execute([$le['requested_time_out'], $outLogId]);
+                }
             }
         }
 
