@@ -7,8 +7,12 @@ if (!isset($_SESSION['user_id'])) {
     exit();
 }
 
-$userRole = $_SESSION['user_role'] ?? 'employee';
-$employeeId = $_SESSION['user_id'] ?? null;
+$userRole   = $_SESSION['user_role'] ?? 'employee';
+$employeeId = $_SESSION['user_id']   ?? null;
+
+// Admin viewing a specific employee's profile — scope to that employee, hide employee columns
+$scopedToEmployee = $userRole === 'admin' && !empty($_GET['employee_id']);
+if ($scopedToEmployee) $employeeId = intval($_GET['employee_id']);
 date_default_timezone_set('Asia/Manila');
 
 $startDate = !empty($_GET['start']) ? date('Y-m-d', strtotime($_GET['start'])) : '';
@@ -65,9 +69,9 @@ $sql = "
 
 $params = [];
 
-// if NOT admin, restrict to own logs
-if ($userRole !== 'admin') {
-    $sql .= " AND employee_id = ?";
+// restrict to own logs (employee) or one specific employee (admin profile view)
+if ($userRole !== 'admin' || $scopedToEmployee) {
+    $sql .= " AND l.employee_id = ?";
     $params[] = $employeeId;
 }
 
@@ -107,7 +111,7 @@ $editSql = "
 ";
 $editParams = [];
 
-if ($userRole !== 'admin') {
+if ($userRole !== 'admin' || $scopedToEmployee) {
     $editSql .= " AND ler.employee_id = ?";
     $editParams[] = $employeeId;
 }
@@ -141,7 +145,7 @@ foreach ($erStmt->fetchAll(PDO::FETCH_ASSOC) as $er) {
    EMPTY STATE
 ========================= */
 if (!$records) {
-    $colspan = $userRole === 'admin' ? 9 : 6;
+    $colspan = $userRole !== 'admin' ? 6 : ($scopedToEmployee ? 7 : 9);
     echo "
     <tr class='emptyRow'>
         <td colspan='{$colspan}'>
@@ -170,7 +174,7 @@ foreach ($records as $row):
 
     if ($initiatedById === null) {
         $editRole = null;
-    } elseif ((int)$initiatedById === (int)$employeeId) {
+    } elseif (!$scopedToEmployee && (int)$initiatedById === (int)$_SESSION['user_id']) {
         $editRole = 'self';
     } else {
         $editRole = $initiatorRole;
@@ -230,7 +234,7 @@ foreach ($records as $row):
         </a>
     </td>
 
-    <?php if ($userRole === 'admin'): ?>
+    <?php if ($userRole === 'admin' && !$scopedToEmployee): ?>
     <td>
         <span class="empIdBadge">#<?= $empId ?></span>
         <?= htmlspecialchars($empName) ?>
@@ -260,6 +264,10 @@ foreach ($records as $row):
             <span class="pill">
                 <i class="bi bi-person-fill"></i> You
             </span>
+        <?php elseif ($editRole === 'employee'): ?>
+            <span class="pill">
+                <i class="bi bi-person-fill"></i> <?= htmlspecialchars($initiatorName ?? 'Employee') ?>
+            </span>
         <?php else: ?>
             <span style="color:rgba(255,255,255,0.15);font-size:0.75rem;">—</span>
         <?php endif; ?>
@@ -282,5 +290,19 @@ foreach ($records as $row):
             <span style="color:rgba(255,255,255,0.2);font-size:0.75rem;">—</span>
         <?php endif; ?>
     </td>
+
+    <?php if ($scopedToEmployee): ?>
+    <td>
+        <button class="leEditRowBtn" title="Edit log entry"
+            data-log-id="<?= $row['log_id'] ?>"
+            data-log-type="<?= htmlspecialchars($row['log_type']) ?>"
+            data-log-datetime="<?= date('Y-m-d\TH:i', strtotime($row['log_time'])) ?>"
+            data-log-date-label="<?= htmlspecialchars(date('F d, Y', strtotime($row['log_time']))) ?>"
+            data-log-time-label="<?= htmlspecialchars(date('h:i A', strtotime($row['log_time']))) ?>"
+            onclick="openAdminLogEditModal(this)">
+            <i class="bi bi-pencil-fill"></i>
+        </button>
+    </td>
+    <?php endif; ?>
 </tr>
 <?php endforeach; ?>

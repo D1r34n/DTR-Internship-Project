@@ -172,7 +172,13 @@ function computeGanttRow(array $row, ?array $sched): ?array
         $barLeft  = (($schedIn  - $rangeStart) / $range) * 100;
         $barWidth = (($schedOut - $schedIn)    / $range) * 100;
 
-        if ($isFuturePending) {
+        $isRestDay = !empty($sched['is_rest_day']);
+
+        if ($isRestDay) {
+            $barClass   = 'ganttBarRestDay';
+            $labelClass = 'ganttRestDayLabel';
+            $labelText  = 'Rest Day';
+        } elseif ($isFuturePending) {
             $barClass   = 'ganttBarPending';
             $labelClass = 'ganttPendingLabel';
             $labelText  = 'Upcoming';
