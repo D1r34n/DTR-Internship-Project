@@ -64,7 +64,7 @@ $rejectedCount = $pdo->query("SELECT COUNT(*) FROM schedules WHERE status = 'rej
 
 // ---- GET SCHEDULE REQUESTS ----
 $scheduleRequests = $pdo->query("
-    SELECT s.*, e.name AS employee_name, d.department_code
+    SELECT s.*, CONCAT(e.first_name, ' ', e.last_name) AS employee_name, d.department_code
     FROM schedules s
     JOIN employees e ON s.employee_id = e.id
     LEFT JOIN departments d ON e.department_id = d.id

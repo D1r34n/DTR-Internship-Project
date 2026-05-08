@@ -46,9 +46,10 @@ $records = $stmt->fetchAll(PDO::FETCH_ASSOC);
 $editMap = [];
 $erStmt  = $pdo->prepare("
     SELECT ler.log_id, ler.status, ler.initiated_by_id,
-           e_init.role AS initiator_role, e_init.name AS initiator_name
+           r_init.role_key AS initiator_role, CONCAT(e_init.first_name, ' ', e_init.last_name) AS initiator_name
     FROM log_edit_requests ler
     LEFT JOIN employees e_init ON ler.initiated_by_id = e_init.id
+    LEFT JOIN roles r_init ON r_init.id = e_init.role_id
     WHERE ler.employee_id = ?
     ORDER BY ler.created_at DESC
 ");

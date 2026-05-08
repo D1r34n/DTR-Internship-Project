@@ -46,7 +46,12 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         exit();
     }
 
-    $stmt = $pdo->prepare("SELECT id, name, email, password, role FROM employees WHERE email = ?");
+    $stmt = $pdo->prepare("
+        SELECT e.id, CONCAT(e.first_name, ' ', e.last_name) AS name, e.email, e.password, r.role_key AS role
+        FROM employees e
+        LEFT JOIN roles r ON r.id = e.role_id
+        WHERE e.email = ?
+    ");
     $stmt->execute([$email]);
     $employee = $stmt->fetch(PDO::FETCH_ASSOC);
 

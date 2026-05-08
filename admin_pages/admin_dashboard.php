@@ -12,7 +12,7 @@ require_once '../db.php';
 date_default_timezone_set('Asia/Manila');
 
 $today   = date('Y-m-d');
-$count   = $pdo->query("SELECT COUNT(*) FROM employees WHERE role = 'employee'")->fetchColumn();
+$count   = $pdo->query("SELECT COUNT(*) FROM employees e JOIN roles r ON r.id = e.role_id WHERE r.role_key = 'employee'")->fetchColumn();
 $stmt    = $pdo->prepare("SELECT COUNT(DISTINCT employee_id) FROM logs WHERE DATE(log_time) = ? AND log_type = 'login'");
 $stmt->execute([$today]);
 $present = $stmt->fetchColumn();

@@ -27,11 +27,12 @@ $deptCode   = $selfData['department_code'] ?? null;
 $deptEmployees = [];
 if ($myDept) {
     $empStmt = $pdo->prepare("
-        SELECT e.id, e.name, e.role, d.department_code
+        SELECT e.id, CONCAT(e.first_name, ' ', e.last_name) AS name, r.role_key AS role, d.department_code
         FROM employees e
+        LEFT JOIN roles r ON r.id = e.role_id
         LEFT JOIN departments d ON e.department_id = d.id
         WHERE e.department_id = ?
-        ORDER BY e.name
+        ORDER BY e.first_name, e.last_name
     ");
     $empStmt->execute([$myDept]);
     $deptEmployees = $empStmt->fetchAll(PDO::FETCH_ASSOC);

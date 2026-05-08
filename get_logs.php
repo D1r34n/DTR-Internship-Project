@@ -53,11 +53,12 @@ $sql = "
         l.distance_meters,
 
         e.id AS employee_id,
-        e.name AS employee_name,
-        e.role AS employee_role,
+        CONCAT(e.first_name, ' ', e.last_name) AS employee_name,
+        r.role_key AS employee_role,
         d.department_name
     FROM logs l
     LEFT JOIN employees e ON l.employee_id = e.id
+    LEFT JOIN roles r ON r.id = e.role_id
     LEFT JOIN departments d ON e.department_id = d.id
     WHERE 1=1
 ";
@@ -98,9 +99,10 @@ $records = $stmt->fetchAll(PDO::FETCH_ASSOC);
 $editMap    = [];
 $editSql = "
     SELECT ler.log_id, ler.status,
-           ler.initiated_by_id, e_init.role AS initiator_role, e_init.name AS initiator_name
+           ler.initiated_by_id, r_init.role_key AS initiator_role, CONCAT(e_init.first_name, ' ', e_init.last_name) AS initiator_name
     FROM log_edit_requests ler
     LEFT JOIN employees e_init ON ler.initiated_by_id = e_init.id
+    LEFT JOIN roles r_init ON r_init.id = e_init.role_id
     WHERE 1=1
 ";
 $editParams = [];

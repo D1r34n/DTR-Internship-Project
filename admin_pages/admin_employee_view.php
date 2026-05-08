@@ -23,7 +23,8 @@ $employeeId = intval($_GET['id']);
 // ---- HANDLE EMPLOYEE EDIT ----
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'edit_employee') {
 
-    $name       = trim($_POST['name'] ?? '');
+    $first_name = trim($_POST['first_name'] ?? '');
+    $last_name  = trim($_POST['last_name']  ?? '');
     $email      = trim($_POST['email'] ?? '');
     $password   = trim($_POST['password'] ?? '');
     $role       = $_POST['role'] ?? 'employee';
@@ -53,22 +54,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'edit_
        UPDATE EMPLOYEE
     -------------------------------------------- */
 
+    $roleStmt = $pdo->prepare("SELECT id FROM roles WHERE role_key = ?");
+    $roleStmt->execute([$role]);
+    $roleId = $roleStmt->fetchColumn() ?: null;
+
     if (!empty($password)) {
 
         $pdo->prepare("
             UPDATE employees
             SET
-                name = ?,
+                first_name = ?,
+                last_name = ?,
                 email = ?,
                 password = ?,
-                role = ?,
+                role_id = ?,
                 department_id = ?
             WHERE id = ?
         ")->execute([
-            $name,
+            $first_name,
+            $last_name,
             $email,
             $password,
-            $role,
+            $roleId,
             $department,
             $employeeId
         ]);
@@ -78,15 +85,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'edit_
         $pdo->prepare("
             UPDATE employees
             SET
-                name = ?,
+                first_name = ?,
+                last_name = ?,
                 email = ?,
-                role = ?,
+                role_id = ?,
                 department_id = ?
             WHERE id = ?
         ")->execute([
-            $name,
+            $first_name,
+            $last_name,
             $email,
-            $role,
+            $roleId,
             $department,
             $employeeId
         ]);
@@ -169,8 +178,9 @@ if (isset($_GET['action']) && $_GET['action'] === 'delete_employee') {
 
 // ---- GET EMPLOYEE ----
 $stmt = $pdo->prepare("
-    SELECT e.*, d.department_name, d.department_code
+    SELECT e.*, CONCAT(e.first_name, ' ', e.last_name) AS name, r.role_key AS role, d.department_name, d.department_code
     FROM employees e
+    LEFT JOIN roles r ON r.id = e.role_id
     LEFT JOIN departments d ON e.department_id = d.id
     WHERE e.id = ?
 ");
@@ -806,9 +816,15 @@ $tapLogs = $logsStmt->fetchAll(PDO::FETCH_ASSOC);
                     <div class="row g-3">
 
                         <div class="col-md-6">
-                            <label class="form-label">Name</label>
-                            <input type="text" name="name" class="form-control"
-                                   value="<?= htmlspecialchars($emp['name']) ?>" required>
+                            <label class="form-label">First Name</label>
+                            <input type="text" name="first_name" class="form-control"
+                                   value="<?= htmlspecialchars($emp['first_name']) ?>" required>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Last Name</label>
+                            <input type="text" name="last_name" class="form-control"
+                                   value="<?= htmlspecialchars($emp['last_name']) ?>" required>
                         </div>
 
                         <div class="col-md-6">

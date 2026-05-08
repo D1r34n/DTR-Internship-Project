@@ -24,34 +24,40 @@ if (isset($_GET['delete'])) {
 
 // ---- HANDLE ADD / EDIT ----
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $name       = trim($_POST['name']);
+    $first_name = trim($_POST['first_name'] ?? '');
+    $last_name  = trim($_POST['last_name']  ?? '');
     $email      = trim($_POST['email']);
     $password   = trim($_POST['password']);
     $role       = $_POST['role'];
     $department = !empty($_POST['department_id']) ? $_POST['department_id'] : null;
 
+    $roleStmt = $pdo->prepare("SELECT id FROM roles WHERE role_key = ?");
+    $roleStmt->execute([$role]);
+    $roleId = $roleStmt->fetchColumn() ?: null;
+
     if (!empty($_POST['employee_id'])) {
         if (!empty($password)) {
-            $pdo->prepare("UPDATE employees SET name=?, email=?, password=?, role=?, department_id=? WHERE id=?")
-                ->execute([$name, $email, $password, $role, $department, $_POST['employee_id']]);
+            $pdo->prepare("UPDATE employees SET first_name=?, last_name=?, email=?, password=?, role_id=?, department_id=? WHERE id=?")
+                ->execute([$first_name, $last_name, $email, $password, $roleId, $department, $_POST['employee_id']]);
         } else {
-            $pdo->prepare("UPDATE employees SET name=?, email=?, role=?, department_id=? WHERE id=?")
-                ->execute([$name, $email, $role, $department, $_POST['employee_id']]);
+            $pdo->prepare("UPDATE employees SET first_name=?, last_name=?, email=?, role_id=?, department_id=? WHERE id=?")
+                ->execute([$first_name, $last_name, $email, $roleId, $department, $_POST['employee_id']]);
         }
         $success = "Employee updated successfully!";
     } else {
-        $pdo->prepare("INSERT INTO employees (name, email, password, role, department_id) VALUES (?, ?, ?, ?, ?)")
-            ->execute([$name, $email, $password, $role, $department]);
+        $pdo->prepare("INSERT INTO employees (first_name, last_name, email, password, role_id, department_id) VALUES (?, ?, ?, ?, ?, ?)")
+            ->execute([$first_name, $last_name, $email, $password, $roleId, $department]);
         $success = "Employee added successfully!";
     }
 }
 
 // ---- GET ALL EMPLOYEES ----
 $employees = $pdo->query("
-    SELECT e.*, d.department_name, d.department_code
+    SELECT e.*, CONCAT(e.first_name, ' ', e.last_name) AS name, r.role_key AS role, d.department_name, d.department_code
     FROM employees e
+    LEFT JOIN roles r ON r.id = e.role_id
     LEFT JOIN departments d ON e.department_id = d.id
-    ORDER BY e.name
+    ORDER BY e.first_name, e.last_name
 ")->fetchAll(PDO::FETCH_ASSOC);
 ?>
 <!doctype html>
@@ -110,7 +116,7 @@ $employees = $pdo->query("
                     <?php foreach ($employees as $emp): ?>
                         <div class="empRow"
                                 data-id="<?= $emp['id'] ?>"
-                                data-name="<?= htmlspecialchars($emp['name']) ?>"
+                                data-first-name="<?= htmlspecialchars($emp['first_name']) ?>" data-last-name="<?= htmlspecialchars($emp['last_name']) ?>"
                                 data-email="<?= htmlspecialchars($emp['email']) ?>"
                                 data-role="<?= $emp['role'] ?>"
                                 data-dept="<?= htmlspecialchars($emp['department_id'] ?? '') ?>"
@@ -225,8 +231,12 @@ $employees = $pdo->query("
 
                         <div class="formGrid">
                             <div class="formGroup">
-                                <label>Name</label>
-                                <input type="text" name="name" id="modalName" class="formControl" required>
+                                <label>First Name</label>
+                                <input type="text" name="first_name" id="modalFirstName" class="formControl" required>
+                            </div>
+                            <div class="formGroup">
+                                <label>Last Name</label>
+                                <input type="text" name="last_name" id="modalLastName" class="formControl" required>
                             </div>
                             <div class="formGroup">
                                 <label>Email</label>
@@ -371,7 +381,8 @@ $employees = $pdo->query("
         function openEditModal(row) {
             document.getElementById('empModalTitle').textContent    = 'Edit Employee';
             document.getElementById('modalEmpId').value            = row.dataset.id;
-            document.getElementById('modalName').value             = row.dataset.name;
+            document.getElementById('modalFirstName').value        = row.dataset.firstName;
+            document.getElementById('modalLastName').value         = row.dataset.lastName;
             document.getElementById('modalEmail').value            = row.dataset.email;
             document.getElementById('modalPassword').value         = '';
             document.getElementById('modalPwdLabel').textContent   = 'New Password (leave blank to keep)';

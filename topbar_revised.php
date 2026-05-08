@@ -357,12 +357,18 @@ $currentStatus = $timedIn ? 'Timed In' : 'Timed Out';
         }
     };
 
-    // Button group animation — retriggers on every call
-    const setBtnGroup = (btnGroup, newHTML) => {
+    // Button group swap — animate=true for result states, false for loading spinner
+    const setBtnGroup = (btnGroup, newHTML, animate = true) => {
         btnGroup.innerHTML = newHTML;
-        btnGroup.classList.remove('btn-group-animate');
-        void btnGroup.offsetWidth; // force reflow
-        btnGroup.classList.add('btn-group-animate');
+        if (animate) {
+            btnGroup.classList.remove('btn-group-animate');
+            void btnGroup.offsetWidth;
+            btnGroup.classList.add('btn-group-animate');
+        }
+        const dropdownEl = btnGroup.querySelector('[data-bs-toggle="dropdown"]');
+        if (dropdownEl && window.bootstrap?.Dropdown) {
+            bootstrap.Dropdown.getOrCreateInstance(dropdownEl);
+        }
     };
 
 
@@ -380,12 +386,13 @@ $currentStatus = $timedIn ? 'Timed In' : 'Timed Out';
         const originalGroupHTML = btnGroup.innerHTML;
         isProcessing = true;
 
-        // Spinner on the whole group
+        // Spinner on the whole group — preserve current color so button doesn't go transparent
+        const colorClass = btnGroup.querySelector('button')?.classList.contains('btn-danger') ? 'btn-danger' : 'btn-success';
         setBtnGroup(btnGroup, `
-        <button class="btn btn-sm" disabled>
+        <button class="btn ${colorClass}" style="pointer-events:none;">
             <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
         </button>
-    `);
+    `, false);
 
         const reset = () => {
             setBtnGroup(btnGroup, originalGroupHTML);
@@ -418,11 +425,11 @@ $currentStatus = $timedIn ? 'Timed In' : 'Timed Out';
 
                     const tick = () => {
                         setBtnGroup(btnGroup, `
-                        <button class="btn btn-sm" disabled>
+                        <button class="btn ${colorClass}" style="pointer-events:none;">
                             <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
                             Wait ${remaining}s...
                         </button>
-                    `);
+                    `, false);
 
                         if (remaining <= 0) {
                             setBtnGroup(btnGroup, originalGroupHTML);
@@ -452,10 +459,12 @@ $currentStatus = $timedIn ? 'Timed In' : 'Timed Out';
                     <button type="button"
                             class="btn btn-danger btn-sm dropdown-toggle dropdown-toggle-split"
                             data-bs-toggle="dropdown"
+                            data-bs-auto-close="outside"
                             aria-expanded="false">
                         <span class="visually-hidden">Toggle Dropdown</span>
                     </button>
                     <ul class="dropdown-menu break-menu">
+                        <li>
                             <button
                                 class="dropdown-item btn btn-break"
                                 id="break-action-btn"
@@ -506,6 +515,9 @@ $currentStatus = $timedIn ? 'Timed In' : 'Timed Out';
         const btn = document.getElementById('break-action-btn');
         if (!btn) return;
 
+        const btnGroup = document.querySelector('.btn-group');
+        const originalGroupHTML = btnGroup ? btnGroup.innerHTML : '';
+
         isBreakProcessing = true;
         setLoading(btn);
 
@@ -535,17 +547,17 @@ $currentStatus = $timedIn ? 'Timed In' : 'Timed Out';
                     let remaining = response.seconds_remaining;
 
                     // Animate once into cooldown state
-                    setBtnGroup(btnGroup, `
-                    <button class="btn btn-sm" disabled>
+                    if (btnGroup) setBtnGroup(btnGroup, `
+                    <button class="btn btn-danger" style="pointer-events:none;">
                         <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
                         <span id="cooldown-text">Wait ${remaining}s...</span>
                     </button>
-                `);
+                `, false);
 
                     const tick = () => {
                         if (remaining <= 0) {
-                            setBtnGroup(btnGroup, originalGroupHTML);
-                            isProcessing = false;
+                            if (btnGroup) setBtnGroup(btnGroup, originalGroupHTML);
+                            isBreakProcessing = false;
                             return;
                         }
 

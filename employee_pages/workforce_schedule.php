@@ -119,11 +119,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $deptEmployees = [];
 if ($department) {
     $empStmt = $pdo->prepare("
-        SELECT e.id, e.name, e.role, d.department_code
+        SELECT e.id, CONCAT(e.first_name, ' ', e.last_name) AS name, r.role_key AS role, d.department_code
         FROM employees e
+        LEFT JOIN roles r ON r.id = e.role_id
         LEFT JOIN departments d ON e.department_id = d.id
         WHERE e.department_id = ?
-        ORDER BY e.name
+        ORDER BY e.first_name, e.last_name
     ");
     $empStmt->execute([$department]);
     $deptEmployees = $empStmt->fetchAll(PDO::FETCH_ASSOC);
@@ -135,7 +136,7 @@ if ($department) {
     $schedStmt = $pdo->prepare("
         SELECT
             s.id,
-            e.name AS employee_name,
+            CONCAT(e.first_name, ' ', e.last_name) AS employee_name,
             s.schedule_date,
             s.scheduled_start,
             s.scheduled_end,
@@ -148,7 +149,7 @@ if ($department) {
               s.status = 'pending'
               OR (s.status IN ('approved','rejected') AND s.schedule_date >= CURDATE() - INTERVAL 7 DAY)
           )
-        ORDER BY s.status ASC, s.schedule_date ASC, e.name
+        ORDER BY s.status ASC, s.schedule_date ASC, e.first_name, e.last_name
     ");
     $schedStmt->execute([$department]);
     $deptSchedules = $schedStmt->fetchAll(PDO::FETCH_ASSOC);

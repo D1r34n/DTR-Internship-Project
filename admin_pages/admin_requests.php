@@ -136,7 +136,7 @@ $totalLogEdit  = $pendingLogEdit + $approvedLogEdit + $rejectedLogEdit;
 
 // ---- GET LEAVE REQUESTS ----
 $leaveRequests = $pdo->query("
-    SELECT lr.*, e.name AS employee_name
+    SELECT lr.*, CONCAT(e.first_name, ' ', e.last_name) AS employee_name
     FROM leave_requests lr
     JOIN employees e ON lr.employee_id = e.id
     ORDER BY lr.created_at DESC
@@ -144,7 +144,7 @@ $leaveRequests = $pdo->query("
 
 // ---- GET OVERTIME REQUESTS ----
 $overtimeRequests = $pdo->query("
-    SELECT or2.*, e.name AS employee_name
+    SELECT or2.*, CONCAT(e.first_name, ' ', e.last_name) AS employee_name
     FROM overtime_requests or2
     JOIN employees e ON or2.employee_id = e.id
     ORDER BY or2.created_at DESC
@@ -152,7 +152,7 @@ $overtimeRequests = $pdo->query("
 
 // ---- GET OB REQUESTS ----
 $obRequests = $pdo->query("
-    SELECT ob.*, e.name AS employee_name
+    SELECT ob.*, CONCAT(e.first_name, ' ', e.last_name) AS employee_name
     FROM ob_requests ob
     JOIN employees e ON ob.employee_id = e.id
     ORDER BY ob.created_at DESC
@@ -171,7 +171,7 @@ $logEditRequests = $pdo->query("
         le.reason,
         le.status,
         le.created_at,
-        e.name AS employee_name,
+        CONCAT(e.first_name, ' ', e.last_name) AS employee_name,
         COALESCE(a.work_date, le.work_date) AS work_date
     FROM log_edit_requests le
     JOIN employees e ON le.employee_id = e.id
