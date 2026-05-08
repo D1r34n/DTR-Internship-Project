@@ -201,10 +201,18 @@ $departmentList = $stmt2->fetchAll(PDO::FETCH_ASSOC);
                             </div>
                         <?php endif; ?>
 
-                        <button class="dept-meta">
+                        <?php if ($dept['employee_count'] > 0): ?>
+                        <a class="dept-meta" href="admin_manage_employees.php?dept=<?= $dept['id'] ?>">
+                        <?php else: ?>
+                        <span class="dept-meta dept-meta--empty">
+                        <?php endif; ?>
                             <i class="bi bi-people"></i>
                             <?= $dept['employee_count'] ?> <?= $dept['employee_count'] != 1 ? 'Employees' : 'Employee' ?>
-                        </button>
+                        <?php if ($dept['employee_count'] > 0): ?>
+                        </a>
+                        <?php else: ?>
+                        </span>
+                        <?php endif; ?>
 
                     </div>
                 <?php endforeach; ?>
@@ -544,10 +552,10 @@ form.addEventListener('submit', function(e) {
                     </div>
                 ` : ''}
 
-                <button class="dept-meta">
+                <a class="dept-meta" href="admin_manage_employees.php?dept=${data.id}">
                     <i class="bi bi-people"></i>
                     0 Employees
-                </button>
+                </a>
             `;
 
             grid.appendChild(div);

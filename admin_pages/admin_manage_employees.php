@@ -922,6 +922,16 @@ $employees = $pdo->query("
                         onSelect: () => applyFilters()
                     });
 
+                    const urlDept = new URLSearchParams(location.search).get('dept');
+                    if (urlDept) {
+                        const match = formatted.find(d => d.value === urlDept);
+                        if (match) {
+                            document.getElementById('dept-filter').value       = match.value;
+                            document.getElementById('dept-search-input').value = match.label;
+                            applyFilters();
+                        }
+                    }
+
                     // =========================
                     // MODAL DROPDOWN
                     // =========================

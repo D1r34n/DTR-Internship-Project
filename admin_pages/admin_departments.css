@@ -596,6 +596,22 @@ body {
 
     font-size: 0.75rem;
     color: white;
-    cursor: default;
+    cursor: pointer;
     transition: 0.2s ease;
+    text-decoration: none;
+}
+
+.dept-meta:hover {
+    background: var(--glass-border);
+    color: var(--primary-color);
+}
+
+.dept-meta--empty {
+    cursor: default;
+    opacity: 0.5;
+}
+
+.dept-meta--empty:hover {
+    background: var(--glass-bg);
+    color: white;
 }
