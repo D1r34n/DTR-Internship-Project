@@ -7,8 +7,11 @@ if (!isset($_SESSION['user_id'])) {
     exit();
 }
 
-$userRole   = $_SESSION['user_role'] ?? 'employee';
-$employeeId = $_SESSION['user_id']   ?? null;
+header('Content-Type: application/json');
+
+$userRole      = $_SESSION['user_role'] ?? 'employee';
+$employeeId    = $_SESSION['user_id']   ?? null;
+$currentUserId = (int)($_SESSION['user_id'] ?? 0);
 
 // Admin viewing a specific employee's profile — scope to that employee, hide employee columns
 $scopedToEmployee = $userRole === 'admin' && !empty($_GET['employee_id']);
@@ -142,167 +145,54 @@ foreach ($erStmt->fetchAll(PDO::FETCH_ASSOC) as $er) {
 }
 
 /* =========================
-   EMPTY STATE
+   BUILD JSON RESPONSE
 ========================= */
-if (!$records) {
-    $colspan = $userRole !== 'admin' ? 6 : ($scopedToEmployee ? 7 : 9);
-    echo "
-    <tr class='emptyRow'>
-        <td colspan='{$colspan}'>
-            <div class='logsEmpty'>
-                <i class='bi bi-calendar-x logsEmptyIcon'></i>
-                <div>No logs found for this period.</div>
-            </div>
-        </td>
-    </tr>";
-    exit();
-}
-
-/* =========================
-   OUTPUT ROWS
-========================= */
-foreach ($records as $row):
-    $editEntry = $editMap[$row['log_id']] ?? null;
-    $editStatus      = $editEntry['status']          ?? null;
-    $initiatedById   = $editEntry['initiated_by_id'] ?? null;
-    $initiatorRole   = $editEntry['initiator_role']  ?? null;
-    $initiatorName   = $editEntry['initiator_name']  ?? null;
-    $empId   = $row['employee_id'];
-    $empName = $row['employee_name'];
-    $empRole = $row['employee_role'];
-    $dept    = $row['department_name'] ?? '—';
+$rows = [];
+foreach ($records as $row) {
+    $editEntry     = $editMap[$row['log_id']] ?? null;
+    $editStatus    = $editEntry['status']          ?? null;
+    $initiatedById = $editEntry['initiated_by_id'] ?? null;
+    $initiatorRole = $editEntry['initiator_role']  ?? null;
+    $initiatorName = $editEntry['initiator_name']  ?? null;
 
     if ($initiatedById === null) {
         $editRole = null;
-    } elseif (!$scopedToEmployee && (int)$initiatedById === (int)$_SESSION['user_id']) {
+    } elseif (!$scopedToEmployee && (int)$initiatedById === $currentUserId) {
         $editRole = 'self';
     } else {
         $editRole = $initiatorRole;
     }
 
-    $isInside = $row['is_within_office'];
-    $label    = $isInside ? 'Within Office' : 'Outside Office';
-    $class    = $isInside ? 'in-office' : 'out-office';
+    $lat  = $row['latitude']  ?? 0;
+    $lng  = $row['longitude'] ?? 0;
+    $acc  = isset($row['accuracy'])        ? round($row['accuracy'], 1)        : null;
+    $dist = isset($row['distance_meters']) ? round($row['distance_meters'], 1) : null;
 
-    $lat = $row['latitude'] ?? 0;
-    $lng = $row['longitude'] ?? 0;
+    $rows[] = [
+        'log_id'           => (int)$row['log_id'],
+        'date'             => date('F d, Y', strtotime($row['log_time'])),
+        'time'             => date('h:i A', strtotime($row['log_time'])),
+        'log_datetime'     => date('Y-m-d\TH:i', strtotime($row['log_time'])),
+        'log_type'         => $row['log_type'],
+        'is_within_office' => (bool)$row['is_within_office'],
+        'latitude'         => (float)$lat,
+        'longitude'        => (float)$lng,
+        'accuracy'         => $acc,
+        'distance_meters'  => $dist,
+        'employee_id'      => (int)$row['employee_id'],
+        'employee_name'    => $row['employee_name'],
+        'employee_role'    => $row['employee_role'],
+        'department_name'  => $row['department_name'],
+        'edit_role'        => $editRole,
+        'edit_status'      => $editStatus,
+        'initiator_name'   => $initiatorName,
+    ];
+}
 
-    $acc = isset($row['accuracy']) 
-        ? round($row['accuracy'], 1) 
-        : 'N/A';
-
-    $dist = isset($row['distance_meters']) 
-        ? round($row['distance_meters'], 1) 
-        : 'N/A';
-
-    $mapUrl = "https://www.google.com/maps?q={$lat},{$lng}";
-?>
-<tr>
-    <td><?= date('F d, Y', strtotime($row['log_time'])) ?></td>
-    <td><?= date('h:i A', strtotime($row['log_time'])) ?></td>
-
-    <td>
-        <span class="pill <?= match($row['log_type']) {
-            'IN'        => 'btn-success',
-            'OUT'       => 'btn-danger',
-            'BREAK_IN'  => 'status-pending',
-            'BREAK_OUT' => 'btn-info',
-            default     => ''
-        } ?>">
-            <?= match($row['log_type']) {
-                'IN'        => 'Time In',
-                'OUT'       => 'Time Out',
-                'BREAK_IN'  => 'Break In',
-                'BREAK_OUT' => 'Break Out',
-                default     => $row['log_type']
-            } ?>
-        </span>
-    </td>
-
-    <td>
-        <a href="<?= $mapUrl ?>" target="_blank"
-            class="pill <?= $isInside ? 'btn-success' : 'btn-danger' ?> loc-trigger"
-            style="text-decoration: none;"
-            data-lat="<?= htmlspecialchars($lat, ENT_QUOTES) ?>"
-            data-lng="<?= htmlspecialchars($lng, ENT_QUOTES) ?>"
-            data-label="<?= htmlspecialchars($label, ENT_QUOTES) ?>"
-            data-acc="<?= htmlspecialchars($acc, ENT_QUOTES) ?>"
-            data-dist="<?= htmlspecialchars($dist, ENT_QUOTES) ?>">
-
-            <i class="bi bi-geo-alt-fill"></i>
-            <?= $label ?>
-        </a>
-    </td>
-
-    <?php if ($userRole === 'admin' && !$scopedToEmployee): ?>
-    <td>
-        <span class="empIdBadge">#<?= $empId ?></span>
-        <?= htmlspecialchars($empName) ?>
-    </td>
-
-    <td>
-        <span class="empRoleBadge empRole-<?= htmlspecialchars($empRole) ?>">
-            <?= ucfirst($empRole) ?>
-        </span>
-    </td>
-
-    <td>
-        <?= htmlspecialchars($dept) ?>
-    </td>
-    <?php endif; ?>
-
-    <td>
-        <?php if ($editRole === 'workforce'): ?>
-            <span class="pill empRole-workforce">
-                <i class="bi bi-person-badge-fill"></i> <?= htmlspecialchars($initiatorName ?? 'Workforce') ?>
-            </span>
-        <?php elseif ($editRole === 'admin'): ?>
-            <span class="pill empRole-admin">
-                <i class="bi bi-shield-fill"></i> <?= htmlspecialchars($initiatorName ?? 'Admin') ?>
-            </span>
-        <?php elseif ($editRole === 'self'): ?>
-            <span class="pill">
-                <i class="bi bi-person-fill"></i> You
-            </span>
-        <?php elseif ($editRole === 'employee'): ?>
-            <span class="pill">
-                <i class="bi bi-person-fill"></i> <?= htmlspecialchars($initiatorName ?? 'Employee') ?>
-            </span>
-        <?php else: ?>
-            <span style="color:rgba(255,255,255,0.15);font-size:0.75rem;">—</span>
-        <?php endif; ?>
-    </td>
-
-    <td>
-        <?php if ($editStatus === 'pending'): ?>
-            <span class="pill btn-info">
-                <i class="bi bi-hourglass-split"></i> Pending
-            </span>
-        <?php elseif ($editStatus === 'approved'): ?>
-            <span class="pill btn-success">
-                <i class="bi bi-check-circle-fill"></i> Approved
-            </span>
-        <?php elseif ($editStatus === 'rejected'): ?>
-            <span class="pill btn-danger">
-                <i class="bi bi-x-circle-fill"></i> Rejected
-            </span>
-        <?php else: ?>
-            <span style="color:rgba(255,255,255,0.2);font-size:0.75rem;">—</span>
-        <?php endif; ?>
-    </td>
-
-    <?php if ($scopedToEmployee): ?>
-    <td>
-        <button class="leEditRowBtn" title="Edit log entry"
-            data-log-id="<?= $row['log_id'] ?>"
-            data-log-type="<?= htmlspecialchars($row['log_type']) ?>"
-            data-log-datetime="<?= date('Y-m-d\TH:i', strtotime($row['log_time'])) ?>"
-            data-log-date-label="<?= htmlspecialchars(date('F d, Y', strtotime($row['log_time']))) ?>"
-            data-log-time-label="<?= htmlspecialchars(date('h:i A', strtotime($row['log_time']))) ?>"
-            onclick="openAdminLogEditModal(this)">
-            <i class="bi bi-pencil-fill"></i>
-        </button>
-    </td>
-    <?php endif; ?>
-</tr>
-<?php endforeach; ?>
+echo json_encode([
+    'meta' => [
+        'user_role'          => $userRole,
+        'scoped_to_employee' => $scopedToEmployee,
+    ],
+    'rows' => $rows,
+]);

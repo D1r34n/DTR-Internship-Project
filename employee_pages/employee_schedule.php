@@ -8,6 +8,10 @@
     <!-- 1. Third-party CSS FIRST -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+
+    <!-- Custom Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
 
     <!-- 2. Your global CSS -->
@@ -18,20 +22,6 @@
 
     <!-- 3. Page-specific CSS -->
     <link rel="stylesheet" href="employee_schedule.css">
-
-    <style>
-        html, body { height: 100%; margin: 0; }
-        body { display: flex; min-height: 100vh; }
-        #sidebar { flex-shrink: 0; }
-        #main-wrapper {
-            display: flex;
-            flex-direction: column;
-            flex-grow: 1;
-            min-width: 0;
-            overflow-y: auto;
-        }
-        #topbar { flex-shrink: 0; position: sticky; top: 0; z-index: 100; }
-    </style>
 </head>
 <body>
     <?php $currentPage = 'schedule'; include '../sidebar_revised.php'; ?>
@@ -79,7 +69,14 @@
                 </div>
 
                 <!-- CALENDAR -->
-                <div id="calendar"></div>
+                <div id="calendar-wrapper">
+                    <div id="calendar-loading">
+                        <div class="spinner-border" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                    <div id="calendar"></div>
+                </div>
             </div>
         </div>
     </div>
@@ -90,23 +87,45 @@
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const calendarEl = document.getElementById('calendar');
+            let isRefreshing = false;
+
+            function formatDateLabel(date) {
+                const options = { year: 'numeric', month: 'short', day: 'numeric' };
+                return new Date(date).toLocaleDateString(undefined, options);
+            }
 
             const calendar = new FullCalendar.Calendar(calendarEl, {
                 initialView: 'dayGridMonth',
 
                 customButtons: {
                     refresh: {
-                        text: 'Refresh',
+                        text: '',
                         click: function () {
+                            isRefreshing = true;
                             calendar.refetchEvents();
                         }
+                    },
+
+                    customDate: {
+                        text: formatDateLabel(new Date()),
+                        click: function () {}
+                    }
+                },
+
+                loading: function (isLoading) {
+                    if (!isRefreshing) return;
+                    const overlay = document.getElementById('calendar-loading');
+                    if (isLoading) {
+                        if (overlay) overlay.classList.add('show');
+                    } else {
+                        if (overlay) overlay.classList.remove('show');
+                        isRefreshing = false;
                     }
                 },
 
                 headerToolbar: {
-                    left:   'prev,next today',
-                    center: 'title',
-                    right:  'refresh'
+                    left:   'refresh',
+                    right:  'customDate'
                 },
 
                 events: {
@@ -135,6 +154,66 @@
             });
 
             calendar.render();
+            
+            // Custom refresh button on toolbar
+            const refreshBtn = calendarEl.querySelector('.fc-refresh-button');
+            if (refreshBtn) refreshBtn.innerHTML = '<i class="bi bi-arrow-clockwise"></i>';
+
+            // Custom date picker button on toolbar
+            const dateBtn = calendarEl.querySelector('.fc-customDate-button');
+
+            function formatRangeLabel(start, end) {
+                const opts = { month: 'short', day: 'numeric' };
+                return `${start.toLocaleDateString(undefined, opts)} - ${end.toLocaleDateString(undefined, opts)}`;
+            }
+
+            if (dateBtn) {
+                const fp = flatpickr(dateBtn, {
+                    mode: "range",
+                    defaultDate: [new Date(), new Date()],
+                    dateFormat: "Y-m-d",
+
+                    onChange: function (selectedDates) {
+
+                        if (selectedDates.length === 1) {
+                            const start = selectedDates[0];
+
+                            dateBtn.innerHTML = `
+                                <i class="bi bi-calendar-event"></i>
+                                ${formatDateLabel(start)} →
+                            `;
+                            return;
+                        }
+
+                        // ✅ full range selected
+                        if (selectedDates.length === 2) {
+                            const [start, end] = selectedDates;
+
+                            calendar.gotoDate(start);
+
+                            dateBtn.innerHTML = `
+                                <i class="bi bi-calendar-event"></i>
+                                ${formatRangeLabel(start, end)}
+                            `;
+
+                            window.selectedRange = { start, end };
+                        }
+                    }
+                });
+
+                // ✅ default label (better than "Today")
+                const today = new Date();
+                dateBtn.innerHTML = `
+                    <i class="bi bi-calendar-event"></i>
+                    ${formatDateLabel(today)}
+                `;
+
+                // IMPORTANT: prevent double-open glitch
+                dateBtn.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    fp.open();
+                });
+            }
 
             // Resize calendar when sidebar expands
             function debounce(fn, delay = 100) {
@@ -149,7 +228,7 @@
                 calendar.updateSize();
             }, 150);
 
-            /* Watch layout changes (sidebar expand/collapse) */
+            // Watch layout changes (sidebar expand/collapse)
             window.addEventListener('resize', resizeCalendar);
 
             const sidebar = document.getElementById('sidebar');

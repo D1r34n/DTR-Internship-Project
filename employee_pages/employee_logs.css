@@ -75,7 +75,6 @@ body {
     display: flex;
     align-items: center;
     gap: 1rem;
-    padding-bottom: 1rem;
     flex-wrap: wrap;
 }
 
@@ -160,7 +159,7 @@ body {
 .table thead th {
     background: transparent;
     font-weight: 300;
-    font-size: 0.875rem;
+    font-size: 0.75rem;
     user-select: none;
     text-align: left;
     color: var(--text-muted);
@@ -197,7 +196,7 @@ body {
 .table tbody td {
     padding: 1rem 0.5rem;
     background: transparent;
-    font-size: 0.875rem;
+    font-size: 0.7rem;
     color: var(--text-light);
     user-select: none;
 }

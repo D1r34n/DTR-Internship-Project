@@ -526,7 +526,7 @@ button.btn {
     justify-content: center !important;
     gap: 0.4rem !important;
 
-    padding: 0 1rem !important;
+    padding: 0.75rem !important;
 
     color: var(--text-light) !important;
 
@@ -578,6 +578,23 @@ button.btn {
     background: var(--frosted-highlight);
     opacity: 0.5;
     pointer-events: none;
+}
+
+/* ================================================
+   SMALL BUTTON
+   ================================================ */
+
+.btn-sm,
+button.btn-sm {
+    height: calc(var(--control-height) - 10px) !important;
+
+    padding: 0.75rem !important;
+
+    font-size: 0.75rem !important;
+
+    border-radius: 8px !important;
+
+    gap: 0.3rem !important;
 }
 
 /* ------------------------------------------------
@@ -919,23 +936,6 @@ button.btn {
 
 .dropdown-toggle[aria-expanded="true"]::after {
     transform: rotate(180deg) !important;
-}
-
-/* ================================================
-   SMALL BUTTON
-   ================================================ */
-
-.btn-sm,
-button.btn-sm {
-    height: calc(var(--control-height) - 10px) !important;
-
-    padding: 0 0.75rem !important;
-
-    font-size: 0.75rem !important;
-
-    border-radius: 10px !important;
-
-    gap: 0.3rem !important;
 }
 
 /* ================================================
@@ -1323,4 +1323,36 @@ button.btn-sm {
 .fc td,
 .fc th {
     transition: width 0.38s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ================================================
+   MAP POPOVER
+   ================================================ */
+
+.map-popover .popover-body {
+    background: var(--frosted-bg) linear-gradient(
+        to right,
+        rgba(255, 255, 255, 0.06) 0%,
+        rgba(255, 255, 255, 0.03) 40%,
+        transparent 100%
+    ) !important;
+    backdrop-filter: var(--frosted-blur) !important;
+    -webkit-backdrop-filter: var(--frosted-blur) !important;
+    border: 1px solid var(--frosted-border) !important;
+    border-radius: 12px !important;
+    box-shadow: var(--frosted-shadow) !important;
+    color: var(--text-light) !important;
+    padding: 0.75rem !important;
+    font-size: 0.8rem !important;
+    min-width: 300px !important;
+}
+
+.map-popover .popover-arrow { display: none !important; }
+
+/* Hide the default popover wrapper border */
+.map-popover.popover {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    max-width: 320px !important;
 }

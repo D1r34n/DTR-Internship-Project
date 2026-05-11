@@ -26,8 +26,8 @@ $titles = [
     'employee' => [
         'dashboard' => 'Employee Dashboard',
         'records'   => 'Employee Records',
-        'schedule'  => 'Employee Schedule',
-        'logs'      => 'Employee Activity Logs',
+        'schedule'  => 'Schedule',
+        'logs'      => 'Activity Logs',
     ],
     'workforce' => [
         'dashboard'          => 'Employee Dashboard',

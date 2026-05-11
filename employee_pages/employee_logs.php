@@ -10,10 +10,15 @@ require_once '../db.php';
 
 date_default_timezone_set('Asia/Manila');
 
-$startDate = !empty($_GET['start']) ? date('Y-m-d', strtotime($_GET['start'])) : '';
-$endDate   = !empty($_GET['end'])   ? date('Y-m-d', strtotime($_GET['end']))   : '';
+$startDate = !empty($_GET['start'])
+    ? date('Y-m-d', strtotime($_GET['start']))
+    : date('Y-m-d');
 
-$current_page = 'logs';
+$endDate = !empty($_GET['end'])
+    ? date('Y-m-d', strtotime($_GET['end']))
+    : date('Y-m-d');
+
+$currentPage = 'logs';
 ?>
 
 <!doctype html>
@@ -24,28 +29,20 @@ $current_page = 'logs';
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Employee Logs</title>
 
-    <!-- 1. Third-party CSS FIRST -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 
-    <!-- 2. Your global CSS -->
     <link rel="stylesheet" href="../assets/css/root.css">
     <link rel="stylesheet" href="../assets/css/typography.css">
     <link rel="stylesheet" href="../assets/css/components.css">
     <link rel="stylesheet" href="../navbars_revised.css">
 
-    <!-- 3. Page-specific CSS -->
     <link rel="stylesheet" href="employee_logs.css">
-
-    <!-- 4. Scripts -->
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
-
 <body>
-    <?php $currentPage = 'logs'; include '../sidebar_revised.php'; ?>
+    <?php include '../sidebar_revised.php'; ?>
 
     <div id="main-wrapper">
         <?php include '../topbar_revised.php'; ?>
@@ -53,108 +50,253 @@ $current_page = 'logs';
         <div class="card card-glass logs-card">
             <div class="card-body d-flex flex-column logs-card-body">
 
-            <!-- Filter Section -->
-            <div class="filterWrapper">
+                <!-- Filter Section -->
+                <div class="filterWrapper">
 
-                <!-- Date Range Picker -->
-                <div class="dropdown">
-                    <button class="btn dropdown-toggle" id="datePickerBtn" type="button">
-                        <i class="bi bi-calendar3"></i>
-                        <span id="dateRangeLabel">Today</span>
-                    </button>
+                    <div class="dropdown">
+                        <button class="btn btn-sm dropdown-toggle" id="datePickerBtn" type="button">
+                            <i class="bi bi-calendar3"></i>
+                            <span id="dateRangeLabel">Today</span>
+                        </button>
+                    </div>
+
+                    <div class="dropdown">
+                        <button class="btn btn-sm dropdown-toggle" type="button" id="logTypeToggle"
+                                data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-funnel"></i>
+                            <span id="logTypeLabel">All Types</span>
+                        </button>
+                        <ul class="dropdown-menu" id="logTypeMenu">
+                            <li><a class="dropdown-item" href="#" data-value="ALL">All Types</a></li>
+                            <li><a class="dropdown-item" href="#" data-value="IN">Time In</a></li>
+                            <li><a class="dropdown-item" href="#" data-value="OUT">Time Out</a></li>
+                            <li><a class="dropdown-item" href="#" data-value="BREAK_IN">Break In</a></li>
+                            <li><a class="dropdown-item" href="#" data-value="BREAK_OUT">Break Out</a></li>
+                        </ul>
+                    </div>
+
+                    <input type="hidden" id="logTypeFilter" value="ALL">
+                    <input type="hidden" id="startDate" value="<?= $startDate ?>">
+                    <input type="hidden" id="endDate" value="<?= $endDate ?>">
                 </div>
 
-                <!-- Log Type Filter -->
-                <div class="dropdown">
-                    <button class="btn dropdown-toggle" type="button" id="logTypeToggle"
-                            data-bs-toggle="dropdown" aria-expanded="false">
-                        <i class="bi bi-funnel"></i>
-                        <span id="logTypeLabel">All Types</span>
-                    </button>
-                    <ul class="dropdown-menu" id="logTypeMenu">
-                        <li><a class="dropdown-item" href="#" data-value="ALL">All Types</a></li>
-                        <li><a class="dropdown-item" href="#" data-value="IN">Time In</a></li>
-                        <li><a class="dropdown-item" href="#" data-value="OUT">Time Out</a></li>
-                        <li><a class="dropdown-item" href="#" data-value="BREAK_IN">Break In</a></li>
-                        <li><a class="dropdown-item" href="#" data-value="BREAK_OUT">Break Out</a></li>
-                    </ul>
+                <!-- Table Header -->
+                <div class="tableHeaderGlass">
+                    <table class="table table-borderless mb-0">
+                        <colgroup id="logs_header_colgroup"></colgroup>
+                        <thead>
+                            <tr id="logs_header_row"></tr>
+                        </thead>
+                    </table>
                 </div>
 
-                <input type="hidden" id="logTypeFilter" value="ALL">
-                <input type="hidden" id="startDate" value="<?= $startDate ?>">
-                <input type="hidden" id="endDate" value="<?= $endDate ?>">
-            </div>
-
-            <!-- Table Header -->
-            <div class="tableHeaderGlass">
-                <table class="table table-borderless mb-0">
-                    <colgroup>
-                        <col style="width:18%">
-                        <col style="width:12%">
-                        <col style="width:15%">
-                        <col style="width:18%">
-                        <col style="width:20%">
-                        <col style="width:17%">
-                    </colgroup>
-                    <thead>
-                        <tr>
-                            <th class="sortable" data-sort="date">
-                                Date <i class="bi bi-arrow-down-up sortIcon" id="sort-date"></i>
-                            </th>
-                            <th class="sortable" data-sort="time">
-                                Time <i class="bi bi-arrow-down-up sortIcon" id="sort-time"></i>
-                            </th>
-                            <th class="sortable" data-sort="type">
-                                Log Type <i class="bi bi-arrow-down-up sortIcon" id="sort-type"></i>
-                            </th>
-                            <th class="sortable" data-sort="location">
-                                Location <i class="bi bi-arrow-down-up sortIcon" id="sort-location"></i>
-                            </th>
-                            <th>Requested By</th>
-                            <th>Edit Status</th>
-                        </tr>
-                    </thead>
-                </table>
-            </div>
-
-            <!-- Body with scrolling -->
-            <div class="tableScroll">
-                <table class="table table-hover mb-0">
-                    <colgroup>
-                        <col style="width:18%">
-                        <col style="width:12%">
-                        <col style="width:15%">
-                        <col style="width:18%">
-                        <col style="width:20%">
-                        <col style="width:17%">
-                    </colgroup>
-                    <tbody id="logs_table_body">
-                        <!-- populated by fetchLogs() -->
-                    </tbody>
-                </table>
-            </div>
+                <!-- Scrollable Body -->
+                <div class="tableScroll">
+                    <table class="table table-hover mb-0">
+                        <colgroup id="logs_body_colgroup"></colgroup>
+                        <tbody id="logs_table_body"></tbody>
+                    </table>
+                </div>
 
             </div>
         </div>
 
-    <!-- Map Hover Popup -->
-    <div class="mapPopUpContainer" id="map_pop_up_container">
-        <div class="mapPopUp" id="map_pop_up"></div>
-        <div class="mapPopUpInfo" id="map_pop_up_info"></div>
-        <div style="padding: 10px;">
-            <a class="openGoogleMapsBtn" id="open_gmaps_btn" href="#" target="_blank">
-                Open in Google Maps
-            </a>
+        <!-- Map Hover Popup -->
+        <div class="mapPopUpContainer" id="map_pop_up_container">
+            <div class="mapPopUp" id="map_pop_up"></div>
+            <div class="mapPopUpInfo" id="map_pop_up_info"></div>
+            <div style="padding:10px;">
+                <a class="openGoogleMapsBtn" id="open_gmaps_btn" href="#" target="_blank">
+                    Open in Google Maps
+                </a>
+            </div>
         </div>
-    </div>
-</div><!-- #main-wrapper -->
 
- <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+    </div><!-- #main-wrapper -->
+
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+
 <script>
 const tbody = document.getElementById('logs_table_body');
 
 /* =========================
-   FETCH LOGS (AJAX)
+   SORTING
+========================= */
+const DEFAULT_SORT_COL = 'date';
+const DEFAULT_SORT_DIR = 'desc';
+
+let sortColumn    = DEFAULT_SORT_COL;
+let sortDirection = DEFAULT_SORT_DIR;
+
+/* =========================
+   COLUMN DEFINITIONS
+========================= */
+const COLS = {
+    employee: [
+        { width: '18%', label: 'Date',         sort: 'date'     },
+        { width: '12%', label: 'Time',         sort: 'time'     },
+        { width: '15%', label: 'Log Type',     sort: 'type'     },
+        { width: '18%', label: 'Location',     sort: 'location' },
+        { width: '20%', label: 'Requested By'                   },
+        { width: '17%', label: 'Edit Status'                    },
+    ],
+    admin: [
+        { width: '10%', label: 'Date',         sort: 'date'     },
+        { width: '10%', label: 'Time',         sort: 'time'     },
+        { width: '12%', label: 'Employee'                       },
+        { width: '10%', label: 'Role'                          },
+        { width: '10%', label: 'Log Type',     sort: 'type'     },
+        { width: '14%', label: 'Location',     sort: 'location' },
+        { width: '8%',  label: 'Requested By'                   },
+        { width: '7%',  label: 'Edit Status'                    },
+    ],
+    admin_scoped: [
+        { width: '17%', label: 'Date',         sort: 'date'     },
+        { width: '12%', label: 'Time',         sort: 'time'     },
+        { width: '14%', label: 'Log Type',     sort: 'type'     },
+        { width: '16%', label: 'Location',     sort: 'location' },
+        { width: '18%', label: 'Requested By'                   },
+        { width: '15%', label: 'Edit Status'                    },
+        { width: '8%',  label: ''                               },
+    ],
+};
+
+function updateHeader(user_role, scoped_to_employee) {
+    const key  = user_role !== 'admin' ? 'employee' : (scoped_to_employee ? 'admin_scoped' : 'admin');
+    const cols = COLS[key];
+    const colHtml = cols.map(c => `<col style="width:${c.width}">`).join('');
+    document.getElementById('logs_header_colgroup').innerHTML = colHtml;
+    document.getElementById('logs_body_colgroup').innerHTML   = colHtml;
+    document.getElementById('logs_header_row').innerHTML = cols.map(c =>
+        c.sort
+            ? `<th class="sortable" data-sort="${c.sort}">${c.label} <i class="bi bi-arrow-down-up sortIcon" id="sort-${c.sort}"></i></th>`
+            : `<th>${c.label}</th>`
+    ).join('');
+}
+
+/* =========================
+   RENDER HELPERS
+========================= */
+function esc(v) {
+    if (v == null) return '';
+    return String(v)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+const LOG_TYPE_CLASS = { IN: 'btn-success', OUT: 'btn-danger', BREAK_IN: 'status-pending', BREAK_OUT: 'btn-info' };
+const LOG_TYPE_LABEL = { IN: 'Time In', OUT: 'Time Out', BREAK_IN: 'Break In', BREAK_OUT: 'Break Out' };
+
+/* =========================
+   RENDER ROWS
+========================= */
+function renderRows({ meta, rows }) {
+    const { user_role, scoped_to_employee } = meta;
+    updateHeader(user_role, scoped_to_employee);
+
+    if (!rows.length) {
+        const colspan = user_role !== 'admin' ? 6 : (scoped_to_employee ? 7 : 9);
+        tbody.innerHTML = `
+        <tr class="emptyRow">
+            <td colspan="${colspan}">
+                <div class="logsEmpty">
+                    <i class="bi bi-calendar-x logsEmptyIcon"></i>
+                    <div>No logs found for this period.</div>
+                </div>
+            </td>
+        </tr>`;
+        return;
+    }
+
+    tbody.innerHTML = rows.map(row => {
+        const isInside = row.is_within_office;
+        const locLabel = isInside ? 'Within Office' : 'Outside Office';
+        const locClass = isInside ? 'btn-success' : 'btn-danger';
+        const acc      = row.accuracy        != null ? row.accuracy        : 'N/A';
+        const dist     = row.distance_meters != null ? row.distance_meters : 'N/A';
+        const mapUrl   = `https://www.google.com/maps?q=${row.latitude},${row.longitude}`;
+        const typeClass = LOG_TYPE_CLASS[row.log_type] ?? '';
+        const typeLabel = LOG_TYPE_LABEL[row.log_type] ?? row.log_type;
+
+        let editRoleHtml = `<span style="color:rgba(255,255,255,0.15);font-size:0.75rem;">—</span>`;
+        if (row.edit_role === 'workforce') {
+            editRoleHtml = `<span class="pill empRole-workforce"><i class="bi bi-person-badge-fill"></i> ${esc(row.initiator_name ?? 'Workforce')}</span>`;
+        } else if (row.edit_role === 'admin') {
+            editRoleHtml = `<span class="pill empRole-admin"><i class="bi bi-shield-fill"></i> ${esc(row.initiator_name ?? 'Admin')}</span>`;
+        } else if (row.edit_role === 'self') {
+            editRoleHtml = `<span class="pill"><i class="bi bi-person-fill"></i> You</span>`;
+        } else if (row.edit_role === 'employee') {
+            editRoleHtml = `<span class="pill"><i class="bi bi-person-fill"></i> ${esc(row.initiator_name ?? 'Employee')}</span>`;
+        }
+
+        let editStatusHtml = `<span style="color:rgba(255,255,255,0.2);font-size:0.75rem;">—</span>`;
+        if (row.edit_status === 'pending') {
+            editStatusHtml = `<span class="pill btn-info"><i class="bi bi-hourglass-split"></i> Pending</span>`;
+        } else if (row.edit_status === 'approved') {
+            editStatusHtml = `<span class="pill btn-success"><i class="bi bi-check-circle-fill"></i> Approved</span>`;
+        } else if (row.edit_status === 'rejected') {
+            editStatusHtml = `<span class="pill btn-danger"><i class="bi bi-x-circle-fill"></i> Rejected</span>`;
+        }
+
+        let adminCols = '';
+        if (user_role === 'admin' && !scoped_to_employee) {
+            const roleLabel = row.employee_role
+                ? row.employee_role.charAt(0).toUpperCase() + row.employee_role.slice(1)
+                : '';
+            adminCols = `
+            <td><span class="empIdBadge"> ${esc(row.employee_name)}</td>
+            <td><span class="empRoleBadge empRole-${esc(row.employee_role)}">${esc(roleLabel)}</span></td>`;
+        }
+
+        let editBtnCol = '';
+        if (scoped_to_employee) {
+            editBtnCol = `
+            <td>
+                <button class="leEditRowBtn" title="Edit log entry"
+                    data-log-id="${row.log_id}"
+                    data-log-type="${esc(row.log_type)}"
+                    data-log-datetime="${esc(row.log_datetime)}"
+                    data-log-date-label="${esc(row.date)}"
+                    data-log-time-label="${esc(row.time)}"
+                    onclick="openAdminLogEditModal(this)">
+                    <i class="bi bi-pencil-fill"></i>
+                </button>
+            </td>`;
+        }
+
+        return `<tr>
+            <td>${esc(row.date)}</td>
+            <td>${esc(row.time)}</td>
+            ${adminCols}
+            <td><span class="pill ${typeClass}">${typeLabel}</span></td>
+            <td>
+                <a href="${mapUrl}" target="_blank"
+                    class="pill ${locClass} loc-trigger"
+                    style="text-decoration:none;"
+                    data-lat="${esc(row.latitude)}"
+                    data-lng="${esc(row.longitude)}"
+                    data-label="${esc(locLabel)}"
+                    data-acc="${esc(acc)}"
+                    data-dist="${esc(dist)}">
+                    <i class="bi bi-geo-alt-fill"></i>
+                    ${locLabel}
+                </a>
+            </td>
+            
+            <td>${editRoleHtml}</td>
+            <td>${editStatusHtml}</td>
+            ${editBtnCol}
+        </tr>`;
+    }).join('');
+}
+
+/* =========================
+   FETCH LOGS
 ========================= */
 function fetchLogs() {
     const start = document.getElementById('startDate').value;
@@ -162,46 +304,64 @@ function fetchLogs() {
     const type  = document.getElementById('logTypeFilter').value;
 
     fetch(`../get_logs.php?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}&type=${encodeURIComponent(type)}&sort=${sortColumn}&dir=${sortDirection}`)
-        .then(res => res.text())
-        .then(html => { tbody.innerHTML = html; });
+        .then(res => res.json())
+        .then(data => renderRows(data));
 }
 
 /* =========================
-   FLATPICKR INIT
+   DATE LABEL HELPER
 ========================= */
-const startInput     = document.getElementById('startDate');
-const endInput       = document.getElementById('endDate');
-const datePickerBtn  = document.getElementById('datePickerBtn');
+const startInput    = document.getElementById('startDate');
+const endInput      = document.getElementById('endDate');
 const dateRangeLabel = document.getElementById('dateRangeLabel');
 
 function fmtDate(d) {
     return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
+function toLocalStr(d) {
+    const pad = n => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
 function updateDateLabel(dates) {
-    if (!dates.length) { dateRangeLabel.textContent = 'All Logs'; return; }
+    if (!dates.length) {
+        dateRangeLabel.textContent = 'All Logs';
+        return;
+    }
+
+    const today     = toLocalStr(new Date());
     const isSameDay = dates.length > 1 && dates[0].toDateString() === dates[1].toDateString();
-    dateRangeLabel.textContent = (dates.length === 1 || isSameDay)
+    const isSingle  = dates.length === 1 || isSameDay;
+
+    if (isSingle && toLocalStr(dates[0]) === today) {
+        dateRangeLabel.textContent = 'Today';
+        return;
+    }
+
+    dateRangeLabel.textContent = isSingle
         ? fmtDate(dates[0])
         : fmtDate(dates[0]) + ' – ' + fmtDate(dates[1]);
 }
 
-flatpickr(datePickerBtn, {
+/* =========================
+   FLATPICKR
+========================= */
+flatpickr(document.getElementById('datePickerBtn'), {
     mode: 'range',
     dateFormat: 'Y-m-d',
-    defaultDate: startInput.value ? [startInput.value, endInput.value] : [],
+    defaultDate: [startInput.value, endInput.value],
 
-    onReady(dates) { updateDateLabel(dates); },
+    onReady(dates) {
+        updateDateLabel(dates);
+    },
 
     onChange(dates) {
         updateDateLabel(dates);
         if (dates.length !== 2) return;
 
-        const pad     = n => String(n).padStart(2, '0');
-        const toLocal = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
-
-        startInput.value = toLocal(dates[0]);
-        endInput.value   = toLocal(dates[1]);
+        startInput.value = toLocalStr(dates[0]);
+        endInput.value   = toLocalStr(dates[1]);
         fetchLogs();
     }
 });
@@ -222,17 +382,8 @@ document.querySelectorAll('#logTypeMenu .dropdown-item').forEach(item => {
 });
 
 /* =========================
-   SORTING — 3-STATE PER COLUMN
-   1st click on column  → ASC
-   2nd click same column → DESC
-   3rd click same column → reset to default (date DESC)
+   SORT HEADERS
 ========================= */
-const DEFAULT_SORT_COL = 'date';
-const DEFAULT_SORT_DIR = 'desc';
-
-let sortColumn    = DEFAULT_SORT_COL;
-let sortDirection = DEFAULT_SORT_DIR;
-
 function applyHeaderUI() {
     document.querySelectorAll('.sortable').forEach(el => el.classList.remove('sorted'));
     document.querySelectorAll('.sortIcon').forEach(el => {
@@ -247,28 +398,26 @@ function applyHeaderUI() {
     }
 }
 
-document.querySelectorAll('.sortable').forEach(th => {
-    th.addEventListener('click', () => {
-        const column = th.dataset.sort;
+document.querySelector('.tableHeaderGlass').addEventListener('click', e => {
+    const th = e.target.closest('.sortable');
+    if (!th) return;
 
-        if (sortColumn === column) {
-            if (sortDirection === 'asc') {
-                // 2nd click → flip to DESC
-                sortDirection = 'desc';
-            } else {
-                // 3rd click → reset to default
-                sortColumn    = DEFAULT_SORT_COL;
-                sortDirection = DEFAULT_SORT_DIR;
-            }
+    const col = th.dataset.sort;
+
+    if (sortColumn === col) {
+        if (sortDirection === 'asc') {
+            sortDirection = 'desc';
         } else {
-            // New column → start ASC
-            sortColumn    = column;
-            sortDirection = 'asc';
+            sortColumn    = DEFAULT_SORT_COL;
+            sortDirection = DEFAULT_SORT_DIR;
         }
+    } else {
+        sortColumn    = col;
+        sortDirection = 'asc';
+    }
 
-        applyHeaderUI();
-        fetchLogs();
-    });
+    applyHeaderUI();
+    fetchLogs();
 });
 
 /* =========================
@@ -284,11 +433,10 @@ document.addEventListener('mouseover', e => {
 
     clearTimeout(hideTimeout);
 
-    const lat   = parseFloat(trigger.dataset.lat);
-    const lng   = parseFloat(trigger.dataset.lng);
-    const label = trigger.dataset.label;
-    const acc   = trigger.dataset.acc;
-    const dist  = trigger.dataset.dist;
+    const lat  = parseFloat(trigger.dataset.lat);
+    const lng  = parseFloat(trigger.dataset.lng);
+    const acc  = trigger.dataset.acc;
+    const dist = trigger.dataset.dist;
 
     document.getElementById('open_gmaps_btn').href = `https://www.google.com/maps?q=${lat},${lng}`;
 
@@ -313,11 +461,10 @@ document.addEventListener('mouseover', e => {
     mapPopup.style.left    = `${leftPos}px`;
     mapPopup.style.display = 'block';
 
-    document.getElementById('map_pop_up_info').innerHTML = `
-        <b>${label}</b><br>
-        Latitude: ${lat} &nbsp;&nbsp; Longitude: ${lng}<br>
-        Accuracy: ±${acc} m &nbsp; Distance: ${dist} m
-    `;
+    document.getElementById('map_pop_up_info').innerHTML =
+        `<b>${trigger.dataset.label}</b><br>
+         Lat: ${lat} &nbsp; Lng: ${lng}<br>
+         Accuracy: ±${acc} m &nbsp; Distance: ${dist} m`;
 
     setTimeout(() => {
         if (!popupMap) {
@@ -325,19 +472,15 @@ document.addEventListener('mouseover', e => {
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(popupMap);
             popupMap._marker = null;
         }
-
         popupMap.invalidateSize();
         popupMap.setView([lat, lng], 17);
-
         if (popupMap._marker) popupMap.removeLayer(popupMap._marker);
         popupMap._marker = L.marker([lat, lng]).addTo(popupMap);
     }, 50);
 });
 
 document.addEventListener('mouseout', e => {
-    const trigger = e.target.closest('.loc-trigger');
-    if (!trigger) return;
-
+    if (!e.target.closest('.loc-trigger')) return;
     hideTimeout = setTimeout(() => {
         mapPopup.style.display = 'none';
         if (popupMap) { popupMap.remove(); popupMap = null; }
@@ -353,17 +496,13 @@ mapPopup.addEventListener('mouseout', () => {
 });
 
 /* =========================
-   INITIAL LOAD
+   INIT
 ========================= */
 document.addEventListener('DOMContentLoaded', () => {
     applyHeaderUI();
     fetchLogs();
 });
 
-/* =========================
-   REAL-TIME UPDATE
-   Re-fetch when topbar fires a tap (same tab)
-========================= */
 document.addEventListener('attendance_tapped', () => fetchLogs());
 </script>
 </body>

@@ -1,5 +1,5 @@
 /* ================================================
-   EMPLOYEE SCHEDULES
+   SCHEDULES PAGE
    ================================================
    Page-specific styles for the employee dashboard.
    Depends on: root.css, typography.css,
@@ -70,7 +70,37 @@ body {
     overflow: visible;
 }
 
+/* =========================
+   LOADING OVERLAY
+========================= */
 
+#calendar-wrapper {
+    position: relative;
+    flex: 1;
+    min-height: 0;
+}
+
+#calendar-loading {
+    display: none;
+    position: absolute;
+    inset: 0;
+    z-index: 10;
+    background: rgba(0, 0, 0, 0.35);
+    backdrop-filter: blur(3px);
+    border-radius: 8px;
+    align-items: center;
+    justify-content: center;
+}
+
+#calendar-loading.show {
+    display: flex;
+}
+
+#calendar-loading .spinner-border {
+    width: 2.5rem;
+    height: 2.5rem;
+    color: var(--primary-color);
+}
 
 /* ============================================================
    SHIFT TYPE LEGEND
@@ -137,4 +167,26 @@ body {
 
 .shiftLegendDot.ob-rejected {
     background: var(--shift-ob-rejected);
+}
+
+/* ============================================================
+   FULLCALENDAR HEADER TOOLBAR
+   ============================================================ */
+
+.fc-header-toolbar {
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+}
+
+.fc-header-toolbar .fc-toolbar-chunk {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+
+.fc-header-toolbar .fc-toolbar-title {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
