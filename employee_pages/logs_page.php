@@ -39,7 +39,7 @@ $currentPage = 'logs';
     <link rel="stylesheet" href="../assets/css/components.css">
     <link rel="stylesheet" href="../navbars_revised.css">
 
-    <link rel="stylesheet" href="employee_logs.css">
+    <link rel="stylesheet" href="logs_page.css">
 </head>
 <body>
     <?php include '../sidebar_revised.php'; ?>

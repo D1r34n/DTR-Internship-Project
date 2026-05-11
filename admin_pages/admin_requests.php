@@ -191,18 +191,20 @@ $logEditRequests = $pdo->query("
         le.id,
         le.employee_id,
         le.attendance_id,
+        le.log_id,
         le.request_type,
-        le.actual_time_in,
         le.requested_time_in,
         le.requested_time_out,
         le.reason,
         le.status,
         le.created_at,
         CONCAT(e.first_name, ' ', e.last_name) AS employee_name,
-        COALESCE(a.work_date, le.work_date) AS work_date
+        COALESCE(a.work_date, le.work_date) AS work_date,
+        l.log_time AS original_log_time
     FROM log_edit_requests le
     JOIN employees e ON le.employee_id = e.id
     LEFT JOIN attendances a ON le.attendance_id = a.id
+    LEFT JOIN logs l ON le.log_id = l.id
     ORDER BY le.created_at DESC
 ")->fetchAll(PDO::FETCH_ASSOC);
 
@@ -448,12 +450,15 @@ function getActionButtons($type, $id, $status) {
                                         <td><?= htmlspecialchars($row['employee_name']) ?></td>
                                         <td><span class="badge request-log-edit">Log Edit</span></td>
                                         <td><?= date('M d, Y', strtotime($row['work_date'])) ?> |
+                                            <?php
+                                            $origTime = $row['original_log_time'] ? date('h:i A', strtotime($row['original_log_time'])) : '—';
+                                            ?>
                                             <?php if ($row['request_type'] === 'time_in'): ?>
-                                                In: <?= date('h:i A', strtotime($row['actual_time_in'])) ?> &rarr; <?= date('h:i A', strtotime($row['requested_time_in'])) ?>
+                                                In: <?= $origTime ?> &rarr; <?= date('h:i A', strtotime($row['requested_time_in'])) ?>
                                             <?php elseif ($row['request_type'] === 'time_out'): ?>
-                                                In: <?= date('h:i A', strtotime($row['actual_time_in'])) ?> &rarr; Out: <?= date('h:i A', strtotime($row['requested_time_out'])) ?>
+                                                Out: <?= $origTime ?> &rarr; <?= date('h:i A', strtotime($row['requested_time_out'])) ?>
                                             <?php else: ?>
-                                                In: <?= date('h:i A', strtotime($row['actual_time_in'])) ?> &rarr; <?= date('h:i A', strtotime($row['requested_time_in'])) ?> | Out: <?= date('h:i A', strtotime($row['requested_time_out'])) ?>
+                                                <?= $origTime ?> &rarr; In: <?= date('h:i A', strtotime($row['requested_time_in'])) ?> | Out: <?= date('h:i A', strtotime($row['requested_time_out'])) ?>
                                             <?php endif; ?>
                                         </td>
                                         <td class="reasonCol"><?= htmlspecialchars($row['reason']) ?></td>
@@ -569,7 +574,7 @@ function getActionButtons($type, $id, $status) {
                                                 echo htmlspecialchars($typeLabels[$row['request_type']] ?? $row['request_type']);
                                                 ?>
                                             </td>
-                                            <td><?= date('h:i A', strtotime($row['actual_time_in'])) ?></td>
+                                            <td><?= $row['original_log_time'] ? date('h:i A', strtotime($row['original_log_time'])) : '—' ?></td>
                                             <td>
                                                 <?php if ($row['request_type'] === 'time_in'): ?>
                                                     In: <?= date('h:i A', strtotime($row['requested_time_in'])) ?>

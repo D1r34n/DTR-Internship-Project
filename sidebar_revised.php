@@ -69,7 +69,7 @@ $requestsOpen = in_array($currentPage, ['employee_requests', 'schedule_requests'
             <?php navLink('employee_dashboard.php', 'bi-columns-gap',     'Dashboard', $currentPage === 'dashboard'); ?>
             <?php navLink('employee_records.php',   'bi-bar-chart-steps', 'Records',   $currentPage === 'records');   ?>
             <?php navLink('employee_schedule.php',  'bi-calendar-week',   'Schedules', $currentPage === 'schedule');  ?>
-            <?php navLink('employee_logs.php',      'bi-clipboard-minus', 'Logs',      $currentPage === 'logs');      ?>
+            <?php navLink('logs_page.php',      'bi-clipboard-minus', 'Logs',      $currentPage === 'logs');      ?>
         <?php endif; ?>
 
         <!-- WORKFORCE MENU -->
@@ -119,7 +119,7 @@ $requestsOpen = in_array($currentPage, ['employee_requests', 'schedule_requests'
             <?php navLink('admin_dashboard.php',   'bi-columns-gap',   'Dashboard',   $currentPage === 'dashboard');  ?>
             
             <!-- Manage Employees -->
-            <?php navLink('admin_manage_employees.php',    'bi-people-fill', 'Manage Employees',   $currentPage === 'manage employees');   ?>
+            <?php navLink('../admin_pages/admin_manage_employees.php',    'bi-people-fill', 'Manage Employees',   $currentPage === 'manage employees');   ?>
 
             <!-- Requests dropdown -->
             <div class="sidebar-dropdown">
@@ -149,7 +149,7 @@ $requestsOpen = in_array($currentPage, ['employee_requests', 'schedule_requests'
                 </div>
             </div>
 
-            <?php navLink('admin_logs.php',        'bi-journal-text',  'Logs',        $currentPage === 'employee_logs'); ?>
+            <?php navLink('../employee_pages/logs_page.php',        'bi-journal-text',  'Logs',        $currentPage === 'employee_logs'); ?>
             <?php navLink('admin_departments.php', 'bi-building-gear', 'Departments', $currentPage === 'departments');   ?>
         <?php endif; ?>
 
