@@ -974,6 +974,21 @@ body {
 
 .sched-cal-day.empty          { background: transparent; border-color: transparent; }
 .sched-cal-day.is-past        { opacity: 0.55; }
+.sched-cal-day.no-sched       { cursor: pointer; }
+
+.sched-cal-add-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    color: var(--primary-color);
+    opacity: 0;
+    transition: opacity 0.15s;
+    pointer-events: none;
+}
+.sched-cal-day.no-sched:hover .sched-cal-add-overlay { opacity: 1; }
 .sched-cal-day.is-today       { border-color: var(--primary-border); box-shadow: 0 0 0 1px var(--primary-soft); }
 .sched-cal-day.has-sched      { background: var(--primary-bg); border-color: var(--primary-border); }
 .sched-cal-day.has-sched.sched-pending  { background: var(--warning-bg); border-color: var(--warning-border); }

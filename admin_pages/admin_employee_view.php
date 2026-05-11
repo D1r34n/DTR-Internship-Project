@@ -1395,12 +1395,87 @@ function fetchAdminLogs() {
     const tbody = document.getElementById('admin_logs_tbody');
     tbody.innerHTML = `<tr class="emptyRow"><td colspan="7"><div class="logsEmpty"><i class="bi bi-arrow-clockwise" style="font-size:1.5rem;"></i></div></td></tr>`;
     fetch(`../get_logs.php?employee_id=${EMP_ID}&start=${logStartDate}&end=${logEndDate}&type=${logType}&sort=${logSort}&dir=${logSortDir}`)
-        .then(r => r.text())
-        .then(html => {
-            tbody.innerHTML = html;
-            const rows = tbody.querySelectorAll('tr:not(.emptyRow)').length;
-            const chip = document.getElementById('chip-logs-count');
-            if (chip) chip.textContent = rows + ' log' + (rows !== 1 ? 's' : '');
+        .then(r => r.json())
+        .then(data => {
+            const rows = data.rows ?? [];
+            if (!rows.length) {
+                tbody.innerHTML = `<tr class="emptyRow"><td colspan="7"><div class="logsEmpty"><i class="bi bi-calendar-x logsEmptyIcon"></i><div>No logs found for this period.</div></div></td></tr>`;
+                const chip = document.getElementById('chip-logs-count');
+                if (chip) chip.textContent = '0 logs';
+                return;
+            }
+
+            const LOG_TYPE_CLASS = { IN: 'btn-success', OUT: 'btn-danger', BREAK_IN: 'status-pending', BREAK_OUT: 'btn-info' };
+            const LOG_TYPE_LABEL = { IN: 'Time In', OUT: 'Time Out', BREAK_IN: 'Break In', BREAK_OUT: 'Break Out' };
+
+            function escHtml(v) {
+                if (v == null) return '';
+                return String(v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+            }
+
+            tbody.innerHTML = rows.map(row => {
+                const isInside  = row.is_within_office;
+                const locLabel  = isInside ? 'Within Office' : 'Outside Office';
+                const locClass  = isInside ? 'btn-success' : 'btn-danger';
+                const acc       = row.accuracy        != null ? row.accuracy        : 'N/A';
+                const dist      = row.distance_meters != null ? row.distance_meters : 'N/A';
+                const typeClass = LOG_TYPE_CLASS[row.log_type] ?? '';
+                const typeLabel = LOG_TYPE_LABEL[row.log_type] ?? row.log_type;
+
+                let editRoleHtml = `<span style="color:rgba(255,255,255,0.15);font-size:0.75rem;">—</span>`;
+                if (row.edit_role === 'workforce') {
+                    editRoleHtml = `<span class="pill empRole-workforce"><i class="bi bi-person-badge-fill"></i> ${escHtml(row.initiator_name ?? 'Workforce')}</span>`;
+                } else if (row.edit_role === 'admin') {
+                    editRoleHtml = `<span class="pill empRole-admin"><i class="bi bi-shield-fill"></i> ${escHtml(row.initiator_name ?? 'Admin')}</span>`;
+                } else if (row.edit_role === 'employee') {
+                    editRoleHtml = `<span class="pill"><i class="bi bi-person-fill"></i> ${escHtml(row.initiator_name ?? 'Employee')}</span>`;
+                }
+
+                let editStatusHtml = `<span style="color:rgba(255,255,255,0.2);font-size:0.75rem;">—</span>`;
+                if (row.edit_status === 'pending') {
+                    editStatusHtml = `<span class="pill btn-info"><i class="bi bi-hourglass-split"></i> Pending</span>`;
+                } else if (row.edit_status === 'approved') {
+                    editStatusHtml = `<span class="pill btn-success"><i class="bi bi-check-circle-fill"></i> Approved</span>`;
+                } else if (row.edit_status === 'rejected') {
+                    editStatusHtml = `<span class="pill btn-danger"><i class="bi bi-x-circle-fill"></i> Rejected</span>`;
+                }
+
+                return `<tr>
+                    <td>${escHtml(row.date)}</td>
+                    <td>${escHtml(row.time)}</td>
+                    <td><span class="pill ${typeClass}">${typeLabel}</span></td>
+                    <td>
+                        <a href="https://www.google.com/maps?q=${row.latitude},${row.longitude}" target="_blank"
+                            class="pill ${locClass} loc-trigger"
+                            style="text-decoration:none;"
+                            data-lat="${escHtml(row.latitude)}"
+                            data-lng="${escHtml(row.longitude)}"
+                            data-label="${escHtml(locLabel)}"
+                            data-acc="${escHtml(acc)}"
+                            data-dist="${escHtml(dist)}">
+                            <i class="bi bi-geo-alt-fill"></i>
+                            ${locLabel}
+                        </a>
+                    </td>
+                    <td>${editRoleHtml}</td>
+                    <td>${editStatusHtml}</td>
+                    <td>
+                        <button class="leEditRowBtn" title="Edit log entry"
+                            data-log-id="${row.log_id}"
+                            data-log-type="${escHtml(row.log_type)}"
+                            data-log-datetime="${escHtml(row.log_datetime)}"
+                            data-log-date-label="${escHtml(row.date)}"
+                            data-log-time-label="${escHtml(row.time)}"
+                            onclick="openAdminLogEditModal(this)">
+                            <i class="bi bi-pencil-fill"></i>
+                        </button>
+                    </td>
+                </tr>`;
+            }).join('');
+
+            const count = rows.length;
+            const chip  = document.getElementById('chip-logs-count');
+            if (chip) chip.textContent = count + ' log' + (count !== 1 ? 's' : '');
         })
         .catch(() => {
             tbody.innerHTML = `<tr class="emptyRow"><td colspan="7"><div class="logsEmpty"><i class="bi bi-exclamation-circle logsEmptyIcon"></i><div>Failed to load logs.</div></div></td></tr>`;
@@ -1757,6 +1832,13 @@ function openManageModal() {
     document.querySelectorAll('.rest-day-toggle').forEach(btn => btn.classList.remove('active'));
     document.getElementById('restDaysDirty').value = '0';
     bootstrap.Modal.getOrCreateInstance(document.getElementById('manageScheduleModal')).show();
+}
+
+function openManageModalWithDate(dateStr) {
+    openManageModal();
+    selectedDatesAdd = [dateStr];
+    if (fpAdd) fpAdd.setDate([dateStr, dateStr], false);
+    renderDateTagsAdd();
 }
 
 // ---- Schedule modal helpers ----

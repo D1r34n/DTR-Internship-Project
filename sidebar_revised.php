@@ -116,7 +116,7 @@ $requestsOpen = in_array($currentPage, ['employee_requests', 'schedule_requests'
         <!-- ADMIN MENU -->
         <?php if ($role === 'admin'): ?>
             <!-- Dashboard -->
-            <?php navLink('admin_dashboard.php',   'bi-columns-gap',   'Dashboard',   $currentPage === 'dashboard');  ?>
+            <?php navLink('../admin_pages/admin_dashboard.php',   'bi-columns-gap',   'Dashboard',   $currentPage === 'dashboard');  ?>
             
             <!-- Manage Employees -->
             <?php navLink('../admin_pages/admin_manage_employees.php',    'bi-people-fill', 'Manage Employees',   $currentPage === 'manage employees');   ?>
@@ -136,12 +136,12 @@ $requestsOpen = in_array($currentPage, ['employee_requests', 'schedule_requests'
                 </button>
 
                 <div id="requests-submenu" class="collapse <?= $requestsOpen ? 'show' : '' ?>">
-                    <a href="admin_requests.php"
+                    <a href="../admin_pages/admin_requests.php"
                        class="sidebar-sub-link <?= ($currentPage === 'employee_requests') ? 'active' : '' ?>">
                         <i class="bi bi-file-earmark-text"></i>
                         <span>Employee Requests</span>
                     </a>
-                    <a href="admin_schedule_requests.php"
+                    <a href="../admin_pages/admin_schedule_requests.php"
                        class="sidebar-sub-link <?= ($currentPage === 'schedule_requests') ? 'active' : '' ?>">
                         <i class="bi bi-calendar-check"></i>
                         <span>Schedule Requests</span>
@@ -150,7 +150,7 @@ $requestsOpen = in_array($currentPage, ['employee_requests', 'schedule_requests'
             </div>
 
             <?php navLink('../employee_pages/logs_page.php',        'bi-journal-text',  'Logs',        $currentPage === 'employee_logs'); ?>
-            <?php navLink('admin_departments.php', 'bi-building-gear', 'Departments', $currentPage === 'departments');   ?>
+            <?php navLink('../admin_pages/admin_departments.php', 'bi-building-gear', 'Departments', $currentPage === 'departments');   ?>
         <?php endif; ?>
 
     </nav>
