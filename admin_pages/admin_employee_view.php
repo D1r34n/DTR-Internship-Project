@@ -9,6 +9,7 @@ if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'admin') {
 }
 
 require_once '../db.php';
+require_once '../send_mail.php';
 require_once '../system_functions/system_service.php';
 require_once '../system_functions/system_library.php';
 date_default_timezone_set('Asia/Manila');
@@ -51,6 +52,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'edit_
         exit();
     }
 
+    // Fetch old email before updating so we can notify it if it changes
+    $oldStmt = $pdo->prepare("SELECT email FROM employees WHERE id = ?");
+    $oldStmt->execute([$employeeId]);
+    $oldEmail = $oldStmt->fetchColumn() ?: null;
+
     if (!empty($password)) {
 
         $pdo->prepare("
@@ -92,6 +98,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'edit_
             $department,
             $employeeId
         ]);
+    }
+
+    $notifyName  = htmlspecialchars($firstName . ' ' . $lastName);
+    $emailChanged = $oldEmail && strtolower($oldEmail) !== strtolower($email);
+
+    // Notify old email if the email address was changed
+    if ($emailChanged) {
+        sendMail($oldEmail, $notifyName, 'Your HSN DTR Account Email Has Been Updated', "
+            <p>Hi {$notifyName},</p>
+            <p>This is a notification that the email address for your HSN DTR System account has been changed.</p>
+            <p><strong>Old Email:</strong> {$oldEmail}<br>
+               <strong>New Email:</strong> {$email}</p>
+            <p>If you did not request this change, please contact your administrator immediately.</p>
+            <p>— HSN DTR System</p>
+        ");
+    }
+
+    // Notify current email if the password was changed
+    if (!empty($password)) {
+        $sendTo = $emailChanged ? $email : $oldEmail;
+        sendMail($sendTo, $notifyName, 'Your HSN DTR Account Password Has Been Updated', "
+            <p>Hi {$notifyName},</p>
+            <p>This is a notification that the password for your HSN DTR System account has been changed by an administrator.</p>
+            <p>If you did not request this change, please contact your administrator immediately.</p>
+            <p>— HSN DTR System</p>
+        ");
     }
 
     header("Location: admin_employee_view.php?id=$employeeId");
@@ -146,6 +178,84 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' &&
                 $insertSchedule->execute([$postEmpId, $date, $startDT, $endDT]);
                 $schedId = $pdo->lastInsertId() ?: null;
                 $insertAttendance->execute([$postEmpId, $schedId, $date, $startDT, $endDT]);
+            }
+        }
+    }
+
+    header("Location: admin_employee_view.php?id=$employeeId");
+    exit();
+}
+// ---- HANDLE SAVE COMBINED (schedule dates + rest days in one submit) ----
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save_combined') {
+    $postEmpId     = intval($_POST['employee_id'] ?? 0);
+    $dates         = json_decode($_POST['selected_dates'] ?? '[]', true);
+    $time_in       = $_POST['time_in']  ?? '';
+    $time_out      = $_POST['time_out'] ?? '';
+    $restDays      = json_decode($_POST['rest_days'] ?? '[]', true);
+    $restDaysDirty = ($_POST['rest_days_dirty'] ?? '0') === '1';
+    $is_overnight  = $time_out < $time_in;
+
+    if (!empty($dates) && $postEmpId && $time_in && $time_out) {
+        $existsStmt       = $pdo->prepare("SELECT id FROM schedules WHERE employee_id = ? AND schedule_date = ?");
+        $updateStmt       = $pdo->prepare("UPDATE schedules SET scheduled_start = ?, scheduled_end = ? WHERE employee_id = ? AND schedule_date = ?");
+        $updateAttendance = $pdo->prepare("UPDATE attendances SET scheduled_start = ?, scheduled_end = ? WHERE employee_id = ? AND work_date = ? AND actual_time_in IS NULL");
+        $insertSchedule   = $pdo->prepare("INSERT INTO schedules (employee_id, schedule_date, scheduled_start, scheduled_end, is_rest_day) VALUES (?, ?, ?, ?, 0)");
+        $insertAttendance = $pdo->prepare("
+            INSERT INTO attendances (employee_id, schedule_id, work_date, scheduled_start, scheduled_end, actual_time_in, actual_time_out, total_work_minutes, late_minutes, undertime_minutes, overtime_minutes, status, missed_time_out)
+            VALUES (?, ?, ?, ?, ?, NULL, NULL, 0, 0, 0, 0, 'incomplete', 0)
+            ON DUPLICATE KEY UPDATE scheduled_start = VALUES(scheduled_start), scheduled_end = VALUES(scheduled_end)
+        ");
+
+        foreach ($dates as $date) {
+            $startDT = $date . ' ' . $time_in  . ':00';
+            $endDT   = $is_overnight
+                ? date('Y-m-d', strtotime($date . ' +1 day')) . ' ' . $time_out . ':00'
+                : $date . ' ' . $time_out . ':00';
+
+            $existsStmt->execute([$postEmpId, $date]);
+            if ($existsStmt->fetch()) {
+                $updateStmt->execute([$startDT, $endDT, $postEmpId, $date]);
+                $updateAttendance->execute([$startDT, $endDT, $postEmpId, $date]);
+            } else {
+                $insertSchedule->execute([$postEmpId, $date, $startDT, $endDT]);
+                $schedId = $pdo->lastInsertId() ?: null;
+                $insertAttendance->execute([$postEmpId, $schedId, $date, $startDT, $endDT]);
+            }
+        }
+    }
+
+    if ($postEmpId && $restDaysDirty && is_array($restDays)) {
+        $pdo->prepare("UPDATE schedules SET is_rest_day = 0 WHERE employee_id = ? AND is_rest_day = 1")
+            ->execute([$postEmpId]);
+
+        if (!empty($restDays)) {
+            $monthsStmt = $pdo->prepare("
+                SELECT DISTINCT DATE_FORMAT(schedule_date, '%Y-%m') AS ym
+                FROM schedules
+                WHERE employee_id = ?
+                ORDER BY ym
+            ");
+            $monthsStmt->execute([$postEmpId]);
+            $months = $monthsStmt->fetchAll(PDO::FETCH_COLUMN);
+
+            $setRestStmt = $pdo->prepare("
+                UPDATE schedules
+                SET is_rest_day = 1
+                WHERE employee_id = ? AND schedule_date = ?
+            ");
+
+            foreach ($months as $ym) {
+                [$y, $m]     = explode('-', $ym);
+                $firstDay    = sprintf('%04d-%02d-01', (int)$y, (int)$m);
+                $daysInMonth = (int) date('t', strtotime($firstDay));
+
+                for ($d = 1; $d <= $daysInMonth; $d++) {
+                    $dateStr = sprintf('%04d-%02d-%02d', (int)$y, (int)$m, $d);
+                    $dow     = (int) date('w', strtotime($dateStr));
+                    if (in_array($dow, $restDays)) {
+                        $setRestStmt->execute([$postEmpId, $dateStr]);
+                    }
+                }
             }
         }
     }
@@ -786,95 +896,65 @@ $tapLogs = $logsStmt->fetchAll(PDO::FETCH_ASSOC);
     </div>
 </div>
 
-<!-- ===== MANAGE SCHEDULE MODAL (Add Schedule + Rest Day side-by-side) ===== -->
+<!-- ===== MANAGE SCHEDULE MODAL (merged) ===== -->
 <div class="modal fade" id="manageScheduleModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-xl modal-dialog-centered">
-        <div class="modal-content manage-sched-shell">
-        <div class="manage-sched-wrapper">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content glass-modal">
 
-            <!-- LEFT: Add Schedule -->
-            <div class="manage-sched-card glass-modal">
-                <div class="manage-sched-card-header">
-                    <span><i class="bi bi-calendar-plus me-2"></i>Add Schedule</span>
-                </div>
-                <div class="manage-sched-card-body">
-
-                    <form method="POST" action="admin_employee_view.php?id=<?= $employeeId ?>" id="addSchedForm">
-                        <input type="hidden" name="action" value="save_schedule">
-                        <input type="hidden" name="employee_id" value="<?= $employeeId ?>">
-                        <input type="hidden" name="is_edit" value="0">
-                        <input type="hidden" name="selected_dates" id="addSelectedDatesInput">
-
-                        <div class="mb-3">
-                            <label class="form-label">Employee</label>
-                            <input type="text" class="form-control"
-                                   value="<?= htmlspecialchars($emp['name']) ?>" readonly>
-                        </div>
-
-                        <div class="row g-3">
-                            <div class="col-6">
-                                <label class="form-label">Time In</label>
-                                <input type="time" name="time_in" id="addModalTimeIn" class="form-control" required>
-                            </div>
-                            <div class="col-6">
-                                <label class="form-label">
-                                    Time Out <small class="text-muted">(next day if night)</small>
-                                </label>
-                                <input type="time" name="time_out" id="addModalTimeOut" class="form-control" required>
-                            </div>
-                        </div>
-
-                        <div class="mt-3">
-                            <label class="form-label">Select Dates</label>
-                            <p class="text-muted small mb-2">Click to select/deselect work days.</p>
-                            <input type="text" id="addSchedDatePicker" class="form-control" readonly>
-                            <div id="addSelectedDatesList" class="mt-2"></div>
-                        </div>
-
-                        <div class="mt-3">
-                            <button type="submit" class="btn btn-success w-100">
-                                <i class="bi bi-check-circle-fill"></i> Save Schedule
-                            </button>
-                        </div>
-                    </form>
-
-                </div>
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-calendar-week me-2"></i>Manage Schedule</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
 
-            <!-- RIGHT: Rest Days -->
-            <div class="manage-sched-card glass-modal">
-                <div class="manage-sched-card-header">
-                    <span><i class="bi bi-moon-stars me-2"></i>Set Rest Days</span>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="manage-sched-card-body">
+            <form method="POST" action="admin_employee_view.php?id=<?= $employeeId ?>" id="addSchedForm">
+                <input type="hidden" name="action" value="save_combined">
+                <input type="hidden" name="employee_id" value="<?= $employeeId ?>">
+                <input type="hidden" name="selected_dates" id="addSelectedDatesInput">
+                <input type="hidden" name="rest_days" id="restDaysInput" value="[]">
+                <input type="hidden" name="rest_days_dirty" id="restDaysDirty" value="0">
 
-                    <p class="text-muted small mb-3">
-                        Select up to 2 days of the week. All matching dates will be marked as
-                        rest days, overriding any existing schedule on those dates.
-                    </p>
-                    <div class="rest-day-grid" id="restDayToggles">
-                        <button type="button" class="btn rest-day-toggle" data-dow="0">Sun</button>
-                        <button type="button" class="btn rest-day-toggle" data-dow="1">Mon</button>
-                        <button type="button" class="btn rest-day-toggle" data-dow="2">Tue</button>
-                        <button type="button" class="btn rest-day-toggle" data-dow="3">Wed</button>
-                        <button type="button" class="btn rest-day-toggle" data-dow="4">Thu</button>
-                        <button type="button" class="btn rest-day-toggle" data-dow="5">Fri</button>
-                        <button type="button" class="btn rest-day-toggle" data-dow="6">Sat</button>
+                <div class="modal-body">
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-6">
+                            <label class="form-label">Time In</label>
+                            <input type="time" name="time_in" id="addModalTimeIn" class="form-control">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">Time Out <small class="text-muted">(next day if night)</small></label>
+                            <input type="time" name="time_out" id="addModalTimeOut" class="form-control">
+                        </div>
                     </div>
-                    <p class="text-muted small mt-3 mb-0 text-center" id="restDaySelectionHint">Select 1–2 days</p>
 
-                    <div class="mt-3">
-                        <button type="button" class="btn btn-warning w-100" id="restDaySubmitBtn" disabled>
-                            <i class="bi bi-check-circle-fill"></i> Set Rest Days
-                        </button>
+                    <div class="mb-3">
+                        <label class="form-label">Select Dates</label>
+                        <input type="text" id="addSchedDatePicker" class="form-control" placeholder="Click to select dates..." readonly>
+                        <div id="addSelectedDatesList" class="mt-2"></div>
+                    </div>
+
+                    <div>
+                        <label class="form-label">Set Rest Days</label>
+                        <div class="rest-day-grid" id="restDayToggles">
+                            <button type="button" class="btn rest-day-toggle" data-dow="0">Sun</button>
+                            <button type="button" class="btn rest-day-toggle" data-dow="1">Mon</button>
+                            <button type="button" class="btn rest-day-toggle" data-dow="2">Tue</button>
+                            <button type="button" class="btn rest-day-toggle" data-dow="3">Wed</button>
+                            <button type="button" class="btn rest-day-toggle" data-dow="4">Thu</button>
+                            <button type="button" class="btn rest-day-toggle" data-dow="5">Fri</button>
+                            <button type="button" class="btn rest-day-toggle" data-dow="6">Sat</button>
+                        </div>
                     </div>
 
                 </div>
-            </div>
 
-        </div><!-- /.manage-sched-wrapper -->
-        </div><!-- /.modal-content -->
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-success w-100">
+                        <i class="bi bi-check-circle-fill me-1"></i> Save Schedule
+                    </button>
+                </div>
+            </form>
+
+        </div>
     </div>
 </div>
 
@@ -1526,45 +1606,44 @@ document.addEventListener('DOMContentLoaded', () => {
                 btn.classList.add('active');
                 selectedRestDays.push(dow);
             }
-            updateRestDaySubmitBtn();
+            document.getElementById('restDaysDirty').value = '1';
         });
     });
 
-    document.getElementById('restDaySubmitBtn').addEventListener('click', () => {
-        if (selectedRestDays.length === 0) return;
-        const form = new FormData();
-        form.append('action', 'save_rest_day');
-        form.append('employee_id', EMP_ID);
-        form.append('rest_days', JSON.stringify(selectedRestDays));
-        form.append('month', currentMonth);
-        fetch(`admin_employee_view.php?id=${EMP_ID}`, { method: 'POST', body: form })
-            .then(() => {
-                bootstrap.Modal.getInstance(document.getElementById('manageScheduleModal'))?.hide();
-                const { year, month } = parseYM(currentMonth);
-                loadCalendar(year, month);
-            })
-            .catch(() => alert('Failed to save rest days. Please try again.'));
-    });
-
-    // ---- Add Schedule form (inside Manage Schedule modal) ----
+    // ---- Manage Schedule form (merged: dates + rest days) ----
     document.getElementById('addSchedForm').addEventListener('submit', function (e) {
         e.preventDefault();
-        document.getElementById('addSelectedDatesInput').value = JSON.stringify(selectedDatesAdd);
-        if (selectedDatesAdd.length === 0) {
-            alert('Please select at least one date.');
+        const hasDates    = selectedDatesAdd.length > 0;
+        const hasRestDays = document.getElementById('restDaysDirty').value === '1';
+
+        if (!hasDates && !hasRestDays) {
+            alert('Please select dates or set rest days.');
             return;
         }
-        const existing = new Set(
-            [...document.querySelectorAll('.sched-cal-day.has-sched[data-date]')]
-                .map(el => el.dataset.date)
-        );
-        const conflicts = selectedDatesAdd.filter(d => existing.has(d));
-        if (conflicts.length > 0) {
-            const msg = conflicts.length === 1
-                ? `A schedule for ${conflicts[0]} already exists. Replace it?`
-                : `Schedules for ${conflicts.length} selected dates already exist. Replace them?`;
-            if (!confirm(msg)) return;
+
+        if (hasDates) {
+            const timeIn  = document.getElementById('addModalTimeIn').value;
+            const timeOut = document.getElementById('addModalTimeOut').value;
+            if (!timeIn || !timeOut) {
+                alert('Please enter Time In and Time Out for the selected dates.');
+                return;
+            }
+            const existing = new Set(
+                [...document.querySelectorAll('.sched-cal-day.has-sched[data-date]')]
+                    .map(el => el.dataset.date)
+            );
+            const conflicts = selectedDatesAdd.filter(d => existing.has(d));
+            if (conflicts.length > 0) {
+                const msg = conflicts.length === 1
+                    ? `A schedule for ${conflicts[0]} already exists. Replace it?`
+                    : `Schedules for ${conflicts.length} selected dates already exist. Replace them?`;
+                if (!confirm(msg)) return;
+            }
         }
+
+        document.getElementById('addSelectedDatesInput').value = JSON.stringify(selectedDatesAdd);
+        document.getElementById('restDaysInput').value         = JSON.stringify(selectedRestDays);
+
         fetch(this.getAttribute('action'), { method: 'POST', body: new FormData(this) })
             .then(r => {
                 if (!r.ok && r.status !== 200) throw new Error('save failed');
@@ -1669,16 +1748,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // ---- Manage Schedule modal ----
 function openManageModal() {
-    // Reset add-schedule form
     document.getElementById('addModalTimeIn').value  = '';
     document.getElementById('addModalTimeOut').value = '';
     selectedDatesAdd = [];
     renderDateTagsAdd();
     if (fpAdd) fpAdd.clear();
-    // Reset rest-day toggles
     selectedRestDays = [];
     document.querySelectorAll('.rest-day-toggle').forEach(btn => btn.classList.remove('active'));
-    updateRestDaySubmitBtn();
+    document.getElementById('restDaysDirty').value = '0';
     bootstrap.Modal.getOrCreateInstance(document.getElementById('manageScheduleModal')).show();
 }
 
@@ -1757,17 +1834,6 @@ function openEditModal(empIdOrDate, dateOrTimeIn, timeInOrTimeOut, timeOutOrUnde
 // ---- Rest day modal helpers ----
 function openRestDayModal() {
     openManageModal();
-}
-
-function updateRestDaySubmitBtn() {
-    const btn  = document.getElementById('restDaySubmitBtn');
-    const hint = document.getElementById('restDaySelectionHint');
-    btn.disabled = selectedRestDays.length === 0;
-    hint.textContent = selectedRestDays.length === 0
-        ? 'Select 1–2 days'
-        : selectedRestDays.length === 1
-            ? '1 day selected'
-            : '2 days selected';
 }
 
 // Shim for get_admin_schedule_calendar.php
