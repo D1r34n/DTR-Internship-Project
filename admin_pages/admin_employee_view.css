@@ -141,6 +141,7 @@ body {
     display: flex;
     flex-direction: column;
     height: 100%;
+    overflow: hidden;
 }
 
 /* ------------------------------------------------
@@ -1473,6 +1474,112 @@ body {
     align-items: center;
     gap: 4px;
 }
+
+/* ------------------------------------------------
+   LEAVE BALANCE CARDS
+   ------------------------------------------------ */
+
+.leave-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 1rem;
+    padding: 1rem 0.25rem;
+    overflow-y: auto;
+    align-content: start;
+}
+
+.leave-card {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    padding: 1.25rem 1rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 0.25rem;
+    position: relative;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s;
+}
+
+.leave-card:hover {
+    background: var(--glass-hover);
+    border-color: var(--primary-border);
+}
+
+/* Action buttons row (pencil + reset) — hidden until hover */
+.leave-card-actions {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    display: flex;
+    gap: 4px;
+    opacity: 0;
+    transition: opacity 0.15s;
+}
+
+.leave-card:hover .leave-card-actions { opacity: 1; }
+
+.leave-card-btn {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 5px;
+    color: var(--text-muted);
+    width: 22px;
+    height: 22px;
+    font-size: 0.62rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    padding: 0;
+    transition: background 0.15s, color 0.15s;
+}
+
+.leave-card-btn:hover { background: var(--primary-bg); color: var(--primary-color); }
+.leave-reset-btn:hover { background: var(--warning-soft); color: var(--warning-color); }
+
+.leave-card-icon {
+    font-size: 1.5rem;
+    margin-bottom: 0.25rem;
+    margin-top: 0.25rem;
+}
+
+.leave-card-days {
+    font-size: 2.2rem;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.leave-card-name {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--text-light);
+    margin-top: 0.2rem;
+}
+
+.leave-card-unit {
+    font-size: 0.65rem;
+    color: var(--text-muted);
+}
+
+.leave-days-input {
+    width: 4rem;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid currentColor;
+    text-align: center;
+    font-size: 2.2rem;
+    font-weight: 700;
+    line-height: 1;
+    outline: none;
+    font-family: inherit;
+    padding: 0;
+}
+
+.leave-days-input::-webkit-inner-spin-button,
+.leave-days-input::-webkit-outer-spin-button { -webkit-appearance: none; }
 
 /* ------------------------------------------------
    LOGS TABLE WRAPPER

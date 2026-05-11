@@ -406,6 +406,21 @@ $logsStmt = $pdo->prepare("
 ");
 $logsStmt->execute([$employeeId, $monthStart, $monthEnd]);
 $tapLogs = $logsStmt->fetchAll(PDO::FETCH_ASSOC);
+
+// ---- LEAVE BALANCE ----
+$balStmt = $pdo->prepare("SELECT * FROM employee_leave_balances WHERE employee_id = ?");
+$balStmt->execute([$employeeId]);
+$leaveBalance = $balStmt->fetch(PDO::FETCH_ASSOC) ?: [];
+
+$leaveTypes = [
+    ['key' => 'vacation_leave',    'label' => 'Vacation Leave',    'icon' => 'bi-umbrella-fill',    'color' => '#4da3ff',              'default' => 0],
+    ['key' => 'sick_leave',        'label' => 'Sick Leave',        'icon' => 'bi-heart-pulse-fill', 'color' => '#ff6b7a',              'default' => 4],
+    ['key' => 'birthday_leave',    'label' => 'Birthday Leave',    'icon' => 'bi-gift-fill',        'color' => '#f0ad4e',              'default' => 1],
+    ['key' => 'paternity_leave',   'label' => 'Paternity Leave',   'icon' => 'bi-person-fill',      'color' => '#7dd9a8',              'default' => 7],
+    ['key' => 'maternity_leave',   'label' => 'Maternity Leave',   'icon' => 'bi-person-hearts',    'color' => '#fd7e14',              'default' => 90],
+    ['key' => 'solo_parent_leave', 'label' => 'Solo Parent Leave', 'icon' => 'bi-people-fill',      'color' => '#a07de0',              'default' => 1],
+    ['key' => 'buffer_leave',      'label' => 'Buffer Leave',      'icon' => 'bi-shield-fill',      'color' => 'var(--primary-color)', 'default' => 0],
+];
 ?>
 <!doctype html>
 <html lang="en">
@@ -515,6 +530,12 @@ $tapLogs = $logsStmt->fetchAll(PDO::FETCH_ASSOC);
                 <li class="nav-item" role="presentation">
                     <button class="nav-link" role="tab" data-bs-toggle="tab" data-bs-target="#tab3">
                         <i class="bi bi-clock-history"></i> Logs
+                    </button>
+                </li>
+
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" role="tab" data-bs-toggle="tab" data-bs-target="#tab4">
+                        <i class="bi bi-calendar-heart"></i> Leave Balance
                     </button>
                 </li>
 
@@ -862,6 +883,44 @@ $tapLogs = $logsStmt->fetchAll(PDO::FETCH_ASSOC);
                         </table>
                     </div>
 
+                </div>
+
+                <!-- Tab 4: Leave Balance -->
+                <div class="tab-pane fade" id="tab4" role="tabpanel">
+                    <?php if (empty($leaveBalance)): ?>
+                        <div class="sched-cal-empty">
+                            <div class="sched-cal-empty-icon"><i class="bi bi-exclamation-circle"></i></div>
+                            No leave balance record found for this employee.
+                        </div>
+                    <?php else: ?>
+                        <div class="leave-cards-grid">
+                            <?php foreach ($leaveTypes as $lt): ?>
+                                <div class="leave-card"
+                                     data-key="<?= $lt['key'] ?>"
+                                     data-emp="<?= $employeeId ?>"
+                                     data-default="<?= $lt['default'] ?>">
+                                    <div class="leave-card-actions">
+                                        <button class="leave-card-btn leave-reset-btn" title="Reset to default (<?= $lt['default'] ?>)">
+                                            <i class="bi bi-arrow-counterclockwise"></i>
+                                        </button>
+                                        <span class="leave-card-btn leave-edit-icon">
+                                            <i class="bi bi-pencil"></i>
+                                        </span>
+                                    </div>
+                                    <div class="leave-card-icon" style="color:<?= $lt['color'] ?>">
+                                        <i class="bi <?= $lt['icon'] ?>"></i>
+                                    </div>
+                                    <div class="leave-card-days"
+                                         style="color:<?= $lt['color'] ?>"
+                                         data-value="<?= (int)($leaveBalance[$lt['key']] ?? 0) ?>">
+                                        <?= (int)($leaveBalance[$lt['key']] ?? 0) ?>
+                                    </div>
+                                    <div class="leave-card-name"><?= $lt['label'] ?></div>
+                                    <div class="leave-card-unit">days available</div>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                    <?php endif; ?>
                 </div>
 
             </div>
@@ -2075,6 +2134,87 @@ function deleteSchedule(date) {
             loadCalendar(year, month);
         });
 }
+
+// ---- Leave balance inline edit ----
+function saveLeaveBalance(card, val) {
+    const daysEl = card.querySelector('.leave-card-days');
+    const key    = card.dataset.key;
+    const empId  = card.dataset.emp;
+    const prev   = parseInt(daysEl.dataset.value, 10);
+
+    const fd = new FormData();
+    fd.append('employee_id', empId);
+    fd.append('leave_type',  key);
+    fd.append('value',       val);
+
+    fetch('update_leave_balance.php', { method: 'POST', body: fd })
+        .then(r => r.json())
+        .then(data => {
+            daysEl.textContent   = data.ok ? data.value : prev;
+            daysEl.dataset.value = data.ok ? data.value : prev;
+            showToast(data.ok ? 'Leave balance updated.' : 'Failed to update leave balance.');
+        })
+        .catch(() => {
+            daysEl.textContent   = prev;
+            daysEl.dataset.value = prev;
+            showToast('Failed to update leave balance.');
+        });
+}
+
+document.addEventListener('click', e => {
+    // Reset button
+    const resetBtn = e.target.closest('.leave-reset-btn');
+    if (resetBtn) {
+        e.stopPropagation();
+        const card   = resetBtn.closest('.leave-card');
+        const def    = parseInt(card.dataset.default, 10);
+        const daysEl = card.querySelector('.leave-card-days');
+        if (daysEl.querySelector('input')) return;
+        const cur = parseInt(daysEl.dataset.value, 10);
+        if (cur === def) return;
+        daysEl.textContent   = def;
+        daysEl.dataset.value = def;
+        saveLeaveBalance(card, def);
+        return;
+    }
+
+    // Card click → inline edit
+    const card = e.target.closest('.leave-card');
+    if (!card) return;
+    const daysEl = card.querySelector('.leave-card-days');
+    if (!daysEl || daysEl.querySelector('input')) return;
+
+    const color = daysEl.style.color;
+    const prev  = parseInt(daysEl.dataset.value, 10);
+
+    const input = document.createElement('input');
+    input.type        = 'number';
+    input.min         = '0';
+    input.value       = prev;
+    input.className   = 'leave-days-input';
+    input.style.color = color;
+
+    daysEl.textContent = '';
+    daysEl.appendChild(input);
+    input.focus();
+    input.select();
+
+    let saved = false;
+    function save() {
+        if (saved) return;
+        saved = true;
+        const val = Math.max(0, parseInt(input.value, 10) || 0);
+        daysEl.textContent   = val;
+        daysEl.dataset.value = val;
+        if (val !== prev) saveLeaveBalance(card, val);
+    }
+
+    input.addEventListener('keydown', ev => {
+        if (ev.key === 'Enter')  { input.blur(); }
+        if (ev.key === 'Escape') { saved = true; daysEl.textContent = prev; daysEl.dataset.value = prev; }
+    });
+    input.addEventListener('blur', save);
+});
 
 </script>
 

@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: May 11, 2026 at 03:04 AM
+-- Generation Time: May 11, 2026 at 10:46 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -82,7 +82,12 @@ INSERT INTO `attendances` (`id`, `employee_id`, `schedule_id`, `work_date`, `sch
 (169, 19, 308, '2026-05-27', '2026-05-27 08:30:00', '2026-05-27 17:30:00', NULL, NULL, 0, 0, 0, 0, 0, 'incomplete', 'none', 0, '2026-05-08 08:04:36', '2026-05-08 08:04:36'),
 (170, 19, 309, '2026-05-28', '2026-05-28 08:30:00', '2026-05-28 17:30:00', NULL, NULL, 0, 0, 0, 0, 0, 'incomplete', 'none', 0, '2026-05-08 08:04:36', '2026-05-08 08:04:36'),
 (171, 19, 310, '2026-05-29', '2026-05-29 08:30:00', '2026-05-29 17:30:00', NULL, NULL, 0, 0, 0, 0, 0, 'incomplete', 'none', 0, '2026-05-08 08:04:36', '2026-05-08 08:04:36'),
-(172, 19, 311, '2026-05-30', '2026-05-30 08:30:00', '2026-05-30 17:30:00', NULL, NULL, 0, 0, 0, 0, 0, 'incomplete', 'none', 0, '2026-05-08 08:04:36', '2026-05-08 08:04:36');
+(172, 19, 311, '2026-05-30', '2026-05-30 08:30:00', '2026-05-30 17:30:00', NULL, NULL, 0, 0, 0, 0, 0, 'incomplete', 'none', 0, '2026-05-08 08:04:36', '2026-05-08 08:04:36'),
+(187, 22, 317, '2026-05-11', '2026-05-11 08:30:00', '2026-05-11 17:30:00', NULL, NULL, 0, 0, 0, 0, 0, 'incomplete', 'none', 0, '2026-05-11 08:43:00', '2026-05-11 08:43:00'),
+(188, 22, 318, '2026-05-12', '2026-05-12 08:30:00', '2026-05-12 17:30:00', NULL, NULL, 0, 0, 0, 0, 0, 'incomplete', 'none', 0, '2026-05-11 08:43:00', '2026-05-11 08:43:00'),
+(189, 22, 319, '2026-05-13', '2026-05-13 08:30:00', '2026-05-13 17:30:00', NULL, NULL, 0, 0, 0, 0, 0, 'incomplete', 'none', 0, '2026-05-11 08:43:00', '2026-05-11 08:43:00'),
+(190, 22, 320, '2026-05-14', '2026-05-14 08:30:00', '2026-05-14 17:30:00', NULL, NULL, 0, 0, 0, 0, 0, 'incomplete', 'none', 0, '2026-05-11 08:43:00', '2026-05-11 08:43:00'),
+(191, 22, 321, '2026-05-15', '2026-05-15 08:30:00', '2026-05-15 17:30:00', NULL, NULL, 0, 0, 0, 0, 0, 'incomplete', 'none', 0, '2026-05-11 08:43:00', '2026-05-11 08:43:00');
 
 -- --------------------------------------------------------
 
@@ -130,24 +135,61 @@ CREATE TABLE `employees` (
   `password` varchar(255) DEFAULT NULL,
   `role_id` int(11) NOT NULL,
   `department_id` int(10) UNSIGNED DEFAULT NULL,
-  `hired_date` date NOT NULL
+  `hired_date` date NOT NULL,
+  `tenure` int(11) DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `employees`
 --
 
-INSERT INTO `employees` (`id`, `profile_image`, `first_name`, `last_name`, `email`, `password`, `role_id`, `department_id`, `hired_date`) VALUES
-(2, NULL, 'User', 'Employee', 'user@gmail.com', 'user123', 5, 2, '2026-05-11'),
-(3, NULL, 'User', 'Admin', 'admin@gmail.com', 'admin123', 3, 7, '2026-05-11'),
-(4, NULL, 'User', 'Workforce', 'user1@gmail.com', 'user123', 4, 14, '2026-05-11'),
-(5, NULL, 'Earl David', 'Jordan', 'earl@gmail.com', '123', 5, 13, '2026-05-11'),
-(7, NULL, 'Jignesh', 'Nate', 'jigs@gmail.com', '123', 5, 13, '2026-05-11'),
-(8, NULL, 'Justine', 'Tandoc', 'justine@gmail.com', '123', 5, 13, '2026-05-11'),
-(12, NULL, 'Dirk Adolf', 'Del Mundo', 'dirk@gmail.com', '123', 5, 13, '2026-05-11'),
-(15, NULL, 'Thonie', 'Revil', 'thonie.revil@hsnservice.com', '123', 1, 10, '2026-05-11'),
-(19, NULL, 'Edrian', 'Evangelista', 'edrian.evangelista@gmail.com', '123', 5, 10, '2026-05-11'),
-(20, NULL, 'Dharmveer', 'Sandhu', 'dharm@gmail.com', 'dharm123', 5, 7, '2026-05-11');
+INSERT INTO `employees` (`id`, `profile_image`, `first_name`, `last_name`, `email`, `password`, `role_id`, `department_id`, `hired_date`, `tenure`) VALUES
+(2, NULL, 'User', 'Employee', 'user@gmail.com', 'user123', 5, 2, '2026-05-11', 0),
+(3, NULL, 'User', 'Admin', 'admin@gmail.com', 'admin123', 3, 7, '2026-05-11', 0),
+(4, NULL, 'User', 'Workforce', 'user1@gmail.com', 'user123', 4, 14, '2026-05-11', 0),
+(7, NULL, 'Jignesh', 'Nate', 'jigs@gmail.com', '123', 5, 13, '2026-05-11', 0),
+(8, NULL, 'Justine', 'Tandoc', 'justine@gmail.com', '123', 5, 13, '2026-05-11', 0),
+(12, NULL, 'Dirk Adolf', 'Del Mundo', 'dirk@gmail.com', '123', 5, 13, '2026-05-11', 0),
+(15, NULL, 'Thonie', 'Revil', 'thonie.revil@hsnservice.com', '123', 1, 10, '2026-05-11', 0),
+(19, NULL, 'Edrian', 'Evangelista', 'edrian.evangelista@gmail.com', '123', 5, 10, '2026-05-11', 0),
+(20, NULL, 'Dharmveer', 'Sandhu', 'dharm@gmail.com', 'dharm123', 5, 7, '2026-05-11', 0),
+(22, NULL, 'Earl David', 'Jordan', 'earl3jordan@gmail.com', '123', 5, NULL, '2026-05-11', 0);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `employee_leave_balances`
+--
+
+CREATE TABLE `employee_leave_balances` (
+  `employee_id` int(11) NOT NULL,
+  `buffer_leave` int(11) DEFAULT 0,
+  `vacation_leave` int(11) DEFAULT 0,
+  `sick_leave` int(11) DEFAULT 4,
+  `paternity_leave` int(11) DEFAULT 7,
+  `maternity_leave` int(11) DEFAULT 90,
+  `solo_parent_leave` int(11) DEFAULT 1,
+  `birthday_leave` int(11) DEFAULT 1,
+  `last_vacation_accrual` date DEFAULT curdate(),
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `employee_leave_balances`
+--
+
+INSERT INTO `employee_leave_balances` (`employee_id`, `buffer_leave`, `vacation_leave`, `sick_leave`, `paternity_leave`, `maternity_leave`, `solo_parent_leave`, `birthday_leave`, `last_vacation_accrual`, `created_at`, `updated_at`) VALUES
+(2, 0, 0, 4, 7, 90, 1, 1, '2026-05-11', '2026-05-11 07:41:20', '2026-05-11 07:41:20'),
+(3, 0, 0, 4, 7, 90, 1, 1, '2026-05-11', '2026-05-11 07:41:20', '2026-05-11 07:41:20'),
+(4, 0, 0, 4, 7, 90, 1, 1, '2026-05-11', '2026-05-11 07:41:20', '2026-05-11 07:41:20'),
+(7, 0, 0, 4, 7, 90, 1, 1, '2026-05-11', '2026-05-11 07:41:20', '2026-05-11 07:41:20'),
+(8, 0, 0, 4, 7, 90, 1, 1, '2026-05-11', '2026-05-11 07:41:20', '2026-05-11 07:41:20'),
+(12, 0, 0, 4, 7, 90, 1, 1, '2026-05-11', '2026-05-11 07:41:20', '2026-05-11 07:41:20'),
+(15, 0, 0, 4, 7, 90, 1, 1, '2026-05-11', '2026-05-11 07:41:20', '2026-05-11 07:41:20'),
+(19, 0, 0, 4, 7, 90, 1, 1, '2026-05-11', '2026-05-11 07:41:20', '2026-05-11 07:41:20'),
+(20, 0, 0, 4, 7, 90, 1, 1, '2026-05-11', '2026-05-11 07:41:20', '2026-05-11 07:41:20'),
+(22, 0, 0, 4, 7, 90, 1, 1, '2026-05-11', '2026-05-11 07:41:20', '2026-05-11 07:41:20');
 
 -- --------------------------------------------------------
 
@@ -209,7 +251,16 @@ INSERT INTO `logs` (`id`, `employee_id`, `log_type`, `log_time`, `longitude`, `l
 (684, 2, 'OUT', '2026-05-11 08:59:23', 120.9954938, 14.5842575, 55, 1, 22.6493, '2026-05-11 00:59:23'),
 (685, 2, 'IN', '2026-05-11 08:59:28', 120.9954938, 14.5842575, 55, 1, 22.6493, '2026-05-11 00:59:28'),
 (686, 2, 'OUT', '2026-05-11 09:02:15', 120.9954969, 14.5842577, 55, 1, 22.4215, '2026-05-11 01:02:15'),
-(687, 2, 'IN', '2026-05-11 09:02:21', 120.9954969, 14.5842577, 55, 1, 22.4215, '2026-05-11 01:02:21');
+(687, 2, 'IN', '2026-05-11 09:02:21', 120.9954969, 14.5842577, 55, 1, 22.4215, '2026-05-11 01:02:21'),
+(688, 2, 'OUT', '2026-05-11 09:06:22', 120.9954981, 14.5842620, 55, 1, 21.9652, '2026-05-11 01:06:22'),
+(689, 2, 'IN', '2026-05-11 09:06:27', 120.9954981, 14.5842620, 55, 1, 21.9652, '2026-05-11 01:06:27'),
+(690, 2, 'OUT', '2026-05-11 09:25:37', 120.9955000, 14.5842555, 55, 1, 22.4062, '2026-05-11 01:25:37'),
+(691, 2, 'IN', '2026-05-11 09:25:52', 120.9954941, 14.5842611, 55, 1, 22.3177, '2026-05-11 01:25:52'),
+(692, 2, 'OUT', '2026-05-11 09:25:58', 120.9954941, 14.5842611, 55, 1, 22.3177, '2026-05-11 01:25:58'),
+(695, 2, 'IN', '2026-05-11 14:20:22', 120.9954995, 14.5842573, 55, 1, 22.2763, '2026-05-11 06:20:22'),
+(696, 2, 'OUT', '2026-05-11 14:20:27', 120.9954995, 14.5842573, 55, 1, 22.2763, '2026-05-11 06:20:27'),
+(697, 2, 'IN', '2026-05-11 15:50:22', 120.9954988, 14.5842579, 55, 1, 22.2752, '2026-05-11 07:50:22'),
+(698, 2, 'OUT', '2026-05-11 15:50:27', 120.9954988, 14.5842579, 55, 1, 22.2752, '2026-05-11 07:50:27');
 
 -- --------------------------------------------------------
 
@@ -220,10 +271,9 @@ INSERT INTO `logs` (`id`, `employee_id`, `log_type`, `log_time`, `longitude`, `l
 CREATE TABLE `log_edit_requests` (
   `id` bigint(20) UNSIGNED NOT NULL,
   `employee_id` bigint(20) UNSIGNED NOT NULL,
-  `attendance_id` bigint(20) UNSIGNED NOT NULL,
+  `attendance_id` bigint(20) UNSIGNED DEFAULT NULL,
   `log_id` bigint(20) DEFAULT NULL,
   `work_date` date NOT NULL,
-  `actual_time_in` datetime NOT NULL,
   `request_type` enum('time_in','time_out','both') NOT NULL DEFAULT 'time_out',
   `requested_time_in` datetime DEFAULT NULL,
   `requested_time_out` datetime DEFAULT NULL,
@@ -238,10 +288,11 @@ CREATE TABLE `log_edit_requests` (
 -- Dumping data for table `log_edit_requests`
 --
 
-INSERT INTO `log_edit_requests` (`id`, `employee_id`, `attendance_id`, `log_id`, `work_date`, `actual_time_in`, `request_type`, `requested_time_in`, `requested_time_out`, `reason`, `initiated_by_id`, `status`, `created_at`, `updated_at`) VALUES
-(14, 19, 150, 679, '2026-05-08', '2026-05-08 16:06:04', 'time_out', NULL, '2026-05-08 18:00:00', 'misinput', 19, 'approved', '2026-05-08 08:06:48', '2026-05-08 08:51:08'),
-(15, 19, 150, 680, '2026-05-08', '2026-05-08 16:06:04', 'time_in', '2026-05-08 16:59:00', NULL, 'incorrect time in', 19, 'rejected', '2026-05-08 09:00:00', '2026-05-08 09:00:10'),
-(16, 19, 150, 681, '2026-05-08', '2026-05-08 16:06:04', 'time_out', NULL, '2026-05-08 15:00:00', 'timed out misinput', 19, 'approved', '2026-05-08 09:00:29', '2026-05-08 09:00:40');
+INSERT INTO `log_edit_requests` (`id`, `employee_id`, `attendance_id`, `log_id`, `work_date`, `request_type`, `requested_time_in`, `requested_time_out`, `reason`, `initiated_by_id`, `status`, `created_at`, `updated_at`) VALUES
+(14, 19, 150, 679, '2026-05-08', 'time_out', NULL, '2026-05-08 18:00:00', 'misinput', 19, 'approved', '2026-05-08 08:06:48', '2026-05-08 08:51:08'),
+(15, 19, 150, 680, '2026-05-08', 'time_in', '2026-05-08 16:59:00', NULL, 'incorrect time in', 19, 'rejected', '2026-05-08 09:00:00', '2026-05-08 09:00:10'),
+(16, 19, 150, 681, '2026-05-08', 'time_out', NULL, '2026-05-08 15:00:00', 'timed out misinput', 19, 'approved', '2026-05-08 09:00:29', '2026-05-08 09:00:40'),
+(17, 2, NULL, 696, '2026-05-11', 'time_out', NULL, '2026-05-11 14:20:00', 'incorrect time out', 2, 'rejected', '2026-05-11 06:59:49', '2026-05-11 07:01:52');
 
 -- --------------------------------------------------------
 
@@ -373,7 +424,14 @@ INSERT INTO `schedules` (`id`, `employee_id`, `schedule_date`, `scheduled_start`
 (308, 19, '2026-05-27', '2026-05-27 08:30:00', '2026-05-27 17:30:00', 0, 'approved'),
 (309, 19, '2026-05-28', '2026-05-28 08:30:00', '2026-05-28 17:30:00', 0, 'approved'),
 (310, 19, '2026-05-29', '2026-05-29 08:30:00', '2026-05-29 17:30:00', 0, 'approved'),
-(311, 19, '2026-05-30', '2026-05-30 08:30:00', '2026-05-30 17:30:00', 1, 'approved');
+(311, 19, '2026-05-30', '2026-05-30 08:30:00', '2026-05-30 17:30:00', 1, 'approved'),
+(317, 22, '2026-05-11', '2026-05-11 08:30:00', '2026-05-11 17:30:00', 0, 'approved'),
+(318, 22, '2026-05-12', '2026-05-12 08:30:00', '2026-05-12 17:30:00', 0, 'approved'),
+(319, 22, '2026-05-13', '2026-05-13 08:30:00', '2026-05-13 17:30:00', 0, 'approved'),
+(320, 22, '2026-05-14', '2026-05-14 08:30:00', '2026-05-14 17:30:00', 0, 'approved'),
+(321, 22, '2026-05-15', '2026-05-15 08:30:00', '2026-05-15 17:30:00', 0, 'approved'),
+(322, 22, '2026-05-16', NULL, NULL, 1, 'approved'),
+(323, 22, '2026-05-17', NULL, NULL, 1, 'approved');
 
 -- --------------------------------------------------------
 
@@ -424,6 +482,12 @@ ALTER TABLE `employees`
   ADD UNIQUE KEY `email` (`email`),
   ADD KEY `department_id` (`department_id`),
   ADD KEY `fk_employee_role` (`role_id`);
+
+--
+-- Indexes for table `employee_leave_balances`
+--
+ALTER TABLE `employee_leave_balances`
+  ADD PRIMARY KEY (`employee_id`);
 
 --
 -- Indexes for table `leave_requests`
@@ -498,7 +562,7 @@ ALTER TABLE `system_state`
 -- AUTO_INCREMENT for table `attendances`
 --
 ALTER TABLE `attendances`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=182;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=192;
 
 --
 -- AUTO_INCREMENT for table `departments`
@@ -510,7 +574,7 @@ ALTER TABLE `departments`
 -- AUTO_INCREMENT for table `employees`
 --
 ALTER TABLE `employees`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=23;
 
 --
 -- AUTO_INCREMENT for table `leave_requests`
@@ -522,13 +586,13 @@ ALTER TABLE `leave_requests`
 -- AUTO_INCREMENT for table `logs`
 --
 ALTER TABLE `logs`
-  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=688;
+  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=699;
 
 --
 -- AUTO_INCREMENT for table `log_edit_requests`
 --
 ALTER TABLE `log_edit_requests`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=18;
 
 --
 -- AUTO_INCREMENT for table `ob_requests`
@@ -558,7 +622,7 @@ ALTER TABLE `roles`
 -- AUTO_INCREMENT for table `schedules`
 --
 ALTER TABLE `schedules`
-  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=312;
+  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=324;
 
 --
 -- Constraints for dumped tables
@@ -576,6 +640,12 @@ ALTER TABLE `departments`
 ALTER TABLE `employees`
   ADD CONSTRAINT `employees_ibfk_1` FOREIGN KEY (`department_id`) REFERENCES `departments` (`id`) ON DELETE SET NULL,
   ADD CONSTRAINT `fk_employee_role` FOREIGN KEY (`role_id`) REFERENCES `roles` (`id`);
+
+--
+-- Constraints for table `employee_leave_balances`
+--
+ALTER TABLE `employee_leave_balances`
+  ADD CONSTRAINT `fk_leave_employee` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `leave_requests`
