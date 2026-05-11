@@ -9,6 +9,7 @@ if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'admin') {
 }
 
 require_once '../db.php';
+require_once '../send_mail.php';
 date_default_timezone_set('Asia/Manila');
 
 // ---- HANDLE ADD / EDIT ----
@@ -35,6 +36,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         $pdo->prepare("INSERT INTO employees (first_name, last_name, email, password, role_id, department_id, hired_date) VALUES (?, ?, ?, ?, ?, ?, CURDATE())")
             ->execute([$first_name, $last_name, $email, $password, $roleId, $department]);
+
+        $fullName = htmlspecialchars($first_name . ' ' . $last_name);
+        sendMail($email, $fullName, 'Your HSN DTR Account', "
+            <p>Hi {$fullName},</p>
+            <p>Your account has been created in the HSN DTR System.</p>
+            <p><strong>Email:</strong> {$email}<br>
+               <strong>Password:</strong> {$password}</p>
+            <p>Please log in and change your password.</p>
+            <p>— HSN DTR System</p>
+        ");
     }
     header("Location: admin_manage_employees.php");
     exit();
