@@ -105,11 +105,6 @@
                             calendar.refetchEvents();
                         }
                     },
-
-                    customDate: {
-                        text: formatDateLabel(new Date()),
-                        click: function () {}
-                    }
                 },
 
                 loading: function (isLoading) {
@@ -125,7 +120,7 @@
 
                 headerToolbar: {
                     left:   'refresh',
-                    right:  'customDate'
+                    right:  'prev title next'
                 },
 
                 events: {
@@ -154,66 +149,10 @@
             });
 
             calendar.render();
-            
+
             // Custom refresh button on toolbar
             const refreshBtn = calendarEl.querySelector('.fc-refresh-button');
             if (refreshBtn) refreshBtn.innerHTML = '<i class="bi bi-arrow-clockwise"></i>';
-
-            // Custom date picker button on toolbar
-            const dateBtn = calendarEl.querySelector('.fc-customDate-button');
-
-            function formatRangeLabel(start, end) {
-                const opts = { month: 'short', day: 'numeric' };
-                return `${start.toLocaleDateString(undefined, opts)} - ${end.toLocaleDateString(undefined, opts)}`;
-            }
-
-            if (dateBtn) {
-                const fp = flatpickr(dateBtn, {
-                    mode: "range",
-                    defaultDate: [new Date(), new Date()],
-                    dateFormat: "Y-m-d",
-
-                    onChange: function (selectedDates) {
-
-                        if (selectedDates.length === 1) {
-                            const start = selectedDates[0];
-
-                            dateBtn.innerHTML = `
-                                <i class="bi bi-calendar-event"></i>
-                                ${formatDateLabel(start)} →
-                            `;
-                            return;
-                        }
-
-                        // ✅ full range selected
-                        if (selectedDates.length === 2) {
-                            const [start, end] = selectedDates;
-
-                            calendar.gotoDate(start);
-
-                            dateBtn.innerHTML = `
-                                <i class="bi bi-calendar-event"></i>
-                                ${formatRangeLabel(start, end)}
-                            `;
-
-                            window.selectedRange = { start, end };
-                        }
-                    }
-                });
-
-                // ✅ default label (better than "Today")
-                const today = new Date();
-                dateBtn.innerHTML = `
-                    <i class="bi bi-calendar-event"></i>
-                    ${formatDateLabel(today)}
-                `;
-
-                // IMPORTANT: prevent double-open glitch
-                dateBtn.addEventListener('click', function (e) {
-                    e.preventDefault();
-                    fp.open();
-                });
-            }
 
             // Resize calendar when sidebar expands
             function debounce(fn, delay = 100) {

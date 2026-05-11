@@ -20,15 +20,13 @@ date_default_timezone_set('Asia/Manila');
 $current_page = 'records';
 $employeeId   = $_SESSION['user_id'];
 
-// Read optional date range from GET params (used when user picks a range)
-$startDate = $_GET['start'] ?? null;
-$endDate   = $_GET['end'] ?? null;
-
-// Default to today if no date range is provided
-if (!$startDate && !$endDate) {
-    $startDate = date('Y-m-d');
-    $endDate   = date('Y-m-d');
-}
+// Month-based navigation: ?month=YYYY-MM
+$rawMonth = $_GET['month'] ?? date('Y-m');
+[$yr, $mn] = array_pad(array_map('intval', explode('-', $rawMonth)), 2, 0);
+if ($yr < 2000 || $mn < 1 || $mn > 12) { $yr = (int)date('Y'); $mn = (int)date('n'); }
+$startDate  = sprintf('%04d-%02d-01', $yr, $mn);
+$endDate    = date('Y-m-t', strtotime($startDate));
+$monthLabel = date('F Y', strtotime($startDate));
 
 // Fetch attendance records and schedules for the employee within the selected range
 $records   = getAttendanceRecords($pdo, $employeeId, $startDate, $endDate);
@@ -81,8 +79,6 @@ foreach ($obStmt->fetchAll(PDO::FETCH_ASSOC) as $ob) {
     <!-- 1. Third-party CSS FIRST -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-
     <!-- 2. Your global CSS -->
     <link rel="stylesheet" href="../assets/css/root.css">
     <link rel="stylesheet" href="../assets/css/typography.css">
@@ -91,9 +87,6 @@ foreach ($obStmt->fetchAll(PDO::FETCH_ASSOC) as $ob) {
 
     <!-- 3. Page-specific CSS -->
     <link rel="stylesheet" href="employee_records.css">
-
-    <!-- 4. Scripts -->
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr" defer></script>
 
     <style>
         html, body { height: 100%; margin: 0; }
@@ -118,73 +111,50 @@ foreach ($obStmt->fetchAll(PDO::FETCH_ASSOC) as $ob) {
         <div class="card card-glass records-card">
             <div class="card-body d-flex flex-column records-card-body">
 
-                <!-- Header: shows a clickable date range that opens the date picker -->
+                <?php
+                $cPresent = $cAbsent = $cIncomplete = 0;
+                foreach ($records as $r) {
+                    if ($r['status'] === 'present')    $cPresent++;
+                    elseif ($r['status'] === 'absent') $cAbsent++;
+                    else                               $cIncomplete++;
+                }
+                ?>
                 <div class="recordHeader">
-                    <!-- Date Range Picker (Dropdown Style) -->
-                    <div class="dropdown">
-                        <button class="btn dropdown-toggle" id="datePickerBtn" type="button">
-                            <i class="bi bi-calendar3"></i>
-                            <span id="dateRangeLabel">
-                                <?php
-                                $today = date('Y-m-d');
-                                if ($startDate === $today && $endDate === $today) {
-                                    echo 'Today';
-                                } else {
-                                    echo date('F j', strtotime($startDate)) . ' – ' . date('F j, Y', strtotime($endDate));
-                                }
-                                ?>
-                            </span>
+                    <div class="d-flex align-items-center gap-2">
+                        <button class="sched-nav-btn" onclick="navigatePrev()">
+                            <i class="bi bi-chevron-left"></i>
                         </button>
+                        <span class="sched-month-label"><?= htmlspecialchars($monthLabel) ?></span>
+                        <button class="sched-nav-btn" onclick="navigateNext()">
+                            <i class="bi bi-chevron-right"></i>
+                        </button>
+                    </div>
+                    <div class="tab-summary-chips">
+                        <span class="tab-summary-chip" style="color:var(--primary-color);">
+                            <i class="bi bi-check-circle-fill"></i> <?= $cPresent ?> Present
+                        </span>
+                        <span class="tab-summary-chip" style="color:var(--neutral-color);">
+                            <i class="bi bi-clock-fill"></i> <?= $cIncomplete ?> Incomplete
+                        </span>
+                        <span class="tab-summary-chip" style="color:var(--danger-color);">
+                            <i class="bi bi-x-circle-fill"></i> <?= $cAbsent ?> Absent
+                        </span>
                     </div>
                 </div>
 
                 <script>
-                    document.addEventListener('DOMContentLoaded', () => {
-
-                        const dateLabel = document.getElementById('dateRangeLabel');
-                        const btn       = document.getElementById('datePickerBtn');
-
-                        const fp = flatpickr(btn, {
-                            mode: 'range',
-                            dateFormat: 'Y-m-d',
-
-                            defaultDate: [
-                                '<?= $startDate ?>',
-                                '<?= $endDate ?>'
-                            ],
-
-                            // OPEN calendar when clicking button
-                            onOpen() {
-                                btn.classList.add('active');
-                            },
-
-                            onClose() {
-                                btn.classList.remove('active');
-                            },
-
-                            // UPDATE + reload
-                            onChange(selectedDates, dateStr, instance) {
-                                if (selectedDates.length === 2) {
-
-                                    const start = instance.formatDate(selectedDates[0], "Y-m-d");
-                                    const end   = instance.formatDate(selectedDates[1], "Y-m-d");
-                                    const todayStr = instance.formatDate(new Date(), "Y-m-d");
-
-                                    dateLabel.textContent = (start === end && start === todayStr)
-                                        ? 'Today'
-                                        : instance.formatDate(selectedDates[0], "F j") + " – " + instance.formatDate(selectedDates[1], "F j, Y");
-
-                                    window.location.href = `?start=${start}&end=${end}`;
-                                }
-                            }
-                        });
-
-                        // open picker when clicking button
-                        btn.addEventListener('click', () => {
-                            fp.open();
-                        });
-
-                    });
+                    const currentMonth = '<?= sprintf('%04d-%02d', $yr, $mn) ?>';
+                    function pad(n) { return String(n).padStart(2, '0'); }
+                    function navigatePrev() {
+                        const d = new Date(currentMonth + '-01');
+                        d.setMonth(d.getMonth() - 1);
+                        window.location.href = `?month=${d.getFullYear()}-${pad(d.getMonth() + 1)}`;
+                    }
+                    function navigateNext() {
+                        const d = new Date(currentMonth + '-01');
+                        d.setMonth(d.getMonth() + 1);
+                        window.location.href = `?month=${d.getFullYear()}-${pad(d.getMonth() + 1)}`;
+                    }
                 </script>
 
                 <!-- Gantt chart: one row per attendance record -->
@@ -226,30 +196,21 @@ foreach ($obStmt->fetchAll(PDO::FETCH_ASSOC) as $ob) {
                     ?>
 
                     <?php if ($ganttBar['type'] === 'absent_or_future'): ?>
-                    <!-- ── Absent / future day row ── -->
-                    <!-- Shows only the schedule ghost bar (or an empty bar for future dates) -->
                     <div class="ganttRow">
                         <div class="ganttLabel">
-                            <div><?= $ganttBar['dayLabel'] ?></div><!-- e.g. "Mon" -->
-                            <div style="font-size: 0.75rem; color: #aaa;"><?= $ganttBar['dateNum'] ?></div><!-- e.g. "14" -->
+                            <div><?= $ganttBar['dayLabel'] ?></div>
+                            <div class="ganttSubLabel"><?= $ganttBar['dateNum'] ?></div>
                         </div>
                         <div class="ganttBarContainer"
                             data-range-start="<?= $ganttBar['rangeStart'] ?>"
                             data-range-end="<?= $ganttBar['rangeEnd'] ?>">
-
-                            <!-- Animated cursor line showing the current time -->
                             <?= gantt_cursor() ?>
-                            <!-- Hour/half-hour tick marks along the timeline axis -->
                             <?= gantt_scale($ganttBar['rangeStart'], $ganttBar['rangeEnd']) ?>
-
-                            <!-- Single bar representing the absent/future status -->
                             <div class="ganttBar <?= $ganttBar['barClass'] ?>"
-                                style="left: <?= $ganttBar['barLeft'] ?>%; width: <?= $ganttBar['barWidth'] ?>%;">
-                            </div>
-                            
-                            <!-- Status label centered inside the bar -->
-                            <div class="<?= $ganttBar['labelClass'] ?>" style="left: <?= $ganttBar['midLeft'] ?>%">
-                                <?= $ganttBar['labelText'] ?>
+                                style="left:<?= $ganttBar['barLeft'] ?>%; width:<?= $ganttBar['barWidth'] ?>%;">
+                                <span class="<?= $ganttBar['labelClass'] ?>" style="left:<?= $ganttBar['midLeft'] ?>%;">
+                                    <?= $ganttBar['labelText'] ?>
+                                </span>
                             </div>
                         </div>
                     </div>
