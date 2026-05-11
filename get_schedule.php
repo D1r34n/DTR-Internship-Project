@@ -88,9 +88,9 @@ foreach ($schedules as $row) {
         $events[] = [
             'title'           => 'Rest Day',
             'start'           => $row['schedule_date'],
-            'backgroundColor' => '#6c757d',
-            'borderColor'     => '#6c757d',
-            'textColor'       => '#ffffff',
+            'backgroundColor' => 'var(--warning-glass)',
+            'borderColor'     => 'var(--warning-border)',
+            'textColor'       => 'var(--warning-color)',
             'extendedProps'   => ['is_rest_day' => true]
         ];
         continue;

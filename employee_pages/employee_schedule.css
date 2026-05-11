@@ -190,3 +190,35 @@ body {
     overflow: hidden;
     text-overflow: ellipsis;
 }
+
+/* ============================================================
+   COMPACT DAY CELLS
+   ============================================================ */
+
+.fc .fc-daygrid-day-frame {
+    min-height: 32px !important;
+}
+
+.fc .fc-daygrid-day-top {
+    padding: 2px 4px 0;
+}
+
+.fc .fc-daygrid-day-number {
+    font-size: 0.75rem;
+    padding: 2px 4px;
+}
+
+.fc .fc-daygrid-event {
+    font-size: 0.7rem;
+    padding: 1px 4px;
+    margin-bottom: 1px;
+}
+
+.fc .fc-col-header-cell {
+    padding: 3px 0;
+    font-size: 0.72rem;
+}
+
+.fc .fc-daygrid-day-events {
+    margin-bottom: 2px;
+}
