@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: May 08, 2026 at 10:21 AM
+-- Generation Time: May 11, 2026 at 03:04 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -60,7 +60,7 @@ INSERT INTO `attendances` (`id`, `employee_id`, `schedule_id`, `work_date`, `sch
 (147, 19, 286, '2026-05-05', '2026-05-05 08:30:00', '2026-05-05 17:30:00', NULL, NULL, 0, 0, 0, 0, 0, 'absent', 'none', 0, '2026-05-08 08:04:36', '2026-05-08 08:06:04'),
 (148, 19, 287, '2026-05-06', '2026-05-06 08:30:00', '2026-05-06 17:30:00', NULL, NULL, 0, 0, 0, 0, 0, 'absent', 'none', 0, '2026-05-08 08:04:36', '2026-05-08 08:06:04'),
 (149, 19, 288, '2026-05-07', '2026-05-07 08:30:00', '2026-05-07 17:30:00', NULL, NULL, 0, 0, 0, 0, 0, 'absent', 'none', 0, '2026-05-08 08:04:36', '2026-05-08 08:06:04'),
-(150, 19, 289, '2026-05-08', '2026-05-08 08:30:00', '2026-05-08 17:30:00', '2026-05-08 16:06:04', '2026-05-08 16:06:09', 0, 456, 84, 0, 0, 'present', 'none', 0, '2026-05-08 08:04:36', '2026-05-08 08:06:09'),
+(150, 19, 289, '2026-05-08', '2026-05-08 08:30:00', '2026-05-08 17:30:00', '2026-05-08 16:06:04', '2026-05-08 15:00:00', 0, 456, 150, 0, 0, 'present', 'none', 0, '2026-05-08 08:04:36', '2026-05-08 09:00:40'),
 (151, 19, 290, '2026-05-09', '2026-05-09 08:30:00', '2026-05-09 17:30:00', NULL, NULL, 0, 0, 0, 0, 0, 'incomplete', 'none', 0, '2026-05-08 08:04:36', '2026-05-08 08:04:36'),
 (152, 19, 291, '2026-05-10', '2026-05-10 08:30:00', '2026-05-10 17:30:00', NULL, NULL, 0, 0, 0, 0, 0, 'incomplete', 'none', 0, '2026-05-08 08:04:36', '2026-05-08 08:04:36'),
 (153, 19, 292, '2026-05-11', '2026-05-11 08:30:00', '2026-05-11 17:30:00', NULL, NULL, 0, 0, 0, 0, 0, 'incomplete', 'none', 0, '2026-05-08 08:04:36', '2026-05-08 08:04:36'),
@@ -126,28 +126,28 @@ CREATE TABLE `employees` (
   `profile_image` varchar(255) DEFAULT NULL,
   `first_name` varchar(100) NOT NULL,
   `last_name` varchar(100) NOT NULL,
-  `name` varchar(100) DEFAULT NULL,
   `email` varchar(100) NOT NULL,
   `password` varchar(255) DEFAULT NULL,
   `role_id` int(11) NOT NULL,
-  `department_id` int(10) UNSIGNED DEFAULT NULL
+  `department_id` int(10) UNSIGNED DEFAULT NULL,
+  `hired_date` date NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `employees`
 --
 
-INSERT INTO `employees` (`id`, `profile_image`, `first_name`, `last_name`, `name`, `email`, `password`, `role_id`, `department_id`) VALUES
-(2, NULL, 'User', 'Employee', '', 'user@gmail.com', 'user123', 5, 2),
-(3, NULL, 'User', 'Admin', '', 'admin@gmail.com', 'admin123', 3, 7),
-(4, NULL, 'User', 'Workforce', '', 'user1@gmail.com', 'user123', 4, 14),
-(5, NULL, 'Earl David', 'Jordan', '', 'earl@gmail.com', '123', 5, 13),
-(7, NULL, 'Jignesh', 'Nate', '', 'jigs@gmail.com', '123', 5, 13),
-(8, NULL, 'Justine', 'Tandoc', '', 'justine@gmail.com', '123', 5, 13),
-(11, NULL, 'Dharmveer', 'Sandhu', '', 'dharm@gmail.com', '123', 5, NULL),
-(12, NULL, 'Dirk Adolf', 'Del Mundo', '', 'dirk@gmail.com', '123', 5, 13),
-(15, NULL, 'Thonie', 'Revil', '', 'thonie.revil@hsnservice.com', '123', 1, 10),
-(19, NULL, 'Edrian', 'Evangelista', '', 'edrian.evangelista@gmail.com', '123', 5, 10);
+INSERT INTO `employees` (`id`, `profile_image`, `first_name`, `last_name`, `email`, `password`, `role_id`, `department_id`, `hired_date`) VALUES
+(2, NULL, 'User', 'Employee', 'user@gmail.com', 'user123', 5, 2, '2026-05-11'),
+(3, NULL, 'User', 'Admin', 'admin@gmail.com', 'admin123', 3, 7, '2026-05-11'),
+(4, NULL, 'User', 'Workforce', 'user1@gmail.com', 'user123', 4, 14, '2026-05-11'),
+(5, NULL, 'Earl David', 'Jordan', 'earl@gmail.com', '123', 5, 13, '2026-05-11'),
+(7, NULL, 'Jignesh', 'Nate', 'jigs@gmail.com', '123', 5, 13, '2026-05-11'),
+(8, NULL, 'Justine', 'Tandoc', 'justine@gmail.com', '123', 5, 13, '2026-05-11'),
+(12, NULL, 'Dirk Adolf', 'Del Mundo', 'dirk@gmail.com', '123', 5, 13, '2026-05-11'),
+(15, NULL, 'Thonie', 'Revil', 'thonie.revil@hsnservice.com', '123', 1, 10, '2026-05-11'),
+(19, NULL, 'Edrian', 'Evangelista', 'edrian.evangelista@gmail.com', '123', 5, 10, '2026-05-11'),
+(20, NULL, 'Dharmveer', 'Sandhu', 'dharm@gmail.com', 'dharm123', 5, 7, '2026-05-11');
 
 -- --------------------------------------------------------
 
@@ -201,7 +201,15 @@ INSERT INTO `logs` (`id`, `employee_id`, `log_type`, `log_time`, `longitude`, `l
 (676, 3, 'IN', '2026-05-08 15:56:29', 120.9955033, 14.5842579, 55, 1, 21.9768, '2026-05-08 07:56:29'),
 (677, 3, 'BREAK_IN', '2026-05-08 15:56:41', 120.9955033, 14.5842579, 55, 1, 21.98, '2026-05-08 07:56:41'),
 (678, 19, 'IN', '2026-05-08 16:06:04', 120.9954961, 14.5842637, 55, 1, 21.9518, '2026-05-08 08:06:04'),
-(679, 19, 'OUT', '2026-05-08 16:06:09', 120.9954961, 14.5842637, 55, 1, 21.9518, '2026-05-08 08:06:09');
+(679, 19, 'OUT', '2026-05-08 16:06:09', 120.9954961, 14.5842637, 55, 1, 21.9518, '2026-05-08 08:06:09'),
+(680, 19, 'IN', '2026-05-08 16:59:50', 120.9954929, 14.5842656, 55, 1, 22.0125, '2026-05-08 08:59:50'),
+(681, 19, 'OUT', '2026-05-08 15:00:00', 120.9954929, 14.5842656, 55, 1, 22.0125, '2026-05-08 09:00:14'),
+(682, 3, 'OUT', '2026-05-11 08:44:44', 120.9954915, 14.5842609, 55, 1, 22.5094, '2026-05-11 00:44:44'),
+(683, 2, 'IN', '2026-05-11 08:59:12', 120.9955024, 14.5842540, 55, 1, 22.3824, '2026-05-11 00:59:12'),
+(684, 2, 'OUT', '2026-05-11 08:59:23', 120.9954938, 14.5842575, 55, 1, 22.6493, '2026-05-11 00:59:23'),
+(685, 2, 'IN', '2026-05-11 08:59:28', 120.9954938, 14.5842575, 55, 1, 22.6493, '2026-05-11 00:59:28'),
+(686, 2, 'OUT', '2026-05-11 09:02:15', 120.9954969, 14.5842577, 55, 1, 22.4215, '2026-05-11 01:02:15'),
+(687, 2, 'IN', '2026-05-11 09:02:21', 120.9954969, 14.5842577, 55, 1, 22.4215, '2026-05-11 01:02:21');
 
 -- --------------------------------------------------------
 
@@ -231,7 +239,9 @@ CREATE TABLE `log_edit_requests` (
 --
 
 INSERT INTO `log_edit_requests` (`id`, `employee_id`, `attendance_id`, `log_id`, `work_date`, `actual_time_in`, `request_type`, `requested_time_in`, `requested_time_out`, `reason`, `initiated_by_id`, `status`, `created_at`, `updated_at`) VALUES
-(14, 19, 150, 679, '2026-05-08', '2026-05-08 16:06:04', 'time_out', NULL, '2026-05-08 18:00:00', 'misinput', 19, 'pending', '2026-05-08 08:06:48', '2026-05-08 08:06:48');
+(14, 19, 150, 679, '2026-05-08', '2026-05-08 16:06:04', 'time_out', NULL, '2026-05-08 18:00:00', 'misinput', 19, 'approved', '2026-05-08 08:06:48', '2026-05-08 08:51:08'),
+(15, 19, 150, 680, '2026-05-08', '2026-05-08 16:06:04', 'time_in', '2026-05-08 16:59:00', NULL, 'incorrect time in', 19, 'rejected', '2026-05-08 09:00:00', '2026-05-08 09:00:10'),
+(16, 19, 150, 681, '2026-05-08', '2026-05-08 16:06:04', 'time_out', NULL, '2026-05-08 15:00:00', 'timed out misinput', 19, 'approved', '2026-05-08 09:00:29', '2026-05-08 09:00:40');
 
 -- --------------------------------------------------------
 
@@ -488,7 +498,7 @@ ALTER TABLE `system_state`
 -- AUTO_INCREMENT for table `attendances`
 --
 ALTER TABLE `attendances`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=180;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=182;
 
 --
 -- AUTO_INCREMENT for table `departments`
@@ -500,7 +510,7 @@ ALTER TABLE `departments`
 -- AUTO_INCREMENT for table `employees`
 --
 ALTER TABLE `employees`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=20;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
 
 --
 -- AUTO_INCREMENT for table `leave_requests`
@@ -512,13 +522,13 @@ ALTER TABLE `leave_requests`
 -- AUTO_INCREMENT for table `logs`
 --
 ALTER TABLE `logs`
-  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=680;
+  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=688;
 
 --
 -- AUTO_INCREMENT for table `log_edit_requests`
 --
 ALTER TABLE `log_edit_requests`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
 
 --
 -- AUTO_INCREMENT for table `ob_requests`
@@ -542,7 +552,7 @@ ALTER TABLE `password_setup_tokens`
 -- AUTO_INCREMENT for table `roles`
 --
 ALTER TABLE `roles`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
 
 --
 -- AUTO_INCREMENT for table `schedules`
