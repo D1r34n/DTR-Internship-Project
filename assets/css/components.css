@@ -827,16 +827,18 @@ button.btn {
 .btn-group .btn:hover     { z-index: 1 !important; }
 .btn-group > .btn:only-child { border-radius: 12px !important; }
 
-/* btn-danger in a group: strip the per-button gradient so both halves share the same flat color */
+/* btn-danger in a group: strip per-button gradient and shadow so both halves look like one button */
 .btn-group .btn-danger,
 .btn-group .btn.btn-danger {
     background: var(--status-danger-bg) !important;
+    box-shadow: none !important;
 }
 
 .btn-group .btn-danger:hover,
 .btn-group .btn-danger:focus,
 .btn-group .btn-danger:focus-visible {
     background: var(--status-danger-hover) !important;
+    box-shadow: none !important;
 }
 
 /* ================================================

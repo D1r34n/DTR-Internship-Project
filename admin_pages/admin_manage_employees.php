@@ -33,7 +33,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ->execute([$first_name, $last_name, $email, $roleId, $department, $_POST['employee_id']]);
         }
     } else {
-        $pdo->prepare("INSERT INTO employees (first_name, last_name, email, password, role_id, department_id) VALUES (?, ?, ?, ?, ?, ?)")
+        $pdo->prepare("INSERT INTO employees (first_name, last_name, email, password, role_id, department_id, hired_date) VALUES (?, ?, ?, ?, ?, ?, CURDATE())")
             ->execute([$first_name, $last_name, $email, $password, $roleId, $department]);
     }
     header("Location: admin_manage_employees.php");
