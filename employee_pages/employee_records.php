@@ -434,6 +434,7 @@ foreach ($obStmt->fetchAll(PDO::FETCH_ASSOC) as $ob) {
 
 <!-- Bootstrap JS bundle (includes Popper) -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+<script src="../system_functions/gantt.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', () => {
         // Wire up cursor tracking and tooltip behavior for all Gantt rows

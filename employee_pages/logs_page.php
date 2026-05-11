@@ -143,13 +143,13 @@ const COLS = {
         { width: '17%', label: 'Edit Status'                    },
     ],
     admin: [
-        { width: '10%', label: 'Date',         sort: 'date'     },
-        { width: '10%', label: 'Time',         sort: 'time'     },
+        { width: '8%', label: 'Date',         sort: 'date'     },
+        { width: '8%', label: 'Time',         sort: 'time'     },
         { width: '12%', label: 'Employee'                       },
         { width: '10%', label: 'Role'                          },
         { width: '10%', label: 'Log Type',     sort: 'type'     },
-        { width: '14%', label: 'Location',     sort: 'location' },
-        { width: '8%',  label: 'Requested By'                   },
+        { width: '12%', label: 'Location',     sort: 'location' },
+        { width: '10%',  label: 'Requested By'                   },
         { width: '7%',  label: 'Edit Status'                    },
     ],
     admin_scoped: [
