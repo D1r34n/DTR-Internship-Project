@@ -23,12 +23,18 @@ $employeeId = intval($_GET['id']);
 // ---- HANDLE EMPLOYEE EDIT ----
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'edit_employee') {
 
-    $first_name = trim($_POST['first_name'] ?? '');
-    $last_name  = trim($_POST['last_name']  ?? '');
+    $fullName   = trim($_POST['name'] ?? '');
+    $nameParts  = preg_split('/\s+/', $fullName, 2);
+    $firstName  = $nameParts[0] ?? '';
+    $lastName   = $nameParts[1] ?? '';
     $email      = trim($_POST['email'] ?? '');
     $password   = trim($_POST['password'] ?? '');
-    $role       = $_POST['role'] ?? 'employee';
+    $roleKey    = $_POST['role'] ?? 'employee';
     $department = !empty($_POST['department_id']) ? $_POST['department_id'] : null;
+
+    $roleRow = $pdo->prepare("SELECT id FROM roles WHERE role_key = ?");
+    $roleRow->execute([$roleKey]);
+    $roleId  = $roleRow->fetchColumn() ?: null;
 
     $dup = $pdo->prepare("
         SELECT id
@@ -45,14 +51,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'edit_
         exit();
     }
 
-    /* --------------------------------------------
-       UPDATE EMPLOYEE
-    -------------------------------------------- */
-
-    $roleStmt = $pdo->prepare("SELECT id FROM roles WHERE role_key = ?");
-    $roleStmt->execute([$role]);
-    $roleId = $roleStmt->fetchColumn() ?: null;
-
     if (!empty($password)) {
 
         $pdo->prepare("
@@ -66,8 +64,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'edit_
                 department_id = ?
             WHERE id = ?
         ")->execute([
-            $first_name,
-            $last_name,
+            $firstName,
+            $lastName,
             $email,
             $password,
             $roleId,
@@ -87,8 +85,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'edit_
                 department_id = ?
             WHERE id = ?
         ")->execute([
-            $first_name,
-            $last_name,
+            $firstName,
+            $lastName,
             $email,
             $roleId,
             $department,
@@ -204,6 +202,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save_
 // ---- HANDLE EMPLOYEE DELETE ----
 if (isset($_GET['action']) && $_GET['action'] === 'delete_employee') {
 
+    $pdo->prepare("DELETE ler FROM log_edit_requests ler INNER JOIN logs l ON ler.log_id = l.id WHERE l.employee_id = ?")->execute([$employeeId]);
     $pdo->prepare("DELETE FROM logs WHERE employee_id = ?")->execute([$employeeId]);
     $pdo->prepare("DELETE FROM attendances WHERE employee_id = ?")->execute([$employeeId]);
     $pdo->prepare("DELETE FROM schedules WHERE employee_id = ?")->execute([$employeeId]);
@@ -216,7 +215,12 @@ if (isset($_GET['action']) && $_GET['action'] === 'delete_employee') {
 
 // ---- GET EMPLOYEE ----
 $stmt = $pdo->prepare("
-    SELECT e.*, CONCAT(e.first_name, ' ', e.last_name) AS name, r.role_key AS role, d.department_name, d.department_code
+    SELECT e.*,
+           CONCAT(e.first_name, ' ', e.last_name) AS name,
+           r.role_key  AS role,
+           r.role_name,
+           d.department_name,
+           d.department_code
     FROM employees e
     LEFT JOIN roles r ON r.id = e.role_id
     LEFT JOIN departments d ON e.department_id = d.id
@@ -224,6 +228,10 @@ $stmt = $pdo->prepare("
 ");
 $stmt->execute([$employeeId]);
 $emp = $stmt->fetch(PDO::FETCH_ASSOC);
+
+// ---- GET ALL ROLES (for edit form) ----
+$roles = $pdo->query("SELECT role_key, role_name FROM roles ORDER BY id")
+             ->fetchAll(PDO::FETCH_ASSOC);
 
 if (!$emp) {
     header("Location: admin_employees_list.php");
@@ -404,23 +412,9 @@ $tapLogs = $logsStmt->fetchAll(PDO::FETCH_ASSOC);
                             <span id="chip-sched-count" class="tab-summary-chip" style="color:var(--text-muted);">
                                 <?= count($schedulesByDate) ?> scheduled day<?= count($schedulesByDate) !== 1 ? 's' : '' ?>
                             </span>
-                            <div class="dropdown">
-                                <button class="btn btn-success sched-add-btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                    <i class="bi bi-plus-lg"></i> Manage Schedule
-                                </button>
-                                <ul class="dropdown-menu dropdown-menu-end">
-                                    <li>
-                                        <a class="dropdown-item" href="#" id="btn-add-schedule">
-                                            <i class="bi bi-calendar-plus me-2"></i>Add Schedule
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a class="dropdown-item" href="#" id="btn-add-rest-day">
-                                            <i class="bi bi-moon-stars me-2"></i>Add Rest Day
-                                        </a>
-                                    </li>
-                                </ul>
-                            </div>
+                            <button class="btn btn-success sched-add-btn" type="button" id="btn-manage-schedule">
+                                <i class="bi bi-plus-lg"></i> Manage Schedule
+                            </button>
                         </div>
                     </div>
 
@@ -792,42 +786,95 @@ $tapLogs = $logsStmt->fetchAll(PDO::FETCH_ASSOC);
     </div>
 </div>
 
-<!-- ===== REST DAY MODAL ===== -->
-<div class="modal fade" id="restDayModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content glass-modal">
+<!-- ===== MANAGE SCHEDULE MODAL (Add Schedule + Rest Day side-by-side) ===== -->
+<div class="modal fade" id="manageScheduleModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content manage-sched-shell">
+        <div class="manage-sched-wrapper">
 
-            <div class="modal-header">
-                <h5 class="modal-title">Add Rest Days</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-
-            <div class="modal-body">
-                <p class="text-muted small mb-3">
-                    Select up to 2 days of the week. All matching dates in
-                    <strong id="restDayMonthLabel"></strong> will be marked as rest days,
-                    overriding any existing schedule on those dates.
-                </p>
-                <div class="rest-day-grid" id="restDayToggles">
-                    <button type="button" class="btn rest-day-toggle" data-dow="0">Sun</button>
-                    <button type="button" class="btn rest-day-toggle" data-dow="1">Mon</button>
-                    <button type="button" class="btn rest-day-toggle" data-dow="2">Tue</button>
-                    <button type="button" class="btn rest-day-toggle" data-dow="3">Wed</button>
-                    <button type="button" class="btn rest-day-toggle" data-dow="4">Thu</button>
-                    <button type="button" class="btn rest-day-toggle" data-dow="5">Fri</button>
-                    <button type="button" class="btn rest-day-toggle" data-dow="6">Sat</button>
+            <!-- LEFT: Add Schedule -->
+            <div class="manage-sched-card glass-modal">
+                <div class="manage-sched-card-header">
+                    <span><i class="bi bi-calendar-plus me-2"></i>Add Schedule</span>
                 </div>
-                <p class="text-muted small mt-3 mb-0 text-center" id="restDaySelectionHint">Select 1–2 days</p>
+                <div class="manage-sched-card-body">
+
+                    <form method="POST" action="admin_employee_view.php?id=<?= $employeeId ?>" id="addSchedForm">
+                        <input type="hidden" name="action" value="save_schedule">
+                        <input type="hidden" name="employee_id" value="<?= $employeeId ?>">
+                        <input type="hidden" name="is_edit" value="0">
+                        <input type="hidden" name="selected_dates" id="addSelectedDatesInput">
+
+                        <div class="mb-3">
+                            <label class="form-label">Employee</label>
+                            <input type="text" class="form-control"
+                                   value="<?= htmlspecialchars($emp['name']) ?>" readonly>
+                        </div>
+
+                        <div class="row g-3">
+                            <div class="col-6">
+                                <label class="form-label">Time In</label>
+                                <input type="time" name="time_in" id="addModalTimeIn" class="form-control" required>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">
+                                    Time Out <small class="text-muted">(next day if night)</small>
+                                </label>
+                                <input type="time" name="time_out" id="addModalTimeOut" class="form-control" required>
+                            </div>
+                        </div>
+
+                        <div class="mt-3">
+                            <label class="form-label">Select Dates</label>
+                            <p class="text-muted small mb-2">Click to select/deselect work days.</p>
+                            <input type="text" id="addSchedDatePicker" class="form-control" readonly>
+                            <div id="addSelectedDatesList" class="mt-2"></div>
+                        </div>
+
+                        <div class="mt-3">
+                            <button type="submit" class="btn btn-success w-100">
+                                <i class="bi bi-check-circle-fill"></i> Save Schedule
+                            </button>
+                        </div>
+                    </form>
+
+                </div>
             </div>
 
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-warning" id="restDaySubmitBtn" disabled>
-                    <i class="bi bi-check-circle-fill"></i> Set Rest Days
-                </button>
+            <!-- RIGHT: Rest Days -->
+            <div class="manage-sched-card glass-modal">
+                <div class="manage-sched-card-header">
+                    <span><i class="bi bi-moon-stars me-2"></i>Set Rest Days</span>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="manage-sched-card-body">
+
+                    <p class="text-muted small mb-3">
+                        Select up to 2 days of the week. All matching dates will be marked as
+                        rest days, overriding any existing schedule on those dates.
+                    </p>
+                    <div class="rest-day-grid" id="restDayToggles">
+                        <button type="button" class="btn rest-day-toggle" data-dow="0">Sun</button>
+                        <button type="button" class="btn rest-day-toggle" data-dow="1">Mon</button>
+                        <button type="button" class="btn rest-day-toggle" data-dow="2">Tue</button>
+                        <button type="button" class="btn rest-day-toggle" data-dow="3">Wed</button>
+                        <button type="button" class="btn rest-day-toggle" data-dow="4">Thu</button>
+                        <button type="button" class="btn rest-day-toggle" data-dow="5">Fri</button>
+                        <button type="button" class="btn rest-day-toggle" data-dow="6">Sat</button>
+                    </div>
+                    <p class="text-muted small mt-3 mb-0 text-center" id="restDaySelectionHint">Select 1–2 days</p>
+
+                    <div class="mt-3">
+                        <button type="button" class="btn btn-warning w-100" id="restDaySubmitBtn" disabled>
+                            <i class="bi bi-check-circle-fill"></i> Set Rest Days
+                        </button>
+                    </div>
+
+                </div>
             </div>
 
-        </div>
+        </div><!-- /.manage-sched-wrapper -->
+        </div><!-- /.modal-content -->
     </div>
 </div>
 
@@ -898,7 +945,7 @@ $tapLogs = $logsStmt->fetchAll(PDO::FETCH_ASSOC);
         <div class="modal-content">
 
             <div class="modal-header">
-                <h5 class="modal-title">Editing <?= htmlspecialchars($emp['name']) ?></h5>
+                <h5 class="modal-title">Editing <?= htmlspecialchars($emp['first_name'] . ' ' . $emp['last_name']) ?></h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
 
@@ -911,14 +958,8 @@ $tapLogs = $logsStmt->fetchAll(PDO::FETCH_ASSOC);
 
                         <div class="col-md-6">
                             <label class="form-label">First Name</label>
-                            <input type="text" name="first_name" class="form-control"
-                                   value="<?= htmlspecialchars($emp['first_name']) ?>" required>
-                        </div>
-
-                        <div class="col-md-6">
-                            <label class="form-label">Last Name</label>
-                            <input type="text" name="last_name" class="form-control"
-                                   value="<?= htmlspecialchars($emp['last_name']) ?>" required>
+                            <input type="text" name="name" class="form-control"
+                                   value="<?= htmlspecialchars($emp['first_name'] . ' ' . $emp['last_name']) ?>" required>
                         </div>
 
                         <div class="col-md-6">
@@ -935,9 +976,12 @@ $tapLogs = $logsStmt->fetchAll(PDO::FETCH_ASSOC);
                         <div class="col-md-6">
                             <label class="form-label">Role</label>
                             <select name="role" class="form-select">
-                                <option value="employee"  <?= $emp['role'] === 'employee'  ? 'selected' : '' ?>>Employee</option>
-                                <option value="workforce" <?= $emp['role'] === 'workforce' ? 'selected' : '' ?>>Workforce</option>
-                                <option value="admin"     <?= $emp['role'] === 'admin'     ? 'selected' : '' ?>>Admin</option>
+                                <?php foreach ($roles as $r): ?>
+                                    <option value="<?= htmlspecialchars($r['role_key']) ?>"
+                                        <?= ($emp['role'] ?? '') === $r['role_key'] ? 'selected' : '' ?>>
+                                        <?= htmlspecialchars($r['role_name']) ?>
+                                    </option>
+                                <?php endforeach; ?>
                             </select>
                         </div>
 
@@ -982,7 +1026,7 @@ $tapLogs = $logsStmt->fetchAll(PDO::FETCH_ASSOC);
             </div>
 
             <div class="modal-body">
-                Are you sure you want to delete <strong><?= htmlspecialchars($emp['name']) ?></strong>?
+                Are you sure you want to delete <strong><?= htmlspecialchars($emp['first_name'] . ' ' . $emp['last_name']) ?></strong>?
                 This will permanently remove their schedules and logs.
             </div>
 
@@ -1148,8 +1192,10 @@ $tapLogs = $logsStmt->fetchAll(PDO::FETCH_ASSOC);
 
 // ---- State ----
 let selectedDates    = [];
+let selectedDatesAdd = [];
 let selectedRestDays = [];
 let fp               = null;
+let fpAdd            = null;
 const EMP_ID         = <?= $employeeId ?>;
 let currentMonth  = '<?= $rawMonth ?>';
 const tabLoadedMonth = { '#tab1': null, '#tab2': null, '#tab3': null };
@@ -1231,7 +1277,7 @@ function loadRecords(startDate, endDate) {
         .then(r => r.text())
         .then(html => {
             const match = html.match(/<!--SUMMARY:({.*?})-->/);
-            if (match && match[1]) {
+            if (match) {
                 try {
                     const c = JSON.parse(match[1]);
                     document.getElementById('chip-present').innerHTML    = `<i class="bi bi-check-circle-fill"></i> ${c.present} Present`;
@@ -1441,16 +1487,31 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // ---- Dropdown: Add Schedule / Add Rest Day ----
-    document.getElementById('btn-add-schedule').addEventListener('click', e => {
-        e.preventDefault();
-        openAddModal();
-        bootstrap.Modal.getOrCreateInstance(document.getElementById('schedModal')).show();
+    fpAdd = flatpickr('#addSchedDatePicker', {
+        mode: 'range',
+        dateFormat: 'Y-m-d',
+        onChange(dates) {
+            if (dates.length < 2) {
+                selectedDatesAdd = dates.length === 1
+                    ? [`${dates[0].getFullYear()}-${pad(dates[0].getMonth()+1)}-${pad(dates[0].getDate())}`]
+                    : [];
+                renderDateTagsAdd();
+                return;
+            }
+            selectedDatesAdd = [];
+            const cur = new Date(dates[0].getTime());
+            const end = new Date(dates[1].getTime());
+            while (cur <= end) {
+                selectedDatesAdd.push(`${cur.getFullYear()}-${pad(cur.getMonth()+1)}-${pad(cur.getDate())}`);
+                cur.setDate(cur.getDate() + 1);
+            }
+            renderDateTagsAdd();
+        }
     });
 
-    document.getElementById('btn-add-rest-day').addEventListener('click', e => {
-        e.preventDefault();
-        openRestDayModal();
+    // ---- Manage Schedule button ----
+    document.getElementById('btn-manage-schedule').addEventListener('click', () => {
+        openManageModal();
     });
 
     // ---- Rest day weekday toggles ----
@@ -1478,14 +1539,46 @@ document.addEventListener('DOMContentLoaded', () => {
         form.append('month', currentMonth);
         fetch(`admin_employee_view.php?id=${EMP_ID}`, { method: 'POST', body: form })
             .then(() => {
-                bootstrap.Modal.getInstance(document.getElementById('restDayModal'))?.hide();
+                bootstrap.Modal.getInstance(document.getElementById('manageScheduleModal'))?.hide();
                 const { year, month } = parseYM(currentMonth);
                 loadCalendar(year, month);
             })
             .catch(() => alert('Failed to save rest days. Please try again.'));
     });
 
-    // Schedule form: AJAX submit → reload only the calendar
+    // ---- Add Schedule form (inside Manage Schedule modal) ----
+    document.getElementById('addSchedForm').addEventListener('submit', function (e) {
+        e.preventDefault();
+        document.getElementById('addSelectedDatesInput').value = JSON.stringify(selectedDatesAdd);
+        if (selectedDatesAdd.length === 0) {
+            alert('Please select at least one date.');
+            return;
+        }
+        const existing = new Set(
+            [...document.querySelectorAll('.sched-cal-day.has-sched[data-date]')]
+                .map(el => el.dataset.date)
+        );
+        const conflicts = selectedDatesAdd.filter(d => existing.has(d));
+        if (conflicts.length > 0) {
+            const msg = conflicts.length === 1
+                ? `A schedule for ${conflicts[0]} already exists. Replace it?`
+                : `Schedules for ${conflicts.length} selected dates already exist. Replace them?`;
+            if (!confirm(msg)) return;
+        }
+        fetch(this.getAttribute('action'), { method: 'POST', body: new FormData(this) })
+            .then(r => {
+                if (!r.ok && r.status !== 200) throw new Error('save failed');
+                bootstrap.Modal.getInstance(document.getElementById('manageScheduleModal'))?.hide();
+                showToast('Schedule saved successfully');
+                const { year, month } = parseYM(currentMonth);
+                tabLoadedMonth['#tab1'] = null;
+                loadCalendar(year, month);
+                tabLoadedMonth['#tab1'] = currentMonth;
+            })
+            .catch(() => alert('Failed to save schedule. Please try again.'));
+    });
+
+    // ---- Edit Schedule form (inside Edit modal, opened from calendar pencil) ----
     document.getElementById('schedForm').addEventListener('submit', function (e) {
         e.preventDefault();
         if (!prepareSubmit()) return;
@@ -1574,7 +1667,44 @@ document.addEventListener('DOMContentLoaded', () => {
 
 });
 
+// ---- Manage Schedule modal ----
+function openManageModal() {
+    // Reset add-schedule form
+    document.getElementById('addModalTimeIn').value  = '';
+    document.getElementById('addModalTimeOut').value = '';
+    selectedDatesAdd = [];
+    renderDateTagsAdd();
+    if (fpAdd) fpAdd.clear();
+    // Reset rest-day toggles
+    selectedRestDays = [];
+    document.querySelectorAll('.rest-day-toggle').forEach(btn => btn.classList.remove('active'));
+    updateRestDaySubmitBtn();
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('manageScheduleModal')).show();
+}
+
 // ---- Schedule modal helpers ----
+function renderDateTagsAdd() {
+    const list = document.getElementById('addSelectedDatesList');
+    if (selectedDatesAdd.length === 0) { list.innerHTML = ''; return; }
+    if (selectedDatesAdd.length === 1) {
+        list.innerHTML = `<span class="selected-date-tag">${selectedDatesAdd[0]}
+            <span class="selected-date-remove" onclick="clearDateSelectionAdd()">&times;</span>
+        </span>`;
+    } else {
+        const first = selectedDatesAdd[0], last = selectedDatesAdd[selectedDatesAdd.length - 1];
+        list.innerHTML = `<span class="selected-date-tag">
+            ${first} &rarr; ${last} &nbsp;(${selectedDatesAdd.length} days)
+            <span class="selected-date-remove" onclick="clearDateSelectionAdd()">&times;</span>
+        </span>`;
+    }
+}
+
+function clearDateSelectionAdd() {
+    selectedDatesAdd = [];
+    if (fpAdd) fpAdd.clear();
+    renderDateTagsAdd();
+}
+
 function renderDateTags() {
     const list = document.getElementById('selectedDatesList');
     if (selectedDates.length === 0) { list.innerHTML = ''; return; }
@@ -1626,11 +1756,7 @@ function openEditModal(empIdOrDate, dateOrTimeIn, timeInOrTimeOut, timeOutOrUnde
 
 // ---- Rest day modal helpers ----
 function openRestDayModal() {
-    selectedRestDays = [];
-    document.getElementById('restDayMonthLabel').textContent = monthLabel(currentMonth);
-    document.querySelectorAll('.rest-day-toggle').forEach(btn => btn.classList.remove('active'));
-    updateRestDaySubmitBtn();
-    bootstrap.Modal.getOrCreateInstance(document.getElementById('restDayModal')).show();
+    openManageModal();
 }
 
 function updateRestDaySubmitBtn() {

@@ -103,6 +103,8 @@ $breakDisabled = !$timedIn;
 <link rel="stylesheet" href="../dropdown_requests/leave_modal.css">
 <link rel="stylesheet" href="../dropdown_requests/ob_modal.css">
 <link rel="stylesheet" href="../dropdown_requests/log_edit_modal.css">
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
 
 <nav class="navbar topbar">
     <div class="container-fluid d-flex align-items-center justify-content-between">
