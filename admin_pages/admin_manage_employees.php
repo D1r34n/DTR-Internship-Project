@@ -26,12 +26,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $roleId = $roleStmt->fetchColumn() ?: null;
 
     if (!empty($_POST['employee_id'])) {
+        // Fetch old email before updating so we can notify it if it changes
+        $oldStmt = $pdo->prepare("SELECT email, first_name, last_name FROM employees WHERE id = ?");
+        $oldStmt->execute([$_POST['employee_id']]);
+        $oldEmployee = $oldStmt->fetch(PDO::FETCH_ASSOC);
+        $oldEmail = $oldEmployee['email'] ?? null;
+
         if (!empty($password)) {
             $pdo->prepare("UPDATE employees SET first_name=?, last_name=?, email=?, password=?, role_id=?, department_id=? WHERE id=?")
                 ->execute([$first_name, $last_name, $email, $password, $roleId, $department, $_POST['employee_id']]);
         } else {
             $pdo->prepare("UPDATE employees SET first_name=?, last_name=?, email=?, role_id=?, department_id=? WHERE id=?")
                 ->execute([$first_name, $last_name, $email, $roleId, $department, $_POST['employee_id']]);
+        }
+
+        // Notify old email if the email address was changed
+        if ($oldEmail && strtolower($oldEmail) !== strtolower($email)) {
+            $fullName = htmlspecialchars($first_name . ' ' . $last_name);
+            sendMail($oldEmail, $fullName, 'Your HSN DTR Account Email Has Been Updated', "
+                <p>Hi {$fullName},</p>
+                <p>This is a notification that the email address for your HSN DTR System account has been changed.</p>
+                <p><strong>Old Email:</strong> {$oldEmail}<br>
+                   <strong>New Email:</strong> {$email}</p>
+                <p>If you did not request this change, please contact your administrator immediately.</p>
+                <p>— HSN DTR System</p>
+            ");
         }
     } else {
         $pdo->prepare("INSERT INTO employees (first_name, last_name, email, password, role_id, department_id, hired_date) VALUES (?, ?, ?, ?, ?, ?, CURDATE())")

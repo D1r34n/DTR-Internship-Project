@@ -176,8 +176,10 @@ foreach ($schedMap as $date => $sched) {
         if ($isNightCont && empty($badgeText)) $classes .= ' night-cont-day';
         if ($isToday)      $classes .= ' is-today';
         if ($isPast && !$hasContent) $classes .= ' is-past';
+        if (!$hasContent)  $classes .= ' no-sched';
     ?>
-    <div class="<?= $classes ?>" data-date="<?= $dateStr ?>">
+    <div class="<?= $classes ?>" data-date="<?= $dateStr ?>"
+        <?= !$hasContent ? "onclick=\"openManageModalWithDate('" . $dateStr . "')\"" : '' ?>>
         <div class="sched-cal-day-num <?= $isToday ? 'is-today-num' : '' ?>"><?= $day ?></div>
 
         <?php if ($isNightCont): ?>
@@ -189,6 +191,12 @@ foreach ($schedMap as $date => $sched) {
             <?php if ($showTimes): ?>
                 <div class="sched-cal-times"><?= $timeInStr ?><br><?= $timeOutStr ?></div>
             <?php endif; ?>
+        <?php endif; ?>
+
+        <?php if (!$hasContent): ?>
+            <div class="sched-cal-add-overlay">
+                <i class="bi bi-plus-circle"></i>
+            </div>
         <?php endif; ?>
 
         <?php $hasActiveLeaveOrOB = in_array($leaveStatus, ['approved','pending']) || in_array($obStatus, ['approved','pending']); ?>
