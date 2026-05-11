@@ -224,6 +224,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save_
         }
     }
 
+    // ---- Single specific rest dates ----
+    $singleRestDates = json_decode($_POST['single_rest_dates'] ?? '[]', true);
+    if (!empty($singleRestDates) && $postEmpId && is_array($singleRestDates)) {
+        $chkStmt = $pdo->prepare("SELECT id FROM schedules WHERE employee_id = ? AND schedule_date = ?");
+        $insRest = $pdo->prepare("INSERT INTO schedules (employee_id, schedule_date, scheduled_start, scheduled_end, is_rest_day) VALUES (?, ?, NULL, NULL, 1)");
+        $updRest = $pdo->prepare("UPDATE schedules SET is_rest_day = 1, scheduled_start = NULL, scheduled_end = NULL WHERE employee_id = ? AND schedule_date = ?");
+        $delAtt  = $pdo->prepare("DELETE FROM attendances WHERE employee_id = ? AND work_date = ? AND actual_time_in IS NULL");
+        foreach ($singleRestDates as $date) {
+            if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) continue;
+            $chkStmt->execute([$postEmpId, $date]);
+            if ($chkStmt->fetch()) {
+                $updRest->execute([$postEmpId, $date]);
+            } else {
+                $insRest->execute([$postEmpId, $date]);
+            }
+            $delAtt->execute([$postEmpId, $date]);
+        }
+    }
+
     if ($postEmpId && $restDaysDirty && is_array($restDays)) {
         $pdo->prepare("UPDATE schedules SET is_rest_day = 0 WHERE employee_id = ? AND is_rest_day = 1")
             ->execute([$postEmpId]);
@@ -912,6 +931,7 @@ $tapLogs = $logsStmt->fetchAll(PDO::FETCH_ASSOC);
                 <input type="hidden" name="selected_dates" id="addSelectedDatesInput">
                 <input type="hidden" name="rest_days" id="restDaysInput" value="[]">
                 <input type="hidden" name="rest_days_dirty" id="restDaysDirty" value="0">
+                <input type="hidden" name="single_rest_dates" id="singleRestDatesInput" value="[]">
 
                 <div class="modal-body">
 
@@ -932,7 +952,7 @@ $tapLogs = $logsStmt->fetchAll(PDO::FETCH_ASSOC);
                         <div id="addSelectedDatesList" class="mt-2"></div>
                     </div>
 
-                    <div>
+                    <div id="restDaySection">
                         <label class="form-label">Set Rest Days</label>
                         <div class="rest-day-grid" id="restDayToggles">
                             <button type="button" class="btn rest-day-toggle" data-dow="0">Sun</button>
@@ -942,6 +962,13 @@ $tapLogs = $logsStmt->fetchAll(PDO::FETCH_ASSOC);
                             <button type="button" class="btn rest-day-toggle" data-dow="4">Thu</button>
                             <button type="button" class="btn rest-day-toggle" data-dow="5">Fri</button>
                             <button type="button" class="btn rest-day-toggle" data-dow="6">Sat</button>
+                        </div>
+                    </div>
+
+                    <div id="singleDateRestDaySection" style="display:none;">
+                        <div class="form-check mt-1">
+                            <input class="form-check-input" type="checkbox" id="isSingleRestDay">
+                            <label class="form-check-label" for="isSingleRestDay">Is Rest Day</label>
                         </div>
                     </div>
 
@@ -1688,26 +1715,26 @@ document.addEventListener('DOMContentLoaded', () => {
     // ---- Manage Schedule form (merged: dates + rest days) ----
     document.getElementById('addSchedForm').addEventListener('submit', function (e) {
         e.preventDefault();
-        const hasDates    = selectedDatesAdd.length > 0;
-        const hasRestDays = document.getElementById('restDaysDirty').value === '1';
 
-        if (!hasDates && !hasRestDays) {
+        const isSingleRest   = selectedDatesAdd.length === 1 && document.getElementById('isSingleRestDay').checked;
+        const datesToSchedule = isSingleRest ? [] : [...selectedDatesAdd];
+        const singleRestDates = isSingleRest ? [...selectedDatesAdd] : [];
+
+        const hasDates      = datesToSchedule.length > 0;
+        const hasRestDays   = document.getElementById('restDaysDirty').value === '1';
+        const hasSingleRest = singleRestDates.length > 0;
+
+        if (!hasDates && !hasRestDays && !hasSingleRest) {
             alert('Please select dates or set rest days.');
             return;
         }
 
         if (hasDates) {
-            const timeIn  = document.getElementById('addModalTimeIn').value;
-            const timeOut = document.getElementById('addModalTimeOut').value;
-            if (!timeIn || !timeOut) {
-                alert('Please enter Time In and Time Out for the selected dates.');
-                return;
-            }
             const existing = new Set(
                 [...document.querySelectorAll('.sched-cal-day.has-sched[data-date]')]
                     .map(el => el.dataset.date)
             );
-            const conflicts = selectedDatesAdd.filter(d => existing.has(d));
+            const conflicts = datesToSchedule.filter(d => existing.has(d));
             if (conflicts.length > 0) {
                 const msg = conflicts.length === 1
                     ? `A schedule for ${conflicts[0]} already exists. Replace it?`
@@ -1716,8 +1743,9 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        document.getElementById('addSelectedDatesInput').value = JSON.stringify(selectedDatesAdd);
+        document.getElementById('addSelectedDatesInput').value = JSON.stringify(datesToSchedule);
         document.getElementById('restDaysInput').value         = JSON.stringify(selectedRestDays);
+        document.getElementById('singleRestDatesInput').value  = JSON.stringify(singleRestDates);
 
         fetch(this.getAttribute('action'), { method: 'POST', body: new FormData(this) })
             .then(r => {
@@ -1830,7 +1858,10 @@ function openManageModal() {
     if (fpAdd) fpAdd.clear();
     selectedRestDays = [];
     document.querySelectorAll('.rest-day-toggle').forEach(btn => btn.classList.remove('active'));
-    document.getElementById('restDaysDirty').value = '0';
+    document.getElementById('restDaysDirty').value              = '0';
+    document.getElementById('isSingleRestDay').checked          = false;
+    document.getElementById('singleDateRestDaySection').style.display = 'none';
+    document.getElementById('restDaySection').style.display           = '';
     bootstrap.Modal.getOrCreateInstance(document.getElementById('manageScheduleModal')).show();
 }
 
@@ -1841,11 +1872,17 @@ function openManageModalWithDate(dateStr) {
     renderDateTagsAdd();
 }
 
+function openRestDayEditModal(dateStr) {
+    openManageModalWithDate(dateStr);
+    document.getElementById('isSingleRestDay').checked = true;
+}
+
 // ---- Schedule modal helpers ----
 function renderDateTagsAdd() {
     const list = document.getElementById('addSelectedDatesList');
-    if (selectedDatesAdd.length === 0) { list.innerHTML = ''; return; }
-    if (selectedDatesAdd.length === 1) {
+    if (selectedDatesAdd.length === 0) {
+        list.innerHTML = '';
+    } else if (selectedDatesAdd.length === 1) {
         list.innerHTML = `<span class="selected-date-tag">${selectedDatesAdd[0]}
             <span class="selected-date-remove" onclick="clearDateSelectionAdd()">&times;</span>
         </span>`;
@@ -1856,6 +1893,14 @@ function renderDateTagsAdd() {
             <span class="selected-date-remove" onclick="clearDateSelectionAdd()">&times;</span>
         </span>`;
     }
+    updateRestDaySection();
+}
+
+function updateRestDaySection() {
+    const single = selectedDatesAdd.length === 1;
+    document.getElementById('restDaySection').style.display           = single ? 'none' : '';
+    document.getElementById('singleDateRestDaySection').style.display = single ? ''     : 'none';
+    if (!single) document.getElementById('isSingleRestDay').checked   = false;
 }
 
 function clearDateSelectionAdd() {

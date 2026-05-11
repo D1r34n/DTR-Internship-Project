@@ -200,8 +200,14 @@ foreach ($schedMap as $date => $sched) {
         <?php endif; ?>
 
         <?php $hasActiveLeaveOrOB = in_array($leaveStatus, ['approved','pending']) || in_array($obStatus, ['approved','pending']); ?>
-        <?php if ($sched && !$sched['is_rest_day'] && !($isNightCont && empty($badgeText)) && !$hasActiveLeaveOrOB): ?>
+        <?php if ($sched && !($isNightCont && empty($badgeText)) && !$hasActiveLeaveOrOB): ?>
             <div class="sched-cal-day-actions">
+                <?php if ($sched['is_rest_day']): ?>
+                <button class="sched-cal-action-btn edit" title="Edit"
+                    onclick="openRestDayEditModal('<?= $dateStr ?>'); event.stopPropagation();">
+                    <i class="bi bi-pencil"></i>
+                </button>
+                <?php else: ?>
                 <button class="sched-cal-action-btn edit" title="Edit"
                     onclick="openEditModal(
                         <?= $employeeId ?>,
@@ -211,6 +217,7 @@ foreach ($schedMap as $date => $sched) {
                     ); event.stopPropagation();">
                     <i class="bi bi-pencil"></i>
                 </button>
+                <?php endif; ?>
                 <button class="sched-cal-action-btn delete" title="Delete"
                     onclick="deleteScheduleDay(<?= $employeeId ?>, '<?= $dateStr ?>'); event.stopPropagation();">
                     <i class="bi bi-trash"></i>
