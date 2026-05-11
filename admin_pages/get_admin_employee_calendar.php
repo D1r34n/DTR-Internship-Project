@@ -214,9 +214,3 @@ foreach ($schedMap as $date => $sched) {
 
 </div>
 
-<?php if (empty($schedMap) && empty($leaveMap) && empty($obMap) && empty($nightContDates)): ?>
-<div class="sched-cal-empty">
-    <i class="bi bi-calendar-x sched-cal-empty-icon"></i>
-    <div>No schedules for this month.</div>
-</div>
-<?php endif; ?>

@@ -40,9 +40,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     exit();
 }
 
+// ---- GET ALL ROLES ----
+$roles = $pdo->query("SELECT role_key, role_name FROM roles ORDER BY id")->fetchAll(PDO::FETCH_ASSOC);
+
 // ---- GET ALL EMPLOYEES ----
 $employees = $pdo->query("
-    SELECT e.*, CONCAT(e.first_name, ' ', e.last_name) AS name, r.role_key AS role, d.department_name, d.department_code
+    SELECT e.*, CONCAT(e.first_name, ' ', e.last_name) AS name, r.role_key AS role, r.role_name, d.department_name, d.department_code
     FROM employees e
     LEFT JOIN roles r ON r.id = e.role_id
     LEFT JOIN departments d ON e.department_id = d.id
@@ -75,7 +78,7 @@ $employees = $pdo->query("
 </head>
 <body>
 
-    <?php $currentPage = 'employees'; include '../sidebar_revised.php'; ?>
+    <?php $currentPage = 'manage_employees'; include '../sidebar_revised.php'; ?>
 
     <div id="main-wrapper">
 
@@ -99,9 +102,9 @@ $employees = $pdo->query("
                             </button>
                             <ul class="dropdown-menu">
                                 <li><button class="dropdown-item" type="button" onclick="selectFilter('role','','All Roles')">All Roles</button></li>
-                                <li><button class="dropdown-item" type="button" onclick="selectFilter('role','employee','Employee')">Employee</button></li>
-                                <li><button class="dropdown-item" type="button" onclick="selectFilter('role','workforce','Workforce')">Workforce</button></li>
-                                <li><button class="dropdown-item" type="button" onclick="selectFilter('role','admin','Admin')">Admin</button></li>
+                                <?php foreach ($roles as $r): ?>
+                                <li><button class="dropdown-item" type="button" onclick="selectFilter('role','<?= $r['role_key'] ?>','<?= $r['role_name'] ?>')"><?= $r['role_name'] ?></button></li>
+                                <?php endforeach; ?>
                             </ul>
                         </div>
                         <input type="hidden" id="role-filter" value="">
@@ -206,6 +209,7 @@ $employees = $pdo->query("
                                     data-first-name="<?= htmlspecialchars($emp['first_name']) ?>" data-last-name="<?= htmlspecialchars($emp['last_name']) ?>"
                                     data-email="<?= htmlspecialchars($emp['email']) ?>"
                                     data-role="<?= $emp['role'] ?>"
+                                    data-role-name="<?= htmlspecialchars($emp['role_name'] ?? ucfirst($emp['role'])) ?>"
                                     data-dept="<?= htmlspecialchars($emp['department_id'] ?? '') ?>"
                                     data-dept-name="<?= htmlspecialchars($emp['department_name'] ?? '') ?>">
 
@@ -214,7 +218,7 @@ $employees = $pdo->query("
                                     <td><?= htmlspecialchars($emp['email']) ?></td>
                                     <td>
                                         <span class="empRoleBadge empRole-<?= $emp['role'] ?>">
-                                            <?= ucfirst($emp['role']) ?>
+                                            <?= htmlspecialchars($emp['role_name'] ?? ucfirst($emp['role'])) ?>
                                         </span>
                                     </td>
                                     <td><?= htmlspecialchars($emp['department_name'] ?? 'No Department') ?></td>
@@ -335,29 +339,21 @@ $employees = $pdo->query("
 
                                     <div class="dropdown w-100">
                                         <button class="btn btn-outline-light dropdown-toggle w-100 text-start" type="button" id="roleDropdownBtn" data-bs-toggle="dropdown" aria-expanded="false">
-                                            <span id="roleLabel">Employee</span>
+                                            <span id="roleLabel">Select Role</span>
                                         </button>
 
                                         <ul class="dropdown-menu w-100">
+                                            <?php foreach ($roles as $r): ?>
                                             <li>
-                                                <button class="dropdown-item" type="button" onclick="selectRole('employee', 'Employee')">
-                                                    Employee
+                                                <button class="dropdown-item" type="button" onclick="selectRole('<?= $r['role_key'] ?>', '<?= $r['role_name'] ?>')">
+                                                    <?= $r['role_name'] ?>
                                                 </button>
                                             </li>
-                                            <li>
-                                                <button class="dropdown-item" type="button" onclick="selectRole('workforce', 'Workforce')">
-                                                    Workforce
-                                                </button>
-                                            </li>
-                                            <li>
-                                                <button class="dropdown-item" type="button" onclick="selectRole('admin', 'Admin')">
-                                                    Admin
-                                                </button>
-                                            </li>
+                                            <?php endforeach; ?>
                                         </ul>
                                     </div>
 
-                                    <input type="hidden" name="role" id="roleInput" value="employee">
+                                    <input type="hidden" name="role" id="roleInput" value="">
                                 </div>
 
                                 <!-- Department (Searchable Dropdown) -->
@@ -767,7 +763,7 @@ $employees = $pdo->query("
             document.getElementById('modalPwdLabel').textContent   = 'Password';
             document.getElementById('modalPassword').required      = true;
             document.getElementById('modalSubmitBtn').innerHTML    = '<i class="bi bi-check-circle-fill"></i> Save Employee';
-            selectRole('employee', 'Employee');
+            selectRole('', 'Select Role');
             selectDept('', 'Select Department');
             document.getElementById('empModalOverlay').style.display = 'flex';
         }
@@ -782,7 +778,7 @@ $employees = $pdo->query("
             document.getElementById('modalPwdLabel').textContent   = 'New Password (leave blank to keep)';
             document.getElementById('modalPassword').required      = false;
             document.getElementById('modalSubmitBtn').innerHTML    = '<i class="bi bi-check-circle-fill"></i> Update Employee';
-            selectRole(row.dataset.role, row.dataset.role.charAt(0).toUpperCase() + row.dataset.role.slice(1));
+            selectRole(row.dataset.role, row.dataset.roleName || row.dataset.role);
             selectDept(row.dataset.dept, row.dataset.deptName || 'Select Department');
             document.getElementById('empModalOverlay').style.display = 'flex';
         }
