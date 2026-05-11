@@ -55,12 +55,7 @@ if ($myRole === 'admin') {
 
     $attStmt = $pdo->prepare("SELECT id, actual_time_in FROM attendances WHERE employee_id = ? AND work_date = ?");
     $attStmt->execute([$employeeId, $workDate]);
-    $att = $attStmt->fetch(PDO::FETCH_ASSOC);
-
-    if (!$att) {
-        echo json_encode(['success' => false, 'message' => 'No attendance record found for this date.']);
-        exit();
-    }
+    $att = $attStmt->fetch(PDO::FETCH_ASSOC) ?: null;
 
     $reqTimeIn  = ($requestType === 'time_in')  ? $newDT : null;
     $reqTimeOut = ($requestType === 'time_out') ? $newDT : null;
@@ -70,15 +65,15 @@ if ($myRole === 'admin') {
 
         $pdo->prepare("
             INSERT INTO log_edit_requests
-                (employee_id, attendance_id, log_id, work_date, actual_time_in,
+                (employee_id, attendance_id, log_id, work_date,
                  request_type, requested_time_in, requested_time_out, reason, status, initiated_by_id, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'approved', ?, NOW())
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'approved', ?, NOW())
         ")->execute([
-            $employeeId, $att['id'], $logId, $workDate, $att['actual_time_in'],
+            $employeeId, $att['id'] ?? null, $logId, $workDate,
             $requestType, $reqTimeIn, $reqTimeOut, $reason, $myId,
         ]);
 
-        if ($requestType === 'time_in') {
+        if ($att && $requestType === 'time_in') {
             $pdo->prepare("
                 UPDATE attendances SET
                     actual_time_in     = ?,
@@ -87,7 +82,7 @@ if ($myRole === 'admin') {
                     status             = 'present'
                 WHERE id = ?
             ")->execute([$newDT, $newDT, $newDT, $att['id']]);
-        } elseif ($requestType === 'time_out') {
+        } elseif ($att && $requestType === 'time_out') {
             $pdo->prepare("
                 UPDATE attendances SET
                     actual_time_out    = ?,
@@ -161,19 +156,14 @@ if ($myRole === 'workforce') {
 
     $workDate = date('Y-m-d', strtotime($log['log_time']));
 
-    // Get attendance
+    // Get attendance (optional)
     $attStmt = $pdo->prepare("
         SELECT id, actual_time_in, actual_time_out
         FROM attendances
         WHERE employee_id = ? AND work_date = ?
     ");
     $attStmt->execute([$employeeId, $workDate]);
-    $att = $attStmt->fetch(PDO::FETCH_ASSOC);
-
-    if (!$att) {
-        echo json_encode(['success' => false, 'message' => 'No attendance record found for this date.']);
-        exit();
-    }
+    $att = $attStmt->fetch(PDO::FETCH_ASSOC) ?: null;
 
     // Validate datetime
     $newDT = date('Y-m-d H:i:s', strtotime($newDatetime));
@@ -192,9 +182,9 @@ if ($myRole === 'workforce') {
     $reqTimeIn   = ($logType === 'IN')  ? $newDT : null;
     $reqTimeOut  = ($logType === 'OUT') ? $newDT : null;
 
-    // Check existing pending for the same request type
-    $dupStmt = $pdo->prepare("SELECT id FROM log_edit_requests WHERE attendance_id = ? AND request_type = ? AND status = 'pending'");
-    $dupStmt->execute([$att['id'], $requestType]);
+    // Check for existing pending request for the same log
+    $dupStmt = $pdo->prepare("SELECT id FROM log_edit_requests WHERE log_id = ? AND status = 'pending'");
+    $dupStmt->execute([$logId]);
     $existing = $dupStmt->fetch(PDO::FETCH_ASSOC);
 
     try {
@@ -213,9 +203,9 @@ if ($myRole === 'workforce') {
         } else {
             $pdo->prepare("
                 INSERT INTO log_edit_requests
-                    (employee_id, attendance_id, log_id, work_date, actual_time_in, request_type, requested_time_in, requested_time_out, reason, status, initiated_by_id, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, NOW())
-            ")->execute([$employeeId, $att['id'], $logId, $workDate, $att['actual_time_in'], $requestType, $reqTimeIn, $reqTimeOut, $reason, $myId]);
+                    (employee_id, attendance_id, log_id, work_date, request_type, requested_time_in, requested_time_out, reason, status, initiated_by_id, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, NOW())
+            ")->execute([$employeeId, $att['id'] ?? null, $logId, $workDate, $requestType, $reqTimeIn, $reqTimeOut, $reason, $myId]);
         }
     } catch (Exception $e) {
         echo json_encode(['success' => false, 'message' => 'Database error.']);
@@ -267,16 +257,11 @@ if (in_array($myRole, ['employee', 'admin'])) {
 
     $attStmt = $pdo->prepare("SELECT id, actual_time_in FROM attendances WHERE employee_id = ? AND work_date = ?");
     $attStmt->execute([$employeeId, $workDate]);
-    $att = $attStmt->fetch(PDO::FETCH_ASSOC);
+    $att = $attStmt->fetch(PDO::FETCH_ASSOC) ?: null;
 
-    if (!$att) {
-        echo json_encode(['success' => false, 'message' => 'No attendance record found for this date.']);
-        exit();
-    }
-
-    // Check for existing pending request of the same type
-    $dup = $pdo->prepare("SELECT id FROM log_edit_requests WHERE attendance_id = ? AND request_type = ? AND status = 'pending'");
-    $dup->execute([$att['id'], $requestType]);
+    // Check for existing pending request for the same log
+    $dup = $pdo->prepare("SELECT id FROM log_edit_requests WHERE log_id = ? AND status = 'pending'");
+    $dup->execute([$logId]);
     if ($dup->fetch()) {
         echo json_encode(['success' => false, 'message' => 'A pending request for this log entry already exists.']);
         exit();
@@ -285,14 +270,13 @@ if (in_array($myRole, ['employee', 'admin'])) {
     try {
         $pdo->prepare("
             INSERT INTO log_edit_requests
-                (employee_id, attendance_id, log_id, work_date, actual_time_in, request_type, requested_time_in, requested_time_out, reason, status, initiated_by_id)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?)
+                (employee_id, attendance_id, log_id, work_date, request_type, requested_time_in, requested_time_out, reason, status, initiated_by_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?)
         ")->execute([
             $employeeId,
-            $att['id'],
+            $att['id'] ?? null,
             $logId,
             $workDate,
-            $att['actual_time_in'],
             $requestType,
             $requestType === 'time_in'  ? $newDT : null,
             $requestType === 'time_out' ? $newDT : null,
