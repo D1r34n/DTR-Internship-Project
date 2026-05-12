@@ -385,8 +385,19 @@ function getActionButtons($type, $id, $status) {
                 </div>
 
                 <!-- SUCCESS ALERT -->
-                <?php if ($success): ?>
-                    <div class="alert alert-success"><?= $success ?></div>
+               <!-- TOAST -->
+                <?php if ($success || $error): ?>
+                    <div class="custom-toast <?= $success ? 'toast-success' : 'toast-error' ?>" id="customToast">
+                        <div class="toast-content">
+                            <i class="bi <?= $success ? 'bi-check-circle-fill' : 'bi-x-circle-fill' ?> toast-icon"></i>
+                            <span>
+                                <?= htmlspecialchars($success ?: $error) ?>
+                            </span>
+                        </div>
+                        <button class="toast-close" onclick="closeToast()">
+                            <i class="bi bi-x-lg"></i>
+                        </button>
+                    </div>
                 <?php endif; ?>
 
                 <!-- TABS -->
@@ -669,15 +680,21 @@ function getActionButtons($type, $id, $status) {
             document.getElementById('modalOverlay').style.display = 'none';
         }
 
-        // ---- AUTO DISMISS ALERTS ----
-        setTimeout(() => {
-            document.querySelectorAll('.alert').forEach(alert => {
-                alert.style.transition = 'opacity 0.5s ease';
-                alert.style.opacity    = '0';
-                setTimeout(() => alert.remove(), 500);
-            });
-        }, 3000);
+        // ---- TOAST ----
+        function closeToast() {
+            const toast = document.getElementById('customToast');
 
-    </script>
+            if (toast) {
+                toast.classList.add('toast-hide');
+
+                setTimeout(() => {
+                    toast.remove();
+                }, 400);
+            }
+        }
+        setTimeout(() => {
+            closeToast();
+        }, 3000);
+            </script>
 </body>
 </html>
