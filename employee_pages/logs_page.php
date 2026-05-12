@@ -145,7 +145,7 @@ const COLS = {
     admin: [
         { width: '8%', label: 'Date',         sort: 'date'     },
         { width: '8%', label: 'Time',         sort: 'time'     },
-        { width: '12%', label: 'Employee'                       },
+        { width: '10%', label: 'Employee'                       },
         { width: '10%', label: 'Role'                          },
         { width: '10%', label: 'Log Type',     sort: 'type'     },
         { width: '12%', label: 'Location',     sort: 'location' },
