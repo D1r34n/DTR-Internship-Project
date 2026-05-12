@@ -38,7 +38,6 @@ if ($action === 'download_template') {
         'C' => 'Start Date',
         'D' => 'End Date',
         'E' => 'Time',
-        'F' => 'Is Rest Day',
     ];
 
     $notes = [
@@ -46,8 +45,7 @@ if ($action === 'download_template') {
         'B' => 'Optional — for reference only.',
         'C' => 'Format: YYYY-MM-DD (e.g. 2026-05-01).',
         'D' => 'Format: YYYY-MM-DD. Same as Start Date for a single day.',
-        'E' => 'Format: HH:MM-HH:MM (e.g. 08:00-17:00). Leave blank if Is Rest Day is yes.',
-        'F' => 'Values: yes or no (also accepts 1 or 0).',
+        'E' => 'Format: HH:MM-HH:MM (e.g. 08:00-17:00).',
     ];
 
     foreach ($headers as $col => $label) {
@@ -55,7 +53,7 @@ if ($action === 'download_template') {
     }
 
     // Header row style
-    $sheet->getStyle('A1:F1')->applyFromArray([
+    $sheet->getStyle('A1:E1')->applyFromArray([
         'font'      => ['bold' => true, 'color' => ['rgb' => 'FFFFFF'], 'size' => 11],
         'fill'      => ['fillType' => 'solid', 'startColor' => ['rgb' => '97BE41']],
         'alignment' => ['horizontal' => 'center', 'vertical' => 'center'],
@@ -71,28 +69,26 @@ if ($action === 'download_template') {
         $comment->setHeight('50pt');
     }
 
-    // Sample normal row
+    // Sample first row
     $sheet->setCellValue('A2', '1001');
     $sheet->setCellValue('B2', 'John Doe');
     $sheet->setCellValue('C2', '2026-05-01');
     $sheet->setCellValue('D2', '2026-05-01');
     $sheet->setCellValue('E2', '08:00-17:00');
-    $sheet->setCellValue('F2', 'no');
 
-    // Sample rest day row
+    // Sample second row
     $sheet->setCellValue('A3', '1002');
     $sheet->setCellValue('B3', 'Jane Doe');
     $sheet->setCellValue('C3', '2026-05-02');
     $sheet->setCellValue('D3', '2026-05-02');
     $sheet->setCellValue('E3', '');
-    $sheet->setCellValue('F3', 'yes');
 
     // Sample row styles
-    $sheet->getStyle('A2:F2')->applyFromArray([
+    $sheet->getStyle('A2:E2')->applyFromArray([
         'fill'    => ['fillType' => 'solid', 'startColor' => ['rgb' => 'F0F7E6']],
         'borders' => ['allBorders' => ['borderStyle' => 'thin', 'color' => ['rgb' => 'CCCCCC']]],
     ]);
-    $sheet->getStyle('A3:F3')->applyFromArray([
+    $sheet->getStyle('A3:E3')->applyFromArray([
         'fill'    => ['fillType' => 'solid', 'startColor' => ['rgb' => 'FFF8E1']],
         'borders' => ['allBorders' => ['borderStyle' => 'thin', 'color' => ['rgb' => 'CCCCCC']]],
     ]);
@@ -138,12 +134,11 @@ if ($action === 'import') {
         // ✅ UPSERT STATEMENT (INSERT OR UPDATE)
         $upsertStmt = $pdo->prepare("
             INSERT INTO schedules
-            (employee_id, schedule_date, scheduled_start, scheduled_end, is_rest_day)
-            VALUES (:employee_id, :schedule_date, :start, :end, :rest)
+            (employee_id, schedule_date, scheduled_start, scheduled_end)
+            VALUES (:employee_id, :schedule_date, :start, :end)
             ON DUPLICATE KEY UPDATE
                 scheduled_start = VALUES(scheduled_start),
-                scheduled_end   = VALUES(scheduled_end),
-                is_rest_day     = VALUES(is_rest_day)
+                scheduled_end   = VALUES(scheduled_end)
         ");
 
         foreach ($rows as $i => $row) {
@@ -154,8 +149,6 @@ if ($action === 'import') {
             $startDate  = trim((string)($row[2] ?? ''));
             $endDate    = trim((string)($row[3] ?? ''));
             $time       = trim((string)($row[4] ?? ''));
-            $restVal    = strtolower(trim((string)($row[5] ?? '')));
-            $isRest     = in_array($restVal, ['1', 'yes', 'true']) ? 1 : 0;
 
             if ($employeeId === '' || $startDate === '' || $endDate === '') {
                 $errors[] = "Row $rowNum: missing required fields";
@@ -173,29 +166,25 @@ if ($action === 'import') {
             $startTime = null;
             $endTime   = null;
 
-            if (!$isRest) {
-                if (!str_contains($time, '-')) {
-                    $errors[] = "Row $rowNum: invalid time format";
-                    continue;
-                }
-
-                [$startTime, $endTime] = array_map('trim', explode('-', $time));
+            if (empty($time) || !str_contains($time, '-')) {
+                $errors[] = "Row $rowNum: invalid or missing time format";
+                continue;
             }
+
+            [$startTime, $endTime] = array_map('trim', explode('-', $time));
 
             while ($current <= $end) {
 
                 $date = date('Y-m-d', $current);
 
-                $startDT = $isRest ? null : ($date . ' ' . $startTime . ':00');
-                $endDT   = $isRest ? null : ($date . ' ' . $endTime . ':00');
+                $startDT = $date . ' ' . $startTime . ':00';
+                $endDT   = $date . ' ' . $endTime . ':00';
 
-                // ✅ INSERT OR UPDATE (NO DUPLICATE CHECK NEEDED)
                 $upsertStmt->execute([
                     ':employee_id'    => $employeeId,
                     ':schedule_date'  => $date,
                     ':start'          => $startDT,
                     ':end'            => $endDT,
-                    ':rest'           => $isRest
                 ]);
 
                 $inserted++;

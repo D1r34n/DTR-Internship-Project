@@ -293,9 +293,8 @@ function renderRows({ meta, rows }) {
             ${adminCols}
             <td>${typePill}</td>
             <td>
-                <a href="${mapUrl}" target="_blank"
+                <span role="button" tabindex="0"
                     class="pill ${locClass} loc-trigger"
-                    style="text-decoration:none;"
                     data-lat="${esc(row.latitude)}"
                     data-lng="${esc(row.longitude)}"
                     data-label="${esc(locLabel)}"
@@ -303,7 +302,7 @@ function renderRows({ meta, rows }) {
                     data-dist="${esc(dist)}">
                     <i class="bi bi-geo-alt-fill"></i>
                     ${locLabel}
-                </a>
+                </span>
             </td>
             
             <td>${editRoleHtml}</td>
@@ -452,15 +451,12 @@ document.querySelector('.tableHeaderGlass').addEventListener('click', e => {
 /* =========================
    MAP POPUP
 ========================= */
-let popupMap    = null;
-let hideTimeout = null;
-const mapPopup  = document.getElementById('map_pop_up_container');
+let popupMap      = null;
+let activeTrigger = null;
+const mapPopup    = document.getElementById('map_pop_up_container');
 
-document.addEventListener('mouseover', e => {
-    const trigger = e.target.closest('.loc-trigger');
-    if (!trigger) return;
-
-    clearTimeout(hideTimeout);
+function openMapPopup(trigger) {
+    activeTrigger = trigger;
 
     const lat  = parseFloat(trigger.dataset.lat);
     const lng  = parseFloat(trigger.dataset.lng);
@@ -506,22 +502,29 @@ document.addEventListener('mouseover', e => {
         if (popupMap._marker) popupMap.removeLayer(popupMap._marker);
         popupMap._marker = L.marker([lat, lng]).addTo(popupMap);
     }, 50);
-});
+}
 
-document.addEventListener('mouseout', e => {
-    if (!e.target.closest('.loc-trigger')) return;
-    hideTimeout = setTimeout(() => {
-        mapPopup.style.display = 'none';
-        if (popupMap) { popupMap.remove(); popupMap = null; }
-    }, 200);
-});
+function closeMapPopup() {
+    mapPopup.style.display = 'none';
+    if (popupMap) { popupMap.remove(); popupMap = null; }
+    activeTrigger = null;
+}
 
-mapPopup.addEventListener('mouseover', () => clearTimeout(hideTimeout));
-mapPopup.addEventListener('mouseout', () => {
-    hideTimeout = setTimeout(() => {
-        mapPopup.style.display = 'none';
-        if (popupMap) { popupMap.remove(); popupMap = null; }
-    }, 200);
+document.addEventListener('click', e => {
+    const trigger = e.target.closest('.loc-trigger');
+
+    if (!trigger && !e.target.closest('#map_pop_up_container')) {
+        closeMapPopup();
+        return;
+    }
+
+    if (!trigger) return;
+
+    if (trigger === activeTrigger) {
+        closeMapPopup();
+    } else {
+        openMapPopup(trigger);
+    }
 });
 
 /* =========================
