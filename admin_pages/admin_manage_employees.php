@@ -357,7 +357,7 @@ $currentPage = 'manage_employees';
                                             <span id="roleLabel">Select Role</span>
                                         </button>
 
-                                        <ul class="dropdown-menu w-100">
+                                        <ul class="dropdown-menu w-100" id="roleDropdown">
                                             <?php foreach ($roles as $r): ?>
                                             <li>
                                                 <button class="dropdown-item" type="button" onclick="selectRole('<?= $r['role_key'] ?>', '<?= $r['role_name'] ?>')">
