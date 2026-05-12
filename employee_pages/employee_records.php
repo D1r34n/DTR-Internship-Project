@@ -382,7 +382,7 @@ foreach ($obStmt->fetchAll(PDO::FETCH_ASSOC) as $ob) {
 
             <!-- Overtime row — hidden by default, shown only when overtime exists -->
             <div class="ganttToolTipRow ganttToolTipOverTime" id="gt-ot-row">
-                <span class="ganttToolTipLabel">Overtime</span>
+                <span class="ganttToolTipLabel" id="gt-ot-label">Overtime</span>
                 <span class="ganttToolTipValue" id="gt-ot"></span>
             </div>
             

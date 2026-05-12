@@ -992,7 +992,7 @@ $leaveTypes = [
         <span class="ganttToolTipValue" id="gt-ob"></span>
     </div>
     <div class="ganttToolTipRow ganttToolTipOverTime" id="gt-ot-row">
-        <span class="ganttToolTipLabel">Overtime</span>
+        <span class="ganttToolTipLabel" id="gt-ot-label">Overtime</span>
         <span class="ganttToolTipValue" id="gt-ot"></span>
     </div>
     <div class="ganttToolTipRow ganttToolTipUnderTime" id="gt-ut-row">
