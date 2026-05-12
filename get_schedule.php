@@ -29,6 +29,7 @@ $leaveStmt = $pdo->prepare("
     SELECT start_date, end_date, selected_dates, status
     FROM leave_requests
     WHERE employee_id = ?
+    AND leave_type != 'ob leave'
     AND (
         start_date BETWEEN ? AND ?
         OR end_date BETWEEN ? AND ?
