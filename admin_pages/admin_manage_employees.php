@@ -595,11 +595,19 @@ $employees = $pdo->query("
             const dept = document.getElementById('dept-filter').value;
 
             let filtered = allRows.filter(row => {
+
+                const firstName = (row.dataset.firstName || '').toLowerCase();
+                const lastName  = (row.dataset.lastName || '').toLowerCase();
+                const fullName  = `${firstName} ${lastName}`.trim();
+                const email     = (row.dataset.email || '').toLowerCase();
+
                 const matchSearch = !q
-                    || row.dataset.name.toLowerCase().includes(q)
-                    || row.dataset.email.toLowerCase().includes(q);
+                    || fullName.includes(q)
+                    || email.includes(q);
+
                 const matchRole = !role || row.dataset.role === role;
                 const matchDept = !dept || row.dataset.dept === dept;
+
                 return matchSearch && matchRole && matchDept;
             });
 
@@ -608,9 +616,12 @@ $employees = $pdo->query("
                     if (sortCol === 'id') {
                         return sortDir * (parseInt(a.dataset.id) - parseInt(b.dataset.id));
                     }
+
                     const key = sortCol === 'deptName' ? 'deptName' : sortCol;
-                    const av  = (a.dataset[key] || '').toLowerCase();
-                    const bv  = (b.dataset[key] || '').toLowerCase();
+
+                    const av = (a.dataset[key] || '').toLowerCase();
+                    const bv = (b.dataset[key] || '').toLowerCase();
+
                     return sortDir * av.localeCompare(bv);
                 });
             }
@@ -618,24 +629,29 @@ $employees = $pdo->query("
             const total      = filtered.length;
             lastTotal        = total;
             const totalPages = Math.max(1, Math.ceil(total / ROWS_PER_PAGE));
+
             if (currentPage > totalPages) currentPage = 1;
 
             const start   = (currentPage - 1) * ROWS_PER_PAGE;
             const pagRows = filtered.slice(start, start + ROWS_PER_PAGE);
 
             const tbody = document.getElementById('empList');
+
             pagRows.forEach(r => tbody.appendChild(r));
 
             allRows.forEach(r => r.style.display = 'none');
             pagRows.forEach(r => r.style.display = '');
 
             const emptyRow = document.querySelector('#empList .emptyRow');
-            if (emptyRow) emptyRow.style.display = total === 0 ? '' : 'none';
+
+            if (emptyRow) {
+                emptyRow.style.display = total === 0 ? '' : 'none';
+            }
 
             document.getElementById('empCount').textContent = total;
+
             renderPagination(total, totalPages, start);
         }
-
         // ---- SORT ----
         function sortBy(col) {
             if (sortCol === col) {

@@ -24,17 +24,25 @@ $stmt = $pdo->prepare("
 $stmt->execute([$employeeId]);
 $scheduledDates = array_column($stmt->fetchAll(PDO::FETCH_ASSOC), 'schedule_date');
 
-// Dates already covered by pending or approved OB requests
-$obStmt = $pdo->prepare("
-    SELECT ob_date
-    FROM ob_requests
+// All dates already covered by any pending/approved leave or OB request
+$leaveStmt = $pdo->prepare("
+    SELECT selected_dates
+    FROM leave_requests
     WHERE employee_id = ?
     AND status IN ('pending', 'approved')
 ");
-$obStmt->execute([$employeeId]);
-$obDates = array_column($obStmt->fetchAll(PDO::FETCH_ASSOC), 'ob_date');
+$leaveStmt->execute([$employeeId]);
+
+$blockedDates = [];
+foreach ($leaveStmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+    $decoded = json_decode($row['selected_dates'], true);
+    if (is_array($decoded)) {
+        $blockedDates = array_merge($blockedDates, $decoded);
+    }
+}
+$blockedDates = array_values(array_unique($blockedDates));
 
 echo json_encode([
     'scheduledDates' => $scheduledDates,
-    'obDates'        => $obDates,
+    'obDates'        => $blockedDates,
 ]);

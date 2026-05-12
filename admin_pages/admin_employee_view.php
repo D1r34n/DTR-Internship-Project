@@ -151,33 +151,48 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' &&
     $time_in      = $_POST['time_in']  ?? '';
     $time_out     = $_POST['time_out'] ?? '';
     $is_edit      = !empty($_POST['is_edit']) && $_POST['is_edit'] === '1';
+    $is_rest_day  = ($_POST['is_rest_day'] ?? '0') === '1';
     $is_overnight = $time_out < $time_in;
 
     if (!empty($dates) && $postEmpId) {
-        $existsStmt       = $pdo->prepare("SELECT id FROM schedules WHERE employee_id = ? AND schedule_date = ?");
-        $updateStmt       = $pdo->prepare("UPDATE schedules SET scheduled_start = ?, scheduled_end = ? WHERE employee_id = ? AND schedule_date = ?");
-        $updateAttendance = $pdo->prepare("UPDATE attendances SET scheduled_start = ?, scheduled_end = ? WHERE employee_id = ? AND work_date = ? AND actual_time_in IS NULL");
-        $insertSchedule   = $pdo->prepare("INSERT INTO schedules (employee_id, schedule_date, scheduled_start, scheduled_end, is_rest_day) VALUES (?, ?, ?, ?, 0)");
-        $insertAttendance = $pdo->prepare("
-            INSERT INTO attendances (employee_id, schedule_id, work_date, scheduled_start, scheduled_end, actual_time_in, actual_time_out, total_work_minutes, late_minutes, undertime_minutes, overtime_minutes, status, missed_time_out)
-            VALUES (?, ?, ?, ?, ?, NULL, NULL, 0, 0, 0, 0, 'incomplete', 0)
-            ON DUPLICATE KEY UPDATE scheduled_start = VALUES(scheduled_start), scheduled_end = VALUES(scheduled_end)
-        ");
+        $existsStmt = $pdo->prepare("SELECT id FROM schedules WHERE employee_id = ? AND schedule_date = ?");
 
-        foreach ($dates as $date) {
-            $startDT = $date . ' ' . $time_in  . ':00';
-            $endDT   = $is_overnight
-                ? date('Y-m-d', strtotime($date . ' +1 day')) . ' ' . $time_out . ':00'
-                : $date . ' ' . $time_out . ':00';
+        if ($is_rest_day) {
+            $updRest = $pdo->prepare("UPDATE schedules SET is_rest_day = 1, scheduled_start = NULL, scheduled_end = NULL WHERE employee_id = ? AND schedule_date = ?");
+            $insRest = $pdo->prepare("INSERT INTO schedules (employee_id, schedule_date, scheduled_start, scheduled_end, is_rest_day) VALUES (?, ?, NULL, NULL, 1)");
+            foreach ($dates as $date) {
+                $existsStmt->execute([$postEmpId, $date]);
+                if ($existsStmt->fetch()) {
+                    $updRest->execute([$postEmpId, $date]);
+                } else {
+                    $insRest->execute([$postEmpId, $date]);
+                }
+            }
+        } else {
+            $updateStmt       = $pdo->prepare("UPDATE schedules SET scheduled_start = ?, scheduled_end = ?, is_rest_day = 0 WHERE employee_id = ? AND schedule_date = ?");
+            $updateAttendance = $pdo->prepare("UPDATE attendances SET scheduled_start = ?, scheduled_end = ? WHERE employee_id = ? AND work_date = ? AND actual_time_in IS NULL");
+            $insertSchedule   = $pdo->prepare("INSERT INTO schedules (employee_id, schedule_date, scheduled_start, scheduled_end, is_rest_day) VALUES (?, ?, ?, ?, 0)");
+            $insertAttendance = $pdo->prepare("
+                INSERT INTO attendances (employee_id, schedule_id, work_date, scheduled_start, scheduled_end, actual_time_in, actual_time_out, total_work_minutes, late_minutes, undertime_minutes, overtime_minutes, status, missed_time_out)
+                VALUES (?, ?, ?, ?, ?, NULL, NULL, 0, 0, 0, 0, 'incomplete', 0)
+                ON DUPLICATE KEY UPDATE scheduled_start = VALUES(scheduled_start), scheduled_end = VALUES(scheduled_end)
+            ");
 
-            $existsStmt->execute([$postEmpId, $date]);
-            if ($existsStmt->fetch()) {
-                $updateStmt->execute([$startDT, $endDT, $postEmpId, $date]);
-                $updateAttendance->execute([$startDT, $endDT, $postEmpId, $date]);
-            } else {
-                $insertSchedule->execute([$postEmpId, $date, $startDT, $endDT]);
-                $schedId = $pdo->lastInsertId() ?: null;
-                $insertAttendance->execute([$postEmpId, $schedId, $date, $startDT, $endDT]);
+            foreach ($dates as $date) {
+                $startDT = $date . ' ' . $time_in  . ':00';
+                $endDT   = $is_overnight
+                    ? date('Y-m-d', strtotime($date . ' +1 day')) . ' ' . $time_out . ':00'
+                    : $date . ' ' . $time_out . ':00';
+
+                $existsStmt->execute([$postEmpId, $date]);
+                if ($existsStmt->fetch()) {
+                    $updateStmt->execute([$startDT, $endDT, $postEmpId, $date]);
+                    $updateAttendance->execute([$startDT, $endDT, $postEmpId, $date]);
+                } else {
+                    $insertSchedule->execute([$postEmpId, $date, $startDT, $endDT]);
+                    $schedId = $pdo->lastInsertId() ?: null;
+                    $insertAttendance->execute([$postEmpId, $schedId, $date, $startDT, $endDT]);
+                }
             }
         }
     }
@@ -197,7 +212,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save_
 
     if (!empty($dates) && $postEmpId && $time_in && $time_out) {
         $existsStmt       = $pdo->prepare("SELECT id FROM schedules WHERE employee_id = ? AND schedule_date = ?");
-        $updateStmt       = $pdo->prepare("UPDATE schedules SET scheduled_start = ?, scheduled_end = ? WHERE employee_id = ? AND schedule_date = ?");
+        $updateStmt       = $pdo->prepare("UPDATE schedules SET scheduled_start = ?, scheduled_end = ?, is_rest_day = 0 WHERE employee_id = ? AND schedule_date = ?");
         $updateAttendance = $pdo->prepare("UPDATE attendances SET scheduled_start = ?, scheduled_end = ? WHERE employee_id = ? AND work_date = ? AND actual_time_in IS NULL");
         $insertSchedule   = $pdo->prepare("INSERT INTO schedules (employee_id, schedule_date, scheduled_start, scheduled_end, is_rest_day) VALUES (?, ?, ?, ?, 0)");
         $insertAttendance = $pdo->prepare("
@@ -606,7 +621,20 @@ $leaveTypes = [
                                     <?= $d ?>
                                 </div>
 
-                                <?php if ($sched):
+                                <?php if ($sched && $sched['is_rest_day']): ?>
+                                    <span class="sched-cal-shift-badge" style="background:#6c757d;">Rest</span>
+                                    <div class="sched-cal-times" style="color:#aaa;">Rest Day</div>
+                                    <div class="sched-cal-day-actions">
+                                        <button class="sched-cal-action-btn edit" title="Edit"
+                                            onclick='openEditModal(<?= json_encode($ds) ?>, "", "", true); event.stopPropagation();'>
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                        <button class="sched-cal-action-btn delete" title="Delete"
+                                            onclick='deleteSchedule(<?= json_encode($ds) ?>); event.stopPropagation();'>
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                <?php elseif ($sched):
                                     $startTs = strtotime($sched['scheduled_start']);
                                     $endTs   = strtotime($sched['scheduled_end']);
                                     $hour    = (int) date('H', $startTs);
@@ -1061,6 +1089,7 @@ $leaveTypes = [
                     <input type="hidden" name="employee_id" id="modalEmpId" value="<?= $employeeId ?>">
                     <input type="hidden" name="selected_dates" id="selectedDatesInput">
                     <input type="hidden" name="is_edit" id="isEditMode" value="0">
+                    <input type="hidden" name="is_rest_day" id="modalIsRestDay" value="0">
 
                     <div class="mb-3">
                         <label class="form-label">Employee</label>
@@ -1070,7 +1099,12 @@ $leaveTypes = [
                                readonly>
                     </div>
 
-                    <div class="row g-3">
+                    <div class="form-check mb-3" id="restDayCheckRow">
+                        <input class="form-check-input" type="checkbox" id="modalRestDayCheck">
+                        <label class="form-check-label" for="modalRestDayCheck">Mark as Rest Day</label>
+                    </div>
+
+                    <div id="modalTimeFields" class="row g-3">
                         <div class="col-md-6">
                             <label class="form-label">Time In</label>
                             <input type="time" name="time_in" id="modalTimeIn" class="form-control" required>
@@ -1442,7 +1476,7 @@ function loadRecords(startDate, endDate) {
     fetch(`get_admin_employee_records.php?employee_id=${EMP_ID}&start=${startDate}&end=${endDate}`)
         .then(r => r.text())
         .then(html => {
-            const match = html.match(/<!--SUMMARY:({.*?})-->/);
+            const match = html.match(/<!--SUMMARY:(\{.*?\})-->/);
             if (match) {
                 try {
                     const c = JSON.parse(match[1]);
@@ -1837,6 +1871,15 @@ document.addEventListener('DOMContentLoaded', () => {
             .catch(() => alert('Failed to save schedule. Please try again.'));
     });
 
+    // ---- Rest Day checkbox in edit modal ----
+    document.getElementById('modalRestDayCheck').addEventListener('change', function () {
+        const isRest = this.checked;
+        document.getElementById('modalIsRestDay').value          = isRest ? '1' : '0';
+        document.getElementById('modalTimeFields').style.display = isRest ? 'none' : '';
+        document.getElementById('modalTimeIn').required          = !isRest;
+        document.getElementById('modalTimeOut').required         = !isRest;
+    });
+
     // Browser back / forward
     window.addEventListener('popstate', e => {
         if (e.state && e.state.month) {
@@ -2001,16 +2044,38 @@ function openAddModal() {
     if (fp) fp.clear();
 }
 
-function openEditModal(empIdOrDate, dateOrTimeIn, timeInOrTimeOut, timeOutOrUndef) {
-    const date    = timeOutOrUndef !== undefined ? dateOrTimeIn    : empIdOrDate;
-    const timeIn  = timeOutOrUndef !== undefined ? timeInOrTimeOut : dateOrTimeIn;
-    const timeOut = timeOutOrUndef !== undefined ? timeOutOrUndef  : timeInOrTimeOut;
+function openEditModal(empIdOrDate, dateOrTimeIn, timeInOrTimeOut, timeOutOrUndef, isRestDayArg) {
+    let date, timeIn, timeOut, isRestDay;
+    if (isRestDayArg !== undefined) {
+        // called as (date, timeIn, timeOut, isRestDay)
+        date      = empIdOrDate;
+        timeIn    = dateOrTimeIn;
+        timeOut   = timeInOrTimeOut;
+        isRestDay = timeOutOrUndef === true;
+    } else if (timeOutOrUndef !== undefined) {
+        // legacy 4-arg: (empId, date, timeIn, timeOut)
+        date      = dateOrTimeIn;
+        timeIn    = timeInOrTimeOut;
+        timeOut   = timeOutOrUndef;
+        isRestDay = false;
+    } else {
+        // 3-arg: (date, timeIn, timeOut)
+        date      = empIdOrDate;
+        timeIn    = dateOrTimeIn;
+        timeOut   = timeInOrTimeOut;
+        isRestDay = false;
+    }
 
     document.getElementById('schedModalTitle').textContent  = 'Edit Schedule';
     document.getElementById('schedSubmitLabel').textContent = 'Update Schedule';
     document.getElementById('isEditMode').value             = '1';
+    document.getElementById('modalIsRestDay').value         = isRestDay ? '1' : '0';
+    document.getElementById('modalRestDayCheck').checked    = isRestDay;
     document.getElementById('modalTimeIn').value            = timeIn;
     document.getElementById('modalTimeOut').value           = timeOut;
+    document.getElementById('modalTimeFields').style.display = isRestDay ? 'none' : '';
+    document.getElementById('modalTimeIn').required          = !isRestDay;
+    document.getElementById('modalTimeOut').required         = !isRestDay;
     selectedDates = [date];
     renderDateTags();
     if (fp) fp.setDate([date, date], false);

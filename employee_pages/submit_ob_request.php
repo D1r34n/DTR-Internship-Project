@@ -38,23 +38,23 @@ if ($schedCheck->fetchColumn() == 0) {
     exit();
 }
 
-// ---- CHECK FOR DUPLICATE ----
+// ---- CHECK FOR CONFLICT WITH ANY EXISTING LEAVE OR OB REQUEST ----
 $dupCheck = $pdo->prepare("
-    SELECT COUNT(*) FROM ob_requests
-    WHERE employee_id = ? AND ob_date = ? AND status IN ('pending', 'approved')
+    SELECT COUNT(*) FROM leave_requests
+    WHERE employee_id = ? AND JSON_CONTAINS(selected_dates, JSON_QUOTE(?)) AND status IN ('pending', 'approved')
 ");
 $dupCheck->execute([$employeeId, $obDate]);
 if ($dupCheck->fetchColumn() > 0) {
-    echo json_encode(['success' => false, 'message' => 'You already have an OB request for this date.']);
+    echo json_encode(['success' => false, 'message' => 'You already have a leave or OB request for this date.']);
     exit();
 }
 
-// ---- INSERT ----
+// ---- INSERT INTO leave_requests ----
 try {
     $pdo->prepare("
-        INSERT INTO ob_requests (employee_id, ob_date, client_name, reason, status)
-        VALUES (?, ?, ?, ?, 'pending')
-    ")->execute([$employeeId, $obDate, $clientName, $reason]);
+        INSERT INTO leave_requests (employee_id, leave_type, start_date, end_date, selected_dates, reason, client_name, status)
+        VALUES (?, 'ob leave', ?, ?, ?, ?, ?, 'pending')
+    ")->execute([$employeeId, $obDate, $obDate, json_encode([$obDate]), $reason, $clientName]);
 
     echo json_encode(['success' => true, 'message' => 'OB request submitted successfully!']);
 } catch (Exception $e) {

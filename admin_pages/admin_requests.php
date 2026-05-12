@@ -37,10 +37,6 @@ if (isset($_GET['action'], $_GET['type'], $_GET['id'])) {
             WHERE o.id = ?
         ")->execute([$status, $id]);
 
-    } elseif ($type === 'ob') {
-        $pdo->prepare("UPDATE ob_requests SET status = ? WHERE id = ?")
-            ->execute([$status, $id]);
-
     } elseif ($type === 'log_edit') {
         $pdo->prepare("UPDATE log_edit_requests SET status = ? WHERE id = ?")
             ->execute([$status, $id]);
@@ -147,9 +143,9 @@ $rejectedLeave    = $pdo->query("SELECT COUNT(*) FROM leave_requests    WHERE st
 $pendingOvertime  = $pdo->query("SELECT COUNT(*) FROM overtime_requests WHERE status = 'pending'")->fetchColumn();
 $approvedOvertime = $pdo->query("SELECT COUNT(*) FROM overtime_requests WHERE status = 'approved'")->fetchColumn();
 $rejectedOvertime = $pdo->query("SELECT COUNT(*) FROM overtime_requests WHERE status = 'rejected'")->fetchColumn();
-$pendingOB        = $pdo->query("SELECT COUNT(*) FROM ob_requests         WHERE status = 'pending'")->fetchColumn();
-$approvedOB       = $pdo->query("SELECT COUNT(*) FROM ob_requests         WHERE status = 'approved'")->fetchColumn();
-$rejectedOB       = $pdo->query("SELECT COUNT(*) FROM ob_requests         WHERE status = 'rejected'")->fetchColumn();
+$pendingOB        = $pdo->query("SELECT COUNT(*) FROM leave_requests WHERE leave_type = 'ob leave' AND status = 'pending'")->fetchColumn();
+$approvedOB       = $pdo->query("SELECT COUNT(*) FROM leave_requests WHERE leave_type = 'ob leave' AND status = 'approved'")->fetchColumn();
+$rejectedOB       = $pdo->query("SELECT COUNT(*) FROM leave_requests WHERE leave_type = 'ob leave' AND status = 'rejected'")->fetchColumn();
 $pendingLogEdit   = $pdo->query("SELECT COUNT(*) FROM log_edit_requests   WHERE status = 'pending'")->fetchColumn();
 $approvedLogEdit  = $pdo->query("SELECT COUNT(*) FROM log_edit_requests   WHERE status = 'approved'")->fetchColumn();
 $rejectedLogEdit  = $pdo->query("SELECT COUNT(*) FROM log_edit_requests   WHERE status = 'rejected'")->fetchColumn();
@@ -161,11 +157,12 @@ $totalOvertime = $pendingOvertime + $approvedOvertime + $rejectedOvertime;
 $totalOB       = $pendingOB + $approvedOB + $rejectedOB;
 $totalLogEdit  = $pendingLogEdit + $approvedLogEdit + $rejectedLogEdit;
 
-// ---- GET LEAVE REQUESTS ----
+// ---- GET LEAVE REQUESTS (non-OB) ----
 $leaveRequests = $pdo->query("
     SELECT lr.*, CONCAT(e.first_name, ' ', e.last_name) AS employee_name
     FROM leave_requests lr
     JOIN employees e ON lr.employee_id = e.id
+    WHERE lr.leave_type != 'ob leave'
     ORDER BY lr.created_at DESC
 ")->fetchAll(PDO::FETCH_ASSOC);
 
@@ -179,10 +176,11 @@ $overtimeRequests = $pdo->query("
 
 // ---- GET OB REQUESTS ----
 $obRequests = $pdo->query("
-    SELECT ob.*, CONCAT(e.first_name, ' ', e.last_name) AS employee_name
-    FROM ob_requests ob
-    JOIN employees e ON ob.employee_id = e.id
-    ORDER BY ob.created_at DESC
+    SELECT lr.*, CONCAT(e.first_name, ' ', e.last_name) AS employee_name
+    FROM leave_requests lr
+    JOIN employees e ON lr.employee_id = e.id
+    WHERE lr.leave_type = 'ob leave'
+    ORDER BY lr.created_at DESC
 ")->fetchAll(PDO::FETCH_ASSOC);
 
 // ---- GET LOG EDIT REQUESTS ----
@@ -439,10 +437,10 @@ function getActionButtons($type, $id, $status) {
                                     <tr>
                                         <td><?= htmlspecialchars($row['employee_name']) ?></td>
                                         <td><span class="badge request-official-business">Official Business</span></td>
-                                        <td><?= date('M d, Y', strtotime($row['ob_date'])) ?> | <?= htmlspecialchars($row['client_name']) ?></td>
+                                        <td><?= date('M d, Y', strtotime($row['start_date'])) ?> | <?= htmlspecialchars($row['client_name']) ?></td>
                                         <td class="reasonCol"><?= htmlspecialchars($row['reason']) ?></td>
                                         <td><?= getStatusBadge($row['status']) ?></td>
-                                        <td class="actionsCol"><?= getActionButtons('ob', $row['id'], $row['status']) ?></td>
+                                        <td class="actionsCol"><?= getActionButtons('leave', $row['id'], $row['status']) ?></td>
                                     </tr>
                                 <?php endforeach; ?>
                                 <?php foreach ($logEditRequests as $row): ?>
@@ -616,11 +614,11 @@ function getActionButtons($type, $id, $status) {
                                     <?php foreach ($obRequests as $row): ?>
                                         <tr>
                                             <td><?= htmlspecialchars($row['employee_name']) ?></td>
-                                            <td><?= date('M d, Y', strtotime($row['ob_date'])) ?></td>
+                                            <td><?= date('M d, Y', strtotime($row['start_date'])) ?></td>
                                             <td><?= htmlspecialchars($row['client_name']) ?></td>
                                             <td class="reasonCol"><?= htmlspecialchars($row['reason']) ?></td>
                                             <td><?= getStatusBadge($row['status']) ?></td>
-                                            <td class="actionsCol"><?= getActionButtons('ob', $row['id'], $row['status']) ?></td>
+                                            <td class="actionsCol"><?= getActionButtons('leave', $row['id'], $row['status']) ?></td>
                                         </tr>
                                     <?php endforeach; ?>
                                 <?php else: ?>
