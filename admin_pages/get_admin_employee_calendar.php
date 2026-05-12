@@ -32,11 +32,12 @@ foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
     $schedMap[$row['schedule_date']] = $row;
 }
 
-// ---- Leave requests ----
+// ---- Leave requests (excludes OB leave so OB has its own map) ----
 $leaveStmt = $pdo->prepare("
     SELECT start_date, end_date, selected_dates, status
     FROM leave_requests
     WHERE employee_id = ?
+    AND leave_type != 'ob leave'
     AND (start_date BETWEEN ? AND ? OR end_date BETWEEN ? AND ? OR (start_date <= ? AND end_date >= ?))
 ");
 $leaveStmt->execute([$employeeId, $firstDay, $lastDay, $firstDay, $lastDay, $firstDay, $lastDay]);
@@ -60,13 +61,28 @@ foreach ($leaveStmt->fetchAll(PDO::FETCH_ASSOC) as $leave) {
 
 // ---- OB requests ----
 $obStmt = $pdo->prepare("
-    SELECT start_date AS ob_date, status FROM leave_requests
-    WHERE employee_id = ? AND leave_type = 'ob leave' AND start_date BETWEEN ? AND ?
+    SELECT start_date, end_date, selected_dates, status
+    FROM leave_requests
+    WHERE employee_id = ? AND leave_type = 'ob leave'
+    AND (start_date BETWEEN ? AND ? OR end_date BETWEEN ? AND ? OR (start_date <= ? AND end_date >= ?))
 ");
-$obStmt->execute([$employeeId, $firstDay, $lastDay]);
+$obStmt->execute([$employeeId, $firstDay, $lastDay, $firstDay, $lastDay, $firstDay, $lastDay]);
 $obMap = [];
 foreach ($obStmt->fetchAll(PDO::FETCH_ASSOC) as $ob) {
-    $obMap[$ob['ob_date']] = $ob['status'];
+    $dates = json_decode($ob['selected_dates'], true);
+    if (is_array($dates) && !empty($dates)) {
+        foreach ($dates as $d) {
+            if ($d >= $firstDay && $d <= $lastDay) $obMap[$d] = $ob['status'];
+        }
+    } else {
+        $cur = new DateTime($ob['start_date']);
+        $end = new DateTime($ob['end_date']);
+        while ($cur <= $end) {
+            $d = $cur->format('Y-m-d');
+            if ($d >= $firstDay && $d <= $lastDay) $obMap[$d] = $ob['status'];
+            $cur->modify('+1 day');
+        }
+    }
 }
 
 // ---- Overnight continuation dates ----
@@ -133,7 +149,7 @@ foreach ($schedMap as $date => $sched) {
             $badgeClass = 'leave-pending';
             $badgeText  = 'Leave Pending';
         } elseif ($obStatus === 'pending') {
-            $badgeClass = 'leave-pending';
+            $badgeClass = 'ob-pending';
             $badgeText  = 'OB Pending';
         } elseif ($leaveStatus === 'rejected') {
             $badgeClass          = 'leave-rejected';

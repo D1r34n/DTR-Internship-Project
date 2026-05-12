@@ -1021,15 +1021,96 @@ $leaveTypes = [
                 <input type="hidden" name="single_rest_dates" id="singleRestDatesInput" value="[]">
 
                 <div class="modal-body">
+                    <!-- Preset Schedule -->
+                    <div class="preset-sched-dropdown-wrap mb-3">
+                        <label class="form-label">Preset Schedule</label>
+                        <button type="button" class="preset-sched-trigger" id="presetSchedTrigger">
+                            <span id="presetSchedDisplay">Select a preset schedule...</span>
+                            <i class="bi bi-chevron-down"></i>
+                        </button>
+                <div class="preset-sched-menu" id="presetSchedMenu"></div>
+                <script>
+                    const presetSchedMenu = document.getElementById("presetSchedMenu");
+
+                    // SETTINGS
+                    const intervalMinutes = 30;
+                    const shiftHours = 9;
+
+                    // 6:00 AM up to 5:30 AM next day
+                    const startMinutes = 6 * 60; // 6:00 AM
+                    const endMinutes = (24 * 60) + (5 * 60) + 30;
+
+                    function formatTime(hour, minute) {
+                        const period = hour >= 12 ? "PM" : "AM";
+
+                        let displayHour = hour % 12;
+
+                        if (displayHour === 0) {
+                            displayHour = 12;
+                        }
+
+                        return `${displayHour}:${minute
+                            .toString()
+                            .padStart(2, "0")} ${period}`;
+                    }
+
+                    function to24Hour(hour, minute) {
+                        return `${hour.toString().padStart(2, "0")}:${minute
+                            .toString()
+                            .padStart(2, "0")}`;
+                    }
+
+                    for (
+                        let totalMinutes = startMinutes;
+                        totalMinutes <= endMinutes;
+                        totalMinutes += intervalMinutes
+                    ) {
+
+                        // Normalize current time
+                        const currentMinutes = totalMinutes % (24 * 60);
+
+                        const inHour = Math.floor(currentMinutes / 60);
+                        const inMinute = currentMinutes % 60;
+
+                        // OUT TIME (+9 hours)
+                        let outTotalMinutes = currentMinutes + (shiftHours * 60);
+
+                        // Wrap next day
+                        outTotalMinutes = outTotalMinutes % (24 * 60);
+
+                        const outHour = Math.floor(outTotalMinutes / 60);
+                        const outMinute = outTotalMinutes % 60;
+
+                        // CREATE ITEM
+                        const item = document.createElement("div");
+
+                        item.className = "preset-sched-item";
+
+                        item.dataset.in = to24Hour(inHour, inMinute);
+                        item.dataset.out = to24Hour(outHour, outMinute);
+
+                        item.textContent =
+                            `${formatTime(inHour, inMinute)} – ${formatTime(outHour, outMinute)}`;
+
+                        presetSchedMenu.appendChild(item);
+                    }
+                </script>
+                    </div>
 
                     <div class="row g-3 mb-3">
                         <div class="col-6">
                             <label class="form-label">Time In</label>
-                            <input type="time" name="time_in" id="addModalTimeIn" class="form-control">
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-clock"></i></span>
+                                <input type="time" name="time_in" id="addModalTimeIn" class="form-control">
+                            </div>
                         </div>
                         <div class="col-6">
                             <label class="form-label">Time Out <small class="text-muted">(next day if night)</small></label>
-                            <input type="time" name="time_out" id="addModalTimeOut" class="form-control">
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-clock"></i></span>
+                                <input type="time" name="time_out" id="addModalTimeOut" class="form-control">
+                            </div>
                         </div>
                     </div>
 
@@ -1955,6 +2036,9 @@ document.addEventListener('DOMContentLoaded', () => {
 function openManageModal() {
     document.getElementById('addModalTimeIn').value  = '';
     document.getElementById('addModalTimeOut').value = '';
+    document.querySelectorAll('.preset-sched-item').forEach(el => el.classList.remove('active'));
+    document.getElementById('presetSchedDisplay').textContent = 'Select a preset schedule...';
+    document.getElementById('presetSchedMenu').classList.remove('open');
     selectedDatesAdd = [];
     renderDateTagsAdd();
     if (fpAdd) fpAdd.clear();
@@ -1966,6 +2050,30 @@ function openManageModal() {
     document.getElementById('restDaySection').style.display           = '';
     bootstrap.Modal.getOrCreateInstance(document.getElementById('manageScheduleModal')).show();
 }
+
+// ---- Preset Schedule ----
+(function initPresetSchedule() {
+    const trigger = document.getElementById('presetSchedTrigger');
+    const menu    = document.getElementById('presetSchedMenu');
+
+    trigger.addEventListener('click', e => {
+        e.stopPropagation();
+        menu.classList.toggle('open');
+    });
+
+    document.querySelectorAll('.preset-sched-item').forEach(item => {
+        item.addEventListener('click', () => {
+            document.getElementById('addModalTimeIn').value  = item.dataset.in;
+            document.getElementById('addModalTimeOut').value = item.dataset.out;
+            document.querySelectorAll('.preset-sched-item').forEach(el => el.classList.remove('active'));
+            item.classList.add('active');
+            document.getElementById('presetSchedDisplay').textContent = item.textContent;
+            menu.classList.remove('open');
+        });
+    });
+
+    document.addEventListener('click', () => menu.classList.remove('open'));
+})();
 
 function openManageModalWithDate(dateStr) {
     openManageModal();
