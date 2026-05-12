@@ -145,7 +145,7 @@ const COLS = {
     admin: [
         { width: '8%', label: 'Date',         sort: 'date'     },
         { width: '8%', label: 'Time',         sort: 'time'     },
-        { width: '12%', label: 'Employee'                       },
+        { width: '10%', label: 'Employee'                       },
         { width: '10%', label: 'Role'                          },
         { width: '10%', label: 'Log Type',     sort: 'type'     },
         { width: '12%', label: 'Location',     sort: 'location' },
@@ -213,6 +213,11 @@ function renderRows({ meta, rows }) {
         return;
     }
 
+    // Dispose existing popovers before re-render
+    document.querySelectorAll('.photo-trigger').forEach(el => {
+        bootstrap.Popover.getInstance(el)?.dispose();
+    });
+
     tbody.innerHTML = rows.map(row => {
         const isInside = row.is_within_office;
         const locLabel = isInside ? 'Within Office' : 'Outside Office';
@@ -269,15 +274,27 @@ function renderRows({ meta, rows }) {
             </td>`;
         }
 
+        const hasPhoto = row.photo_path && (row.log_type === 'IN' || row.log_type === 'OUT');
+        const typePill = hasPhoto
+            ? `<span class="pill ${typeClass} photo-trigger"
+                     role="button" tabindex="0"
+                     data-bs-toggle="popover"
+                     data-bs-trigger="click"
+                     data-bs-placement="bottom"
+                     data-bs-html="true"
+                     data-photo="${esc(row.photo_path)}">
+                     <i class="bi bi-camera-fill" style="font-size:0.65rem;opacity:0.8;"></i> ${typeLabel}
+               </span>`
+            : `<span class="pill ${typeClass}">${typeLabel}</span>`;
+
         return `<tr>
             <td>${esc(row.date)}</td>
             <td>${esc(row.time)}</td>
             ${adminCols}
-            <td><span class="pill ${typeClass}">${typeLabel}</span></td>
+            <td>${typePill}</td>
             <td>
-                <a href="${mapUrl}" target="_blank"
+                <span role="button" tabindex="0"
                     class="pill ${locClass} loc-trigger"
-                    style="text-decoration:none;"
                     data-lat="${esc(row.latitude)}"
                     data-lng="${esc(row.longitude)}"
                     data-label="${esc(locLabel)}"
@@ -285,7 +302,7 @@ function renderRows({ meta, rows }) {
                     data-dist="${esc(dist)}">
                     <i class="bi bi-geo-alt-fill"></i>
                     ${locLabel}
-                </a>
+                </span>
             </td>
             
             <td>${editRoleHtml}</td>
@@ -293,6 +310,17 @@ function renderRows({ meta, rows }) {
             ${editBtnCol}
         </tr>`;
     }).join('');
+
+    // Initialize popovers for photo pills
+    document.querySelectorAll('.photo-trigger').forEach(el => {
+        bootstrap.Popover.getOrCreateInstance(el, {
+            html:      true,
+            trigger:   'focus',
+            placement: 'left',
+            content:   `<img src="../assets/attendance_captures/${el.dataset.photo}"
+                             class="cap-preview-img">`
+        });
+    });
 }
 
 /* =========================
@@ -423,15 +451,12 @@ document.querySelector('.tableHeaderGlass').addEventListener('click', e => {
 /* =========================
    MAP POPUP
 ========================= */
-let popupMap    = null;
-let hideTimeout = null;
-const mapPopup  = document.getElementById('map_pop_up_container');
+let popupMap      = null;
+let activeTrigger = null;
+const mapPopup    = document.getElementById('map_pop_up_container');
 
-document.addEventListener('mouseover', e => {
-    const trigger = e.target.closest('.loc-trigger');
-    if (!trigger) return;
-
-    clearTimeout(hideTimeout);
+function openMapPopup(trigger) {
+    activeTrigger = trigger;
 
     const lat  = parseFloat(trigger.dataset.lat);
     const lng  = parseFloat(trigger.dataset.lng);
@@ -477,22 +502,40 @@ document.addEventListener('mouseover', e => {
         if (popupMap._marker) popupMap.removeLayer(popupMap._marker);
         popupMap._marker = L.marker([lat, lng]).addTo(popupMap);
     }, 50);
+}
+
+function closeMapPopup() {
+    mapPopup.style.display = 'none';
+    if (popupMap) { popupMap.remove(); popupMap = null; }
+    activeTrigger = null;
+}
+
+document.addEventListener('click', e => {
+    const trigger = e.target.closest('.loc-trigger');
+
+    if (!trigger && !e.target.closest('#map_pop_up_container')) {
+        closeMapPopup();
+        return;
+    }
+
+    if (!trigger) return;
+
+    if (trigger === activeTrigger) {
+        closeMapPopup();
+    } else {
+        openMapPopup(trigger);
+    }
 });
 
-document.addEventListener('mouseout', e => {
-    if (!e.target.closest('.loc-trigger')) return;
-    hideTimeout = setTimeout(() => {
-        mapPopup.style.display = 'none';
-        if (popupMap) { popupMap.remove(); popupMap = null; }
-    }, 200);
-});
-
-mapPopup.addEventListener('mouseover', () => clearTimeout(hideTimeout));
-mapPopup.addEventListener('mouseout', () => {
-    hideTimeout = setTimeout(() => {
-        mapPopup.style.display = 'none';
-        if (popupMap) { popupMap.remove(); popupMap = null; }
-    }, 200);
+/* =========================
+   PHOTO POPOVER — CLICK OUTSIDE DISMISS
+========================= */
+document.addEventListener('click', e => {
+    if (!e.target.closest('.photo-trigger') && !e.target.closest('.popover')) {
+        document.querySelectorAll('.photo-trigger').forEach(el => {
+            bootstrap.Popover.getInstance(el)?.hide();
+        });
+    }
 });
 
 /* =========================

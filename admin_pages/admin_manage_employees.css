@@ -75,9 +75,8 @@ body {
     display: flex;
     align-items: center;
     gap: 1rem;
-    padding-bottom: 1rem;
     flex-wrap: wrap;
-    margin: 0.5rem 0.5rem 0rem 0.5rem;
+    margin: 0.5rem;
 }
 
 .employee-title {
@@ -244,7 +243,7 @@ body {
 .table tbody td {
     padding: 1rem 0.5rem;
     background: transparent;
-    font-size: 0.875rem;
+    font-size: 0.75rem;
     color: var(--text-light);
     user-select: none;
     vertical-align: middle;
@@ -931,68 +930,4 @@ body {
     transition: opacity 0.15s;
 }
 
-/* ============================================================
-   PAGINATION
-   ============================================================ */
-.empPagination {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding-top: 0.75rem;
-    flex-shrink: 0;
-    gap: 0.5rem;
-    flex-wrap: wrap;
-}
-
-.pagInfo {
-    font-size: 0.75rem;
-    color: var(--text-muted);
-}
-
-.pagBtns {
-    display: flex;
-    align-items: center;
-    gap: 3px;
-}
-
-.pagBtn {
-    font-family: 'Poppins', sans-serif;
-    min-width: 28px;
-    height: 28px;
-    padding: 0 6px;
-    border: 1px solid rgba(255,255,255,0.12);
-    border-radius: 6px;
-    background: rgba(0,0,0,0.25);
-    color: rgba(255,255,255,0.65);
-    font-size: 0.75rem;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    transition: background 0.18s, color 0.18s, border-color 0.18s;
-}
-
-.pagBtn:hover:not(:disabled) {
-    background: rgba(151,190,65,0.15);
-    border-color: rgba(151,190,65,0.4);
-    color: #97be41;
-}
-
-.pagBtn.active {
-    background: rgba(151,190,65,0.2);
-    border-color: #97be41;
-    color: #97be41;
-    font-weight: 600;
-}
-
-.pagBtn:disabled {
-    opacity: 0.3;
-    cursor: not-allowed;
-}
-
-.pagEllipsis {
-    font-size: 0.75rem;
-    color: rgba(255,255,255,0.35);
-    padding: 0 2px;
-}
 

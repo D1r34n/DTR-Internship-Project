@@ -28,8 +28,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'edit_
     $nameParts  = preg_split('/\s+/', $fullName, 2);
     $firstName  = $nameParts[0] ?? '';
     $lastName   = $nameParts[1] ?? '';
+    $resetPassword = isset($_POST['reset_password']);
     $email      = trim($_POST['email'] ?? '');
-    $password   = trim($_POST['password'] ?? '');
     $roleKey    = $_POST['role'] ?? 'employee';
     $department = !empty($_POST['department_id']) ? $_POST['department_id'] : null;
 
@@ -57,48 +57,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'edit_
     $oldStmt->execute([$employeeId]);
     $oldEmail = $oldStmt->fetchColumn() ?: null;
 
-    if (!empty($password)) {
-
-        $pdo->prepare("
-            UPDATE employees
-            SET
-                first_name = ?,
-                last_name = ?,
-                email = ?,
-                password = ?,
-                role_id = ?,
-                department_id = ?
-            WHERE id = ?
-        ")->execute([
-            $firstName,
-            $lastName,
-            $email,
-            $password,
-            $roleId,
-            $department,
-            $employeeId
-        ]);
-
-    } else {
-
-        $pdo->prepare("
-            UPDATE employees
-            SET
-                first_name = ?,
-                last_name = ?,
-                email = ?,
-                role_id = ?,
-                department_id = ?
-            WHERE id = ?
-        ")->execute([
-            $firstName,
-            $lastName,
-            $email,
-            $roleId,
-            $department,
-            $employeeId
-        ]);
-    }
+    $pdo->prepare("
+        UPDATE employees
+        SET
+            first_name = ?,
+            last_name = ?,
+            email = ?,
+            role_id = ?,
+            department_id = ?
+        WHERE id = ?
+    ")->execute([
+        $firstName,
+        $lastName,
+        $email,
+        $roleId,
+        $department,
+        $employeeId
+    ]);
 
     $notifyName  = htmlspecialchars($firstName . ' ' . $lastName);
     $emailChanged = $oldEmail && strtolower($oldEmail) !== strtolower($email);
@@ -116,14 +91,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'edit_
     }
 
     // Notify current email if the password was changed
-    if (!empty($password)) {
-        $sendTo = $emailChanged ? $email : $oldEmail;
-        sendMail($sendTo, $notifyName, 'Your HSN DTR Account Password Has Been Updated', "
+    if ($resetPassword) {
+
+        $defaultPassword = 'HSN.123';
+
+        $pdo->prepare("
+            UPDATE employees
+            SET password = ?
+            WHERE id = ?
+        ")->execute([
+            $defaultPassword,
+            $employeeId
+        ]);
+
+        sendMail(
+            $email,
+            $notifyName,
+            'Your Password Has Been Reset',
+            "
             <p>Hi {$notifyName},</p>
-            <p>This is a notification that the password for your HSN DTR System account has been changed by an administrator.</p>
-            <p>If you did not request this change, please contact your administrator immediately.</p>
+            <p>Your password has been reset by an administrator.</p>
+
+            <p><strong>New Password:</strong> {$defaultPassword}</p>
+
+            <p>Please change it after login.</p>
+
             <p>— HSN DTR System</p>
-        ");
+            "
+        );
     }
 
     header("Location: admin_employee_view.php?id=$employeeId");
@@ -489,6 +484,10 @@ $leaveTypes = [
                             </span>
                         </div>
                         <div class="ev-emp-metas">
+                            <span class="ev-emp-meta">
+                                <i class="bi bi-person-badge"></i>
+                                ID: <?= htmlspecialchars($emp['id']) ?>
+                            </span>
                             <?php if (!empty($emp['department_name'])): ?>
                                 <span class="ev-emp-meta">
                                     <i class="bi bi-diagram-3"></i>
@@ -1250,8 +1249,17 @@ $leaveTypes = [
                         </div>
 
                         <div class="col-md-6">
-                            <label class="form-label">New Password <small class="text-muted">(leave blank to keep)</small></label>
-                            <input type="password" name="password" class="form-control">
+                            <div class="form-check mt-4">
+                                <input
+                                    class="form-check-input"
+                                    type="checkbox"
+                                    name="reset_password"
+                                    id="reset_password">
+
+                                <label class="form-check-label" for="reset_password">
+                                    Reset Password
+                                </label>
+                            </div>
                         </div>
 
                         <div class="col-md-6">

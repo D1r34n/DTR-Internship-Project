@@ -12,12 +12,11 @@ require_once '../db.php';
 require_once '../send_mail.php';
 date_default_timezone_set('Asia/Manila');
 
-// ---- HANDLE ADD / EDIT ----
+// ---- HANDLE ADD EMPLOYEE ----
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $first_name = trim($_POST['first_name'] ?? '');
     $last_name  = trim($_POST['last_name']  ?? '');
     $email      = trim($_POST['email'] ?? '');
-    $password   = trim($_POST['password'] ?? '');
     $role       = $_POST['role'] ?? 'employee';
     $department = !empty($_POST['department_id']) ? $_POST['department_id'] : null;
 
@@ -32,14 +31,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $oldEmployee = $oldStmt->fetch(PDO::FETCH_ASSOC);
         $oldEmail = $oldEmployee['email'] ?? null;
 
-        if (!empty($password)) {
-            $pdo->prepare("UPDATE employees SET first_name=?, last_name=?, email=?, password=?, role_id=?, department_id=? WHERE id=?")
-                ->execute([$first_name, $last_name, $email, $password, $roleId, $department, $_POST['employee_id']]);
-        } else {
-            $pdo->prepare("UPDATE employees SET first_name=?, last_name=?, email=?, role_id=?, department_id=? WHERE id=?")
-                ->execute([$first_name, $last_name, $email, $roleId, $department, $_POST['employee_id']]);
-        }
-
         // Notify old email if the email address was changed
         if ($oldEmail && strtolower($oldEmail) !== strtolower($email)) {
             $fullName = htmlspecialchars($first_name . ' ' . $last_name);
@@ -53,15 +44,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ");
         }
     } else {
-        $pdo->prepare("INSERT INTO employees (first_name, last_name, email, password, role_id, department_id, hired_date) VALUES (?, ?, ?, ?, ?, ?, CURDATE())")
-            ->execute([$first_name, $last_name, $email, $password, $roleId, $department]);
+        $pdo->prepare("INSERT INTO employees (first_name, last_name, email, role_id, department_id, hired_date) VALUES (?, ?, ?, ?, ?, CURDATE())")
+            ->execute([$first_name, $last_name, $email, $roleId, $department]);
 
         $fullName = htmlspecialchars($first_name . ' ' . $last_name);
         sendMail($email, $fullName, 'Your HSN DTR Account', "
             <p>Hi {$fullName},</p>
             <p>Your account has been created in the HSN DTR System.</p>
             <p><strong>Email:</strong> {$email}<br>
-               <strong>Password:</strong> {$password}</p>
+               <strong>Password:</strong> HSN.123</p>
             <p>Please log in and change your password.</p>
             <p>— HSN DTR System</p>
         ");
@@ -81,7 +72,10 @@ $employees = $pdo->query("
     LEFT JOIN departments d ON e.department_id = d.id
     ORDER BY e.first_name, e.last_name
 ")->fetchAll(PDO::FETCH_ASSOC);
+
+$currentPage = 'manage_employees'; 
 ?>
+
 <!doctype html>
 <html lang="en">
 <head>
@@ -102,13 +96,10 @@ $employees = $pdo->query("
 
     <!-- 3. Page-specific CSS -->
     <link rel="stylesheet" href="admin_manage_employees.css">
-
-    <!-- 4. Scripts -->
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr" defer></script>
 </head>
 <body>
 
-    <?php $currentPage = 'manage_employees'; include '../sidebar_revised.php'; ?>
+    <?php include '../sidebar_revised.php'; ?>
 
     <div id="main-wrapper">
 
@@ -127,7 +118,7 @@ $employees = $pdo->query("
 
                         <!-- Role filter -->
                         <div class="dropdown">
-                            <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <button class="btn btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                                 <span id="roleBtnLabel">All Roles</span>
                             </button>
                             <ul class="dropdown-menu">
@@ -142,7 +133,7 @@ $employees = $pdo->query("
                         <!-- DEPARTMENT FILTER DROPDOWN -->
                         <div class="dropdown w-30">
 
-                            <div class="input-group" style="max-width: 220px;">
+                            <div class="input-group input-group-sm" style="max-width: 220px;">
                                 <span class="input-group-text">
                                     <i class="bi bi-search"></i>
                                 </span>
@@ -163,7 +154,7 @@ $employees = $pdo->query("
                         <input type="hidden" id="dept-filter" value="">
 
                         <!-- Search -->
-                        <div class="input-group" style="max-width: 220px;">
+                        <div class="input-group input-group-sm" style="max-width: 200px;">
                             <span class="input-group-text">
                                 <i class="bi bi-search"></i>
                             </span>
@@ -176,7 +167,7 @@ $employees = $pdo->query("
                         </div>
 
                         <div class="dropdown">
-                            <button class="btn btn-success dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Add">
+                            <button class="btn btn-sm btn-success dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Add">
                                 <i class="bi bi-plus-lg"></i> Manage
                             </button>
 
@@ -189,7 +180,7 @@ $employees = $pdo->query("
 
                                 <li>
                                     <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#importScheduleModal">
-                                        <i class="bi bi-upload"></i> Import Schedule
+                                        <i class="bi bi-download"></i> Import Schedule
                                     </a>
                                 </li>
                             </ul>
@@ -357,12 +348,6 @@ $employees = $pdo->query("
                                     <input type="email" name="email" id="modalEmail" class="form-control" required>
                                 </div>
 
-                                <!-- Password -->
-                                <div class="col-md-6">
-                                    <label class="form-label" id="modalPwdLabel">Password</label>
-                                    <input type="password" name="password" id="modalPassword" class="form-control">
-                                </div>
-
                                 <!-- Role -->
                                 <div class="col-md-3">
                                     <label class="form-label">Role</label>
@@ -426,7 +411,7 @@ $employees = $pdo->query("
                             </button>
 
                             <button type="submit" class="btn btn-success" id="modalSubmitBtn">
-                                <i class="bi bi-check-circle-fill"></i> Save Employee
+                                <i class="bi bi-check-circle-fill"></i> Add Employee
                             </button>
                         </div>
 
@@ -460,7 +445,7 @@ $employees = $pdo->query("
                             Upload an <strong>xlsx</strong> file with the following columns:
                             <br>
                             <small>
-                            <b>employee_id</b>, employee_name (optional), start_date, end_date, time, is_rest_day
+                            <b>employee_id</b>, employee_name (optional), start_date, end_date, time
                             </small>
                         </div>
 
@@ -499,7 +484,6 @@ $employees = $pdo->query("
                                                 <th>start_date</th>
                                                 <th>end_date</th>
                                                 <th>time</th>
-                                                <th>is_rest_day</th>
                                             </tr>
                                         </thead>
                                         <tbody id="previewBody">
@@ -521,7 +505,7 @@ $employees = $pdo->query("
                                     Download the official Excel template to ensure correct format.
                                 </small>
                                 <small style="color:var(--text-muted);">
-                                    Columns: employee_id, employee_name (optional), start_date, end_date, time, is_rest_day
+                                    Columns: employee_id, employee_name (optional), start_date, end_date, time,
                                 </small>
                             </div>
 
@@ -539,8 +523,8 @@ $employees = $pdo->query("
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                             Cancel
                         </button>
-                        <button type="submit" class="btn btn-primary">
-                            Import Schedule
+                        <button type="submit" class="btn btn-success">
+                            <i class="bi bi-download"></i> Import Schedule
                         </button>
                     </div>
                 </form>
@@ -551,7 +535,10 @@ $employees = $pdo->query("
 
     </div><!-- #main-wrapper -->
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- 4. Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
     <script src="../system_functions/gantt.js"></script>
     <script>
@@ -562,7 +549,7 @@ $employees = $pdo->query("
         let currentEnd        = '<?= date('Y-m-t') ?>';
 
         // ---- TABLE STATE ----
-        const ROWS_PER_PAGE = 10;
+        let ROWS_PER_PAGE = 10;
         let allRows     = [];
         let sortCol     = null;
         let sortDir     = 1;
@@ -709,22 +696,106 @@ $employees = $pdo->query("
             const end     = Math.min(start + ROWS_PER_PAGE, total);
             const showing = `${start + 1}–${end} of ${total}`;
 
-            let html = `<span class="pagInfo">Showing ${showing}</span><div class="pagBtns">`;
+            let html = `
+                <div class="row align-items-center g-2 w-100">
 
-            html += `<button class="pagBtn" onclick="changePage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>
-                        <i class="bi bi-chevron-left"></i></button>`;
+                    <!-- LEFT -->
+                    <div class="col-md d-flex align-items-center gap-2 flex-nowrap">
+                        <span class="text-meta">
+                            Showing ${showing}
+                        </span>
+                    </div>
+
+                    <!-- CENTER (PAGINATION BUTTONS) -->
+                    <div class="col-md d-flex justify-content-center">
+                        <ul class="pagination pagination-sm mb-0">
+            `;
+
+            html += `
+                <li class="page-item${currentPage === 1 ? ' disabled' : ''}">
+                    <button class="page-link" onclick="changePage(${currentPage - 1})">
+                        <i class="bi bi-chevron-left"></i>
+                    </button>
+                </li>
+            `;
 
             getPageNums(currentPage, totalPages).forEach(p => {
                 if (p === '...') {
-                    html += `<span class="pagEllipsis">…</span>`;
+                    html += `<li class="page-item disabled"><span class="page-link pag-ellipsis">…</span></li>`;
                 } else {
-                    html += `<button class="pagBtn${p === currentPage ? ' active' : ''}" onclick="changePage(${p})">${p}</button>`;
+                    html += `
+                        <li class="page-item${p === currentPage ? ' active' : ''}">
+                            <button class="page-link" onclick="changePage(${p})">${p}</button>
+                        </li>
+                    `;
                 }
             });
 
-            html += `<button class="pagBtn" onclick="changePage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>
-                        <i class="bi bi-chevron-right"></i></button>`;
-            html += '</div>';
+            html += `
+                <li class="page-item${currentPage === totalPages ? ' disabled' : ''}">
+                    <button class="page-link" onclick="changePage(${currentPage + 1})">
+                        <i class="bi bi-chevron-right"></i>
+                    </button>
+                </li>
+                        </ul>
+                    </div>
+
+                    <!-- RIGHT -->
+                    <div class="col-md d-flex justify-content-md-end justify-content-start align-items-center gap-2 flex-nowrap">
+
+                        <span class="text-meta text-nowrap">
+                            Rows per page
+                        </span>
+
+                        <div class="dropdown">
+
+                            <button
+                                class="btn btn-sm dropdown-toggle"
+                                type="button"
+                                data-bs-toggle="dropdown"
+                                aria-expanded="false">
+
+                                <span id="rowsPerPageLabel">
+                                    ${ROWS_PER_PAGE} Rows
+                                </span>
+
+                            </button>
+
+                            <ul class="dropdown-menu">
+
+                                <li>
+                                    <button class="dropdown-item" type="button" onclick="changeRowsPerPage(10)">
+                                        10 Rows
+                                    </button>
+                                </li>
+
+                                <li>
+                                    <button class="dropdown-item" type="button" onclick="changeRowsPerPage(25)">
+                                        25 Rows
+                                    </button>
+                                </li>
+
+                                <li>
+                                    <button class="dropdown-item" type="button" onclick="changeRowsPerPage(50)">
+                                        50 Rows
+                                    </button>
+                                </li>
+
+                                <li>
+                                    <button class="dropdown-item" type="button" onclick="changeRowsPerPage(100)">
+                                        100 Rows
+                                    </button>
+                                </li>
+
+                            </ul>
+
+                        </div>
+
+                    </div>
+
+                </div>
+            `;
+
             pag.innerHTML = html;
         }
 
@@ -739,6 +810,21 @@ $employees = $pdo->query("
             const totalPages = Math.max(1, Math.ceil(lastTotal / ROWS_PER_PAGE));
             if (n < 1 || n > totalPages) return;
             currentPage = n;
+            applyFilters();
+        }
+        
+        function changeRowsPerPage(value) {
+
+            ROWS_PER_PAGE = parseInt(value);
+
+            const label = document.getElementById('rowsPerPageLabel');
+
+            if (label) {
+                label.textContent = `${ROWS_PER_PAGE} Rows`;
+            }
+
+            currentPage = 1;
+
             applyFilters();
         }
 
@@ -800,34 +886,6 @@ $employees = $pdo->query("
         }
 
         // ---- MODAL ----
-        function openAddModal() {
-            document.getElementById('empModalTitle').textContent    = 'Add Employee';
-            document.getElementById('modalEmpId').value            = '';
-            document.getElementById('modalName').value             = '';
-            document.getElementById('modalEmail').value            = '';
-            document.getElementById('modalPassword').value         = '';
-            document.getElementById('modalPwdLabel').textContent   = 'Password';
-            document.getElementById('modalPassword').required      = true;
-            document.getElementById('modalSubmitBtn').innerHTML    = '<i class="bi bi-check-circle-fill"></i> Save Employee';
-            selectRole('', 'Select Role');
-            selectDept('', 'Select Department');
-            document.getElementById('empModalOverlay').style.display = 'flex';
-        }
-
-        function openEditModal(row) {
-            document.getElementById('empModalTitle').textContent    = 'Edit Employee';
-            document.getElementById('modalEmpId').value            = row.dataset.id;
-            document.getElementById('modalFirstName').value        = row.dataset.firstName;
-            document.getElementById('modalLastName').value         = row.dataset.lastName;
-            document.getElementById('modalEmail').value            = row.dataset.email;
-            document.getElementById('modalPassword').value         = '';
-            document.getElementById('modalPwdLabel').textContent   = 'New Password (leave blank to keep)';
-            document.getElementById('modalPassword').required      = false;
-            document.getElementById('modalSubmitBtn').innerHTML    = '<i class="bi bi-check-circle-fill"></i> Update Employee';
-            selectRole(row.dataset.role, row.dataset.roleName || row.dataset.role);
-            selectDept(row.dataset.dept, row.dataset.deptName || 'Select Department');
-            document.getElementById('empModalOverlay').style.display = 'flex';
-        }
 
         function closeModal(e) {
             if (e.target === document.getElementById('empModalOverlay')) closeModalBtn();
@@ -993,14 +1051,6 @@ $employees = $pdo->query("
         }
         loadDepartments();
 
-        // Close on outside click
-        document.addEventListener('click', e => {
-            if (!e.target.closest('.dropdown')) {
-                document.querySelectorAll('.dropdown-menu.show')
-                    .forEach(m => m.classList.remove('show'));
-            }
-        });
-
         // Auto-dismiss success alert
         setTimeout(() => {
             document.querySelectorAll('.empAlert').forEach(a => {
@@ -1033,7 +1083,7 @@ $employees = $pdo->query("
                 } else {
                     dataRows.forEach(row => {
                         const tr = document.createElement('tr');
-                        for (let i = 0; i < 6; i++) {
+                        for (let i = 0; i < 5; i++) {
                             const td = document.createElement('td');
                             td.textContent = row[i] ?? '';
                             tr.appendChild(td);

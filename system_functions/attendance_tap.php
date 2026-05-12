@@ -49,6 +49,20 @@ $data     = json_decode(file_get_contents("php://input"), true);
 $lat      = $data['lat']      ?? null;
 $lng      = $data['lng']      ?? null;
 $accuracy = $data['accuracy'] ?? null;
+$photoB64 = $data['photo']    ?? null;
+
+// Save webcam capture if provided
+$photoPath = null;
+if ($photoB64 && preg_match('/^data:image\/jpeg;base64,/', $photoB64)) {
+    $imageData = base64_decode(substr($photoB64, strpos($photoB64, ',') + 1));
+    if ($imageData !== false) {
+        $captureDir = __DIR__ . '/../assets/attendance_captures/';
+        $filename   = 'cap_' . $_SESSION['user_id'] . '_' . date('Ymd_His') . '.jpg';
+        if (file_put_contents($captureDir . $filename, $imageData) !== false) {
+            $photoPath = $filename;
+        }
+    }
+}
 
 // Only allow simulated time and testing mode on localhost
 $isLocalhost  = $_SERVER['SERVER_NAME'] === 'localhost';
@@ -105,7 +119,7 @@ try {
         $now    = $simulatedNow ?? date('Y-m-d H:i:s');
         $result = processAttendanceTapTest($pdo, $employee_id, $now);
     } else {
-        $result = processAttendanceTap($pdo, $employee_id, $lat, $lng, $accuracy, $simulatedNow);
+        $result = processAttendanceTap($pdo, $employee_id, $lat, $lng, $accuracy, $simulatedNow, $photoPath);
     }
 
     $result['env'] = [

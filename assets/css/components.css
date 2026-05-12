@@ -88,33 +88,30 @@
     display: flex;
     align-items: stretch;
 
-    height: var(--control-height) !important; 
-    box-sizing: border-box !important;
+    height: var(--control-height);
+    box-sizing: border-box;
 
-    border-radius: 12px;
+    border-radius: 8px;
     overflow: hidden;
 
-    background: var(--neutral-glass) linear-gradient(
-        to right,
-        rgba(255, 255, 255, 0.10) 0%,
-        rgba(255, 255, 255, 0.05) 40%,
-        rgba(255, 255, 255, 0.02) 70%,
-        transparent 100%
-    ) !important;
-
-    border: 1px solid var(--neutral-border) !important;
+    background: var(--neutral-glass);
+    border: 1px solid var(--neutral-border);
 
     backdrop-filter: var(--frosted-blur);
     -webkit-backdrop-filter: var(--frosted-blur);
 
     box-shadow: var(--glass-inset);
 
-    position: relative;
-
     transition:
         transform 0.2s ease,
         box-shadow 0.25s ease,
         background 0.25s ease;
+}
+
+/* SMALL VARIANT */
+.input-group-sm {
+    height: calc(var(--control-height) - 10px);
+    border-radius: 6px;
 }
 
 /* TOP HIGHLIGHT (same as buttons) */
@@ -153,11 +150,15 @@
     border: none !important;
 
     color: var(--text-lightest) !important;
-    font-size: 0.85rem !important;
+    font-size: 0.875rem !important;
 
     box-shadow: none !important;
 
     z-index: 1;
+}
+
+.input-group-sm .form-control {
+    font-size: 0.75rem !important;
 }
 
 /* PLACEHOLDER */
@@ -173,21 +174,6 @@
     background: var(--neutral-glass-hover) !important;
     box-shadow: var(--glass-shadow);
     transform: scale(1.02);
-}
-
-/* ================================================
-   FOCUS GLOW (ADDITIVE LIKE BUTTONS)
-   ================================================ */
-
-.input-group:focus-within {
-    border-color: var(--primary-border) !important;
-
-    box-shadow:
-        var(--glass-shadow),
-        0 0 0 1px var(--primary-border),
-        0 0 18px var(--primary-glow);
-
-    transform: translateY(-1px);
 }
 
 /* remove bootstrap focus glow */
@@ -412,6 +398,7 @@
     background: var(--employee-bg) !important;
     border-color: var(--employee-border) !important;
     color: var(--employee) !important;
+    pointer-events: none;
 }
 
 .empRole-workforce,
@@ -419,12 +406,14 @@
     background: var(--workforce-bg) !important;
     border-color: var(--workforce-border) !important;
     color: var(--workforce) !important;
+    pointer-events: none;
 }
 
 .empRole-admin {
     background: var(--admin-bg) !important;
     border-color: var(--admin-border) !important;
     color: var(--admin) !important;
+    pointer-events: none;
 }
 
 .empRole-manager,
@@ -432,6 +421,7 @@
     background: var(--manager-bg) !important;
     border-color: var(--manager-border) !important;
     color: var(--manager) !important;
+    pointer-events: none;
 }
 
 .empRole-superadmin,
@@ -439,6 +429,7 @@
     background: var(--superadmin-bg) !important;
     border-color: var(--superadmin-border) !important;
     color: var(--superadmin) !important;
+    pointer-events: none;
 }
 
 /* ------------------------------------------------
@@ -495,23 +486,6 @@
 
 .btn-close {
     filter: invert(1) !important;
-}
-
-/* ================================================
-   BTN GROUP SWAP ANIMATION
-   ================================================ */
-
-@keyframes btnSlideIn {
-    from {
-        transform: translateY(3px);
-    }
-    to {
-        transform: translateY(0);
-    }
-}
-
-.btn-group-animate {
-    animation: btnSlideIn 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
 /* ================================================
@@ -842,21 +816,6 @@ button.btn-sm {
 
 .btn-group > .btn + .btn { margin-left: -1px !important; }
 .btn-group .btn:hover     { z-index: 1 !important; }
-.btn-group > .btn:only-child { border-radius: 12px !important; }
-
-/* btn-danger in a group: strip per-button gradient and shadow so both halves look like one button */
-.btn-group .btn-danger,
-.btn-group .btn.btn-danger {
-    background: var(--status-danger-bg) !important;
-    box-shadow: none !important;
-}
-
-.btn-group .btn-danger:hover,
-.btn-group .btn-danger:focus,
-.btn-group .btn-danger:focus-visible {
-    background: var(--status-danger-hover) !important;
-    box-shadow: none !important;
-}
 
 /* ================================================
    DROPDOWN — FROSTED GLASS
@@ -1355,4 +1314,136 @@ button.btn-sm {
     border: none !important;
     box-shadow: none !important;
     max-width: 320px !important;
+}
+
+/* ================================================
+   SPINNER — UNIVERSAL PRIMARY
+   ================================================ */
+
+.spinner-border,
+.spinner-grow {
+    color: var(--primary-color);
+}
+
+/* ================================================
+   POPOVER — UNIVERSAL FROSTED GLASS
+   ================================================ */
+
+.popover {
+    background: var(--frosted-bg) linear-gradient(
+        to bottom,
+        rgba(255, 255, 255, 0.06) 0%,
+        rgba(255, 255, 255, 0.02) 60%,
+        transparent 100%
+    ) !important;
+    border: 1px solid var(--glass-border) !important;
+    border-radius: 12px !important;
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.5), var(--glass-inset) !important;
+    backdrop-filter: var(--frosted-blur) !important;
+    -webkit-backdrop-filter: var(--frosted-blur) !important;
+    padding: 0 !important;
+    max-width: fit-content !important;
+}
+
+.popover-header {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border-bottom: 1px solid var(--glass-border) !important;
+    border-radius: 12px 12px 0 0 !important;
+    color: var(--text-lightest) !important;
+    font-size: 0.85rem !important;
+    font-weight: 500 !important;
+    padding: 0.5rem 0.75rem !important;
+}
+
+.popover-body {
+    color: var(--text-light) !important;
+    font-size: 0.85rem !important;
+    padding: 0.5rem !important;
+}
+
+.popover-arrow::before {
+    border-top-color:    var(--glass-border) !important;
+    border-bottom-color: var(--glass-border) !important;
+    border-left-color:   var(--glass-border) !important;
+    border-right-color:  var(--glass-border) !important;
+}
+
+.popover-arrow::after {
+    border-top-color:    var(--frosted-bg) !important;
+    border-bottom-color: var(--frosted-bg) !important;
+    border-left-color:   var(--frosted-bg) !important;
+    border-right-color:  var(--frosted-bg) !important;
+}
+
+/* ================================================
+   ATTENDANCE CAPTURE PILL
+   ================================================ */
+
+.cap-preview-img {
+    display: block;
+    width: 220px;
+    border-radius: 8px;
+}
+
+.photo-trigger {
+    cursor: pointer;
+}
+
+/* ================================================
+   PAGINATION (Bootstrap override — glass theme)
+   ================================================ */
+.empPagination {
+    padding-top: 0.75rem;
+    flex-shrink: 0;
+}
+
+.pagination .page-link {
+    font-family: 'Poppins', sans-serif;
+    min-width: 28px;
+    height: 28px;
+    padding: 0 6px;
+    font-size: 0.75rem;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--neutral-glass);
+    border-color: var(--neutral-border);
+    color: var(--text-light);
+    border-radius: 6px !important;
+    backdrop-filter: var(--frosted-blur);
+    -webkit-backdrop-filter: var(--frosted-blur);
+    box-shadow: var(--glass-inset);
+    transition: background 0.18s, color 0.18s, border-color 0.18s, box-shadow 0.18s;
+}
+
+.pagination .page-item:not(.disabled) .page-link:hover {
+    background: var(--primary-glass-hover);
+    border-color: var(--primary-border);
+    color: var(--primary-color);
+    box-shadow: var(--glass-shadow);
+}
+
+.pagination .page-item.active .page-link {
+    background: var(--primary-glass);
+    border-color: var(--primary-border);
+    color: var(--primary-color);
+    font-weight: 600;
+    box-shadow: var(--glass-inset);
+}
+
+.pagination .page-item.disabled .page-link {
+    background: var(--neutral-glass);
+    border-color: var(--neutral-border);
+    color: var(--text-light);
+    opacity: 0.3;
+    box-shadow: none;
+}
+
+.pag-ellipsis {
+    color: var(--neutral-color);
+    cursor: default;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    box-shadow: none;
 }

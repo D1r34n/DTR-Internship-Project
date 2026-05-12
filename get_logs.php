@@ -58,6 +58,7 @@ $sql = "
         l.accuracy,
         l.is_within_office,
         l.distance_meters,
+        l.photo_path,
 
         e.id AS employee_id,
         CONCAT(e.first_name, ' ', e.last_name) AS employee_name,
@@ -194,6 +195,7 @@ foreach ($records as $row) {
         'edit_role'        => $editRole,
         'edit_status'      => $editStatus,
         'initiator_name'   => $initiatorName,
+        'photo_path'       => $row['photo_path'] ?? null,
     ];
 }
 
