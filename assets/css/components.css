@@ -498,23 +498,6 @@
 }
 
 /* ================================================
-   BTN GROUP SWAP ANIMATION
-   ================================================ */
-
-@keyframes btnSlideIn {
-    from {
-        transform: translateY(3px);
-    }
-    to {
-        transform: translateY(0);
-    }
-}
-
-.btn-group-animate {
-    animation: btnSlideIn 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-}
-
-/* ================================================
    BOOTSTRAP BUTTON FULL OVERRIDE — FROSTED GLASS
    ================================================ */
 
@@ -842,21 +825,6 @@ button.btn-sm {
 
 .btn-group > .btn + .btn { margin-left: -1px !important; }
 .btn-group .btn:hover     { z-index: 1 !important; }
-.btn-group > .btn:only-child { border-radius: 12px !important; }
-
-/* btn-danger in a group: strip per-button gradient and shadow so both halves look like one button */
-.btn-group .btn-danger,
-.btn-group .btn.btn-danger {
-    background: var(--status-danger-bg) !important;
-    box-shadow: none !important;
-}
-
-.btn-group .btn-danger:hover,
-.btn-group .btn-danger:focus,
-.btn-group .btn-danger:focus-visible {
-    background: var(--status-danger-hover) !important;
-    box-shadow: none !important;
-}
 
 /* ================================================
    DROPDOWN — FROSTED GLASS
@@ -1355,4 +1323,77 @@ button.btn-sm {
     border: none !important;
     box-shadow: none !important;
     max-width: 320px !important;
+}
+
+/* ================================================
+   SPINNER — UNIVERSAL PRIMARY
+   ================================================ */
+
+.spinner-border,
+.spinner-grow {
+    color: var(--primary-color);
+}
+
+/* ================================================
+   POPOVER — UNIVERSAL FROSTED GLASS
+   ================================================ */
+
+.popover {
+    background: var(--frosted-bg) linear-gradient(
+        to bottom,
+        rgba(255, 255, 255, 0.06) 0%,
+        rgba(255, 255, 255, 0.02) 60%,
+        transparent 100%
+    ) !important;
+    border: 1px solid var(--glass-border) !important;
+    border-radius: 12px !important;
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.5), var(--glass-inset) !important;
+    backdrop-filter: var(--frosted-blur) !important;
+    -webkit-backdrop-filter: var(--frosted-blur) !important;
+    padding: 0 !important;
+    max-width: fit-content !important;
+}
+
+.popover-header {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border-bottom: 1px solid var(--glass-border) !important;
+    border-radius: 12px 12px 0 0 !important;
+    color: var(--text-lightest) !important;
+    font-size: 0.85rem !important;
+    font-weight: 500 !important;
+    padding: 0.5rem 0.75rem !important;
+}
+
+.popover-body {
+    color: var(--text-light) !important;
+    font-size: 0.85rem !important;
+    padding: 0.5rem !important;
+}
+
+.popover-arrow::before {
+    border-top-color:    var(--glass-border) !important;
+    border-bottom-color: var(--glass-border) !important;
+    border-left-color:   var(--glass-border) !important;
+    border-right-color:  var(--glass-border) !important;
+}
+
+.popover-arrow::after {
+    border-top-color:    var(--frosted-bg) !important;
+    border-bottom-color: var(--frosted-bg) !important;
+    border-left-color:   var(--frosted-bg) !important;
+    border-right-color:  var(--frosted-bg) !important;
+}
+
+/* ================================================
+   ATTENDANCE CAPTURE PILL
+   ================================================ */
+
+.cap-preview-img {
+    display: block;
+    width: 220px;
+    border-radius: 8px;
+}
+
+.photo-trigger {
+    cursor: pointer;
 }

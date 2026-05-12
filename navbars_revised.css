@@ -35,6 +35,41 @@
 .topbar .container-fluid {
     padding: 0rem;
 }
+
+/* ================================================
+   LOADING BUTTON
+   ================================================ */
+#attendance-btn-group {
+    transition: width 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.btn-group.is-loading {
+    width: 42px !important;
+    height: 42px !important;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50% !important;
+    position: relative;
+    padding: 0;
+}
+
+.btn.btn-spinner-circle {
+    border-radius: 50% !important;
+}
+
+.btn-spinner-circle .spinner-border {
+    width: 1.8rem;
+    height: 1.8rem;
+}
+
+.cooldown-count {
+    font-size: 0.7rem;
+    font-weight: 600;
+    line-height: 1;
+}
+
 /* ================================================
    DROPDOWN MENU (BREAK STATE)
    ================================================ */
@@ -143,6 +178,40 @@
 
 .logout-item:active {
     transform: scale(0.98) !important;
+}
+
+/* ================================================
+   ATTENDANCE SPINNER CIRCLE
+   ================================================ */
+
+@keyframes btn-morph-to-circle {
+    0%   { transform: scale(0.4); opacity: 0; }
+    60%  { transform: scale(1.12); opacity: 1; }
+    100% { transform: scale(1);   opacity: 1; }
+}
+
+@keyframes btn-circle-pulse {
+    0%, 100% { box-shadow: 0 0 0 0   rgba(255, 255, 255, 0.18); }
+    50%       { box-shadow: 0 0 0 7px rgba(255, 255, 255, 0);    }
+}
+
+.btn-spinner-circle {
+    width:     38px !important;
+    height:    38px !important;
+    min-width: 38px !important;
+    padding:   0    !important;
+    border-radius: 50% !important;
+    overflow:  hidden !important;
+    animation:
+        btn-morph-to-circle 0.32s cubic-bezier(0.34, 1.56, 0.64, 1) forwards,
+        btn-circle-pulse    1.5s  ease-in-out 0.32s infinite;
+}
+
+.btn-spinner-circle .cooldown-count {
+    font-size:      0.78rem;
+    font-weight:    700;
+    line-height:    1;
+    letter-spacing: -0.02em;
 }
 
 /* ================================================

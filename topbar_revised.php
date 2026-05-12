@@ -93,9 +93,7 @@ $hasTimeIn  = $lastLog && $lastLog['log_type'] === 'IN';
 $isOnBreak  = $lastLog && $lastLog['log_type'] === 'BREAK_IN';
 $isBreakOut = $lastLog && $lastLog['log_type'] === 'BREAK_OUT';
 $timedIn    = $hasTimeIn || $isOnBreak || $isBreakOut;
-// Once someone does BREAK_OUT they can take another break next time they're on break,
-// so we only disable the button if they've never timed in at all
-$breakDisabled = !$timedIn;
+$breakDisabled = !$timedIn || $isBreakOut;
 ?>
 
 <!-- Modal CSS — topbar-specific, not duplicated in layout_start -->
@@ -138,11 +136,11 @@ $breakDisabled = !$timedIn;
             <!-- Time In/Out -->
             <div class="btn-group" id="attendance-btn-group">
                 <?php if (!$timedIn): ?>
-                    <button class="btn btn-success" onclick="handleTimeIn()">
+                    <button class="btn btn-success" onclick="openWebcamModal()">
                         <i class="bi bi-stopwatch-fill"></i> Time In
                     </button>
                 <?php else: ?>
-                    <button class="btn btn-danger" onclick="handleTimeIn()">
+                    <button class="btn btn-danger" onclick="openWebcamModal()">
                         <i class="bi bi-stopwatch-fill"></i> Time Out
                     </button>
                     <button type="button"
@@ -158,7 +156,8 @@ $breakDisabled = !$timedIn;
                             <button class="btn btn-break"
                                     id="break-action-btn"
                                     data-state="<?= $isOnBreak ? 'out' : 'in' ?>"
-                                    onclick="handleBreak()">
+                                    onclick="handleBreak()"
+                                    <?= $isBreakOut ? 'disabled' : '' ?>>
                                 <?php if ($isOnBreak): ?>
                                     <i class="bi bi-arrow-return-right"></i> Resume Work
                                 <?php else: ?>
@@ -227,236 +226,440 @@ $breakDisabled = !$timedIn;
 
 <?php include '../dropdown_requests/modal_request.php'; ?>
 
+<!-- WEBCAM TIME IN/OUT MODAL -->
+<div class="modal fade" id="webcamModal" tabindex="-1" aria-labelledby="webcamModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="webcamModalLabel">Confirm Attendance</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body text-center p-3">
+        <div class="webcam-wrapper">
+          <video id="webcamFeed" autoplay playsinline muted></video>
+          <div id="webcamError" style="display:none;" class="webcam-error">
+            <i class="bi bi-camera-video-off-fill"></i>
+            <p>Camera unavailable</p>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer justify-content-between">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-success" id="webcamConfirmBtn" onclick="confirmAttendance()">
+          <i class="bi bi-check-circle-fill"></i> Confirm
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+.webcam-wrapper {
+    position: relative;
+    width: 100%;
+    border-radius: 12px;
+    overflow: hidden;
+    background: rgba(0, 0, 0, 0.4);
+    aspect-ratio: 4 / 3;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#webcamFeed {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 12px;
+    transform: scaleX(-1);
+}
+
+.webcam-error {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 0.85rem;
+}
+
+.webcam-error i {
+    font-size: 2.5rem;
+}
+
+.webcam-error p {
+    margin: 0;
+}
+</style>
+
 <script defer>
-    let isProcessing      = false;
-    let isBreakProcessing = false;
-    let cachedPosition    = null;
+let isProcessing      = false;
+let isBreakProcessing = false;
+let cachedPosition    = null;
 
-    document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', () => {
 
-        // Cross-tab attendance sync
-        window.addEventListener('storage', e => {
-            if (e.key !== 'attendance_update') return;
-            const status   = localStorage.getItem('attendance_tap_result');
-            const statusEl = document.getElementById('dashboard-status');
-            if (!statusEl) return;
-            statusEl.textContent = status === 'timed_in' ? 'Timed In' : 'Timed Out';
-        });
-
-        // GPS cache
-        navigator.geolocation.watchPosition(
-            pos => cachedPosition = pos,
-            err => console.warn('GPS watch error:', err),
-            { enableHighAccuracy: false, maximumAge: 60000, timeout: 10000 }
-        );
+    // Cross-tab attendance sync
+    window.addEventListener('storage', e => {
+        if (e.key !== 'attendance_update') return;
+        const status   = localStorage.getItem('attendance_tap_result');
+        const statusEl = document.getElementById('dashboard-status');
+        if (!statusEl) return;
+        statusEl.textContent = status === 'timed_in' ? 'Timed In' : 'Timed Out';
     });
 
-    /* -------------------------------------------------------
-       UI HELPERS
-    ------------------------------------------------------- */
-    const setLoading = btn => {
-        if (!btn) return;
-        btn.disabled = true;
-        btn.dataset.originalHtml = btn.innerHTML;
-        btn.innerHTML = `<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Loading...`;
-    };
+    // GPS cache
+    navigator.geolocation.watchPosition(
+        pos => cachedPosition = pos,
+        err => console.warn('GPS watch error:', err),
+        { enableHighAccuracy: false, maximumAge: 60000, timeout: 10000 }
+    );
+});
 
-    const restoreButton = btn => {
-        if (!btn) return;
-        btn.disabled = false;
-        if (btn.dataset.originalHtml) btn.innerHTML = btn.dataset.originalHtml;
-    };
+/* -------------------------------------------------------
+   HTML TEMPLATES
+------------------------------------------------------- */
+const timeInHTML = () => `
+    <button class="btn btn-success" onclick="openWebcamModal()">
+        <i class="bi bi-stopwatch-fill"></i> Time In
+    </button>`;
 
-    const setBtnGroup = (group, html) => {
-        group.innerHTML = html;
-        group.classList.remove('btn-group-animate');
-        void group.offsetWidth; // force reflow
-        group.classList.add('btn-group-animate');
-    };
+const timeOutHTML = () => `
+    <button class="btn btn-danger" onclick="openWebcamModal()">
+        <i class="bi bi-stopwatch-fill"></i> Time Out
+    </button>
+    <button type="button"
+            class="btn btn-danger dropdown-toggle dropdown-toggle-split"
+            data-bs-toggle="dropdown"
+            aria-expanded="false">
+        <span class="visually-hidden">Toggle Dropdown</span>
+    </button>
+    <ul class="dropdown-menu break-menu">
+        <li>
+            <button class="btn btn-break"
+                    id="break-action-btn"
+                    data-state="in"
+                    onclick="handleBreak()">
+                <i class="bi bi-cup-hot-fill"></i> Take Break
+            </button>
+        </li>
+    </ul>`;
 
-    const timeInHTML = () => `
-        <button class="btn btn-success" onclick="handleTimeIn()">
-            <i class="bi bi-stopwatch-fill"></i> Time In
-        </button>`;
+const spinnerCooldownHTML = secs => `
+    <button
+        class="btn btn-spinner-circle position-relative"
+        disabled>
 
-    const timeOutHTML = () => `
-        <button class="btn btn-danger" onclick="handleTimeIn()">
-            <i class="bi bi-stopwatch-fill"></i> Time Out
-        </button>
-        <button type="button"
-                class="btn btn-danger dropdown-toggle dropdown-toggle-split"
-                data-bs-toggle="dropdown"
-                aria-expanded="false">
-            <span class="visually-hidden">Toggle Dropdown</span>
-        </button>
-        <ul class="dropdown-menu break-menu">
-            <li>
-                <button class="btn btn-break"
-                        id="break-action-btn"
-                        data-state="in"
-                        onclick="handleBreak()">
-                    <i class="bi bi-cup-hot-fill"></i> Take Break
-                </button>
-            </li>
-        </ul>`;
+        <span
+            class="spinner-border spinner-border-sm"
+            role="status"
+            aria-hidden="true">
+        </span>
 
-    const spinnerHTML = () => `
-        <button class="btn" disabled>
-            <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-        </button>`;
+        <span
+            id="cooldown-text"
+            class="cooldown-count position-absolute top-50 start-50 translate-middle">
+            ${secs}
+        </span>
 
-    const cooldownHTML = secs => `
-        <button class="btn" disabled>
-            <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-            <span id="cooldown-text">Wait ${secs}s...</span>
-        </button>`;
+    </button>
+`;
 
-    /* -------------------------------------------------------
-       TIME IN / OUT
-    ------------------------------------------------------- */
-    const handleTimeIn = async () => {
-        if (isProcessing) return;
+/* -------------------------------------------------------
+   UI HELPERS
+------------------------------------------------------- */
+const grp = () => document.getElementById('attendance-btn-group');
 
-        const btnGroup = document.getElementById('attendance-btn-group');
-        const statusEl = document.getElementById('dashboard-status');
-        if (!btnGroup) return;
+const showSpinner = (html = spinnerCooldownHTML('')) => {
+    const g = grp();
+    g.style.width    = g.offsetWidth + 'px';
+    g.style.overflow = 'hidden';
+    void g.offsetWidth;
+    g.innerHTML = html;
+    g.classList.add('is-loading');
+};
 
-        const originalHTML = btnGroup.innerHTML;
-        isProcessing = true;
-        setBtnGroup(btnGroup, spinnerHTML());
+const clearSpinner = html => {
+    const g = grp();
+    g.innerHTML = html;
+    g.classList.remove('is-loading');
+    // style.width is still the locked px value — CSS transition animates 42px → locked width
+    g.addEventListener('transitionend', () => {
+        g.style.width    = '';
+        g.style.overflow = '';
+    }, { once: true });
+};
 
-        const reset   = () => { setBtnGroup(btnGroup, originalHTML); isProcessing = false; };
-        const onError = () => { alert('Location permission required.'); reset(); };
+// Break button helpers
+const setLoading = btn => {
+    if (!btn) return;
+    btn.disabled = true;
+    btn.dataset.originalHtml = btn.innerHTML;
+    btn.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>`;
+};
 
-        const submit = async pos => {
-            try {
-                const res = await fetch('../system_functions/attendance_tap.php', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        lat:      pos.coords.latitude,
-                        lng:      pos.coords.longitude,
-                        accuracy: pos.coords.accuracy
-                    })
-                });
+const restoreButton = btn => {
+    if (!btn) return;
+    btn.disabled = false;
+    if (btn.dataset.originalHtml) btn.innerHTML = btn.dataset.originalHtml;
+};
 
-                const data = await res.json();
+const lockBreakBtn = btn => {
+    if (!btn) return;
+    btn.disabled = true;
+    new MutationObserver(() => { if (!btn.disabled) btn.disabled = true; })
+        .observe(btn, { attributes: true, attributeFilter: ['disabled'] });
+};
 
-                if (data.error === 'too_fast') {
-                    let remaining = data.seconds_remaining;
-                    const tick = () => {
-                        if (remaining <= 0) { setBtnGroup(btnGroup, originalHTML); isProcessing = false; return; }
-                        setBtnGroup(btnGroup, cooldownHTML(remaining--));
-                        setTimeout(tick, 1000);
-                    };
-                    tick();
-                    return;
-                }
+/* -------------------------------------------------------
+   TIME IN / OUT
+------------------------------------------------------- */
+const handleTimeIn = async () => {
+    if (isProcessing) return;
 
-                if (data.error === 'shift_ended') {
-                    alert('Shift ended. You are marked absent.');
-                    reset();
-                    return;
-                }
+    const statusEl     = document.getElementById('dashboard-status');
+    const originalHTML = grp().innerHTML;
+    isProcessing       = true;
 
-                if (data.tap === 'timed_in') {
-                    setBtnGroup(btnGroup, timeOutHTML());
-                    if (statusEl) statusEl.textContent = 'Timed In';
-                } else if (data.tap === 'timed_out') {
-                    setBtnGroup(btnGroup, timeInHTML());
-                    if (statusEl) statusEl.textContent = 'Timed Out';
-                }
+    showSpinner();
 
-                localStorage.setItem('attendance_tap_result', data.tap);
-                localStorage.setItem('attendance_update', Date.now());
-                document.dispatchEvent(new CustomEvent('attendance_tapped'));
+    const reset   = () => { clearSpinner(originalHTML); isProcessing = false; };
+    const onError = () => { alert('Location permission required.'); reset(); };
 
-            } catch (err) {
-                console.error(err);
-                reset();
-            } finally {
-                isProcessing = false;
+    const submit = async pos => {
+        try {
+            const payload = {
+                lat:      pos.coords.latitude,
+                lng:      pos.coords.longitude,
+                accuracy: pos.coords.accuracy
+            };
+            if (capturedPhotoB64) {
+                payload.photo    = capturedPhotoB64;
+                capturedPhotoB64 = null;
             }
-        };
+            const res = await fetch('../system_functions/attendance_tap.php', {
+                method:  'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body:    JSON.stringify(payload)
+            });
 
-        cachedPosition
-            ? submit(cachedPosition)
-            : navigator.geolocation.getCurrentPosition(submit, onError);
-    };
+            const data = await res.json();
 
-    /* -------------------------------------------------------
-       BREAK HANDLER
-    ------------------------------------------------------- */
-    const handleBreak = async () => {
-        if (isBreakProcessing) return;
+            if (data.error === 'too_fast') {
 
-        const btn = document.getElementById('break-action-btn');
-        if (!btn) return;
+                let remaining = data.seconds_remaining;
 
-        isBreakProcessing = true;
-        setLoading(btn);
+                showSpinner(
+                    spinnerCooldownHTML(remaining)
+                );
 
-        const reset   = () => { restoreButton(btn); isBreakProcessing = false; };
-        const onError = () => { alert('Location permission required.'); reset(); };
+                const tick = () => {
 
-        const submit = async pos => {
-            try {
-                const res = await fetch('../system_functions/attendance_tap.php', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        lat:       pos.coords.latitude,
-                        lng:       pos.coords.longitude,
-                        accuracy:  pos.coords.accuracy,
-                        break_tap: true
-                    })
-                });
+                    if (remaining <= 0) {
+                        clearSpinner(originalHTML);
+                        isProcessing = false;
+                        return;
+                    }
 
-                const data = await res.json();
+                    remaining--;
 
-                if (data.error === 'too_fast') {
-                    // Break cooldown: just restore and show a brief message
-                    btn.disabled = true;
-                    btn.innerHTML = `<span id="cooldown-text">Wait ${data.seconds_remaining}s...</span>`;
-                    let remaining = data.seconds_remaining;
-                    const tick = () => {
-                        if (remaining <= 0) { restoreButton(btn); isBreakProcessing = false; return; }
-                        const el = document.getElementById('cooldown-text');
-                        if (el) el.textContent = `Wait ${--remaining}s...`;
-                        setTimeout(tick, 1000);
-                    };
+                    const el =
+                        document.getElementById(
+                            'cooldown-text'
+                        );
+
+                    if (el) {
+                        el.textContent = remaining;
+                    }
+
                     setTimeout(tick, 1000);
-                    return;
-                }
+                };
 
-                if (data.tap === 'break_in') {
-                    btn.disabled  = false;
-                    btn.dataset.state = 'out';
-                    btn.innerHTML = `<i class="bi bi-arrow-return-right"></i> Resume Work`;
-                    document.dispatchEvent(new CustomEvent('attendance_tapped'));
-                }
+                setTimeout(tick, 1000);
 
-                if (data.tap === 'break_out') {
-                    // Re-enable — they can take another break later if they need to
-                    btn.disabled  = false;
-                    btn.dataset.state = 'in';
-                    btn.innerHTML = `<i class="bi bi-cup-hot-fill"></i> Take Break`;
-                    document.dispatchEvent(new CustomEvent('attendance_tapped'));
-                }
-
-            } catch (err) {
-                console.error(err);
-                reset();
-            } finally {
-                isBreakProcessing = false;
+                return;
             }
-        };
 
-        cachedPosition
-            ? submit(cachedPosition)
-            : navigator.geolocation.getCurrentPosition(submit, onError);
+            if (data.error === 'shift_ended') {
+                alert('Shift ended. You are marked absent.');
+                reset();
+                return;
+            }
+
+            if (data.tap === 'timed_in') {
+                clearSpinner(timeOutHTML());
+                if (statusEl) statusEl.textContent = 'Timed In';
+            } else if (data.tap === 'timed_out') {
+                clearSpinner(timeInHTML());
+                if (statusEl) statusEl.textContent = 'Timed Out';
+            }
+
+            localStorage.setItem('attendance_tap_result', data.tap);
+            localStorage.setItem('attendance_update', Date.now());
+            document.dispatchEvent(new CustomEvent('attendance_tapped'));
+
+        } catch (err) {
+            console.error(err);
+            reset();
+        } finally {
+            isProcessing = false;
+        }
     };
 
-    window.handleTimeIn = handleTimeIn;
-    window.handleBreak  = handleBreak;
+    cachedPosition
+        ? submit(cachedPosition)
+        : navigator.geolocation.getCurrentPosition(submit, onError);
+};
+
+/* -------------------------------------------------------
+   BREAK HANDLER
+------------------------------------------------------- */
+const handleBreak = async () => {
+    if (isBreakProcessing) return;
+
+    const btn = document.getElementById('break-action-btn');
+    if (!btn) return;
+
+    isBreakProcessing = true;
+    const originalGroupHTML = grp().innerHTML;
+    setLoading(btn);
+
+    const reset   = () => { restoreButton(btn); isBreakProcessing = false; };
+    const onError = () => { alert('Location permission required.'); reset(); };
+
+    const submit = async pos => {
+        try {
+            const res = await fetch('../system_functions/attendance_tap.php', {
+                method:  'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body:    JSON.stringify({
+                    lat:       pos.coords.latitude,
+                    lng:       pos.coords.longitude,
+                    accuracy:  pos.coords.accuracy,
+                    break_tap: true
+                })
+            });
+
+            const data = await res.json();
+
+            if (data.error === 'too_fast') {
+                let remaining = data.seconds_remaining;
+                showSpinner(spinnerCooldownHTML(remaining));
+
+                const tick = () => {
+                    if (remaining <= 0) {
+                        clearSpinner(originalGroupHTML);
+                        isBreakProcessing = false;
+                        return;
+                    }
+                    remaining--;
+                    const el = document.getElementById('cooldown-text');
+                    if (el) el.textContent = remaining;
+                    setTimeout(tick, 1000);
+                };
+                setTimeout(tick, 1000);
+                return;
+            }
+
+            if (data.tap === 'break_in') {
+                btn.disabled      = false;
+                btn.dataset.state = 'out';
+                btn.innerHTML     = `<i class="bi bi-arrow-return-right"></i> Resume Work`;
+                document.dispatchEvent(new CustomEvent('attendance_tapped'));
+            }
+
+            if (data.tap === 'break_out') {
+                btn.dataset.state = 'in';
+                btn.innerHTML     = `<i class="bi bi-cup-hot-fill"></i> Take Break`;
+                lockBreakBtn(btn);
+                document.dispatchEvent(new CustomEvent('attendance_tapped'));
+            }
+
+            if (data.error === 'not_timed_in') {
+                btn.innerHTML = btn.dataset.originalHtml || `<i class="bi bi-cup-hot-fill"></i> Take Break`;
+                lockBreakBtn(btn);
+            }
+
+        } catch (err) {
+            console.error(err);
+            reset();
+        } finally {
+            isBreakProcessing = false;
+        }
+    };
+
+    cachedPosition
+        ? submit(cachedPosition)
+        : navigator.geolocation.getCurrentPosition(submit, onError);
+};
+
+window.handleTimeIn = handleTimeIn;
+window.handleBreak  = handleBreak;
+
+/* -------------------------------------------------------
+   WEBCAM MODAL
+------------------------------------------------------- */
+let webcamStream      = null;
+let webcamModalInst   = null;
+let capturedPhotoB64  = null;
+
+document.addEventListener('DOMContentLoaded', () => {
+    webcamModalInst = new bootstrap.Modal(document.getElementById('webcamModal'));
+
+    document.getElementById('webcamModal').addEventListener('hidden.bs.modal', () => {
+        if (webcamStream) {
+            webcamStream.getTracks().forEach(t => t.stop());
+            webcamStream = null;
+        }
+        const video = document.getElementById('webcamFeed');
+        if (video) video.srcObject = null;
+    });
+});
+
+const openWebcamModal = () => {
+    const video      = document.getElementById('webcamFeed');
+    const errorEl    = document.getElementById('webcamError');
+    const confirmBtn = document.getElementById('webcamConfirmBtn');
+
+    video.style.display   = 'block';
+    errorEl.style.display = 'none';
+    confirmBtn.disabled   = false;
+
+    webcamModalInst.show();
+
+    navigator.mediaDevices.getUserMedia({ video: true, audio: false })
+        .then(stream => {
+            webcamStream    = stream;
+            video.srcObject = stream;
+        })
+        .catch(() => {
+            video.style.display   = 'none';
+            errorEl.style.display = 'block';
+        });
+};
+
+const confirmAttendance = () => {
+    const video = document.getElementById('webcamFeed');
+    if (video && video.readyState >= 2) {
+        const canvas = document.createElement('canvas');
+        canvas.width  = video.videoWidth  || 640;
+        canvas.height = video.videoHeight || 480;
+        // un-mirror for the saved file
+        const ctx = canvas.getContext('2d');
+        ctx.translate(canvas.width, 0);
+        ctx.scale(-1, 1);
+        ctx.drawImage(video, 0, 0);
+        capturedPhotoB64 = canvas.toDataURL('image/jpeg', 0.85);
+    }
+
+    if (webcamStream) {
+        webcamStream.getTracks().forEach(t => t.stop());
+        webcamStream = null;
+    }
+    webcamModalInst.hide();
+    handleTimeIn();
+};
+
+window.openWebcamModal   = openWebcamModal;
+window.confirmAttendance = confirmAttendance;
 </script>

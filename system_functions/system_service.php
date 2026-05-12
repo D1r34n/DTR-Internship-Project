@@ -22,7 +22,7 @@ fetch('../system_functions/attendance_tap.php', {
 */
 
 // Main entry point for processing a time in/out tap
-function processAttendanceTap($pdo, $employee_id, $lat, $lng, $accuracy, $now = null)
+function processAttendanceTap($pdo, $employee_id, $lat, $lng, $accuracy, $now = null, $photoPath = null)
 {
     // Debug log collector - visible in browser network tab response
     $now = $now ?? date('Y-m-d H:i:s');
@@ -162,9 +162,10 @@ function processAttendanceTap($pdo, $employee_id, $lat, $lng, $accuracy, $now = 
             longitude,
             accuracy,
             is_within_office,
-            distance_meters
+            distance_meters,
+            photo_path
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     ");
     $stmt->execute([
         $employee_id,
@@ -174,7 +175,8 @@ function processAttendanceTap($pdo, $employee_id, $lat, $lng, $accuracy, $now = 
         $lng,
         $accuracy,
         $isWithin,
-        $distance
+        $distance,
+        $photoPath
     ]);
     $debug[] = "Log inserted: {$nextType}";
 
@@ -324,10 +326,9 @@ function processBreakTap(PDO $pdo, int $employeeId, ?float $lat, ?float $lng, ?f
     // Determine break direction from last log
     // null = not allowed (employee not timed in)
     $isBreakIn = match($lastLog['log_type'] ?? null) {
-        'IN'        => true,   // just timed in → can break in
-        'BREAK_OUT' => true,   // returned from break → can break in again
-        'BREAK_IN'  => false,  // currently on break → break out
-        default     => null,   // OUT or no log → not allowed
+        'IN'       => true,   // just timed in → can break in
+        'BREAK_IN' => false,  // currently on break → break out
+        default    => null,   // BREAK_OUT, OUT, or no log → not allowed
     };
 
     // Block break if employee is not timed in

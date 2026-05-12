@@ -213,6 +213,11 @@ function renderRows({ meta, rows }) {
         return;
     }
 
+    // Dispose existing popovers before re-render
+    document.querySelectorAll('.photo-trigger').forEach(el => {
+        bootstrap.Popover.getInstance(el)?.dispose();
+    });
+
     tbody.innerHTML = rows.map(row => {
         const isInside = row.is_within_office;
         const locLabel = isInside ? 'Within Office' : 'Outside Office';
@@ -269,11 +274,24 @@ function renderRows({ meta, rows }) {
             </td>`;
         }
 
+        const hasPhoto = row.photo_path && (row.log_type === 'IN' || row.log_type === 'OUT');
+        const typePill = hasPhoto
+            ? `<span class="pill ${typeClass} photo-trigger"
+                     role="button" tabindex="0"
+                     data-bs-toggle="popover"
+                     data-bs-trigger="click"
+                     data-bs-placement="bottom"
+                     data-bs-html="true"
+                     data-photo="${esc(row.photo_path)}">
+                     <i class="bi bi-camera-fill" style="font-size:0.65rem;opacity:0.8;"></i> ${typeLabel}
+               </span>`
+            : `<span class="pill ${typeClass}">${typeLabel}</span>`;
+
         return `<tr>
             <td>${esc(row.date)}</td>
             <td>${esc(row.time)}</td>
             ${adminCols}
-            <td><span class="pill ${typeClass}">${typeLabel}</span></td>
+            <td>${typePill}</td>
             <td>
                 <a href="${mapUrl}" target="_blank"
                     class="pill ${locClass} loc-trigger"
@@ -293,6 +311,17 @@ function renderRows({ meta, rows }) {
             ${editBtnCol}
         </tr>`;
     }).join('');
+
+    // Initialize popovers for photo pills
+    document.querySelectorAll('.photo-trigger').forEach(el => {
+        bootstrap.Popover.getOrCreateInstance(el, {
+            html:      true,
+            trigger:   'focus',
+            placement: 'left',
+            content:   `<img src="../assets/attendance_captures/${el.dataset.photo}"
+                             class="cap-preview-img">`
+        });
+    });
 }
 
 /* =========================
@@ -493,6 +522,17 @@ mapPopup.addEventListener('mouseout', () => {
         mapPopup.style.display = 'none';
         if (popupMap) { popupMap.remove(); popupMap = null; }
     }, 200);
+});
+
+/* =========================
+   PHOTO POPOVER — CLICK OUTSIDE DISMISS
+========================= */
+document.addEventListener('click', e => {
+    if (!e.target.closest('.photo-trigger') && !e.target.closest('.popover')) {
+        document.querySelectorAll('.photo-trigger').forEach(el => {
+            bootstrap.Popover.getInstance(el)?.hide();
+        });
+    }
 });
 
 /* =========================
