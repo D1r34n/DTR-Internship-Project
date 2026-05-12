@@ -40,10 +40,11 @@ $leaveRequests = $leaveStmt->fetchAll(PDO::FETCH_ASSOC);
 
 // ---- GET OB REQUESTS ----
 $obStmt = $pdo->prepare("
-    SELECT ob_date, status
-    FROM ob_requests
+    SELECT start_date AS ob_date, status
+    FROM leave_requests
     WHERE employee_id = ?
-    AND ob_date BETWEEN ? AND ?
+    AND leave_type = 'ob leave'
+    AND start_date BETWEEN ? AND ?
 ");
 $obStmt->execute([$employeeId, $start, $end]);
 $obMap = [];

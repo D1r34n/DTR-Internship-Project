@@ -860,6 +860,19 @@ body {
 .flatpickr-input.empDateInput { background: transparent !important; border: 1px solid rgba(255,255,255,0.15) !important; color: #fff !important; }
 
 /* ============================================================
+   MODAL DEPARTMENT DROPDOWN — open upward so it doesn't go
+   below the modal footer and off-screen
+   ============================================================ */
+#empModal #dept-modal-menu {
+    top: auto !important;
+    bottom: 100%;
+    margin-top: 0;
+    margin-bottom: 2px;
+    max-height: 220px;
+    overflow-y: auto;
+}
+
+/* ============================================================
    FILTER SELECTS
    ============================================================ */
 .empFilterSelect {
