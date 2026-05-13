@@ -10,53 +10,107 @@ if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'admin') {
 
 require_once '../db.php';
 require_once '../send_mail.php';
+
 date_default_timezone_set('Asia/Manila');
+
 
 // ---- HANDLE ADD EMPLOYEE ----
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+
     $first_name = trim($_POST['first_name'] ?? '');
-    $last_name  = trim($_POST['last_name']  ?? '');
+    $last_name  = trim($_POST['last_name'] ?? '');
     $email      = trim($_POST['email'] ?? '');
+    $birthdate = !empty($_POST['birthdate']) ? $_POST['birthdate'] : null;
     $role       = $_POST['role'] ?? 'employee';
     $department = !empty($_POST['department_id']) ? $_POST['department_id'] : null;
 
+    // ---- GET ROLE ID ----
     $roleStmt = $pdo->prepare("SELECT id FROM roles WHERE role_key = ?");
     $roleStmt->execute([$role]);
-    $roleId = $roleStmt->fetchColumn() ?: null;
+    $roleId = $roleStmt->fetchColumn();
 
+    if (!$roleId) {
+        $_SESSION['error'] = "Invalid role selected.";
+        header("Location: admin_manage_employees.php");
+        exit();
+    }
+
+
+    // =========================================================
+    // EDIT EMPLOYEE
+    // =========================================================
     if (!empty($_POST['employee_id'])) {
-        // Fetch old email before updating so we can notify it if it changes
+
+        $employeeId = $_POST['employee_id'];
+
+        // Fetch old data
         $oldStmt = $pdo->prepare("SELECT email, first_name, last_name FROM employees WHERE id = ?");
-        $oldStmt->execute([$_POST['employee_id']]);
+        $oldStmt->execute([$employeeId]);
         $oldEmployee = $oldStmt->fetch(PDO::FETCH_ASSOC);
         $oldEmail = $oldEmployee['email'] ?? null;
 
-        // Notify old email if the email address was changed
+        // Notify email change
         if ($oldEmail && strtolower($oldEmail) !== strtolower($email)) {
+
             $fullName = htmlspecialchars($first_name . ' ' . $last_name);
-            sendMail($oldEmail, $fullName, 'Your HSN DTR Account Email Has Been Updated', "
+
+            sendMail(
+                $oldEmail,
+                $fullName,
+                'Your HSN DTR Account Email Has Been Updated',
+                "
                 <p>Hi {$fullName},</p>
-                <p>This is a notification that the email address for your HSN DTR System account has been changed.</p>
+                <p>This is a notification that your account email has been changed.</p>
                 <p><strong>Old Email:</strong> {$oldEmail}<br>
                    <strong>New Email:</strong> {$email}</p>
-                <p>If you did not request this change, please contact your administrator immediately.</p>
                 <p>— HSN DTR System</p>
-            ");
+                "
+            );
         }
-    } else {
-        $pdo->prepare("INSERT INTO employees (first_name, last_name, email, role_id, department_id, hired_date) VALUES (?, ?, ?, ?, ?, CURDATE())")
-            ->execute([$first_name, $last_name, $email, $roleId, $department]);
 
-        $fullName = htmlspecialchars($first_name . ' ' . $last_name);
-        sendMail($email, $fullName, 'Your HSN DTR Account', "
-            <p>Hi {$fullName},</p>
+        // (optional: update query goes here if you have edit logic)
+
+    }
+
+    // =========================================================
+    // ADD EMPLOYEE
+    // =========================================================
+    else {
+        // 1. Insert employee WITHOUT profile image first
+        $stmt = $pdo->prepare("
+            INSERT INTO employees (first_name, last_name, email, role_id, department_id, birthdate, hired_date)
+            VALUES (?, ?, ?, ?, ?, ?, CURDATE())
+        ");
+
+        $stmt->execute([$first_name, $last_name, $email, $birthdate, $roleId, $department]);
+
+        // 2. Get inserted employee ID
+        $employeeId = $pdo->lastInsertId();
+
+        // 3. Generate + save SVG avatar file
+        $fullName = $first_name . ' ' . $last_name;
+        $profileImage = 'default_profile.png';
+
+        // 4. Update employee with profile image filename
+        $update = $pdo->prepare("
+            UPDATE employees
+            SET profile_image = ?
+            WHERE id = ?
+        ");
+        $update->execute([$profileImage, $employeeId]);
+
+        // 5. Send email
+        $safeName = htmlspecialchars($fullName);
+        sendMail($email, $safeName, 'Your HSN DTR Account', "
+            <p>Hi {$safeName},</p>
             <p>Your account has been created in the HSN DTR System.</p>
             <p><strong>Email:</strong> {$email}<br>
-               <strong>Password:</strong> HSN.123</p>
+            <strong>Password:</strong> HSN.123</p>
             <p>Please log in and change your password.</p>
             <p>— HSN DTR System</p>
         ");
     }
+
     header("Location: admin_manage_employees.php");
     exit();
 }
@@ -162,8 +216,7 @@ $currentPage = 'manage_employees';
                                 type="text" 
                                 id="empSearch" 
                                 class="form-control" 
-                                placeholder="Search..."
-                                oninput="applyFilters()">
+                                placeholder="Search...">
                         </div>
 
                         <div class="dropdown">
@@ -235,7 +288,25 @@ $currentPage = 'manage_employees';
                                     data-dept-name="<?= htmlspecialchars($emp['department_name'] ?? '') ?>">
 
                                     <td><?= $emp['id'] ?></td>
-                                    <td><?= htmlspecialchars($emp['name']) ?></td>
+                                    <td>
+                                        <div class="d-flex align-items-center gap-2">
+
+                                            <?php
+                                            $avatar = !empty($emp['profile_image'])
+                                                ? $emp['profile_image']
+                                                : 'default_profile.png';
+                                            ?>
+
+                                            <img
+                                                src="../assets/user_profiles/<?= htmlspecialchars($avatar) ?>"
+                                                class="employee-avatar"
+                                                alt="avatar"
+                                            />
+
+                                            <span><?= htmlspecialchars($emp['name']) ?></span>
+
+                                        </div>
+                                    </td>
                                     <td><?= htmlspecialchars($emp['email']) ?></td>
                                     <td>
                                         <span class="empRoleBadge empRole-<?= $emp['role'] ?>">
@@ -328,80 +399,103 @@ $currentPage = 'manage_employees';
                         <input type="hidden" name="employee_id" id="modalEmpId">
 
                         <div class="modal-body">
+                            <div class="row g-4 align-items-center">
 
-                            <div class="row g-3">
+                                <!-- LEFT SIDE: PREVIEW -->
+                                <div class="col-md-4 d-flex flex-column align-items-center justify-content-start">
 
-                                <!-- Name -->
-                                <div class="col-md-6">
-                                    <label class="form-label">First Name</label>
-                                    <input type="text" name="first_name" id="modalFirstName" class="form-control" required>
-                                </div>
-
-                                <div class="col-md-6">
-                                    <label class="form-label">Last Name</label>
-                                    <input type="text" name="last_name" id="modalLastName" class="form-control" required>
-                                </div>
-
-                                <!-- Email -->
-                                <div class="col-md-6">
-                                    <label class="form-label">Email</label>
-                                    <input type="email" name="email" id="modalEmail" class="form-control" required>
-                                </div>
-
-                                <!-- Role -->
-                                <div class="col-md-3">
-                                    <label class="form-label">Role</label>
-
-                                    <div class="dropdown w-100">
-                                        <button class="btn btn-outline-light dropdown-toggle w-100 text-start" type="button" id="roleDropdownBtn" data-bs-toggle="dropdown" aria-expanded="false">
-                                            <span id="roleLabel">Select Role</span>
-                                        </button>
-
-                                        <ul class="dropdown-menu w-100" id="roleDropdown">
-                                            <?php foreach ($roles as $r): ?>
-                                            <li>
-                                                <button class="dropdown-item" type="button" onclick="selectRole('<?= $r['role_key'] ?>', '<?= $r['role_name'] ?>')">
-                                                    <?= $r['role_name'] ?>
-                                                </button>
-                                            </li>
-                                            <?php endforeach; ?>
-                                        </ul>
+                                    <div id="profilePreview">
+                                        <img src="../assets/user_profiles/default_profile.png"
+                                            class="employee-avatar"
+                                            alt="default avatar"
+                                            style="width:140px;height:140px;border-radius:50%;object-fit:cover;">
                                     </div>
 
-                                    <input type="hidden" name="role" id="roleInput" value="">
+                                    <small class="text-meta d-block mt-2 text-center">
+                                        Default profile preview
+                                    </small>
+
                                 </div>
 
-                                <!-- Department (Searchable Dropdown) -->
-                                <div class="col-md-6">
+                                <!-- RIGHT SIDE: FORM INPUTS -->
+                                <div class="col-md-8">
 
-                                    <label class="form-label">Department</label>
+                                    <div class="row g-3">
 
-                                    <div class="dropdown w-100">
-
-                                        <div class="input-group">
-                                            <span class="input-group-text">
-                                                <i class="bi bi-search"></i>
-                                            </span>
-
-                                            <input
-                                                type="text"
-                                                id="dept-search-input-modal"
-                                                class="form-control"
-                                                placeholder="Select Department"
-                                                autocomplete="off"
-                                            >
+                                        <!-- First Name -->
+                                        <div class="col-md-6">
+                                            <label class="form-label">First Name</label>
+                                            <input type="text" name="first_name" id="modalFirstName" class="form-control" required>
                                         </div>
 
-                                        <ul class="dropdown-menu p-2 w-100" id="dept-modal-menu"></ul>
+                                        <!-- Last Name -->
+                                        <div class="col-md-6">
+                                            <label class="form-label">Last Name</label>
+                                            <input type="text" name="last_name" id="modalLastName" class="form-control" required>
+                                        </div>
+
+                                        <!-- Email -->
+                                        <div class="col-md-6">
+                                            <label class="form-label">Email</label>
+                                            <input type="email" name="email" id="modalEmail" class="form-control" required>
+                                        </div>
+
+                                        <!-- Birthdate -->
+                                        <div class="col-md-6">
+                                            <label class="form-label">Birthdate</label>
+                                            <input type="date" name="birthdate" id="modalBirthdate" class="form-control" required>
+                                        </div>
+
+                                        <!-- Role -->
+                                        <div class="col-md-6">
+                                            <label class="form-label">Role</label>
+
+                                            <div class="dropdown w-100 position-relative">
+                                                <button class="btn btn-outline-light dropdown-toggle w-100 text-start"
+                                                        type="button"
+                                                        data-bs-toggle="dropdown">
+                                                    <span id="roleLabel">Select Role</span>
+                                                </button>
+
+                                                <ul class="dropdown-menu w-100 position-absolute" id="roleDropdown">
+                                                    <?php foreach ($roles as $r): ?>
+                                                    <li>
+                                                        <button class="dropdown-item" type="button"
+                                                            onclick="selectRole('<?= $r['role_key'] ?>','<?= $r['role_name'] ?>')">
+                                                            <?= $r['role_name'] ?>
+                                                        </button>
+                                                    </li>
+                                                    <?php endforeach; ?>
+                                                </ul>
+                                            </div>
+
+                                            <input type="hidden" name="role" id="roleInput">
+                                        </div>
+
+                                        <!-- Department -->
+                                        <div class="col-md-12">
+                                            <label class="form-label">Department</label>
+
+                                            <div class="input-group">
+                                                <span class="input-group-text">
+                                                    <i class="bi bi-search"></i>
+                                                </span>
+
+                                                <input type="text"
+                                                    id="dept-search-input-modal"
+                                                    class="form-control"
+                                                    placeholder="Select Department"
+                                                    autocomplete="off">
+                                            </div>
+
+                                            <ul class="dropdown-menu p-2 w-100 position-absolute" id="dept-modal-menu"></ul>
+
+                                            <input type="hidden" name="department_id" id="deptInput">
+                                        </div>
 
                                     </div>
-
-                                    <input type="hidden" name="department_id" id="deptInput">
-
                                 </div>
-
                             </div>
-
                         </div>
 
                         <!-- Footer -->
@@ -550,50 +644,190 @@ $currentPage = 'manage_employees';
 
         // ---- TABLE STATE ----
         let ROWS_PER_PAGE = 10;
-        let allRows     = [];
-        let sortCol     = null;
-        let sortDir     = 1;
-        let currentPage = 1;
-        let lastTotal   = 0;
+        let allRows       = [];
+        let sortCol       = null;
+        let sortDir       = 1;
+        let currentPage   = 1;
+        let lastTotal     = 0;
+        let deptItems     = [];
 
         document.addEventListener('DOMContentLoaded', () => {
+
             allRows = Array.from(document.querySelectorAll('#empList .empRow'));
             applyFilters();
+
+            // Search
+            document.getElementById('empSearch')
+                .addEventListener('input', () => {
+                    currentPage = 1;
+                    applyFilters();
+                });
+
+            // Dept filter — open on click
+            document.getElementById('dept-search-input')
+                .addEventListener('click', () => {
+                    renderDeptMenu(deptItems, 'filter');
+                    document.getElementById('filter-dept-menu').classList.add('show');
+                });
+
+            // Dept filter — search on type
+            document.getElementById('dept-search-input')
+                .addEventListener('input', function () {
+                    const q = this.value.toLowerCase();
+                    renderDeptMenu(deptItems.filter(d => d.label.toLowerCase().includes(q)), 'filter');
+                    document.getElementById('filter-dept-menu').classList.add('show');
+                });
+
+            // Dept modal — open on click
+            document.getElementById('dept-search-input-modal')
+                .addEventListener('click', () => {
+                    renderDeptMenu(deptItems.filter(d => d.value !== ''), 'modal');
+                    document.getElementById('dept-modal-menu').classList.add('show');
+                });
+
+            // Dept modal — search on type
+            document.getElementById('dept-search-input-modal')
+                .addEventListener('input', function () {
+                    const q = this.value.toLowerCase();
+                    renderDeptMenu(
+                        deptItems.filter(d => d.value !== '' && d.label.toLowerCase().includes(q)),
+                        'modal'
+                    );
+                    document.getElementById('dept-modal-menu').classList.add('show');
+                });
+
+            // Close dept dropdowns on outside click
+            document.addEventListener('click', e => {
+                if (!e.target.closest('#dept-search-input') && !e.target.closest('#filter-dept-menu')) {
+                    document.getElementById('filter-dept-menu').classList.remove('show');
+                }
+                if (!e.target.closest('#dept-search-input-modal') && !e.target.closest('#dept-modal-menu')) {
+                    document.getElementById('dept-modal-menu').classList.remove('show');
+                }
+            });
+            
+            // Avatar Preview
+            const firstName = document.getElementById('modalFirstName');
+            const lastName  = document.getElementById('modalLastName');
+            const modal     = document.getElementById('empModal');
+
+            function updateProfilePreview() {
+                const el = document.getElementById('profilePreview');
+                if (!el) return;
+
+                el.innerHTML = `
+                    <img src="../assets/user_profiles/default_profile.png"
+                        class="employee-avatar"
+                        alt="default avatar"
+                        style="width:200px;height:200px;border-radius:50%;object-fit:cover;">
+                `;
+            }
+
+            if (firstName && lastName) {
+                firstName.addEventListener('input', updateProfilePreview);
+                lastName.addEventListener('input', updateProfilePreview);
+            }
+
+            if (modal) {
+                modal.addEventListener('show.bs.modal', () => {
+                    updateProfilePreview();
+
+                    // reset dept modal
+                    document.getElementById('dept-search-input-modal').value = '';
+                    document.getElementById('deptInput').value = '';
+                });
+            }
+
+            loadDepartments();
         });
 
-        // ---- FILTER DROPDOWN SELECTION ----
-        function selectFilter(type, value, label) {
-            if (type === 'role') {
-                document.getElementById('role-filter').value         = value;
-                document.getElementById('roleBtnLabel').textContent = label;
-            } else {
-                document.getElementById('dept-filter').value     = value;
-                document.getElementById('dept-search-input').value = label === 'All Departments' ? '' : label;
-                document.getElementById('filter-dept-menu').classList.remove('show');
-            }
-            currentPage = 1;
-            applyFilters();
+        /* -------------------------------------------------------
+        DEPARTMENT DROPDOWNS
+        ------------------------------------------------------- */
+        function loadDepartments() {
+            fetch('/DTR-Internship-Project/admin_pages/department_api.php?action=list')
+                .then(r => r.json())
+                .then(depts => {
+                    deptItems = [
+                        { value: '', label: 'All Departments' },
+                        ...depts.map(d => ({ value: String(d.id), label: d.department_name }))
+                    ];
+                    renderDeptMenu(deptItems, 'filter');
+                    renderDeptMenu(deptItems.filter(d => d.value !== ''), 'modal');
+                })
+                .catch(() => {});
         }
 
-        // ---- FILTER + SORT + PAGINATE ----
+        function renderDeptMenu(items, target) {
+            const menuId  = target === 'filter' ? 'filter-dept-menu' : 'dept-modal-menu';
+            const menu    = document.getElementById(menuId);
+            if (!menu) return;
+
+            menu.innerHTML = '';
+            items.forEach(item => {
+                const li  = document.createElement('li');
+                const btn = document.createElement('button');
+                btn.type        = 'button';
+                btn.className   = 'dropdown-item';
+                btn.textContent = item.label;
+                btn.onclick = () => {
+                    if (target === 'filter') {
+                        document.getElementById('dept-filter').value        = item.value;
+                        document.getElementById('dept-search-input').value  = item.label === 'All Departments' ? '' : item.label;
+                        menu.classList.remove('show');
+                        currentPage = 1;
+                        applyFilters();
+                    } else {
+                        document.getElementById('deptInput').value                = item.value;
+                        document.getElementById('dept-search-input-modal').value  = item.label;
+                        menu.classList.remove('show');
+                    }
+                };
+                li.appendChild(btn);
+                menu.appendChild(li);
+            });
+        }
+
+        /* -------------------------------------------------------
+        ROLE SELECT
+        ------------------------------------------------------- */
+        function selectRole(value, label) {
+            document.getElementById('roleInput').value       = value;
+            document.getElementById('roleLabel').textContent = label;
+            document.getElementById('roleDropdown').classList.remove('show');
+        }
+
+        /* -------------------------------------------------------
+        ROLE FILTER (dropdown-item onclick)
+        ------------------------------------------------------- */
+        function selectFilter(type, value, label) {
+            if (type === 'role') {
+                document.getElementById('role-filter').value        = value;
+                document.getElementById('roleBtnLabel').textContent = label;
+                currentPage = 1;
+                applyFilters();
+            }
+            // dept is handled by renderDeptMenu now — no else needed
+        }
+
+        /* -------------------------------------------------------
+        FILTER + SORT + PAGINATE
+        ------------------------------------------------------- */
         function applyFilters() {
+
             const q    = document.getElementById('empSearch').value.toLowerCase().trim();
             const role = document.getElementById('role-filter').value;
             const dept = document.getElementById('dept-filter').value;
 
             let filtered = allRows.filter(row => {
-
                 const firstName = (row.dataset.firstName || '').toLowerCase();
-                const lastName  = (row.dataset.lastName || '').toLowerCase();
+                const lastName  = (row.dataset.lastName  || '').toLowerCase();
                 const fullName  = `${firstName} ${lastName}`.trim();
-                const email     = (row.dataset.email || '').toLowerCase();
+                const email     = (row.dataset.email     || '').toLowerCase();
 
-                const matchSearch = !q
-                    || fullName.includes(q)
-                    || email.includes(q);
-
-                const matchRole = !role || row.dataset.role === role;
-                const matchDept = !dept || row.dataset.dept === dept;
+                const matchSearch = !q || fullName.includes(q) || email.includes(q);
+                const matchRole   = !role || row.dataset.role === role;
+                const matchDept   = !dept || row.dataset.dept === dept;
 
                 return matchSearch && matchRole && matchDept;
             });
@@ -603,12 +837,8 @@ $currentPage = 'manage_employees';
                     if (sortCol === 'id') {
                         return sortDir * (parseInt(a.dataset.id) - parseInt(b.dataset.id));
                     }
-
-                    const key = sortCol === 'deptName' ? 'deptName' : sortCol;
-
-                    const av = (a.dataset[key] || '').toLowerCase();
-                    const bv = (b.dataset[key] || '').toLowerCase();
-
+                    const av = (a.dataset[sortCol] || '').toLowerCase();
+                    const bv = (b.dataset[sortCol] || '').toLowerCase();
                     return sortDir * av.localeCompare(bv);
                 });
             }
@@ -623,35 +853,24 @@ $currentPage = 'manage_employees';
             const pagRows = filtered.slice(start, start + ROWS_PER_PAGE);
 
             const tbody = document.getElementById('empList');
-
-            pagRows.forEach(r => tbody.appendChild(r));
-
             allRows.forEach(r => r.style.display = 'none');
-            pagRows.forEach(r => r.style.display = '');
+            pagRows.forEach(r => { tbody.appendChild(r); r.style.display = ''; });
 
             const emptyRow = document.querySelector('#empList .emptyRow');
-
-            if (emptyRow) {
-                emptyRow.style.display = total === 0 ? '' : 'none';
-            }
+            if (emptyRow) emptyRow.style.display = total === 0 ? '' : 'none';
 
             document.getElementById('empCount').textContent = total;
-
             renderPagination(total, totalPages, start);
         }
-        // ---- SORT ----
+
+        /* -------------------------------------------------------
+        SORT
+        ------------------------------------------------------- */
         function sortBy(col) {
             if (sortCol === col) {
-                if (sortDir === 1) {
-                    // 2nd click → DESC
-                    sortDir = -1;
-                } else {
-                    // 3rd click → reset
-                    sortCol = null;
-                    sortDir = 1;
-                }
+                sortDir = sortDir === 1 ? -1 : 1;
+                if (sortDir === 1) sortCol = null;
             } else {
-                // New column → ASC
                 sortCol = col;
                 sortDir = 1;
             }
@@ -661,33 +880,25 @@ $currentPage = 'manage_employees';
         }
 
         function updateSortIcons() {
-            // Reset all headers
-            document.querySelectorAll('.sortable').forEach(el => {
-                el.classList.remove('sorted');
-            });
-
-            // Reset all icons
+            document.querySelectorAll('.sortable').forEach(el => el.classList.remove('sorted'));
             document.querySelectorAll('.sortIcon').forEach(el => {
                 el.className = 'sortIcon bi bi-arrow-down-up';
             });
 
-            // If no sort, stop here
             if (!sortCol) return;
 
-            // Activate current header
             const header = document.querySelector(`[onclick="sortBy('${sortCol}')"]`);
             if (header) header.classList.add('sorted');
 
-            // Update icon direction
             const icon = document.getElementById('sort-' + sortCol);
             if (icon) {
-                icon.className =
-                    'sortIcon bi ' +
-                    (sortDir === 1 ? 'bi-arrow-up' : 'bi-arrow-down');
+                icon.className = 'sortIcon bi ' + (sortDir === 1 ? 'bi-arrow-up' : 'bi-arrow-down');
             }
         }
 
-        // ---- PAGINATION ----
+        /* -------------------------------------------------------
+        PAGINATION
+        ------------------------------------------------------- */
         function renderPagination(total, totalPages, start) {
             const pag = document.getElementById('empPagination');
             if (!pag) return;
@@ -698,15 +909,9 @@ $currentPage = 'manage_employees';
 
             let html = `
                 <div class="row align-items-center g-2 w-100">
-
-                    <!-- LEFT -->
-                    <div class="col-md d-flex align-items-center gap-2 flex-nowrap">
-                        <span class="text-meta">
-                            Showing ${showing}
-                        </span>
+                    <div class="col-md d-flex align-items-center gap-2">
+                        <span class="text-meta">Showing ${showing}</span>
                     </div>
-
-                    <!-- CENTER (PAGINATION BUTTONS) -->
                     <div class="col-md d-flex justify-content-center">
                         <ul class="pagination pagination-sm mb-0">
             `;
@@ -721,7 +926,7 @@ $currentPage = 'manage_employees';
 
             getPageNums(currentPage, totalPages).forEach(p => {
                 if (p === '...') {
-                    html += `<li class="page-item disabled"><span class="page-link pag-ellipsis">…</span></li>`;
+                    html += `<li class="page-item disabled"><span class="page-link">…</span></li>`;
                 } else {
                     html += `
                         <li class="page-item${p === currentPage ? ' active' : ''}">
@@ -739,60 +944,20 @@ $currentPage = 'manage_employees';
                 </li>
                         </ul>
                     </div>
-
-                    <!-- RIGHT -->
-                    <div class="col-md d-flex justify-content-md-end justify-content-start align-items-center gap-2 flex-nowrap">
-
-                        <span class="text-meta text-nowrap">
-                            Rows per page
-                        </span>
-
+                    <div class="col-md d-flex justify-content-md-end align-items-center gap-2">
+                        <span class="text-meta text-nowrap">Rows per page</span>
                         <div class="dropdown">
-
-                            <button
-                                class="btn btn-sm dropdown-toggle"
-                                type="button"
-                                data-bs-toggle="dropdown"
-                                aria-expanded="false">
-
-                                <span id="rowsPerPageLabel">
-                                    ${ROWS_PER_PAGE} Rows
-                                </span>
-
+                            <button class="btn btn-sm dropdown-toggle" data-bs-toggle="dropdown">
+                                <span id="rowsPerPageLabel">${ROWS_PER_PAGE} Rows</span>
                             </button>
-
                             <ul class="dropdown-menu">
-
-                                <li>
-                                    <button class="dropdown-item" type="button" onclick="changeRowsPerPage(10)">
-                                        10 Rows
-                                    </button>
-                                </li>
-
-                                <li>
-                                    <button class="dropdown-item" type="button" onclick="changeRowsPerPage(25)">
-                                        25 Rows
-                                    </button>
-                                </li>
-
-                                <li>
-                                    <button class="dropdown-item" type="button" onclick="changeRowsPerPage(50)">
-                                        50 Rows
-                                    </button>
-                                </li>
-
-                                <li>
-                                    <button class="dropdown-item" type="button" onclick="changeRowsPerPage(100)">
-                                        100 Rows
-                                    </button>
-                                </li>
-
+                                <li><button class="dropdown-item" onclick="changeRowsPerPage(10)">10</button></li>
+                                <li><button class="dropdown-item" onclick="changeRowsPerPage(25)">25</button></li>
+                                <li><button class="dropdown-item" onclick="changeRowsPerPage(50)">50</button></li>
+                                <li><button class="dropdown-item" onclick="changeRowsPerPage(100)">100</button></li>
                             </ul>
-
                         </div>
-
                     </div>
-
                 </div>
             `;
 
@@ -800,10 +965,10 @@ $currentPage = 'manage_employees';
         }
 
         function getPageNums(cur, tot) {
-            if (tot <= 7) return Array.from({length: tot}, (_, i) => i + 1);
-            if (cur <= 4)      return [1,2,3,4,5,'...',tot];
-            if (cur >= tot-3)  return [1,'...',tot-4,tot-3,tot-2,tot-1,tot];
-            return [1,'...',cur-1,cur,cur+1,'...',tot];
+            if (tot <= 7) return Array.from({ length: tot }, (_, i) => i + 1);
+            if (cur <= 4) return [1, 2, 3, 4, 5, '...', tot];
+            if (cur >= tot - 3) return [1, '...', tot-4, tot-3, tot-2, tot-1, tot];
+            return [1, '...', cur-1, cur, cur+1, '...', tot];
         }
 
         function changePage(n) {
@@ -812,353 +977,13 @@ $currentPage = 'manage_employees';
             currentPage = n;
             applyFilters();
         }
-        
+
         function changeRowsPerPage(value) {
-
             ROWS_PER_PAGE = parseInt(value);
-
-            const label = document.getElementById('rowsPerPageLabel');
-
-            if (label) {
-                label.textContent = `${ROWS_PER_PAGE} Rows`;
-            }
-
-            currentPage = 1;
-
+            currentPage   = 1;
             applyFilters();
         }
 
-        // ---- SELECT EMPLOYEE ----
-        function selectEmployee(id, name) {
-            currentEmployeeId = id;
-            document.querySelectorAll('#empList .empRow').forEach(r => r.classList.remove('active'));
-            document.querySelector(`#empList .empRow[data-id="${id}"]`).classList.add('active');
-            document.getElementById('empPlaceholder').style.display    = 'none';
-            document.getElementById('empRecordsContent').style.display = 'flex';
-            document.getElementById('selectedEmpName').textContent     = name;
-            initDatePicker();
-            loadRecords();
-        }
-
-        // ---- DATE PICKER ----
-        function initDatePicker() {
-            if (datePicker) { datePicker.destroy(); datePicker = null; }
-
-            datePicker = flatpickr('#dateRangePicker', {
-                mode:          'range',
-                dateFormat:    'Y-m-d',
-                altInput:      true,
-                altInputClass: 'empDateInput',
-                altFormat:     'M j, Y',
-                defaultDate:   [currentStart, currentEnd],
-                onChange(selectedDates, dateStr, instance) {
-                    if (selectedDates.length === 2) {
-                        currentStart = instance.formatDate(selectedDates[0], 'Y-m-d');
-                        currentEnd   = instance.formatDate(selectedDates[1], 'Y-m-d');
-                        loadRecords();
-                    }
-                }
-            });
-        }
-
-        // ---- LOAD RECORDS ----
-        function loadRecords() {
-            if (!currentEmployeeId) return;
-
-            const container = document.getElementById('ganttContainer');
-            container.innerHTML = '<div class="ganttEmpty"><div class="empSpinner"></div> Loading...</div>';
-
-            const params = new URLSearchParams({
-                employee_id: currentEmployeeId,
-                start:       currentStart,
-                end:         currentEnd
-            });
-
-            fetch('get_admin_employee_records.php?' + params.toString())
-                .then(r => r.text())
-                .then(html => {
-                    container.innerHTML = html;
-                    initGanttCursors();
-                })
-                .catch(() => {
-                    container.innerHTML = '<div class="ganttEmpty" style="color:#ff8a8a;">Failed to load records.</div>';
-                });
-        }
-
-        // ---- MODAL ----
-
-        function closeModal(e) {
-            if (e.target === document.getElementById('empModalOverlay')) closeModalBtn();
-        }
-
-        function closeModalBtn() {
-            document.getElementById('empModalOverlay').style.display = 'none';
-        }
-
-        function createDropdown({
-            inputId,
-            menuId,
-            hiddenInputId = null,
-            items = [],
-            placeholder = 'Select',
-            onSelect = null,
-            allowSearch = true
-        }) {
-            const input = document.getElementById(inputId);
-            const menu = document.getElementById(menuId);
-            const hidden = hiddenInputId ? document.getElementById(hiddenInputId) : null;
-
-            if (!input || !menu) return;
-
-            function render(list) {
-                menu.innerHTML = '';
-
-                list.forEach(item => {
-                    const li = document.createElement('li');
-
-                    const btn = document.createElement('button');
-                    btn.type = 'button';
-                    btn.className = 'dropdown-item';
-                    btn.textContent = item.label;
-
-                    btn.onclick = () => select(item);
-
-                    li.appendChild(btn);
-                    menu.appendChild(li);
-                });
-            }
-
-            function select(item) {
-                input.value = item.label;
-
-                if (hidden) hidden.value = item.value;
-
-                if (onSelect) onSelect(item);
-
-                menu.classList.remove('show');
-            }
-
-            function filter() {
-                const q = input.value.toLowerCase().trim();
-                const filtered = items.filter(i =>
-                    i.label.toLowerCase().includes(q)
-                );
-                render(filtered);
-            }
-
-            function open() {
-                menu.classList.add('show');
-            }
-
-            // events
-            input.addEventListener('click', open);
-
-            if (allowSearch) {
-                input.addEventListener('input', filter);
-            }
-
-            document.addEventListener('click', e => {
-                if (!e.target.closest(`#${menuId}`) &&
-                    !e.target.closest(`#${inputId}`)) {
-                    menu.classList.remove('show');
-                }
-            });
-
-            // initial render
-            render(items);
-        }
-
-        // ---- ROLE / DEPT SELECTS ----
-        function toggleModalDropdown(id) {
-            const all = ['roleDropdown', 'deptDropdown'];
-            all.forEach(d => {
-                if (d !== id) document.getElementById(d).classList.remove('show');
-            });
-            document.getElementById(id).classList.toggle('show');
-        }
-
-        function selectRole(value, label) {
-            document.getElementById('roleInput').value       = value;
-            document.getElementById('roleLabel').textContent = label;
-            document.getElementById('roleDropdown').classList.remove('show');
-        }
-
-        function selectDept(value, label) {
-            document.getElementById('deptInput').value = value;
-            document.getElementById('dept-search-input-modal').value = label;
-
-            // close modal dropdown only
-            const modalMenu = document.getElementById('dept-modal-menu');
-            if (modalMenu) modalMenu.classList.remove('show');
-        }
-
-        document.addEventListener('click', e => {
-            if (!e.target.closest('.customSelectWrapper')) {
-                document.querySelectorAll('.customSelectMenu').forEach(m => m.classList.remove('show'));
-            }
-        });
-
-        function loadDepartments() {
-            fetch('/DTR-Internship-Project/admin_pages/department_api.php?action=list')
-                .then(r => r.json())
-                .then(depts => {
-
-                    const formatted = depts.map(d => ({
-                        value: String(d.id),
-                        label: d.department_name
-                    }));
-
-                    // =========================
-                    // FILTER DROPDOWN
-                    // =========================
-                    createDropdown({
-                        inputId: 'dept-search-input',
-                        menuId: 'filter-dept-menu',
-                        hiddenInputId: 'dept-filter',
-                        items: [
-                            { value: '', label: 'All Departments' },
-                            ...formatted
-                        ],
-                        onSelect: () => applyFilters()
-                    });
-
-                    const urlDept = new URLSearchParams(location.search).get('dept');
-                    if (urlDept) {
-                        const match = formatted.find(d => d.value === urlDept);
-                        if (match) {
-                            document.getElementById('dept-filter').value       = match.value;
-                            document.getElementById('dept-search-input').value = match.label;
-                            applyFilters();
-                        }
-                    }
-
-                    // =========================
-                    // MODAL DROPDOWN
-                    // =========================
-                    createDropdown({
-                        inputId: 'dept-search-input-modal',
-                        menuId: 'dept-modal-menu',
-                        hiddenInputId: 'deptInput',
-                        items: [
-                            { value: '', label: 'None' },
-                            ...formatted
-                        ],
-                        allowSearch: true
-                    });
-
-                })
-                .catch(() => {});
-        }
-        loadDepartments();
-
-        // Auto-dismiss success alert
-        setTimeout(() => {
-            document.querySelectorAll('.empAlert').forEach(a => {
-                a.style.transition = 'opacity 0.5s';
-                a.style.opacity    = '0';
-                setTimeout(() => a.remove(), 500);
-            });
-        }, 3000);
-
-        // ---- BULK SCHEDULE: FILE PREVIEW ----
-        document.getElementById('scheduleFileInput').addEventListener('change', function () {
-            const file = this.files[0];
-            if (!file) return;
-
-            document.getElementById('fileName').textContent = file.name;
-
-            const reader = new FileReader();
-            reader.onload = function (e) {
-                const data     = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, { type: 'array' });
-                const sheet    = workbook.Sheets[workbook.SheetNames[0]];
-                const rows     = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
-
-                const tbody    = document.getElementById('previewBody');
-                tbody.innerHTML = '';
-
-                const dataRows = rows.slice(1, 6);
-                if (dataRows.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="6" class="text-center" style="color:var(--text-muted);">No data rows found</td></tr>';
-                } else {
-                    dataRows.forEach(row => {
-                        const tr = document.createElement('tr');
-                        for (let i = 0; i < 5; i++) {
-                            const td = document.createElement('td');
-                            td.textContent = row[i] ?? '';
-                            tr.appendChild(td);
-                        }
-                        tbody.appendChild(tr);
-                    });
-                }
-
-                document.getElementById('filePreview').style.display = '';
-            };
-            reader.readAsArrayBuffer(file);
-        });
-
-        // Reset preview when modal is closed
-        document.getElementById('importScheduleModal').addEventListener('hidden.bs.modal', function () {
-            document.getElementById('scheduleFileInput').value = '';
-            document.getElementById('filePreview').style.display = 'none';
-            document.getElementById('previewBody').innerHTML = '';
-            document.getElementById('fileName').textContent = '';
-            const submitBtn = document.querySelector('#importScheduleForm [type="submit"]');
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = 'Import Schedule';
-        });
-
-        // ---- BULK SCHEDULE: AJAX SUBMIT ----
-        document.getElementById('importScheduleForm').addEventListener('submit', function (e) {
-            e.preventDefault();
-
-            const btn = this.querySelector('[type="submit"]');
-            btn.disabled = true;
-            btn.innerHTML = '<span class="empSpinner"></span> Importing...';
-
-            fetch('bulk_schedule_api.php?action=import', {
-                method: 'POST',
-                body: new FormData(this)
-            })
-            .then(r => r.json())
-            .then(result => {
-                bootstrap.Modal.getInstance(document.getElementById('importScheduleModal')).hide();
-
-                const isError = result.status !== 'success';
-                let msg = isError
-                    ? (result.message || 'Import failed.')
-                    : `Imported ${result.inserted} schedule entries successfully.`;
-                if (!isError && result.errors && result.errors.length > 0) {
-                    msg += ` (${result.errors.length} row(s) skipped)`;
-                }
-                showImportAlert(msg, isError);
-            })
-            .catch(() => {
-                btn.disabled = false;
-                btn.innerHTML = 'Import Schedule';
-                showImportAlert('Import failed. Please try again.', true);
-            });
-        });
-
-        function showImportAlert(message, isError = false) {
-            const alertDiv = document.createElement('div');
-            alertDiv.className = 'empAlert';
-            if (isError) {
-                alertDiv.style.background   = 'rgba(220,53,69,0.15)';
-                alertDiv.style.borderColor  = 'rgba(220,53,69,0.3)';
-                alertDiv.style.color        = '#ff8a8a';
-            }
-            alertDiv.textContent = message;
-
-            const filterWrapper = document.querySelector('.filter-wrapper');
-            filterWrapper.insertAdjacentElement('afterend', alertDiv);
-
-            setTimeout(() => {
-                alertDiv.style.transition = 'opacity 0.5s';
-                alertDiv.style.opacity    = '0';
-                setTimeout(() => alertDiv.remove(), 500);
-            }, 4000);
-        }
 
     </script>
 </body>

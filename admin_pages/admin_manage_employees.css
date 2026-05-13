@@ -79,6 +79,13 @@ body {
     margin: 0.5rem;
 }
 
+.employee-avatar {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
 .employee-title {
     display: flex;
     align-items: center;

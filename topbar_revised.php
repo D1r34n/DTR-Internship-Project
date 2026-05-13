@@ -12,6 +12,17 @@ if (!isset($_SESSION['user_id'], $_SESSION['user_role'])) {
 require_once '../db.php';
 
 $employeeId = $_SESSION['user_id'];
+
+$stmt = $pdo->prepare("
+    SELECT first_name, last_name, email, profile_image
+    FROM employees
+    WHERE id = ?
+    LIMIT 1
+");
+
+$stmt->execute([$employeeId]);
+$employee = $stmt->fetch(PDO::FETCH_ASSOC);
+
 $role       = $_SESSION['user_role'];
 
 // Validate role
@@ -173,50 +184,101 @@ $breakDisabled = !$timedIn || $isBreakOut;
 
             <!-- User Dropdown -->
             <div class="dropdown">
-                <button class="btn dropdown-toggle" type="button"
-                        data-bs-toggle="dropdown" aria-expanded="false">
-                        <i class="bi bi-person-circle"></i>
-                    <?= htmlspecialchars($_SESSION['user_name'] ?? $_SESSION['user_email'] ?? 'User') ?>
-                    
+
+                <button
+                    class="btn dropdown-toggle d-flex align-items-center gap-2"
+                    type="button"
+                    data-bs-toggle="dropdown"
+                    aria-expanded="false">
+
+                    <!-- PROFILE IMAGE -->
+                    <img 
+                        src="../assets/user_profiles/<?= htmlspecialchars($_SESSION['profile_image'] ?? 'default_profile.png') ?>"
+                        class="topbar-profile-image"
+                        data-bs-toggle="modal"
+                        data-bs-target="#editProfileImageModal"
+                        style="cursor:pointer;"
+                    >
+
+                    <!-- USER NAME -->
+                    <span>
+                        <?= htmlspecialchars($_SESSION['user_name'] ?? $_SESSION['user_email'] ?? 'User') ?>
+                    </span>
+
                     <div class="vr"></div>
-            
+
+                    <!-- ROLE -->
                     <span class="empRole empRole-<?= $role ?>">
                         <?= ucfirst($role) ?>
                     </span>
+
                 </button>
+
+                <!-- DROPDOWN MENU -->
                 <ul class="dropdown-menu dropdown-menu-end">
+
                     <li>
-                        <a class="dropdown-item" href="#"
-                           data-bs-toggle="modal" data-bs-target="#otModal"
-                           onclick="openOTModal()">
-                            <i class="bi bi-clock-history"></i> Request OT
+                        <a class="dropdown-item"
+                        href="#"
+                        data-bs-toggle="modal"
+                        data-bs-target="#otModal"
+                        onclick="openOTModal()">
+
+                            <i class="bi bi-clock-history"></i>
+                            Request OT
+
                         </a>
                     </li>
+
                     <li>
-                        <a class="dropdown-item" href="#"
-                           data-bs-toggle="modal" data-bs-target="#leaveModal"
-                           onclick="openLeaveModal()">
-                            <i class="bi bi-calendar-x"></i> Request Leave
+                        <a class="dropdown-item"
+                        href="#"
+                        data-bs-toggle="modal"
+                        data-bs-target="#leaveModal"
+                        onclick="openLeaveModal()">
+
+                            <i class="bi bi-calendar-x"></i>
+                            Request Leave
+
                         </a>
                     </li>
+
                     <li>
-                        <a class="dropdown-item" href="#"
-                           data-bs-toggle="modal" data-bs-target="#obModal"
-                           onclick="openOBModal()">
-                            <i class="bi bi-briefcase"></i> Request OB
+                        <a class="dropdown-item"
+                        href="#"
+                        data-bs-toggle="modal"
+                        data-bs-target="#obModal"
+                        onclick="openOBModal()">
+
+                            <i class="bi bi-briefcase"></i>
+                            Request OB
+
                         </a>
                     </li>
+
                     <li>
-                        <a class="dropdown-item" href="#" onclick="openLogEditModal(); return false;">
-                            <i class="bi bi-pencil-square"></i> Request Log Edit
+                        <a class="dropdown-item"
+                        href="#"
+                        onclick="openLogEditModal(); return false;">
+
+                            <i class="bi bi-pencil-square"></i>
+                            Request Log Edit
+
                         </a>
                     </li>
+
                     <li><hr class="dropdown-divider"></li>
+
                     <li>
-                        <a class="dropdown-item logout-item" href="../authentication_pages/logout.php">
-                            <i class="bi bi-box-arrow-right"></i> Logout
+                        <a class="dropdown-item logout-item"
+                        href="../authentication_pages/logout.php">
+
+                            <i class="bi bi-box-arrow-right"></i>
+                            Logout
+
                         </a>
                     </li>
+
                 </ul>
             </div>
 
@@ -253,44 +315,91 @@ $breakDisabled = !$timedIn || $isBreakOut;
   </div>
 </div>
 
-<style>
-.webcam-wrapper {
-    position: relative;
-    width: 100%;
-    border-radius: 12px;
-    overflow: hidden;
-    background: rgba(0, 0, 0, 0.4);
-    aspect-ratio: 4 / 3;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
+<!-- EDIT PROFILE IMAGE MODAL -->
+<div class="modal fade"
+     id="editProfileImageModal"
+     tabindex="-1"
+     aria-labelledby="editProfileImageModalLabel"
+     aria-hidden="true">
 
-#webcamFeed {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    border-radius: 12px;
-    transform: scaleX(-1);
-}
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
 
-.webcam-error {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.5rem;
-    color: rgba(255, 255, 255, 0.4);
-    font-size: 0.85rem;
-}
+            <!-- HEADER -->
+            <div class="modal-header">
+                <h5 class="modal-title" id="editProfileImageModalLabel">
+                    Edit Profile Image
+                </h5>
 
-.webcam-error i {
-    font-size: 2.5rem;
-}
+                <button type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"
+                        aria-label="Close">
+                </button>
+            </div>
 
-.webcam-error p {
-    margin: 0;
-}
-</style>
+            <!-- BODY -->
+            <div class="modal-body text-center p-3">
+
+                <div class="webcam-wrapper profile-image-wrapper">
+
+                    <!-- IMAGE PREVIEW -->
+                    <img
+                        id="profileImagePreview"
+                        src="../assets/user_profiles/default_profile.png"
+                        alt="Profile Preview"
+                        class="profile-image-preview"
+                    >
+
+                    <!-- FILE INPUT -->
+                    <input
+                        type="file"
+                        id="profileImageInput"
+                        accept="image/*"
+                        class="form-control mt-3"
+                    >
+
+                    <!-- ERROR -->
+                    <div
+                        id="profileImageError"
+                        style="display:none;"
+                        class="webcam-error mt-3">
+
+                        <i class="bi bi-exclamation-triangle-fill"></i>
+                        <p>Failed to load image</p>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            <!-- FOOTER -->
+            <div class="modal-footer justify-content-between">
+
+                <button type="button"
+                        class="btn btn-secondary"
+                        data-bs-dismiss="modal">
+
+                    Cancel
+
+                </button>
+
+                <button type="button"
+                        class="btn btn-success"
+                        id="saveProfileImageBtn"
+                        onclick="saveProfileImage()">
+
+                    <i class="bi bi-check-circle-fill"></i>
+                    Save Image
+
+                </button>
+
+            </div>
+
+        </div>
+    </div>
+</div>
 
 <script defer>
 let isProcessing      = false;
@@ -662,4 +771,64 @@ const confirmAttendance = () => {
 
 window.openWebcamModal   = openWebcamModal;
 window.confirmAttendance = confirmAttendance;
+
+/* -------------------------------------------------------
+   EDIT PROFILE MODAL
+------------------------------------------------------- */
+document.getElementById('profileImageInput')
+    .addEventListener('change', function (e) {
+
+        const file = e.target.files[0];
+
+        if (!file) return;
+
+        const preview = document.getElementById('profileImagePreview');
+
+        preview.src = URL.createObjectURL(file);
+    });
+
+function saveProfileImage() {
+
+    const input = document.getElementById('profileImageInput');
+
+    if (!input.files.length) {
+        alert('Please select an image.');
+        return;
+    }
+
+    const file = input.files[0];
+
+    const formData = new FormData();
+    formData.append('profile_image', file);
+
+    fetch('../system_functions/upload_profile_image.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(res => res.json())
+    .then(data => {
+
+        if (data.success) {
+
+            // update image immediately in UI
+            const img = document.querySelector('.topbar-profile-image');
+            if (img) {
+                img.src = '../assets/user_profiles/' + data.filename + '?t=' + Date.now();
+            }
+
+            // close modal
+            const modal = bootstrap.Modal.getInstance(
+                document.getElementById('editProfileImageModal')
+            );
+            modal.hide();
+
+        } else {
+            alert(data.error || 'Upload failed');
+        }
+    })
+    .catch(err => {
+        console.error(err);
+        alert('Upload error');
+    });
+}
 </script>
