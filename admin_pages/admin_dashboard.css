@@ -83,7 +83,85 @@ body {
     background-color: rgba(0, 0, 0, 0.5);
     padding: 20px;
     border-radius: 12px;
-    width: 220px;
+    width: 240px;
     text-align: left;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+.summaryBday, 
+.summaryHolidays {
+    background-color: rgba(0, 0, 0, 0.5);
+    padding: 20px;
+    border-radius: 12px;
+    width: 376px;
+    height: 350px;
+    text-align: left;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+
+    position: relative; /* ✅ needed for top-right count */
+}
+
+.summaryTop {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+}
+
+.summaryTop p {
+    margin: 0;
+    font-weight: 500;
+}
+
+/* ✅ TOP RIGHT COUNT */
+.summaryCount {
+    position: absolute;
+    top: 15px;
+    right: 18px;
+
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #fff;
+    margin: 0;
+}
+
+
+.birthdayList {
+    margin-top: 10px;
+    max-height: 180px;
+    overflow-y: auto;
+}
+
+.birthdayList ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.birthdayList li {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    padding: 4px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+
+
+.holidayList {
+    margin-top: 10px;
+    max-height: 180px;
+    overflow-y: auto;
+}
+
+.holidayList ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.holidayList li {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    padding: 4px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
 }
