@@ -1,12 +1,4 @@
-<!-- TOAST CONTAINER -->
-<div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 99999;">
-  <div id="appToast" class="toast align-items-center border-0" role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="4000">
-    <div class="d-flex">
-      <div class="toast-body" id="appToastMsg"></div>
-      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
-    </div>
-  </div>
-</div>
+
 
 <!-- OT REQUEST MODAL -->
 <div class="modal fade" id="otModal" tabindex="-1" aria-labelledby="otModalLabel" aria-hidden="true">
@@ -227,17 +219,6 @@
 <script>
   // ===== SHARED UTILITIES =====
 
-  function showToast(message, type = 'error') {
-    const toast = document.getElementById('appToast');
-    const msg   = document.getElementById('appToastMsg');
-
-    toast.classList.remove('bg-danger', 'bg-success', 'text-white');
-    toast.classList.add(type === 'success' ? 'bg-success' : 'bg-danger', 'text-white');
-    msg.textContent = message;
-
-    bootstrap.Toast.getOrCreateInstance(toast).show();
-  }
-
   function localDateStr(date) {
     const y = date.getFullYear();
     const m = String(date.getMonth() + 1).padStart(2, '0');
@@ -392,11 +373,11 @@
 
           rowEl.addEventListener('click', () => {
             if (isPending) {
-              showToast('You already have a pending OT request for this date.');
+              showToast('You already have a pending OT request for this date.', 'warning');
               return;
             }
             if (!canFile) {
-              showToast('You cannot file an OT request because you were late for more than an hour.');
+              showToast('You cannot file an OT request because you were late for more than an hour.', 'warning');
               return;
             }
 
@@ -424,7 +405,7 @@
         initGanttCursors();
       })
       .catch(() => {
-        showToast('Failed to load OT records. Please try again.');
+        showToast('Failed to load OT records. Please try again.', 'danger');
       });
   }
 
@@ -432,7 +413,7 @@
     const reason = document.getElementById('otReason').value.trim();
 
     if (!reason) {
-      showToast('Please enter a reason for your OT request.');
+      showToast('Please enter a reason for your OT request.', 'warning');
       return;
     }
     if (!otSelectedRecord) return;
@@ -459,7 +440,7 @@
         }
       })
       .catch(() => {
-        showToast('Something went wrong. Please try again.');
+        showToast('Something went wrong. Please try again.', 'danger');
       });
   }
 
@@ -536,7 +517,7 @@
         renderLeaveCalendar();
       })
       .catch(() => {
-        showToast('Failed to load schedule dates. Please try again.');
+        showToast('Failed to load schedule dates. Please try again.', 'danger');
       });
   }
 
@@ -611,17 +592,17 @@
         const dateStr = info.dateStr;
 
         if (!currentLeaveType) {
-          showToast('Please select a leave type first.');
+          showToast('Please select a leave type first.', 'warning');
           return;
         }
         if (leaveExistingDates.includes(dateStr)) {
-          showToast('This date already has an existing leave request.');
+          showToast('This date already has an existing leave request.', 'danger');
           return;
         }
         if (!isDateSelectable(dateStr, rules)) {
           showToast(rules.direction === 'past'
             ? 'Sick leave can only be filed for past dates (before today).'
-            : 'Vacation leave can only be filed for future dates.');
+            : 'Vacation leave can only be filed for future dates.', 'warning');
           return;
         }
 
@@ -630,7 +611,7 @@
           leaveSelectedDates.splice(idx, 1);
         } else {
           if (leaveSelectedDates.length >= rules.maxDays) {
-            showToast(`${capitalize(currentLeaveType)} is limited to ${rules.maxDays} day${rules.maxDays > 1 ? 's' : ''} only.`);
+            showToast(`${capitalize(currentLeaveType)} is limited to ${rules.maxDays} day${rules.maxDays > 1 ? 's' : ''} only.`, 'warning');
             return;
           }
           leaveSelectedDates.push(dateStr);
@@ -665,15 +646,15 @@
     const reason    = document.getElementById('leaveReason').value.trim();
 
     if (!leaveType) {
-      showToast('Please select a leave type.');
+      showToast('Please select a leave type.', 'warning');
       return;
     }
     if (leaveSelectedDates.length === 0) {
-      showToast('Please select at least 1 date.');
+      showToast('Please select at least 1 date.', 'warning');
       return;
     }
     if (!reason) {
-      showToast('Please enter a reason for your leave.');
+      showToast('Please enter a reason for your leave.', 'warning');
       return;
     }
 
@@ -698,11 +679,11 @@
           leaveSelectedDates = [];
           setTimeout(() => leaveModal.hide(), 2000);
         } else {
-          showToast(data.message);
+          showToast(data.message, 'danger');
         }
       })
       .catch(() => {
-        showToast('Something went wrong. Please try again.');
+        showToast('Something went wrong. Please try again.', 'danger');
       });
   }
 
@@ -744,7 +725,7 @@
         renderOBCalendar();
       })
       .catch(() => {
-        showToast('Failed to load schedule dates. Please try again.');
+        showToast('Failed to load schedule dates. Please try again.', 'danger');
         renderOBCalendar();
       });
 
@@ -797,11 +778,11 @@
         const dateStr = info.dateStr;
 
         if (obExistingDates.includes(dateStr)) {
-          showToast('You already have an OB request for this date.');
+          showToast('You already have an OB request for this date.', 'danger');
           return;
         }
         if (!obScheduledDates.includes(dateStr)) {
-          showToast('Please select a scheduled work day.');
+          showToast('Please select a scheduled work day.', 'warning');
           return;
         }
 
@@ -832,15 +813,15 @@
     const reason     = document.getElementById('obReason').value.trim();
 
     if (!obSelectedDate) {
-      showToast('Please select a date.');
+      showToast('Please select a date.', 'danger');
       return;
     }
     if (!clientName) {
-      showToast('Please enter a client name.');
+      showToast('Please enter a client name.', 'danger');
       return;
     }
     if (!reason) {
-      showToast('Please enter a reason.');
+      showToast('Please enter a reason.', 'danger');
       return;
     }
 
@@ -860,11 +841,11 @@
           obSelectedDate = null;
           setTimeout(() => obModal.hide(), 2000);
         } else {
-          showToast(data.message);
+          showToast(data.message, 'danger');
         }
       })
       .catch(() => {
-        showToast('Something went wrong. Please try again.');
+        showToast('Something went wrong. Please try again.', 'danger');
       });
   }
 
@@ -949,7 +930,7 @@
         }).join('');
       })
       .catch(() => {
-        showToast('Failed to load logs. Please try again.');
+        showToast('Failed to load logs. Please try again.', 'danger');
       });
   }
 
@@ -983,7 +964,7 @@
 
     const newDatetime = document.getElementById('leNewDatetime').value;
     if (!newDatetime) {
-      showToast('Please enter a new date and time.');
+      showToast('Please enter a new date and time.', 'danger');
       return;
     }
 
@@ -1003,11 +984,11 @@
           showToast(data.message, 'success');
           setTimeout(() => closeLogEditModal(), 1500);
         } else {
-          showToast(data.message);
+          showToast(data.message, 'danger');
         }
       })
       .catch(() => {
-        showToast('Something went wrong. Please try again.');
+        showToast('Something went wrong. Please try again.', 'danger');
       });
   }
   

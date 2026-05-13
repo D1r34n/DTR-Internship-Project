@@ -371,11 +371,11 @@ $currentPage = 'manage_employees';
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
 
-                    <form method="POST" action="admin_manage_employees.php">
+                    <form method="POST" action="admin_manage_employees.php" onsubmit="validateForm(event)">
                         <input type="hidden" name="employee_id" id="modalEmpId">
 
                         <div class="modal-body">
-                            <div class="row g-4 align-items-start">
+                            <div class="row g-4 align-items-center">
 
                                 <!-- LEFT: Avatar preview -->
                                 <div class="col-md-4 d-flex flex-column align-items-center">
@@ -438,7 +438,7 @@ $currentPage = 'manage_employees';
                                                     <?php endforeach; ?>
                                                 </ul>
                                             </div>
-                                            <input type="hidden" name="role" id="roleInput">
+                                            <input type="hidden" name="role" id="roleInput" required>
                                         </div>
 
                                         <!-- Department — Bootstrap dropdown with search inside -->
@@ -573,7 +573,7 @@ $currentPage = 'manage_employees';
                 </div>
             </div>
         </div>
-
+    <?php include '../toast.php'; ?>                                                    
     </div><!-- #main-wrapper -->
 
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
@@ -901,7 +901,45 @@ $currentPage = 'manage_employees';
             currentPage   = 1;
             applyFilters();
         }
+        
+        /* -------------------------------------------------------
+        FORM VALIDATION
+        ------------------------------------------------------- */
+        function validateForm(e) {
+            e.preventDefault();
 
+            const firstName = document.getElementById('modalFirstName').value.trim();
+            const lastName  = document.getElementById('modalLastName').value.trim();
+            const email     = document.getElementById('modalEmail').value.trim();
+            const birthdate = document.getElementById('modalBirthdate').value.trim();
+            const role      = document.getElementById('roleInput').value.trim();
+            const dept      = document.getElementById('deptInput').value.trim();
+
+            if (!firstName) {
+                showToast('First name is required.', 'danger'); return;
+            }
+            if (!lastName) {
+                showToast('Last name is required.', 'danger'); return;
+            }
+            if (!email) {
+                showToast('Email is required.', 'danger'); return;
+            }
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                showToast('Please enter a valid email address.', 'danger'); return;
+            }
+            if (!birthdate) {
+                showToast('Birthdate is required.', 'danger'); return;
+            }
+            if (!role) {
+                showToast('Please select a role.', 'danger'); return;
+            }
+            if (!dept) {
+                showToast('Please select a department.', 'warning'); return;
+            }
+
+            showToast('Adding employee...', 'success');
+            e.target.submit();
+        }
     </script>
 </body>
 </html>

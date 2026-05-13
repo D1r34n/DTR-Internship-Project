@@ -39,9 +39,9 @@
     --status-info-hover:     var(--info-glass-hover);
 }
 
-   /* ================================================
-   DIVIDER
-   ================================================ */
+/* ================================================
+DIVIDER
+================================================ */
 
 .vr {
     color: var(--text-light);
@@ -79,6 +79,65 @@
 *::-webkit-scrollbar-corner {
     background: transparent;
 }
+
+/* ================================================
+   TOAST
+   ================================================ */
+
+.toast {
+    background: var(--frosted-bg) linear-gradient(
+        to right,
+        rgba(255, 255, 255, 0.06) 0%,
+        rgba(255, 255, 255, 0.03) 40%,
+        transparent 100%
+    ) !important;
+    backdrop-filter: var(--frosted-blur) !important;
+    -webkit-backdrop-filter: var(--frosted-blur) !important;
+    border: 1px solid var(--frosted-border) !important;
+    border-radius: 12px !important;
+    box-shadow: var(--frosted-shadow) !important;
+    color: var(--text-light) !important;
+    min-width: 280px;
+}
+
+.toast.toast-success {
+    color: var(--status-success-color) !important;
+    background: var(--status-success-bg) linear-gradient(
+        to right,
+        rgba(255, 255, 255, 0.10) 0%,
+        rgba(255, 255, 255, 0.05) 40%,
+        rgba(255, 255, 255, 0.02) 70%,
+        transparent 100%
+    ) !important;
+    border: 1px solid var(--status-success-border) !important;
+    box-shadow: var(--primary-soft) !important;
+}
+.toast.toast-danger {
+    color: var(--status-danger-color) !important;
+    background: var(--status-danger-bg) linear-gradient(
+        to right,
+        rgba(255, 255, 255, 0.10) 0%,
+        rgba(255, 255, 255, 0.05) 40%,
+        rgba(255, 255, 255, 0.02) 70%,
+        transparent 100%
+    ) !important;
+    border: 1px solid var(--status-danger-border) !important;
+    box-shadow: var(--danger-soft) !important;
+}
+.toast.toast-warning {
+    color: var(--status-warning-color) !important;
+    background: var(--status-warning-bg) linear-gradient(
+        to right,
+        rgba(255, 255, 255, 0.10) 0%,
+        rgba(255, 255, 255, 0.05) 40%,
+        rgba(255, 255, 255, 0.02) 70%,
+        transparent 100%
+    ) !important;
+    border: 1px solid var(--status-warning-border) !important;
+    box-shadow: var(--glass-inset) !important;
+}
+
+.toast .btn-close { filter: invert(1) !important; }
 
 /* ================================================
    SEARCH BAR
