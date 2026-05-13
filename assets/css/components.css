@@ -840,8 +840,7 @@ button.btn-sm {
     padding: 0.4rem !important;
 
     max-height: 260px;
-    overflow-y: auto;
-    overflow-x: hidden;
+    overflow: visible !important;
 }
 
 .dropdown-menu.show {

@@ -1,200 +1,109 @@
 <?php
-/* =========================================================
-   FILE: fullcalendar_schedule_test.php
-   PURPOSE:
-   Simple FullCalendar schedule setter playground.
-
-   FEATURES:
-   - Click a date to create a schedule
-   - Drag events
-   - Resize events
-   - Delete events
-   - Uses localStorage only (no database yet)
-
-   REQUIREMENTS:
-   - Bootstrap 5
-   - FullCalendar CDN
-
-   AUTHOR: ChatGPT
-========================================================= */
+// Sample data (replace with DB later)
+$items = [
+    "Human Resources",
+    "Finance",
+    "Information Technology",
+    "Marketing",
+    "Operations",
+    "Logistics",
+    "Customer Support",
+    "Research & Development",
+    "Legal",
+    "Procurement"
+];
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FullCalendar Schedule Test</title>
+    <title>Searchable Dropdown</title>
 
-    <!-- Bootstrap -->
+    <!-- Bootstrap 5 -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 
-    <!-- FullCalendar -->
-    <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.css" rel="stylesheet">
-
     <style>
-        body {
-            background: #10141c;
-            color: #fff;
-            font-family: 'Poppins', sans-serif;
-            margin: 0;
-            padding: 2rem;
+        .dropdown-menu {
+            max-height: 250px;
+            overflow-y: auto;
         }
 
-        .calendar-wrapper {
-            max-width: 1200px;
-            margin: auto;
-
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.08);
-            border-radius: 18px;
-
-            padding: 1.5rem;
-
-            backdrop-filter: blur(24px);
-        }
-
-        #calendar {
-            height: 80vh;
-        }
-
-        .fc {
-            color: white;
-        }
-
-        .fc-toolbar-title {
-            font-size: 1.1rem !important;
-        }
-
-        .fc-button {
-            background: rgba(255,255,255,0.08) !important;
-            border: 1px solid rgba(255,255,255,0.1) !important;
-            border-radius: 10px !important;
-        }
-
-        .fc-button:hover {
-            background: rgba(255,255,255,0.14) !important;
-        }
-
-        .fc-event {
-            border: none !important;
-            border-radius: 8px !important;
-            padding: 2px 6px !important;
+        .search-box {
+            position: sticky;
+            top: 0;
+            background: white;
+            padding: 8px;
+            z-index: 10;
         }
     </style>
 </head>
-<body>
+<body class="p-5">
 
-<div class="calendar-wrapper">
-    <div id="calendar"></div>
+<div class="container">
+
+    <h4 class="mb-3">Searchable Bootstrap Dropdown</h4>
+
+    <div class="dropdown">
+        <button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+            Select Department
+        </button>
+
+        <ul class="dropdown-menu w-100">
+
+            <!-- Search Input -->
+            <li class="search-box">
+                <input type="text" id="dropdownSearch" class="form-control form-control-sm"
+                       placeholder="Search...">
+            </li>
+
+            <li><hr class="dropdown-divider"></li>
+
+            <!-- Items -->
+            <div id="dropdownItems">
+                <?php foreach ($items as $item): ?>
+                    <li>
+                        <a class="dropdown-item" href="#">
+                            <?= htmlspecialchars($item) ?>
+                        </a>
+                    </li>
+                <?php endforeach; ?>
+            </div>
+
+            <!-- No result -->
+            <li id="noResult" class="text-center text-muted d-none p-2">
+                No results found
+            </li>
+
+        </ul>
+    </div>
+
 </div>
 
-<!-- FullCalendar -->
-<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
-document.addEventListener('DOMContentLoaded', function () {
+const searchInput = document.getElementById('dropdownSearch');
+const items = document.querySelectorAll('#dropdownItems .dropdown-item');
+const noResult = document.getElementById('noResult');
 
-    const calendarEl = document.getElementById('calendar');
+searchInput.addEventListener('keyup', function () {
+    let filter = this.value.toLowerCase();
+    let visibleCount = 0;
 
-    // =====================================================
-    // LOAD SAVED EVENTS
-    // =====================================================
+    items.forEach(item => {
+        let text = item.textContent.toLowerCase();
 
-    const savedEvents = JSON.parse(localStorage.getItem('fcSchedules') || '[]');
-
-    // =====================================================
-    // CALENDAR
-    // =====================================================
-
-    const calendar = new FullCalendar.Calendar(calendarEl, {
-
-        initialView: 'dayGridMonth',
-
-        selectable: true,
-        editable: true,
-
-        headerToolbar: {
-            left: 'prev,next today',
-            center: 'title',
-            right: 'dayGridMonth,timeGridWeek,timeGridDay'
-        },
-
-        events: savedEvents,
-
-        // =================================================
-        // CLICK DATE TO CREATE SCHEDULE
-        // =================================================
-
-        dateClick(info) {
-
-            const title = prompt('Schedule title:');
-
-            if (!title) return;
-
-            const event = {
-                id: Date.now().toString(),
-                title: title,
-                start: info.dateStr,
-                allDay: true
-            };
-
-            calendar.addEvent(event);
-
-            saveEvents();
-        },
-
-        // =================================================
-        // EVENT CLICK
-        // =================================================
-
-        eventClick(info) {
-
-            const confirmDelete = confirm(
-                `Delete "${info.event.title}"?`
-            );
-
-            if (confirmDelete) {
-                info.event.remove();
-                saveEvents();
-            }
-        },
-
-        // =================================================
-        // DRAG / RESIZE
-        // =================================================
-
-        eventDrop() {
-            saveEvents();
-        },
-
-        eventResize() {
-            saveEvents();
+        if (text.includes(filter)) {
+            item.parentElement.style.display = "";
+            visibleCount++;
+        } else {
+            item.parentElement.style.display = "none";
         }
     });
 
-    calendar.render();
-
-    // =====================================================
-    // SAVE EVENTS
-    // =====================================================
-
-    function saveEvents() {
-
-        const events = calendar.getEvents().map(event => ({
-            id: event.id,
-            title: event.title,
-            start: event.startStr,
-            end: event.endStr,
-            allDay: event.allDay
-        }));
-
-        localStorage.setItem(
-            'fcSchedules',
-            JSON.stringify(events)
-        );
-
-        console.log('Schedules saved.');
-    }
+    noResult.classList.toggle('d-none', visibleCount !== 0);
 });
 </script>
 
