@@ -992,7 +992,7 @@ $leaveTypes = [
         <span class="ganttToolTipValue" id="gt-ob"></span>
     </div>
     <div class="ganttToolTipRow ganttToolTipOverTime" id="gt-ot-row">
-        <span class="ganttToolTipLabel">Overtime</span>
+        <span class="ganttToolTipLabel" id="gt-ot-label">Overtime</span>
         <span class="ganttToolTipValue" id="gt-ot"></span>
     </div>
     <div class="ganttToolTipRow ganttToolTipUnderTime" id="gt-ut-row">
@@ -1264,14 +1264,24 @@ $leaveTypes = [
 
                         <div class="col-md-6">
                             <label class="form-label">Role</label>
-                            <select name="role" class="form-select">
-                                <?php foreach ($roles as $r): ?>
-                                    <option value="<?= htmlspecialchars($r['role_key']) ?>"
-                                        <?= ($emp['role'] ?? '') === $r['role_key'] ? 'selected' : '' ?>>
-                                        <?= htmlspecialchars($r['role_name']) ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
+
+                            <div class="dropdown w-100">
+                                <button class="btn btn-outline-light dropdown-toggle w-100 text-start" type="button" id="roleDropdownBtn" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <span id="roleLabel"><?= htmlspecialchars($emp['role_name']) ?></span>
+                                </button>
+
+                                <ul class="dropdown-menu w-100" id="roleDropdown">
+                                    <?php foreach ($roles as $r): ?>
+                                    <li>
+                                        <button class="dropdown-item" type="button" onclick="selectRole('<?= $r['role_key'] ?>', '<?= $r['role_name'] ?>')">
+                                            <?= $r['role_name'] ?>
+                                        </button>
+                                    </li>
+                                    <?php endforeach; ?>
+                                </ul>
+                            </div>
+
+                            <input type="hidden" name="role" id="roleInput" value="">
                         </div>
 
                         <div class="col-md-6">
@@ -1478,6 +1488,13 @@ $leaveTypes = [
         })
         .catch(() => {});
 })();
+
+// Edit Employee Select Role
+function selectRole(value, label) {
+    document.getElementById('roleInput').value       = value;
+    document.getElementById('roleLabel').textContent = label;
+    document.getElementById('roleDropdown').classList.remove('show');
+}
 
 // ---- State ----
 let selectedDates    = [];

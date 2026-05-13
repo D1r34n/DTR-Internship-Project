@@ -652,8 +652,8 @@ body {
 .ganttToolTipOverTime .ganttToolTipValue  { color: var(--tooltip-overtime); }
 .ganttToolTipUnderTime .ganttToolTipValue { color: var(--tooltip-undertime); }
 .ganttToolTipOverBreak .ganttToolTipValue { color: var(--tooltip-overbreak); }
-.ganttToolTipOverTime.approved .gt-value  { color: var(--tooltip-ot-approved); }
-.ganttToolTipOverTime.rejected .gt-value  { color: var(--tooltip-late); }
+.ganttToolTipOverTime.approved .ganttToolTipValue { color: var(--tooltip-ot-approved); }
+.ganttToolTipOverTime.rejected .ganttToolTipValue { color: var(--tooltip-late); }
 /* ===== FLATPICKR THEME OVERRIDE ===== */
 
 /* Main calendar container */

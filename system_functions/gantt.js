@@ -10,6 +10,7 @@ function initGanttCursors() {
     const gtLateRow   = document.getElementById('gt-late-row');
     const gtLate      = document.getElementById('gt-late');
     const gtOtRow     = document.getElementById('gt-ot-row');
+    const gtOtLabel   = document.getElementById('gt-ot-label');
     const gtOt        = document.getElementById('gt-ot');
     const gtUtRow     = document.getElementById('gt-ut-row');
     const gtUt        = document.getElementById('gt-ut');
@@ -66,6 +67,10 @@ function initGanttCursors() {
                 if (container.dataset.overtime) {
                     gtOt.textContent  = container.dataset.overtime;
                     const status      = container.dataset.overtimeStatus;
+                    const statusLabel = status === 'approved' ? 'Approved'
+                                      : status === 'rejected' ? 'Rejected'
+                                      : 'Pending';
+                    if (gtOtLabel) gtOtLabel.textContent = `Overtime (${statusLabel})`;
                     gtOtRow.className = 'ganttToolTipRow ganttToolTipOverTime'
                                     + (status === 'approved' ? ' approved' : status === 'rejected' ? ' rejected' : '');
                     gtOtRow.style.display = 'flex';

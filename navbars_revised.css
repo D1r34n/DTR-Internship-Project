@@ -163,6 +163,46 @@
 }
 
 /* ================================================
+   PROFILE ICON
+   ================================================ */
+.profile-image-btn {
+    padding: 0;
+    margin: 0;
+
+    border: none;
+    background: transparent;
+
+    cursor: pointer;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.profile-image-btn:hover .topbar-profile-image {
+    transform: scale(1.05);
+    box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+}
+
+.topbar-profile-image {
+    width: 32px;
+    height: 32px;
+
+    border-radius: 50%;
+    display: block;
+
+    cursor: pointer;
+
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+.topbar-profile-image:hover {
+    transform: scale(1.05);
+}
+
+/* ================================================
    LOGOUT BUTTON STYLE
    ================================================ */
 
@@ -212,6 +252,71 @@
     font-weight:    700;
     line-height:    1;
     letter-spacing: -0.02em;
+}
+
+/* ================================================
+   WEBCAM MODAL
+   ================================================ */
+.webcam-wrapper {
+    position: relative;
+    width: 100%;
+    border-radius: 12px;
+    overflow: hidden;
+    background: rgba(0, 0, 0, 0.4);
+    aspect-ratio: 4 / 3;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#webcamFeed {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 12px;
+    transform: scaleX(-1);
+}
+
+.webcam-error {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 0.85rem;
+}
+
+.webcam-error i {
+    font-size: 2.5rem;
+}
+
+.webcam-error p {
+    margin: 0;
+}
+
+/* ================================================
+   EDIT PROFILE MODAL
+   ================================================ */
+.profile-image-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.profile-image-preview {
+    width: 180px;
+    height: 180px;
+
+    border-radius: 50%;
+    object-fit: cover;
+
+    border: 3px solid rgba(255,255,255,0.15);
+
+    background: rgba(255,255,255,0.05);
+
+    box-shadow:
+        0 4px 20px rgba(0,0,0,0.25),
+        inset 0 1px 0 rgba(255,255,255,0.08);
 }
 
 /* ================================================

@@ -213,7 +213,7 @@
     --gantt-early-color:      var(--info);
     --gantt-tardy:            rgba(251, 191, 36, 0.75);
     --gantt-ontime:           rgba(25, 135, 84, 0.75);
-    --gantt-break:            var(--warning);
+    --gantt-break:            var(--warning-color);
     --gantt-pending:          rgba(95, 95, 95, 0.5);
     --gantt-pending-border:   rgba(255, 255, 255, 0.15);
     --gantt-absent:           rgba(220, 53, 69, 0.5);

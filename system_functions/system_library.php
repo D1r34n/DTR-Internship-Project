@@ -45,6 +45,81 @@ function distanceMeters($lat1, $lon1, $lat2, $lon2)
     return 2 * $earthRadius * atan2(sqrt($a), sqrt(1 - $a));
 }
 
+/**
+ * Generate a simple PNG avatar based on user name initials.
+ * Pure helper function (no DB, no side effects).
+ */
+function generateAvatarPng(string $name, int $size = 90): string
+{
+    $initials = '';
+    foreach (explode(' ', trim($name)) as $p) {
+        if ($p !== '') $initials .= strtoupper($p[0]);
+    }
+    $initials = substr($initials, 0, 2) ?: 'U';
+
+    $hash = crc32($name);
+    $hue  = abs($hash % 360);
+
+    $img   = imagecreatetruecolor($size, $size);
+    $white = imagecolorallocate($img, 255, 255, 255);
+
+    // HSL-ish background color from name hash
+    $bg = imagecolorallocate($img,
+        (int)(128 + 100 * sin(deg2rad($hue))),
+        (int)(128 + 100 * sin(deg2rad($hue + 120))),
+        (int)(128 + 100 * sin(deg2rad($hue + 240)))
+    );
+
+    // Transparent background so circle clips properly
+    imagesavealpha($img, true);
+    imagealphablending($img, false);
+    $transparent = imagecolorallocatealpha($img, 0, 0, 0, 127);
+    imagefill($img, 0, 0, $transparent);
+    imagealphablending($img, true);
+
+    // Draw circle
+    imagefilledellipse($img, (int)($size / 2), (int)($size / 2), $size, $size, $bg);
+
+    $fontPath = __DIR__ . '/fonts/Arial.ttf';
+    $fontSize = (int)($size / 3);
+
+    // Get bounding box
+    $bbox = imagettfbbox($fontSize, 0, $fontPath, $initials);
+
+    // bbox points: [0,1]=bottom-left [2,3]=bottom-right [4,5]=top-right [6,7]=top-left
+    $textW = $bbox[2] - $bbox[0]; // width
+    $textH = $bbox[1] - $bbox[7]; // height (baseline to top)
+
+    // Center: x from left edge, y is baseline position
+    $x = (int)(($size - $textW) / 2) - $bbox[0];
+    $y = (int)(($size + $textH) / 2) - $bbox[1];
+
+    imagettftext($img, $fontSize, 0, $x, $y, $white, $fontPath, $initials);
+
+    ob_start();
+    imagepng($img);
+    $data = ob_get_clean();
+
+    imagedestroy($img);
+
+    return $data;
+}
+
+function saveAvatarPngToFile(string $name, int $employeeId, string $dir = '../assets/user_profiles/'): string
+{
+    $pngBinary = generateAvatarPng($name, 90);
+
+    $fileName = 'avatar_user_' . $employeeId . '.png';
+
+    if (!is_dir($dir)) {
+        mkdir($dir, 0777, true);
+    }
+
+    file_put_contents($dir . $fileName, $pngBinary);
+
+    return $fileName;
+}
+
 /* =========================
    GANTT CHART HELPERS
 ========================= */
