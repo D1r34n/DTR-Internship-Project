@@ -1106,7 +1106,7 @@ body {
     z-index:        1;
 }
 
-#admin-calendar .fc-daygrid-day:not(.fc-day-other):not(.fc-day-has-events):hover .fc-day-add-overlay {
+#admin-calendar .fc-daygrid-day:not(.fc-day-has-events):hover .fc-day-add-overlay {
     opacity: 1;
 }
 
