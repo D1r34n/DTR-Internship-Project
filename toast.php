@@ -1,53 +1,61 @@
 <!-- Toast Container -->
-<div class="toast-container position-fixed bottom-0 end-0 p-3">
+<div id="toastContainer"
+     class="toast-container position-fixed bottom-0 end-0 p-3">
+</div>
 
-    <div id="appToast"
-         class="toast align-items-center text-bg-primary border-0"
-         role="alert"
-         aria-live="assertive"
-         aria-atomic="true">
+<script>
+function showToast(message, type = 'primary') {
 
-        <div class="d-flex">
-            <div class="toast-body" id="appToastBody">
-                Message goes here
+    const container = document.getElementById('toastContainer');
+    if (!container) return;
+
+    const toastEl = document.createElement('div');
+
+    // icon mapping
+    const icons = {
+        primary: 'bi-info-circle-fill',
+        success: 'bi-check-circle-fill',
+        danger:  'bi-x-circle-fill',
+        warning: 'bi-exclamation-triangle-fill',
+        info:    'bi-info-circle-fill'
+    };
+
+    const icon = icons[type] || icons.primary;
+
+    toastEl.className = `toast align-items-center toast-${type} border-0`;
+
+    toastEl.setAttribute('role', 'alert');
+    toastEl.setAttribute('aria-live', 'assertive');
+    toastEl.setAttribute('aria-atomic', 'true');
+
+    toastEl.innerHTML = `
+        <div class="d-flex align-items-center">
+
+            <div class="toast-body d-flex align-items-center gap-2">
+                <i class="bi ${icon}"></i>
+                <span>${message}</span>
             </div>
 
             <button type="button"
                     class="btn-close btn-close-white me-2 m-auto"
                     data-bs-dismiss="toast"
-                    aria-label="Close"></button>
+                    aria-label="Close">
+            </button>
+
         </div>
+    `;
 
-    </div>
+    container.appendChild(toastEl);
 
-</div>
-
-<script>
-function showToast(message, type = 'primary') {
-    const toastEl = document.getElementById('appToast');
-    const toastBody = document.getElementById('appToastBody');
-
-    if (!toastEl || !toastBody) return;
-
-    console.log("Toast:", message);
-
-    toastBody.textContent = message;
-
-    toastEl.classList.remove(
-        'text-bg-primary',
-        'text-bg-success',
-        'text-bg-danger',
-        'text-bg-warning',
-        'text-bg-info'
-    );
-
-    toastEl.classList.add('toast-' + type);
-
-    const toast = bootstrap.Toast.getOrCreateInstance(toastEl, {
-        delay: 10000,
+    const toast = new bootstrap.Toast(toastEl, {
+        delay: 5000,
         autohide: true
     });
 
     toast.show();
+
+    toastEl.addEventListener('hidden.bs.toast', () => {
+        toastEl.remove();
+    });
 }
 </script>

@@ -168,94 +168,6 @@ body {
     font-size: 0.78rem;
 }
 
-/* =========================
-   TABLE HEADER (SEPARATE GLASS)
-========================= */
-.tableHeaderGlass {
-    border-bottom: 1px solid var(--text-dark);
-    margin: 0.5rem 0 0;
-}
-
-.tableHeaderGlass th {
-    color: var(--text-muted);
-    font-weight: 500;
-    font-size: 0.9rem;
-    border: none !important;
-    transition: color 0.2s ease;
-}
-
-/* =========================
-   TABLE BODY
-========================= */
-.tableScroll {
-    width: 100%;
-    flex: 1;
-    min-height: 0;
-    overflow-y: auto;
-}
-
-/* table base */
-.table {
-    color: var(--text-light);
-    margin: 0;
-    border: none;
-    width: 100%;
-    table-layout: fixed;
-    border-collapse: collapse;
-}
-
-/* remove bootstrap borders */
-.table thead th,
-.table tbody td,
-.table tbody tr {
-    border-bottom: 1px solid var(--text-dark);
-}
-
-/* header fallback */
-.table thead th {
-    background: transparent;
-    font-weight: 300;
-    font-size: 0.75rem;
-    user-select: none;
-    text-align: left;
-    color: var(--text-muted);
-    text-transform: none !important;
-}
-
-/* rows */
-.table tbody tr {
-    transition: all 0.2s ease;
-}
-
-.table tbody tr:not(.emptyRow):hover {
-    background: var(--overlay-soft);
-    box-shadow: 0 4px 20px var(--shadow);
-}
-
-.table tbody tr.emptyRow,
-.table tbody tr.emptyRow:hover {
-    background: transparent !important;
-    backdrop-filter: none !important;
-    box-shadow: none !important;
-    border-bottom: none;
-}
-
-.table tbody tr.emptyRow td {
-    background: transparent !important;
-    border-bottom: none !important;
-    pointer-events: none;
-}
-
-/* cells */
-.table tbody td {
-    padding: 1rem 0.5rem;
-    background: transparent;
-    font-size: 0.75rem;
-    color: var(--text-light);
-    user-select: none;
-    vertical-align: middle;
-}
-
 /* ROLE BADGE */
 .empRoleBadge {
     padding: 4px 10px;
@@ -937,4 +849,67 @@ body {
     transition: opacity 0.15s;
 }
 
+/* Bulk Import Upload Area */
+.schedule-dropzone {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+
+    min-height: 220px;
+    padding: 2rem;
+
+    border: 2px dashed var(--primary-border);
+    border-radius: 20px;
+
+    background:
+        linear-gradient(
+            180deg,
+            var(--primary-glass),
+            var(--frosted-bg)
+        );
+
+    cursor: pointer;
+
+    transition:
+        border-color 0.2s ease,
+        transform 0.2s ease,
+        background 0.2s ease;
+}
+
+.schedule-dropzone:hover {
+    border-color: var(--primary-color);
+    transform: translateY(-2px);
+}
+
+.schedule-dropzone.dragover {
+    border-color: var(--primary-color);
+    background: var(--primary-glass);
+}
+
+.schedule-dropzone-icon {
+    font-size: 3rem;
+    color: var(--primary-color);
+    line-height: 1;
+    margin-bottom: 1rem;
+}
+
+.schedule-dropzone-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-lightest);
+    text-align: center;
+}
+
+.schedule-dropzone-subtitle {
+    font-size: 0.875rem;
+    color: var(--text-muted);
+    margin-top: 0.35rem;
+    text-align: center;
+}
+
+.schedule-dropzone-meta {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
 

@@ -140,7 +140,7 @@ $currentPage = 'manage_employees';
     <div id="main-wrapper">
 
         <?php include '../topbar_revised.php'; ?>
-
+        <div class="row summary-card-wrapper">Total Employees </div>
         <div class="card card-glass employee-list-card">
             <div class="card-body d-flex flex-column employee-list-card-body">
 
@@ -217,10 +217,18 @@ $currentPage = 'manage_employees';
                                         <i class="bi bi-person-plus"></i> Add Employee
                                     </a>
                                 </li>
+                                <li><hr class="dropdown-divider"></li>
                                 <li>
                                     <a class="dropdown-item" href="#"
-                                       data-bs-toggle="modal" data-bs-target="#importScheduleModal">
+                                        data-bs-toggle="modal" data-bs-target="#import-schedule-modal">
                                         <i class="bi bi-download"></i> Import Schedule
+                                    </a>
+                                </li>
+
+                                <li>
+                                    <a class="dropdown-item" href="#"
+                                        data-bs-toggle="modal" data-bs-target="#import-leaves-modal">
+                                        <i class="bi bi-download"></i> Import Leaves
                                     </a>
                                 </li>
                             </ul>
@@ -371,7 +379,7 @@ $currentPage = 'manage_employees';
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
 
-                    <form method="POST" action="admin_manage_employees.php" onsubmit="validateForm(event)">
+                    <form method="POST" action="admin_manage_employees.php" onsubmit="validateAddEmployeeForm(event)">
                         <input type="hidden" name="employee_id" id="modalEmpId">
 
                         <div class="modal-body">
@@ -487,56 +495,77 @@ $currentPage = 'manage_employees';
         </div>
 
         <!-- Bulk Schedule Modal -->
-        <div class="modal fade" id="importScheduleModal" tabindex="-1">
+        <div class="modal fade" id="import-schedule-modal" tabindex="-1">
             <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
                 <div class="modal-content">
 
                     <div class="modal-header">
-                        <h5 class="modal-title">Import Employee Schedule</h5>
+                        <h5 class="modal-title">Import Employee Schedules</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
 
-                    <form id="importScheduleForm"
-                          action="bulk_schedule_api.php?action=import"
+                    <form id="import-schedule-form"
+                          action="bulk_importing_api.php?action=import_schedule"
                           method="POST"
                           enctype="multipart/form-data">
 
                         <div class="modal-body">
 
-                            <div class="rounded p-3 mb-3"
-                                 style="background:var(--primary-glass);border:1px solid var(--primary-border);color:var(--text-light);">
-                                Upload an <strong>xlsx</strong> file with the following columns:<br>
-                                <small><b>employee_id</b>, employee_name (optional), start_date, end_date, time</small>
-                            </div>
-
                             <div class="mb-3">
-                                <label class="form-label">Select Excel File</label>
-                                <input type="file" name="schedule_file" id="scheduleFileInput"
-                                       class="form-control" accept=".xlsx" required>
-                                <small class="text-secondary d-block mt-1">
+
+                                <label class="form-label">Upload Excel File</label>
+
+                                <label for="schedule-file-input" class="schedule-dropzone w-100">
+
+                                    <div class="schedule-dropzone-icon">
+                                        <i class="bi bi-cloud-arrow-up-fill"></i>
+                                    </div>
+
+                                    <div class="schedule-dropzone-title">
+                                        Drag & Drop your .xlsx file here
+                                    </div>
+
+                                    <div class="schedule-dropzone-subtitle">
+                                        or click to browse files
+                                    </div>
+
+                                    <div class="schedule-dropzone-meta mt-3">
+                                        Accepted format: <strong>.xlsx</strong>
+                                    </div>
+
+                                    <input type="file"
+                                        name="schedule_file"
+                                        id="schedule-file-input"
+                                        accept=".xlsx"
+                                        hidden>
+
+                                </label>
+
+                                <small class="text-secondary d-block mt-2">
                                     Preview will appear below after selecting file.
                                 </small>
+
                             </div>
 
-                            <div id="filePreview" class="mt-3" style="display:none;">
+                            <div id="schedule-file-preview" class="mt-3" style="display:none;">
                                 <div class="rounded p-2"
                                      style="background:var(--frosted-bg);border:1px solid var(--frosted-border);">
                                     <div class="d-flex justify-content-between align-items-center mb-2">
                                         <strong style="color:var(--text-lightest);">File Preview</strong>
-                                        <span id="fileName" class="small" style="color:var(--text-muted);"></span>
+                                        <span id="schedule-file-name" class="small" style="color:var(--text-muted);"></span>
                                     </div>
                                     <div class="table-responsive">
                                         <table class="table table-sm table-bordered mb-0">
                                             <thead>
                                                 <tr>
-                                                    <th>employee_id</th>
-                                                    <th>employee_name</th>
-                                                    <th>start_date</th>
-                                                    <th>end_date</th>
+                                                    <th>Employee ID</th>
+                                                    <th>Employee Name</th>
+                                                    <th>Start Date</th>
+                                                    <th>End Date</th>
                                                     <th>time</th>
                                                 </tr>
                                             </thead>
-                                            <tbody id="previewBody"></tbody>
+                                            <tbody id="schedule-preview-body"></tbody>
                                         </table>
                                     </div>
                                     <small class="d-block mt-2" style="color:var(--text-muted);">
@@ -551,11 +580,10 @@ $currentPage = 'manage_employees';
                                     <small class="d-block" style="color:var(--text-muted);">
                                         Download the official Excel template to ensure correct format.
                                     </small>
-                                    <small style="color:var(--text-muted);">
-                                        Columns: employee_id, employee_name (optional), start_date, end_date, time
-                                    </small>
                                 </div>
-                                <a href="bulk_schedule_api.php?action=download_template" class="btn btn-sm ms-3">
+                                <a href="bulk_importing_api.php?action=download_schedule_template"
+                                    onclick="showToast('Downloading template...', 'info')"
+                                    class="btn btn-sm ms-3">
                                     <i class="bi bi-download"></i> Template
                                 </a>
                             </div>
@@ -573,7 +601,119 @@ $currentPage = 'manage_employees';
                 </div>
             </div>
         </div>
-    <?php include '../toast.php'; ?>                                                    
+
+        <!-- Bulk Leaves Modal -->
+        <div class="modal fade" id="import-leaves-modal" tabindex="-1">
+            <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+                <div class="modal-content">
+
+                    <div class="modal-header">
+                        <h5 class="modal-title">Import Employee Leaves</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+
+                    <form id="import-leave-form"
+                        action="bulk_importing_api.php?action=import_leaves"
+                        method="POST"
+                        enctype="multipart/form-data">
+
+                        <div class="modal-body">
+
+                            <div class="mb-3">
+
+                                <label class="form-label">Upload Excel File</label>
+
+                                <label for="leaves-file-input" class="schedule-dropzone w-100">
+
+                                    <div class="schedule-dropzone-icon">
+                                        <i class="bi bi-cloud-arrow-up-fill"></i>
+                                    </div>
+
+                                    <div class="schedule-dropzone-title">
+                                        Drag & Drop your .xlsx file here
+                                    </div>
+
+                                    <div class="schedule-dropzone-subtitle">
+                                        or click to browse files
+                                    </div>
+
+                                    <div class="schedule-dropzone-meta mt-3">
+                                        Accepted format: <strong>.xlsx</strong>
+                                    </div>
+
+                                    <input type="file"
+                                        name="schedule_file"
+                                        id="leaves-file-input"
+                                        accept=".xlsx"
+                                        hidden>
+
+                                </label>
+
+                                <small class="text-secondary d-block mt-2">
+                                    Preview will appear below after selecting file.
+                                </small>
+
+                            </div>
+
+                            <div id="leaves-file-preview" class="mt-3" style="display:none;">
+                                <div class="rounded p-2"
+                                    style="background:var(--frosted-bg);border:1px solid var(--frosted-border);">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <strong style="color:var(--text-lightest);">File Preview</strong>
+                                        <span id="leaves-file-name" class="small" style="color:var(--text-muted);"></span>
+                                    </div>
+                                    <div class="table-responsive">
+                                        <table class="table table-sm table-bordered mb-0">
+                                            <thead>
+                                                <tr>
+                                                    <th>Employee ID</th>
+                                                    <th>Employee Name</th>
+                                                    <th>Buffer</th>
+                                                    <th>Vacation</th>
+                                                    <th>Sick</th>
+                                                    <th>Paternity</th>
+                                                    <th>Maternity</th>
+                                                    <th>Solo Parent</th>
+                                                    <th>Birthday</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="leaves-preview-body"></tbody>
+                                        </table>
+                                    </div>
+                                    <small class="d-block mt-2" style="color:var(--text-muted);">
+                                        Showing first 5 rows only
+                                    </small>
+                                </div>
+                            </div>
+
+                            <div class="d-flex justify-content-between align-items-center rounded p-3 mt-3"
+                                style="background:var(--frosted-bg);border:1px solid var(--frosted-border);">
+                                <div>
+                                    <small class="d-block" style="color:var(--text-muted);">
+                                        Download the official Excel template to ensure correct format.
+                                    </small>
+                                </div>
+                                <a href="bulk_importing_api.php?action=download_leave_template"
+                                    onclick="showToast('Downloading template...', 'info')"
+                                    class="btn btn-sm ms-3">
+                                    <i class="bi bi-download"></i> Template
+                                </a>
+                            </div>
+
+                        </div>
+
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <button type="submit" class="btn btn-success">
+                                <i class="bi bi-download"></i> Import Leaves
+                            </button>
+                        </div>
+
+                    </form>
+                </div>
+            </div>
+        </div>
+        <?php include '../toast.php'; ?>                                                    
     </div><!-- #main-wrapper -->
 
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
@@ -601,18 +741,15 @@ $currentPage = 'manage_employees';
             allRows = Array.from(document.querySelectorAll('#empList .empRow'));
             applyFilters();
 
-            // Search
             document.getElementById('empSearch')
                 .addEventListener('input', () => { currentPage = 1; applyFilters(); });
 
-            // Dept filter search — inside Bootstrap dropdown menu
             document.getElementById('deptFilterSearch')
                 ?.addEventListener('input', function () {
                     const q = this.value.toLowerCase();
                     renderDeptList(deptItems.filter(d => d.label.toLowerCase().includes(q)), 'filter');
                 });
 
-            // Modal dept search — inside Bootstrap dropdown menu
             document.getElementById('deptSearchInMenu')
                 ?.addEventListener('input', function () {
                     const q = this.value.toLowerCase();
@@ -622,7 +759,6 @@ $currentPage = 'manage_employees';
                     );
                 });
 
-            // Reset modal fields on open
             document.getElementById('empModal')
                 ?.addEventListener('show.bs.modal', () => {
                     document.getElementById('deptSelectedText').textContent = 'Select Department';
@@ -638,13 +774,32 @@ $currentPage = 'manage_employees';
                     updateProfilePreview();
                 });
 
-            // Avatar
             document.getElementById('modalFirstName')
                 ?.addEventListener('input', updateProfilePreview);
             document.getElementById('modalLastName')
                 ?.addEventListener('input', updateProfilePreview);
 
             loadDepartments();
+
+            initImportModal({
+                modalId:      'import-schedule-modal',
+                formId:       'import-schedule-form',
+                fileInputId:  'schedule-file-input',
+                previewId:    'schedule-file-preview',
+                fileNameId:   'schedule-file-name',
+                previewBodyId:'schedule-preview-body',
+                cols: 5,
+            });
+
+            initImportModal({
+                modalId:       'import-leaves-modal',
+                formId:        'import-leave-form',
+                fileInputId:   'leaves-file-input',
+                previewId:     'leaves-file-preview',
+                fileNameId:    'leaves-file-name',
+                previewBodyId: 'leaves-preview-body',
+                cols: 9,
+            });                                 
         });
 
         /* -------------------------------------------------------
@@ -903,9 +1058,133 @@ $currentPage = 'manage_employees';
         }
         
         /* -------------------------------------------------------
+        BULK SCHEDULE FUNCTIONS
+        ------------------------------------------------------- */
+
+        function initImportModal({ modalId, formId, fileInputId, previewId, fileNameId, previewBodyId, cols }) {
+
+            const form      = document.getElementById(formId);
+            const fileInput = document.getElementById(fileInputId);
+            const dropzone  = fileInput?.closest('label.schedule-dropzone');
+
+            if (!form || !fileInput) return;
+
+            // Drag & drop
+            if (dropzone) {
+                ['dragenter', 'dragover'].forEach(ev => {
+                    dropzone.addEventListener(ev, e => { e.preventDefault(); dropzone.classList.add('dragover'); });
+                });
+                ['dragleave', 'drop'].forEach(ev => {
+                    dropzone.addEventListener(ev, e => { e.preventDefault(); dropzone.classList.remove('dragover'); });
+                });
+                dropzone.addEventListener('drop', e => {
+                    if (e.dataTransfer.files.length) {
+                        // Can't directly assign FileList — use DataTransfer
+                        const dt = new DataTransfer();
+                        Array.from(e.dataTransfer.files).forEach(f => dt.items.add(f));
+                        fileInput.files = dt.files;
+                        fileInput.dispatchEvent(new Event('change'));
+                    }
+                });
+            }
+
+            // File preview
+            fileInput.addEventListener('change', function () {
+                const file = this.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    try {
+                        const data     = new Uint8Array(e.target.result);
+                        const workbook = XLSX.read(data, { type: 'array' });
+                        const sheet    = workbook.Sheets[workbook.SheetNames[0]];
+                        const rows     = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+                        const dataRows = rows.slice(1, 6);
+
+                        const tbody      = document.getElementById(previewBodyId);
+                        const fileNameEl = document.getElementById(fileNameId);
+                        const preview    = document.getElementById(previewId);
+
+                        fileNameEl.textContent = file.name;
+                        tbody.innerHTML = '';
+
+                        if (dataRows.length === 0) {
+                            tbody.innerHTML = `<tr><td colspan="${cols}" class="text-center" style="color:var(--text-muted);">No data rows found.</td></tr>`;
+                        } else {
+                            dataRows.forEach(row => {
+                                const tr = document.createElement('tr');
+                                for (let i = 0; i < cols; i++) {
+                                    const td = document.createElement('td');
+                                    td.textContent = row[i] ?? '—';
+                                    tr.appendChild(td);
+                                }
+                                tbody.appendChild(tr);
+                            });
+                        }
+
+                        preview.style.display = 'block';
+                    } catch (err) {
+                        showToast('Could not read file. Make sure it is a valid .xlsx file.', 'danger');
+                    }
+                };
+                reader.readAsArrayBuffer(file);
+            });
+
+            // Form submit
+            form.addEventListener('submit', async function (e) {
+                e.preventDefault();
+
+                if (!fileInput.files[0]) {
+                    showToast('Please select a file first.', 'danger');
+                    return;
+                }
+
+                const submitBtn = this.querySelector('[type="submit"]');
+                const origHTML  = submitBtn.innerHTML;
+                submitBtn.disabled  = true;
+                submitBtn.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Importing...`;
+
+                try {
+                    const res  = await fetch(this.action, { method: 'POST', body: new FormData(this) });
+                    const data = await res.json();
+
+                    if (data.status === 'success') {
+                        let msg = `Imported ${data.inserted} record${data.inserted !== 1 ? 's' : ''}.`;
+
+                        if (data.errors?.length) {
+                            const MAX_SHOWN = 3;
+                            const shown     = data.errors.slice(0, MAX_SHOWN);
+                            const details   = shown.map(err => `Row ${err.row} (${err.message})`).join(', ');
+                            const extra     = data.errors.length > MAX_SHOWN ? ` +${data.errors.length - MAX_SHOWN} more` : '';
+                            msg += ` ${data.errors.length} row${data.errors.length !== 1 ? 's' : ''} skipped — ${details}${extra}.`;
+                        }
+
+                        showToast(msg, data.errors?.length ? 'warning' : 'success');
+                        bootstrap.Modal.getInstance(document.getElementById(modalId))?.hide();
+                    } else {
+                        showToast(data.message || 'Import failed.', 'danger');
+                    }
+                } catch (err) {
+                    showToast('Something went wrong. Please try again.', 'danger');
+                } finally {
+                    submitBtn.disabled  = false;
+                    submitBtn.innerHTML = origHTML;
+                }
+            });
+
+            // Reset on close
+            document.getElementById(modalId)?.addEventListener('hidden.bs.modal', () => {
+                fileInput.value = '';
+                document.getElementById(previewId).style.display = 'none';
+                document.getElementById(previewBodyId).innerHTML = '';
+            });
+        }
+
+        /* -------------------------------------------------------
         FORM VALIDATION
         ------------------------------------------------------- */
-        function validateForm(e) {
+        function validateAddEmployeeForm(e) {
             e.preventDefault();
 
             const firstName = document.getElementById('modalFirstName').value.trim();
