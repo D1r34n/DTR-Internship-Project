@@ -140,7 +140,6 @@ $currentPage = 'manage_employees';
     <div id="main-wrapper">
 
         <?php include '../topbar_revised.php'; ?>
-        <div class="row summary-card-wrapper">Total Employees </div>
         <div class="card card-glass employee-list-card">
             <div class="card-body d-flex flex-column employee-list-card-body">
 

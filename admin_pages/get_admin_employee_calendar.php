@@ -8,18 +8,16 @@ if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'admin') {
 require_once '../db.php';
 date_default_timezone_set('Asia/Manila');
 
-$employeeId  = intval($_GET['employee_id'] ?? 0);
-$year        = intval($_GET['year']  ?? date('Y'));
-$month       = intval($_GET['month'] ?? date('n'));
-if (!$employeeId) exit();
+header('Content-Type: application/json');
 
-$firstDay    = sprintf('%04d-%02d-01', $year, $month);
-$lastDay     = date('Y-m-t', strtotime($firstDay));
-$today       = date('Y-m-d');
-$daysInMonth = (int) date('t', strtotime($firstDay));
-$startDow    = (int) date('N', strtotime($firstDay)); // 1=Mon … 7=Sun
+$employeeId = intval($_GET['employee_id'] ?? 0);
+if (!$employeeId) { echo '[]'; exit(); }
 
-// ---- Schedules (including rest days) ----
+// FullCalendar passes start/end as ISO datetime strings; end is exclusive
+$firstDay = date('Y-m-d', strtotime($_GET['start'] ?? date('Y-m-01')));
+$lastDay  = date('Y-m-d', strtotime(($_GET['end'] ?? date('Y-m-t')) . ' -1 day'));
+
+// ---- Schedules ----
 $stmt = $pdo->prepare("
     SELECT schedule_date, scheduled_start, scheduled_end, is_rest_day, status
     FROM schedules
@@ -32,15 +30,15 @@ foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
     $schedMap[$row['schedule_date']] = $row;
 }
 
-// ---- Leave requests (excludes OB leave so OB has its own map) ----
+// ---- Leave requests (non-OB) ----
 $leaveStmt = $pdo->prepare("
     SELECT start_date, end_date, selected_dates, status
     FROM leave_requests
     WHERE employee_id = ?
     AND leave_type != 'ob leave'
-    AND (start_date BETWEEN ? AND ? OR end_date BETWEEN ? AND ? OR (start_date <= ? AND end_date >= ?))
+    AND (start_date <= ? AND end_date >= ?)
 ");
-$leaveStmt->execute([$employeeId, $firstDay, $lastDay, $firstDay, $lastDay, $firstDay, $lastDay]);
+$leaveStmt->execute([$employeeId, $lastDay, $firstDay]);
 $leaveMap = [];
 foreach ($leaveStmt->fetchAll(PDO::FETCH_ASSOC) as $leave) {
     $dates = json_decode($leave['selected_dates'], true);
@@ -64,9 +62,9 @@ $obStmt = $pdo->prepare("
     SELECT start_date, end_date, selected_dates, status
     FROM leave_requests
     WHERE employee_id = ? AND leave_type = 'ob leave'
-    AND (start_date BETWEEN ? AND ? OR end_date BETWEEN ? AND ? OR (start_date <= ? AND end_date >= ?))
+    AND (start_date <= ? AND end_date >= ?)
 ");
-$obStmt->execute([$employeeId, $firstDay, $lastDay, $firstDay, $lastDay, $firstDay, $lastDay]);
+$obStmt->execute([$employeeId, $lastDay, $firstDay]);
 $obMap = [];
 foreach ($obStmt->fetchAll(PDO::FETCH_ASSOC) as $ob) {
     $dates = json_decode($ob['selected_dates'], true);
@@ -85,163 +83,135 @@ foreach ($obStmt->fetchAll(PDO::FETCH_ASSOC) as $ob) {
     }
 }
 
-// ---- Overnight continuation dates ----
+// ---- Night continuation dates ----
 $nightContDates = [];
 foreach ($schedMap as $date => $sched) {
     if ($sched['is_rest_day'] || !$sched['scheduled_start'] || !$sched['scheduled_end']) continue;
     $endDate = date('Y-m-d', strtotime($sched['scheduled_end']));
     if ($endDate > $date && $endDate <= $lastDay) {
-        $nightContDates[$endDate] = true;
+        $nightContDates[$endDate] = $date; // maps cont-date → origin-date
     }
 }
-?>
-<div class="sched-cal-grid">
 
-    <?php foreach (['Mon','Tue','Wed','Thu','Fri','Sat','Sun'] as $h): ?>
-        <div class="sched-cal-day-header"><?= $h ?></div>
-    <?php endforeach; ?>
+$events = [];
 
-    <?php for ($i = 1; $i < $startDow; $i++): ?>
-        <div class="sched-cal-day empty"></div>
-    <?php endfor; ?>
+// Collect all dates with any content
+$allDates = array_unique(array_merge(
+    array_keys($schedMap),
+    array_keys($leaveMap),
+    array_keys($obMap),
+    array_keys($nightContDates)
+));
+sort($allDates);
 
-    <?php for ($day = 1; $day <= $daysInMonth; $day++):
-        $dateStr     = sprintf('%04d-%02d-%02d', $year, $month, $day);
-        $sched       = $schedMap[$dateStr] ?? null;
-        $leaveStatus = $leaveMap[$dateStr] ?? null;
-        $obStatus    = $obMap[$dateStr]    ?? null;
-        $isNightCont = isset($nightContDates[$dateStr]);
-        $isToday     = ($dateStr === $today);
-        $isPast      = ($dateStr < $today);
+foreach ($allDates as $dateStr) {
+    $sched       = $schedMap[$dateStr] ?? null;
+    $leaveStatus = $leaveMap[$dateStr] ?? null;
+    $obStatus    = $obMap[$dateStr]    ?? null;
+    $isNightCont = isset($nightContDates[$dateStr]);
 
-        // ---- Determine display ----
-        $schedInVal  = '';
-        $schedOutVal = '';
+    // Night continuation event (separate, shown first in the cell)
+    if ($isNightCont) {
+        $originDate  = $nightContDates[$dateStr];
+        $originSched = $schedMap[$originDate] ?? null;
+        $contTimeStr = $originSched ? ('until ' . date('g:i A', strtotime($originSched['scheduled_end']))) : 'Night (cont.)';
+        $events[] = [
+            'id'         => 'night-cont-' . $dateStr,
+            'title'      => $contTimeStr,
+            'start'      => $dateStr,
+            'allDay'     => true,
+            'classNames' => ['fc-ev-night-cont'],
+            'extendedProps' => [
+                'type'              => 'night-cont',
+                'dateStr'           => $dateStr,
+                'hasSchedule'       => false,
+                'hasActiveLeaveOrOB'=> false,
+                'timeInStr'         => null,
+                'timeOutStr'        => null,
+                'schedInVal'        => null,
+                'schedOutVal'       => null,
+                'isRestDay'         => false,
+            ],
+        ];
+    }
 
-        // Night-continuation block (always shown first if applicable)
-        $contBadgeClass = '';
-        $contTimeStr    = '';
-        if ($isNightCont) {
-            $contBadgeClass = 'night-cont';
-            foreach ($schedMap as $_sd => $_s) {
-                if (!empty($_s['scheduled_end']) && date('Y-m-d', strtotime($_s['scheduled_end'])) === $dateStr) {
-                    $contTimeStr = 'until ' . date('g:i A', strtotime($_s['scheduled_end']));
-                    break;
-                }
-            }
-        }
+    // Determine the main event for this day (same priority logic as before)
+    $hasActiveLeaveOrOB  = in_array($leaveStatus, ['approved', 'pending']) || in_array($obStatus, ['approved', 'pending']);
+    $isRejectedLeaveOrOB = false;
+    $eventType  = null;
+    $eventTitle = null;
+    $timeInStr  = null;
+    $timeOutStr = null;
+    $schedInVal = null;
+    $schedOutVal = null;
+    $isRestDay  = false;
 
-        // Own schedule / leave / OB block
-        $badgeClass          = '';
-        $badgeText           = '';
-        $showTimes           = false;
-        $timeInStr           = '';
-        $timeOutStr          = '';
-        $isRejectedLeaveOrOB = false;
+    if ($leaveStatus === 'approved') {
+        $eventType  = 'on-leave';
+        $eventTitle = 'On Leave';
+    } elseif ($obStatus === 'approved') {
+        $eventType  = 'on-ob';
+        $eventTitle = 'On OB';
+    } elseif ($leaveStatus === 'pending') {
+        $eventType  = 'leave-pending';
+        $eventTitle = 'Leave Pending';
+    } elseif ($obStatus === 'pending') {
+        $eventType  = 'ob-pending';
+        $eventTitle = 'OB Pending';
+    } elseif ($leaveStatus === 'rejected') {
+        $eventType           = 'leave-rejected';
+        $eventTitle          = 'Leave Rejected';
+        $isRejectedLeaveOrOB = true;
+    } elseif ($obStatus === 'rejected') {
+        $eventType           = 'leave-rejected';
+        $eventTitle          = 'OB Rejected';
+        $isRejectedLeaveOrOB = true;
+    } elseif ($sched && $sched['is_rest_day']) {
+        $eventType  = 'rest';
+        $eventTitle = 'Rest Day';
+        $isRestDay  = true;
+    } elseif ($sched) {
+        $endTs       = strtotime($sched['scheduled_end']);
+        $isOvernight = date('Y-m-d', $endTs) > $dateStr;
+        $sh          = (int) date('H', strtotime($sched['scheduled_start']));
+        $eventType   = ($sh >= 18 || $sh < 6) ? 'night' : 'day';
+        $eventTitle  = ($sh >= 18 || $sh < 6) ? 'Night Shift' : 'Day Shift';
+        $timeInStr   = date('g:i A', strtotime($sched['scheduled_start']));
+        $timeOutStr  = date('g:i A', $endTs) . ($isOvernight ? ' ↪' : '');
+        $schedInVal  = date('H:i', strtotime($sched['scheduled_start']));
+        $schedOutVal = date('H:i', $endTs);
+    }
 
-        if ($leaveStatus === 'approved') {
-            $badgeClass = 'on-leave';
-            $badgeText  = 'On Leave';
-        } elseif ($obStatus === 'approved') {
-            $badgeClass = 'on-ob';
-            $badgeText  = 'On OB';
-        } elseif ($leaveStatus === 'pending') {
-            $badgeClass = 'leave-pending';
-            $badgeText  = 'Leave Pending';
-        } elseif ($obStatus === 'pending') {
-            $badgeClass = 'ob-pending';
-            $badgeText  = 'OB Pending';
-        } elseif ($leaveStatus === 'rejected') {
-            $badgeClass          = 'leave-rejected';
-            $badgeText           = 'Leave Rejected';
-            $isRejectedLeaveOrOB = true;
-        } elseif ($obStatus === 'rejected') {
-            $badgeClass          = 'leave-rejected';
-            $badgeText           = 'OB Rejected';
-            $isRejectedLeaveOrOB = true;
-        } elseif ($sched && $sched['is_rest_day']) {
-            $badgeClass = 'rest';
-            $badgeText  = 'Rest Day';
-        } elseif ($sched) {
-            $endTs       = strtotime($sched['scheduled_end']);
-            $isOvernight = date('Y-m-d', $endTs) > $dateStr;
-            $sh          = (int) date('H', strtotime($sched['scheduled_start']));
-            $badgeClass  = ($sh >= 18 || $sh < 6) ? 'night' : 'day';
-            $badgeText   = ($sh >= 18 || $sh < 6) ? 'Night' : 'Day';
-            $showTimes   = true;
-            $timeInStr   = date('g:i A', strtotime($sched['scheduled_start']));
-            $timeOutStr  = date('g:i A', $endTs) . ($isOvernight ? ' ↪' : '');
-            $schedInVal  = date('H:i', strtotime($sched['scheduled_start']));
-            $schedOutVal = date('H:i', $endTs);
-        }
+    // For rejected leave/OB, also surface the underlying shift times if a schedule exists
+    if ($isRejectedLeaveOrOB && $sched && !$sched['is_rest_day']) {
+        $endTs       = strtotime($sched['scheduled_end']);
+        $isOvernight = date('Y-m-d', $endTs) > $dateStr;
+        $timeInStr   = date('g:i A', strtotime($sched['scheduled_start']));
+        $timeOutStr  = date('g:i A', $endTs) . ($isOvernight ? ' ↪' : '');
+        $schedInVal  = date('H:i', strtotime($sched['scheduled_start']));
+        $schedOutVal = date('H:i', $endTs);
+    }
 
-        // For rejected leave/OB also show the underlying shift times
-        if ($isRejectedLeaveOrOB && $sched && !$sched['is_rest_day']) {
-            $endTs       = strtotime($sched['scheduled_end']);
-            $isOvernight = date('Y-m-d', $endTs) > $dateStr;
-            $showTimes   = true;
-            $timeInStr   = date('g:i A', strtotime($sched['scheduled_start']));
-            $timeOutStr  = date('g:i A', $endTs) . ($isOvernight ? ' ↪' : '');
-            $schedInVal  = date('H:i', strtotime($sched['scheduled_start']));
-            $schedOutVal = date('H:i', $endTs);
-        }
+    if ($eventType === null) continue;
 
-        $hasContent = $isNightCont || !empty($badgeText);
-        $classes    = 'sched-cal-day';
-        if ($hasContent)   $classes .= ' has-sched';
-        if ($isNightCont && empty($badgeText)) $classes .= ' night-cont-day';
-        if ($isToday)      $classes .= ' is-today';
-        if ($isPast && !$hasContent) $classes .= ' is-past';
-        if (!$hasContent)  $classes .= ' no-sched';
-    ?>
-    <div class="<?= $classes ?>" data-date="<?= $dateStr ?>"
-        <?= !$hasContent ? "onclick=\"openManageModalWithDate('" . $dateStr . "')\"" : '' ?>>
-        <div class="sched-cal-day-num <?= $isToday ? 'is-today-num' : '' ?>"><?= $day ?></div>
+    $events[] = [
+        'id'         => 'main-' . $dateStr,
+        'title'      => $eventTitle,
+        'start'      => $dateStr,
+        'allDay'     => true,
+        'classNames' => ['fc-ev-' . $eventType],
+        'extendedProps' => [
+            'type'               => $eventType,
+            'dateStr'            => $dateStr,
+            'schedInVal'         => $schedInVal,
+            'schedOutVal'        => $schedOutVal,
+            'isRestDay'          => $isRestDay,
+            'hasActiveLeaveOrOB' => $hasActiveLeaveOrOB,
+            'hasSchedule'        => $sched !== null,
+            'timeInStr'          => $timeInStr,
+            'timeOutStr'         => $timeOutStr,
+        ],
+    ];
+}
 
-        <?php if ($isNightCont): ?>
-            <span class="sched-cal-shift-badge night-cont"><?= $contTimeStr ?></span>
-        <?php endif; ?>
-
-        <?php if (!empty($badgeText)): ?>
-            <span class="sched-cal-shift-badge <?= $badgeClass ?>"><?= $badgeText ?></span>
-            <?php if ($showTimes): ?>
-                <div class="sched-cal-times"><?= $timeInStr ?><br><?= $timeOutStr ?></div>
-            <?php endif; ?>
-        <?php endif; ?>
-
-        <?php if (!$hasContent): ?>
-            <div class="sched-cal-add-overlay">
-                <i class="bi bi-plus-circle"></i>
-            </div>
-        <?php endif; ?>
-
-        <?php $hasActiveLeaveOrOB = in_array($leaveStatus, ['approved','pending']) || in_array($obStatus, ['approved','pending']); ?>
-        <?php if ($sched && !($isNightCont && empty($badgeText)) && !$hasActiveLeaveOrOB): ?>
-            <div class="sched-cal-day-actions">
-                <?php if ($sched['is_rest_day']): ?>
-                <button class="sched-cal-action-btn edit" title="Edit"
-                    onclick="openRestDayEditModal('<?= $dateStr ?>'); event.stopPropagation();">
-                    <i class="bi bi-pencil"></i>
-                </button>
-                <?php else: ?>
-                <button class="sched-cal-action-btn edit" title="Edit"
-                    onclick="openEditModal(
-                        <?= $employeeId ?>,
-                        '<?= $dateStr ?>',
-                        '<?= $schedInVal ?>',
-                        '<?= $schedOutVal ?>'
-                    ); event.stopPropagation();">
-                    <i class="bi bi-pencil"></i>
-                </button>
-                <?php endif; ?>
-                <button class="sched-cal-action-btn delete" title="Delete"
-                    onclick="deleteScheduleDay(<?= $employeeId ?>, '<?= $dateStr ?>'); event.stopPropagation();">
-                    <i class="bi bi-trash"></i>
-                </button>
-            </div>
-        <?php endif; ?>
-    </div>
-    <?php endfor; ?>
-
-</div>
-
+echo json_encode($events);
