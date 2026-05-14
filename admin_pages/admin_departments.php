@@ -105,7 +105,7 @@ $departmentList = $stmt2->fetchAll(PDO::FETCH_ASSOC);
 
     <?php include '../topbar_revised.php'; ?>
 
-    <div class="card card-glass logs-card">
+    <div class="card card-neutral logs-card">
         <div class="card-body d-flex flex-column logs-card-body">
 
             <!-- Filter Section -->

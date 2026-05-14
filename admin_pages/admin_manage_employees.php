@@ -17,6 +17,13 @@ date_default_timezone_set('Asia/Manila');
 // ---- HANDLE ADD EMPLOYEE ----
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
+    if (empty($_POST['form_token']) || $_POST['form_token'] !== ($_SESSION['form_token'] ?? '')) {
+        $_SESSION['error'] = "Duplicate submission detected. Please try again.";
+        header("Location: admin_manage_employees.php");
+        exit();
+    }
+    unset($_SESSION['form_token']);
+
     $first_name = trim($_POST['first_name'] ?? '');
     $last_name  = trim($_POST['last_name'] ?? '');
     $email      = trim($_POST['email'] ?? '');
@@ -71,6 +78,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // ADD EMPLOYEE
     // =========================================================
     else {
+        $dupStmt = $pdo->prepare("SELECT id FROM employees WHERE LOWER(email) = LOWER(?)");
+        $dupStmt->execute([$email]);
+        if ($dupStmt->fetchColumn()) {
+            $_SESSION['error'] = "An employee with that email already exists.";
+            header("Location: admin_manage_employees.php");
+            exit();
+        }
+
         $stmt = $pdo->prepare("
             INSERT INTO employees (first_name, last_name, email, role_id, department_id, birthdate, hired_date)
             VALUES (?, ?, ?, ?, ?, ?, CURDATE())
@@ -93,11 +108,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <p>Please log in and change your password.</p>
             <p>— HSN DTR System</p>
         ");
+
+        $_SESSION['success'] = "Employee \"{$fullName}\" added successfully.";
     }
 
     header("Location: admin_manage_employees.php");
     exit();
 }
+
+$_SESSION['form_token'] = bin2hex(random_bytes(16));
 
 // ---- GET ALL ROLES ----
 $roles = $pdo->query("SELECT role_key, role_name FROM roles ORDER BY id")->fetchAll(PDO::FETCH_ASSOC);
@@ -140,17 +159,100 @@ $currentPage = 'manage_employees';
     <div id="main-wrapper">
 
         <?php include '../topbar_revised.php'; ?>
-        <div class="row summary-card-wrapper">Total Employees </div>
-        <div class="card card-glass employee-list-card">
+        <!-- Summary Card -->
+        <div class="container-fluid flex-shrink-0 px-3 pt-2">
+            <div class="row">
+
+                <!-- Total Employees -->
+                <div class="col-12 col-sm-6 col-xl-3">
+                    <div class="card card-info p-3">
+                        <div class="card-body d-flex align-items-center gap-3 p-0">
+                            <div class="icon-box icon-box-info">
+                                <i class="bi bi-people-fill fs-2"></i>
+                            </div>
+                            <div class="d-flex flex-column ms-auto text-end">
+                                <div class="stats-number">
+                                    <?= count($employees) ?>
+                                </div>
+                                <div class="text-meta">
+                                    Total Employees
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Present Employees -->
+                <div class="col-12 col-sm-6 col-xl-3">
+                    <div class="card card-success p-3">
+                        <div class="card-body d-flex align-items-center gap-3 p-0">
+                            <div class="icon-box icon-box-success">
+                                <i class="bi bi-check-circle-fill fs-3"></i>
+                            </div>
+                            <div class="d-flex flex-column ms-auto text-end">
+                                <div class="stats-number">
+                                    <?= count(array_filter($employees, fn($e) => $e['role'] === 'admin')) ?>
+                                </div>
+                                <div class="text-meta">
+                                    Total Present
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Late Employees -->
+                <div class="col-12 col-sm-6 col-xl-3">
+                    <div class="card card-warning p-3">
+                        <div class="card-body d-flex align-items-center gap-3 p-0">
+                            <div class="icon-box icon-box-warning">
+                                <i class="bi bi-clock-fill fs-3"></i>
+                            </div>
+                            <div class="d-flex flex-column ms-auto text-end">
+                                <div class="stats-number">
+                                    <?= count(array_filter($employees, fn($e) => $e['role'] === 'admin')) ?>
+                                </div>
+                                <div class="text-meta">
+                                    Total Late
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Absent Employees -->
+                <div class="col-12 col-sm-6 col-xl-3">
+                    <div class="card card-danger p-3">
+                        <div class="card-body d-flex align-items-center gap-3 p-0">
+                            <div class="icon-box icon-box-danger">
+                                <i class="bi bi-x-circle-fill fs-3"></i>
+                            </div>
+                            <div class="d-flex flex-column ms-auto text-end">
+                                <div class="stats-number">
+                                    <?= count(array_filter($employees, fn($e) => $e['role'] === 'admin')) ?>
+                                </div>
+                                <div class="text-meta">
+                                    Total Absent
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Employee List -->
+        <div class="card card-neutral employee-list-card">
             <div class="card-body d-flex flex-column employee-list-card-body">
 
-                <!-- Filter Section -->
-                <div class="filter-wrapper">
-                    <span class="employee-title text-primary">
-                        <i class="bi bi-people-fill"></i>
-                        Total Employees: <span id="empCount"><?= count($employees) ?></span>
-                    </span>
-                    <div class="d-flex gap-2 align-items-center ms-auto flex-wrap">
+            <!-- Filter Section -->
+            <div class="filter-wrapper">
+
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 w-100">
+
+                    <!-- LEFT SIDE -->
+                    <div class="d-flex gap-3 align-items-center flex-wrap">
 
                         <!-- Role filter -->
                         <div class="dropdown">
@@ -158,6 +260,7 @@ $currentPage = 'manage_employees';
                                     data-bs-toggle="dropdown" aria-expanded="false">
                                 <span id="roleBtnLabel">All Roles</span>
                             </button>
+
                             <ul class="dropdown-menu">
                                 <li>
                                     <button class="dropdown-item" type="button"
@@ -165,6 +268,7 @@ $currentPage = 'manage_employees';
                                         All Roles
                                     </button>
                                 </li>
+
                                 <?php foreach ($roles as $r): ?>
                                 <li>
                                     <button class="dropdown-item" type="button"
@@ -175,9 +279,10 @@ $currentPage = 'manage_employees';
                                 <?php endforeach; ?>
                             </ul>
                         </div>
+
                         <input type="hidden" id="role-filter" value="">
 
-                        <!-- Department filter — Bootstrap dropdown with search inside -->
+                        <!-- Department filter -->
                         <div class="dropdown">
                             <button class="btn btn-sm dropdown-toggle"
                                     type="button"
@@ -187,55 +292,82 @@ $currentPage = 'manage_employees';
                                     id="deptFilterBtn">
                                 <span id="deptFilterLabel">All Departments</span>
                             </button>
+
                             <div class="dropdown-menu p-2" style="min-width:220px;">
                                 <input type="text"
-                                       class="form-control form-control-sm mb-2"
-                                       id="deptFilterSearch"
-                                       placeholder="Search...">
-                                <ul class="list-unstyled mb-0" id="deptFilterList"
-                                    style="max-height:200px; overflow-y:auto;"></ul>
+                                    class="form-control form-control-sm mb-2"
+                                    id="deptFilterSearch"
+                                    placeholder="Search...">
+
+                                <ul class="list-unstyled mb-0"
+                                    id="deptFilterList"
+                                    style="max-height:200px; overflow-y:auto;">
+                                </ul>
                             </div>
                         </div>
+
                         <input type="hidden" id="dept-filter" value="">
 
                         <!-- Search -->
                         <div class="input-group input-group-sm" style="max-width:200px;">
-                            <span class="input-group-text"><i class="bi bi-search"></i></span>
-                            <input type="text" id="empSearch" class="form-control" placeholder="Search...">
-                        </div>
+                            <span class="input-group-text">
+                                <i class="bi bi-search"></i>
+                            </span>
 
-                        <!-- Manage button -->
-                        <div class="dropdown">
-                            <button class="btn btn-sm btn-success dropdown-toggle" type="button"
-                                    data-bs-toggle="dropdown" aria-expanded="false">
-                                <i class="bi bi-plus-lg"></i> Manage
-                            </button>
-                            <ul class="dropdown-menu dropdown-menu-end">
-                                <li>
-                                    <a class="dropdown-item" href="#"
-                                       data-bs-toggle="modal" data-bs-target="#empModal">
-                                        <i class="bi bi-person-plus"></i> Add Employee
-                                    </a>
-                                </li>
-                                <li><hr class="dropdown-divider"></li>
-                                <li>
-                                    <a class="dropdown-item" href="#"
-                                        data-bs-toggle="modal" data-bs-target="#import-schedule-modal">
-                                        <i class="bi bi-download"></i> Import Schedule
-                                    </a>
-                                </li>
-
-                                <li>
-                                    <a class="dropdown-item" href="#"
-                                        data-bs-toggle="modal" data-bs-target="#import-leaves-modal">
-                                        <i class="bi bi-download"></i> Import Leaves
-                                    </a>
-                                </li>
-                            </ul>
+                            <input type="text"
+                                id="empSearch"
+                                class="form-control"
+                                placeholder="Search...">
                         </div>
 
                     </div>
+
+                    <!-- RIGHT SIDE -->
+                    <div class="dropdown">
+                        <button class="btn btn-sm btn-success dropdown-toggle"
+                                type="button"
+                                data-bs-toggle="dropdown"
+                                aria-expanded="false">
+                            <i class="bi bi-plus-lg"></i> Manage
+                        </button>
+
+                        <ul class="dropdown-menu dropdown-menu-end">
+
+                            <li>
+                                <a class="dropdown-item"
+                                href="#"
+                                data-bs-toggle="modal"
+                                data-bs-target="#empModal">
+                                    <i class="bi bi-person-plus"></i> Add Employee
+                                </a>
+                            </li>
+
+                            <li><hr class="dropdown-divider"></li>
+
+                            <li>
+                                <a class="dropdown-item"
+                                href="#"
+                                data-bs-toggle="modal"
+                                data-bs-target="#import-schedule-modal">
+                                    <i class="bi bi-download"></i> Import Schedule
+                                </a>
+                            </li>
+
+                            <li>
+                                <a class="dropdown-item"
+                                href="#"
+                                data-bs-toggle="modal"
+                                data-bs-target="#import-leaves-modal">
+                                    <i class="bi bi-download"></i> Import Leaves
+                                </a>
+                            </li>
+
+                        </ul>
+                    </div>
+
                 </div>
+
+            </div>
 
                 <!-- Table Header -->
                 <div class="tableHeaderGlass">
@@ -381,6 +513,7 @@ $currentPage = 'manage_employees';
 
                     <form method="POST" action="admin_manage_employees.php" onsubmit="validateAddEmployeeForm(event)">
                         <input type="hidden" name="employee_id" id="modalEmpId">
+                        <input type="hidden" name="form_token" value="<?= $_SESSION['form_token'] ?>">
 
                         <div class="modal-body">
                             <div class="row g-4 align-items-center">
@@ -404,25 +537,25 @@ $currentPage = 'manage_employees';
                                         <div class="col-md-6">
                                             <label class="form-label">First Name</label>
                                             <input type="text" name="first_name" id="modalFirstName"
-                                                   class="form-control" required>
+                                                   class="form-control">
                                         </div>
 
                                         <div class="col-md-6">
                                             <label class="form-label">Last Name</label>
                                             <input type="text" name="last_name" id="modalLastName"
-                                                   class="form-control" required>
+                                                   class="form-control">
                                         </div>
 
                                         <div class="col-md-6">
                                             <label class="form-label">Email</label>
                                             <input type="email" name="email" id="modalEmail"
-                                                   class="form-control" required>
+                                                   class="form-control">
                                         </div>
 
                                         <div class="col-md-6">
                                             <label class="form-label">Birthdate</label>
                                             <input type="date" name="birthdate" id="modalBirthdate"
-                                                   class="form-control" required>
+                                                   class="form-control">
                                         </div>
 
                                         <!-- Role -->
@@ -446,7 +579,7 @@ $currentPage = 'manage_employees';
                                                     <?php endforeach; ?>
                                                 </ul>
                                             </div>
-                                            <input type="hidden" name="role" id="roleInput" required>
+                                            <input type="hidden" name="role" id="roleInput">
                                         </div>
 
                                         <!-- Department — Bootstrap dropdown with search inside -->
@@ -713,7 +846,15 @@ $currentPage = 'manage_employees';
                 </div>
             </div>
         </div>
-        <?php include '../toast.php'; ?>                                                    
+        <?php include '../toast.php'; ?>
+        <?php if (!empty($_SESSION['error'])): ?>
+        <script>document.addEventListener('DOMContentLoaded', () => showToast('<?= addslashes(htmlspecialchars($_SESSION['error'])) ?>', 'danger'));</script>
+        <?php unset($_SESSION['error']); ?>
+        <?php endif; ?>
+        <?php if (!empty($_SESSION['success'])): ?>
+        <script>document.addEventListener('DOMContentLoaded', () => showToast('<?= addslashes(htmlspecialchars($_SESSION['success'])) ?>', 'success'));</script>
+        <?php unset($_SESSION['success']); ?>
+        <?php endif; ?>
     </div><!-- #main-wrapper -->
 
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
@@ -937,7 +1078,6 @@ $currentPage = 'manage_employees';
             const emptyRow = document.querySelector('#empList .emptyRow');
             if (emptyRow) emptyRow.style.display = total === 0 ? '' : 'none';
 
-            document.getElementById('empCount').textContent = total;
             renderPagination(total, totalPages, start);
         }
 
@@ -1215,6 +1355,10 @@ $currentPage = 'manage_employees';
             if (!dept) {
                 showToast('Please select a department.', 'warning'); return;
             }
+
+            const btn = document.getElementById('modalSubmitBtn');
+            btn.disabled  = true;
+            btn.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Adding...`;
 
             showToast('Adding employee...', 'success');
             e.target.submit();

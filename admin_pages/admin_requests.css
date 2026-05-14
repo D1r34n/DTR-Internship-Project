@@ -1,5 +1,5 @@
 /* ================================================
-   ADMIN LOGS
+   ADMIN REQUESTS
    ================================================
    Page-specific styles for the admin logs page.
    Depends on: root.css, typography.css,
@@ -58,16 +58,20 @@ body {
 ========================= */
 
 .requests-card {
+    margin: 0.75rem 1rem 1rem;
+    border-radius: 16px !important;
+    overflow: hidden;
     flex: 1;
     min-height: 0;
-    margin: 0.5rem 1rem 1rem;
-    overflow: visible !important;
+    display: flex;
+    flex-direction: column;
 }
 
 .requests-card-body {
-    padding: 1.5rem;
-    height: 100%;
-    overflow: visible;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    padding: 0 1rem 1rem 1rem;
 }
 
 /* Filter Wrapper */
@@ -75,7 +79,7 @@ body {
     display: flex;
     align-items: center;
     gap: 1rem;
-    padding-bottom: 1rem;
+    padding: 1rem 0rem 1rem 0rem;
     flex-wrap: wrap;
 }
 
@@ -87,30 +91,6 @@ body {
     justify-content: space-between;
     align-items: center;
     margin-bottom: 1rem;
-}
-
-/* ============================================================
-   SEARCH INPUT
-   ============================================================ */
-.searchInput {
-    font-family: 'Poppins', sans-serif;
-    padding: 0.4rem 1rem;
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    border-radius: 20px;
-    font-size: 0.85rem;
-    outline: none;
-    width: 220px;
-    background: rgba(0, 0, 0, 0.3);
-    color: #fff;
-    transition: border-color 0.2s;
-}
-
-.searchInput:focus {
-    border-color: #97be41;
-}
-
-.searchInput::placeholder {
-    color: rgba(255, 255, 255, 0.4);
 }
 
 /* ============================================================
@@ -142,7 +122,7 @@ body {
    CUSTOM CARD COLOR
    ============================================================ */
 /* OVERTIME CARD */
-.card-glass.card-overtime {
+.card-neutral.card-overtime {
     background: var(--superadmin-bg) linear-gradient(
         to right,
         rgba(255, 255, 255, 0.06) 0%,
@@ -156,9 +136,9 @@ body {
     box-shadow: 0 4px 16px var(--superadmin-soft) !important;
 }
 
-.card-glass.card-overtime:hover,
-.card-glass.card-overtime:focus,
-.card-glass.card-overtime:focus-visible {
+.card-neutral.card-overtime:hover,
+.card-neutral.card-overtime:focus,
+.card-neutral.card-overtime:focus-visible {
     color: var(--text-lightest) !important;
     background: var(--superadmin-hover) linear-gradient(
         to right,
@@ -170,7 +150,7 @@ body {
 }
 
 /* OFFICIAL BUSINESS CARD */
-.card-glass.card-ob {
+.card-neutral.card-ob {
     background: var(--status-info-bg) linear-gradient(
         to right,
         rgba(255, 255, 255, 0.06) 0%,
@@ -184,9 +164,9 @@ body {
     box-shadow: 0 4px 16px var(--info-soft) !important;
 }
 
-.card-glass.card-ob:hover,
-.card-glass.card-ob:focus,
-.card-glass.card-ob:focus-visible {
+.card-neutral.card-ob:hover,
+.card-neutral.card-ob:focus,
+.card-neutral.card-ob:focus-visible {
     color: var(--text-lightest) !important;
     background: var(--status-info-hover) linear-gradient(
         to right,
@@ -198,7 +178,7 @@ body {
 }
 
 /* LOG EDIT CARD */
-.card-glass.card-log-edit {
+.card-neutral.card-log-edit {
     background: var(--manager-bg) linear-gradient(
         to right,
         rgba(255, 255, 255, 0.06) 0%,
@@ -212,9 +192,9 @@ body {
     box-shadow: var(--manager-soft) !important;
 }
 
-.card-glass.card-log-edit:hover,
-.card-glass.card-log-edit:focus,
-.card-glass.card-log-edit:focus-visible {
+.card-neutral.card-log-edit:hover,
+.card-neutral.card-log-edit:focus,
+.card-neutral.card-log-edit:focus-visible {
     color: var(--text-lightest) !important;
     background: var(--manager-hover) linear-gradient(
         to right,
@@ -234,128 +214,120 @@ body {
 .reqCard.schedule { background-color: #20c997; }
 
 /* ============================================================
-   TABS
+   CARD HEADER + NAV TABS  (matches ev-tabs in admin_employee_view)
    ============================================================ */
-.reqTabButtons {
-    display: flex;
-    gap: 0.5rem;
-    margin-bottom: 1rem;
-    border-bottom: 2px solid rgba(255, 255, 255, 0.1);
-    padding-bottom: 0.5rem;
+.requests-card .card-header {
+    background: rgba(255, 255, 255, 0.04);
+    border-bottom: 1px solid var(--glass-border);
+    position: relative;
+    z-index: 1;
 }
 
-.reqTabBtn {
-    background: none;
+.requests-card .nav-tabs {
+    border-bottom: none;
+    gap: 0;
+    padding: 0.5rem 0.75rem 0;
+    flex-wrap: nowrap;
+    margin-bottom: 0;
+    margin-left: 0;
+    margin-right: 0;
+}
+
+.requests-card .nav-tabs .nav-item { flex-shrink: 0; }
+
+.requests-card .nav-tabs .nav-link {
+    color: var(--text-muted);
+    background: transparent;
     border: none;
+    border-bottom: 2px solid transparent;
+    border-radius: 0;
+    padding: 0.5rem 1.1rem;
+    font-size: 0.83rem;
     font-family: 'Poppins', sans-serif;
-    font-size: 0.9rem;
-    padding: 0.4rem 1.2rem;
-    border-radius: 6px 6px 0 0;
-    cursor: pointer;
-    color: rgba(255, 255, 255, 0.5);
-    font-weight: 500;
-    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    transition: color 0.2s, border-color 0.2s;
 }
 
-.reqTabBtn.active {
-    background-color: #97be41;
-    color: white;
+.requests-card .nav-tabs .nav-link:hover {
+    color: var(--text-light);
+    border-bottom-color: var(--glass-border);
 }
 
-.reqTabBtn:hover:not(.active) {
-    background-color: rgba(255, 255, 255, 0.05);
-    color: #fff;
+.requests-card .nav-tabs .nav-link.active {
+    color: var(--primary-color);
+    background: transparent;
+    border-bottom-color: var(--primary-color);
+}
+
+/* ============================================================
+   SEARCH ROW (between card-header and tab-content)
+   ============================================================ */
+.req-search-row {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding: 0.5rem 1rem;
+    border-bottom: 1px solid var(--glass-border);
+    flex-shrink: 0;
 }
 
 /* ============================================================
    TAB CONTENT
    ============================================================ */
-.reqTabContent {
-    flex: 1;
+.requests-card .tab-content {
+    height: 100%;
+}
+
+.tab-pane.reqTabContent.show {
     display: flex;
     flex-direction: column;
-    min-height: 0;
+    height: 100%;
+    overflow: hidden;
+    padding: 1rem;
 }
 
 /* ============================================================
-   REQUEST TABLE
+   REQUEST TABLE  (matches logs_page tableHeaderGlass + tableScroll)
    ============================================================ */
-.tableScrollWrapper {
-    flex: 1;
-    overflow-y: auto;
+.reqTabContent .tableHeaderGlass {
+    flex-shrink: 0;
+    margin: 0;
+    padding: 0;
+}
+
+.reqTabContent .tableScroll {
     overflow-x: auto;
-    border-radius: 6px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    min-height: 0;
 }
 
-.tableScrollWrapper::-webkit-scrollbar { width: 5px; height: 5px; }
-.tableScrollWrapper::-webkit-scrollbar-track { background: transparent; }
-.tableScrollWrapper::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 10px; }
-.tableScrollWrapper::-webkit-scrollbar-thumb:hover { background: #97be41; }
+.reqTabContent .tableScroll::-webkit-scrollbar         { width: 5px; height: 5px; }
+.reqTabContent .tableScroll::-webkit-scrollbar-track   { background: transparent; }
+.reqTabContent .tableScroll::-webkit-scrollbar-thumb   { background: rgba(255,255,255,0.15); border-radius: 10px; }
+.reqTabContent .tableScroll::-webkit-scrollbar-thumb:hover { background: #97be41; }
 
-.tableScrollWrapper table {
-    margin-bottom: 0;
-    border-color: rgba(255, 255, 255, 0.07) !important;
-}
-
-.tableScrollWrapper table td,
-.tableScrollWrapper table th {
-    border-color: rgba(255, 255, 255, 0.07) !important;
-}
-
-.tableScrollWrapper thead th {
-    position: sticky;
-    top: 0;
-    background-color: rgb(24, 24, 24) !important;
-    color: rgba(255, 255, 255, 0.9) !important;
-    z-index: 1;
-    border-color: rgba(255, 255, 255, 0.1) !important;
-    white-space: nowrap;
-}
-
-.tableScrollWrapper tbody tr td {
-    background-color: rgba(0, 0, 0, 0.2);
-    color: rgba(255, 255, 255, 0.85);
-    border-color: rgba(255, 255, 255, 0.07);
+.reqTabContent .tableScroll tbody tr td {
     vertical-align: middle;
 }
 
-.tableScrollWrapper tbody tr:hover td {
+.reqTabContent .tableScroll tbody tr:hover td {
     background-color: rgba(151, 190, 65, 0.08);
     color: #fff;
 }
 
 /* ============================================================
-   REASON COLUMN (Fixed Width, Wrap Text)
+   REASON / ACTIONS COLUMNS
    ============================================================ */
-.tableScrollWrapper tbody td.reasonCol {
-    max-width: 180px;
+.reqTabContent td.reasonCol {
     white-space: normal;
     word-wrap: break-word;
     word-break: break-word;
 }
 
-/* ============================================================
-   ACTIONS COLUMN (Prevent Wrapping)
-   ============================================================ */
-.tableScrollWrapper tbody td.actionsCol {
+.reqTabContent td.actionsCol {
     white-space: nowrap;
-    min-width: 140px;
 }
 
-/* ============================================================
-   STATUS BADGES
-   ============================================================ */
-.leaveBadge          { background-color: #0d6efd; }
-.overtimeBadge       { background-color: #6f42c1; }
-.obBadge             { background-color: #17a2b8; }
-.logEditBadge        { background-color: #e83e8c; }
-.scheduleBadgeDay    { background-color: #0d6efd; }
-.scheduleBadgeNight  { background-color: #6f42c1; }
-.statusPending  { background-color: #f0ad4e; }
-.statusApproved { background-color: #97be41; }
-.statusRejected { background-color: #dc3545; }
 
 /* ============================================================
    APPROVE / REJECT BUTTONS

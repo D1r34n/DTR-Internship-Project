@@ -89,17 +89,14 @@ function getStatusBadge(string $status): string {
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Schedule Requests</title>
 
-    <!-- 1. Bootstrap FIRST -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
 
-    <!-- 2. Your global CSS -->
     <link rel="stylesheet" href="../assets/css/root.css">
     <link rel="stylesheet" href="../assets/css/typography.css">
     <link rel="stylesheet" href="../assets/css/components.css">
     <link rel="stylesheet" href="../navbars_revised.css">
 
-    <!-- 3. Page-specific CSS -->
     <link rel="stylesheet" href="admin_requests.css">
 </head>
 <body>
@@ -110,86 +107,120 @@ function getStatusBadge(string $status): string {
 
         <?php include '../topbar_revised.php'; ?>
 
-        <div class="card card-glass requests-card">
+        <!-- Summary Cards -->
+        <div class="container-fluid flex-shrink-0 px-3 pt-2">
+            <div class="row g-3">
+
+                <div class="col-12 col-sm-6 col-lg-4">
+                    <div class="card card-warning p-3 h-100">
+                        <div class="card-body d-flex align-items-center gap-3 p-0">
+                            <div class="icon-box icon-box-warning">
+                                <i class="bi bi-hourglass-split fs-4"></i>
+                            </div>
+                            <div class="d-flex flex-column ms-auto text-end">
+                                <div class="stats-number"><?= $pendingCount ?></div>
+                                <div class="text-meta">Pending</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-12 col-sm-6 col-lg-4">
+                    <div class="card card-success p-3 h-100">
+                        <div class="card-body d-flex align-items-center gap-3 p-0">
+                            <div class="icon-box icon-box-success">
+                                <i class="bi bi-check-circle-fill fs-3"></i>
+                            </div>
+                            <div class="d-flex flex-column ms-auto text-end">
+                                <div class="stats-number"><?= $approvedCount ?></div>
+                                <div class="text-meta">Approved</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-12 col-sm-6 col-lg-4">
+                    <div class="card card-danger p-3 h-100">
+                        <div class="card-body d-flex align-items-center gap-3 p-0">
+                            <div class="icon-box icon-box-danger">
+                                <i class="bi bi-x-circle-fill fs-3"></i>
+                            </div>
+                            <div class="d-flex flex-column ms-auto text-end">
+                                <div class="stats-number"><?= $rejectedCount ?></div>
+                                <div class="text-meta">Rejected</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Main Card -->
+        <div class="card card-neutral requests-card">
+
             <div class="card-body d-flex flex-column requests-card-body">
 
-                <!-- SUMMARY CARDS -->
-                <div class="row g-2 mb-4">
-                    <!-- Pending -->
-                    <div class="col-6 col-md-4 col-xl-2">
-                        <div class="card card-glass card-pending h-100">
-                            <div class="card-body d-flex align-items-center justify-content-between">
-                                <div class="icon-wrap">
-                                    <i class="bi bi-hourglass-split fs-4"></i>
-                                </div>
-                                <div class="d-flex flex-column text-end">
-                                    <p class="mb-0 text-meta">Pending</p>
-                                    <h5 class="mb-0 stats-number"><?= $pendingCount ?></h5>
-                                </div>
-                            </div>
+                <!-- Toast -->
+                <?php if ($success || $error): ?>
+                    <div class="custom-toast <?= $success ? 'toast-success' : 'toast-error' ?>" id="customToast">
+                        <div class="toast-content">
+                            <i class="bi <?= $success ? 'bi-check-circle-fill' : 'bi-x-circle-fill' ?> toast-icon"></i>
+                            <span><?= htmlspecialchars($success ?: $error) ?></span>
                         </div>
+                        <button class="toast-close" onclick="closeToast()">
+                            <i class="bi bi-x-lg"></i>
+                        </button>
                     </div>
-
-                    <!-- Approved -->
-                    <div class="col-6 col-md-4 col-xl-2">
-                        <div class="card card-glass card-success h-100">
-                            <div class="card-body d-flex align-items-center justify-content-between">
-                                <div class="icon-wrap icon-success">
-                                    <i class="bi bi-check-circle-fill fs-4"></i>
-                                </div>
-                                <div class="d-flex flex-column text-end">
-                                    <p class="mb-0 text-meta">Approved</p>
-                                    <h5 class="mb-0 stats-number"><?= $approvedCount ?></h5>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Rejected -->
-                    <div class="col-6 col-md-4 col-xl-2">
-                        <div class="card card-glass card-danger h-100">
-                            <div class="card-body d-flex align-items-center justify-content-between">
-                                <div class="icon-wrap icon-danger">
-                                    <i class="bi bi-x-circle-fill fs-4"></i>
-                                </div>
-                                <div class="d-flex flex-column text-end">
-                                    <p class="mb-0 text-meta">Rejected</p>
-                                    <h5 class="mb-0 stats-number"><?= $rejectedCount ?></h5>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- TITLE ROW -->
-                <div class="adminTitleRow">
-                    <span class="text-primary">Schedule Requests</span>
-                    <input type="text" id="searchInput" class="searchInput" placeholder="Search employee..." onkeyup="searchTable()">
-                </div>
-
-                <!-- ALERTS -->
-                <?php if ($success): ?>
-                    <div class="alert alert-success"><?= $success ?></div>
-                <?php endif; ?>
-                <?php if ($error): ?>
-                    <div class="alert alert-danger"><?= $error ?></div>
                 <?php endif; ?>
 
-                <!-- TABLE -->
-                <div class="tableScrollWrapper">
-                    <table class="table table-bordered table-hover mt-0">
-                        <thead>
-                            <tr>
-                                <th>Employee</th>
-                                <th>Department</th>
-                                <th>Date</th>
-                                <th>Time In</th>
-                                <th>Time Out</th>
-                                <th>Shift</th>
-                                <th>Status</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
+                <!-- Filter row -->
+                <div class="filterWrapper">
+
+                    <div class="dropdown">
+                        <button class="btn btn-sm dropdown-toggle" type="button" id="statusToggle"
+                                data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-funnel"></i>
+                            <span id="statusLabel">All Status</span>
+                        </button>
+                        <ul class="dropdown-menu" id="statusMenu">
+                            <li><a class="dropdown-item" href="#" data-value="ALL">All Status</a></li>
+                            <li><a class="dropdown-item" href="#" data-value="pending">Pending</a></li>
+                            <li><a class="dropdown-item" href="#" data-value="approved">Approved</a></li>
+                            <li><a class="dropdown-item" href="#" data-value="rejected">Rejected</a></li>
+                        </ul>
+                    </div>
+
+                    <div class="input-group input-group-sm ms-auto" style="max-width:200px;">
+                        <span class="input-group-text"><i class="bi bi-search"></i></span>
+                        <input type="text" id="searchInput" class="form-control"
+                               placeholder="Search..." onkeyup="filterTable()">
+                    </div>
+
+                </div>
+
+                <!-- Table -->
+                <div class="tableHeaderGlass">
+                    <table class="table table-borderless mb-0">
+                        <colgroup>
+                            <col style="width:20%"><col style="width:10%"><col style="width:12%">
+                            <col style="width:10%"><col style="width:10%"><col style="width:10%">
+                            <col style="width:10%"><col style="width:18%">
+                        </colgroup>
+                        <thead><tr>
+                            <th>Employee</th><th>Department</th><th>Date</th>
+                            <th>Time In</th><th>Time Out</th><th>Shift</th>
+                            <th>Status</th><th>Actions</th>
+                        </tr></thead>
+                    </table>
+                </div>
+                <div class="tableScroll">
+                    <table class="table table-hover mb-0">
+                        <colgroup>
+                            <col style="width:20%"><col style="width:10%"><col style="width:12%">
+                            <col style="width:10%"><col style="width:10%"><col style="width:10%">
+                            <col style="width:10%"><col style="width:18%">
+                        </colgroup>
                         <tbody>
                             <?php if (count($scheduleRequests) > 0): ?>
                                 <?php foreach ($scheduleRequests as $row): ?>
@@ -197,7 +228,7 @@ function getStatusBadge(string $status): string {
                                         $startHour    = $row['scheduled_start'] ? (int)date('H', strtotime($row['scheduled_start'])) : 6;
                                         $isNightShift = ($startHour >= 18 || $startHour < 6);
                                     ?>
-                                    <tr>
+                                    <tr data-status="<?= $row['status'] ?>">
                                         <td><?= htmlspecialchars($row['employee_name']) ?></td>
                                         <td><?= $row['department_code'] ? htmlspecialchars($row['department_code']) : '—' ?></td>
                                         <td><?= date('M d, Y', strtotime($row['schedule_date'])) ?></td>
@@ -205,9 +236,9 @@ function getStatusBadge(string $status): string {
                                         <td><?= $row['scheduled_end']   ? date('h:i A', strtotime($row['scheduled_end']))   : '—' ?></td>
                                         <td>
                                             <?php if ($isNightShift): ?>
-                                                <span class="badge scheduleBadgeNight">Night Shift</span>
+                                                <span class="badge request-overtime">Night</span>
                                             <?php else: ?>
-                                                <span class="badge scheduleBadgeDay">Day Shift</span>
+                                                <span class="badge status-info">Day</span>
                                             <?php endif; ?>
                                         </td>
                                         <td><?= getStatusBadge($row['status']) ?></td>
@@ -243,20 +274,34 @@ function getStatusBadge(string $status): string {
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        function searchTable() {
-            const input = document.getElementById('searchInput').value.toLowerCase();
-            document.querySelectorAll('.tableScrollWrapper tbody tr').forEach(row => {
-                row.style.display = row.textContent.toLowerCase().includes(input) ? '' : 'none';
+        let currentStatus = 'ALL';
+
+        function filterTable() {
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            document.querySelectorAll('.tableScroll tbody tr').forEach(row => {
+                const matchSearch = row.textContent.toLowerCase().includes(search);
+                const matchStatus = currentStatus === 'ALL' || row.dataset.status === currentStatus;
+                row.style.display = (matchSearch && matchStatus) ? '' : 'none';
             });
         }
 
-        setTimeout(() => {
-            document.querySelectorAll('.alert').forEach(alert => {
-                alert.style.transition = 'opacity 0.5s ease';
-                alert.style.opacity    = '0';
-                setTimeout(() => alert.remove(), 500);
+        document.querySelectorAll('#statusMenu .dropdown-item').forEach(item => {
+            item.addEventListener('click', e => {
+                e.preventDefault();
+                document.getElementById('statusLabel').textContent = item.textContent.trim();
+                currentStatus = item.dataset.value;
+                filterTable();
             });
-        }, 3000);
+        });
+
+        function closeToast() {
+            const toast = document.getElementById('customToast');
+            if (toast) {
+                toast.classList.add('toast-hide');
+                setTimeout(() => toast.remove(), 400);
+            }
+        }
+        setTimeout(() => closeToast(), 3000);
     </script>
 </body>
 </html>

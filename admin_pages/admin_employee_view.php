@@ -464,7 +464,7 @@ $leaveTypes = [
     <?php include '../topbar_revised.php'; $employeeId = $emp['id']; ?>
 
     <!-- Employee header strip -->
-    <div class="card card-glass employee-view-card">
+    <div class="card card-neutral employee-view-card">
         <div class="card-body employee-view-card-body">
             <div class="ev-header-row">
 
@@ -525,7 +525,7 @@ $leaveTypes = [
     <?php endif; ?>
 
     <!-- Tabs -->
-    <div class="ev-tabs card-glass">
+    <div class="ev-tabs card-neutral">
         <div class="card-header p-0">
             <ul class="nav nav-tabs card-header-tabs" id="myTab" role="tablist">
 

@@ -972,7 +972,20 @@ button.btn-sm {
    GLASS CARD — FROSTED
    ================================================ */
 
-.card-glass {
+.card {
+    transition:
+        transform 0.2s ease,
+        color 0.2s ease,
+        border-color 0.25s ease,
+        box-shadow 0.25s ease,
+        opacity 0.25s ease;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+}
+
+.card-neutral {
     background: var(--frosted-bg) linear-gradient(
         to right,
         rgba(255, 255, 255, 0.06) 0%,
@@ -982,7 +995,6 @@ button.btn-sm {
     ) !important;
 
     border: 1px solid var(--frosted-border) !important;
-    border-radius: 16px !important;
 
     backdrop-filter: var(--frosted-blur) !important;
     -webkit-backdrop-filter: var(--frosted-blur) !important;
@@ -993,7 +1005,7 @@ button.btn-sm {
     overflow: hidden;
 }
 
-.card-glass::before {
+.card-neutral::before {
     content: "";
     position: absolute;
     inset: 0;
@@ -1004,7 +1016,7 @@ button.btn-sm {
     z-index: 0;
 }
 
-.card-glass > .card-body {
+.card-neutral > .card-body {
     position: relative;
     z-index: 1;
 }
@@ -1014,85 +1026,416 @@ button.btn-sm {
    ================================================ */
 
 .card-success {
-    background: var(--status-success-bg) linear-gradient(
-        to right,
-        rgba(255, 255, 255, 0.06) 0%,
-        rgba(255, 255, 255, 0.03) 40%,
-        rgba(255, 255, 255, 0.015) 70%,
-        transparent 100%
-    ) !important;
+    background:
+        linear-gradient(
+            135deg,
+            transparent 0%,
+            transparent 55%,
+            rgba(151, 190, 65, 0.06) 78%,
+            rgba(151, 190, 65, 0.12) 100%
+        ),
+        linear-gradient(
+            to right,
+            rgba(255, 255, 255, 0.06) 0%,
+            rgba(255, 255, 255, 0.03) 40%,
+            rgba(255, 255, 255, 0.015) 70%,
+            transparent 100%
+        ),
+        var(--frosted-bg) !important;
 
-    border: 1px solid var(--status-success-border) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
 
-    box-shadow: 0 4px 16px var(--primary-soft) !important;
+    backdrop-filter: var(--frosted-blur) !important;
+    -webkit-backdrop-filter: var(--frosted-blur) !important;
+
+    box-shadow: var(--frosted-shadow) !important;
 }
 
 .card-success:hover,
 .card-success:focus,
 .card-success:focus-visible {
-    color: var(--text-lightest) !important;
-    background: var(--status-success-hover) linear-gradient(
-        to right,
-        rgba(255, 255, 255, 0.10) 0%,
-        rgba(255, 255, 255, 0.05) 40%,
-        rgba(255, 255, 255, 0.02) 70%,
-        transparent 100%
-    ) !important;
+
+    background:
+        linear-gradient(
+            135deg,
+            transparent 0%,
+            transparent 50%,
+            rgba(151, 190, 65, 0.10) 75%,
+            rgba(151, 190, 65, 0.18) 100%
+        ),
+        linear-gradient(
+            to right,
+            rgba(255, 255, 255, 0.08) 0%,
+            rgba(255, 255, 255, 0.04) 40%,
+            rgba(255, 255, 255, 0.02) 70%,
+            transparent 100%
+        ),
+        var(--frosted-bg) !important;
+
+    border-color: rgba(151, 190, 65, 0.18) !important;
 }
-
-.card-pending {
-    background: var(--status-warning-bg) linear-gradient(
-        to right,
-        rgba(255, 255, 255, 0.06) 0%,
-        rgba(255, 255, 255, 0.03) 40%,
-        rgba(255, 255, 255, 0.015) 70%,
-        transparent 100%
-    ) !important;
-
-    border: 1px solid var(--status-warning-border) !important;
-
-    box-shadow: var(--warning-soft) !important;
-}
-
-.card-pending:hover,
-.card-pending:focus,
-.card-pending:focus-visible {
-    color: var(--text-lightest) !important;
-    background: var(--status-warning-hover) linear-gradient(
-        to right,
-        rgba(255, 255, 255, 0.10) 0%,
-        rgba(255, 255, 255, 0.05) 40%,
-        rgba(255, 255, 255, 0.02) 70%,
-        transparent 100%
-    ) !important;
-}
-
 
 .card-danger {
-    background: var(--status-danger-bg) linear-gradient(
-        to right,
-        rgba(255, 255, 255, 0.06) 0%,
-        rgba(255, 255, 255, 0.03) 40%,
-        rgba(255, 255, 255, 0.015) 70%,
-        transparent 100%
-    ) !important;
+    background:
+        linear-gradient(
+            135deg,
+            transparent 0%,
+            transparent 55%,
+            rgba(239, 68, 68, 0.06) 78%,
+            rgba(239, 68, 68, 0.12) 100%
+        ),
+        linear-gradient(
+            to right,
+            rgba(255, 255, 255, 0.06) 0%,
+            rgba(255, 255, 255, 0.03) 40%,
+            rgba(255, 255, 255, 0.015) 70%,
+            transparent 100%
+        ),
+        var(--frosted-bg) !important;
 
-    border: 1px solid var(--status-danger-border) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
 
-    box-shadow: var(--danger-soft) !important;
+    backdrop-filter: var(--frosted-blur) !important;
+    -webkit-backdrop-filter: var(--frosted-blur) !important;
+
+    box-shadow: var(--frosted-shadow) !important;
 }
 
 .card-danger:hover,
 .card-danger:focus,
 .card-danger:focus-visible {
-    color: var(--text-lightest) !important;
-    background: var(--status-danger-hover) linear-gradient(
-        to right,
-        rgba(255, 255, 255, 0.10) 0%,
-        rgba(255, 255, 255, 0.05) 40%,
-        rgba(255, 255, 255, 0.02) 70%,
-        transparent 100%
-    ) !important;
+
+    background:
+        linear-gradient(
+            135deg,
+            transparent 0%,
+            transparent 50%,
+            rgba(239, 68, 68, 0.10) 75%,
+            rgba(239, 68, 68, 0.18) 100%
+        ),
+        linear-gradient(
+            to right,
+            rgba(255, 255, 255, 0.08) 0%,
+            rgba(255, 255, 255, 0.04) 40%,
+            rgba(255, 255, 255, 0.02) 70%,
+            transparent 100%
+        ),
+        var(--frosted-bg) !important;
+
+    border-color: rgba(239, 68, 68, 0.18) !important;
+}
+
+/* ================================================ */
+
+.card-warning {
+    background:
+        linear-gradient(
+            135deg,
+            transparent 0%,
+            transparent 55%,
+            rgba(251, 191, 36, 0.06) 78%,
+            rgba(251, 191, 36, 0.12) 100%
+        ),
+        linear-gradient(
+            to right,
+            rgba(255, 255, 255, 0.06) 0%,
+            rgba(255, 255, 255, 0.03) 40%,
+            rgba(255, 255, 255, 0.015) 70%,
+            transparent 100%
+        ),
+        var(--frosted-bg) !important;
+
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+
+    backdrop-filter: var(--frosted-blur) !important;
+    -webkit-backdrop-filter: var(--frosted-blur) !important;
+
+    box-shadow: var(--frosted-shadow) !important;
+}
+
+.card-warning:hover,
+.card-warning:focus,
+.card-warning:focus-visible {
+
+    background:
+        linear-gradient(
+            135deg,
+            transparent 0%,
+            transparent 50%,
+            rgba(251, 191, 36, 0.10) 75%,
+            rgba(251, 191, 36, 0.18) 100%
+        ),
+        linear-gradient(
+            to right,
+            rgba(255, 255, 255, 0.08) 0%,
+            rgba(255, 255, 255, 0.04) 40%,
+            rgba(255, 255, 255, 0.02) 70%,
+            transparent 100%
+        ),
+        var(--frosted-bg) !important;
+
+    border-color: rgba(251, 191, 36, 0.18) !important;
+}
+
+/* ================================================ */
+
+.card-info {
+    background:
+        linear-gradient(
+            135deg,
+            transparent 0%,
+            transparent 55%,
+            rgba(96, 165, 250, 0.06) 78%,
+            rgba(96, 165, 250, 0.12) 100%
+        ),
+        linear-gradient(
+            to right,
+            rgba(255, 255, 255, 0.06) 0%,
+            rgba(255, 255, 255, 0.03) 40%,
+            rgba(255, 255, 255, 0.015) 70%,
+            transparent 100%
+        ),
+        var(--frosted-bg) !important;
+
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+
+    backdrop-filter: var(--frosted-blur) !important;
+    -webkit-backdrop-filter: var(--frosted-blur) !important;
+
+    box-shadow: var(--frosted-shadow) !important;
+}
+
+.card-info:hover,
+.card-info:focus,
+.card-info:focus-visible {
+
+    background:
+        linear-gradient(
+            135deg,
+            transparent 0%,
+            transparent 50%,
+            rgba(96, 165, 250, 0.10) 75%,
+            rgba(96, 165, 250, 0.18) 100%
+        ),
+        linear-gradient(
+            to right,
+            rgba(255, 255, 255, 0.08) 0%,
+            rgba(255, 255, 255, 0.04) 40%,
+            rgba(255, 255, 255, 0.02) 70%,
+            transparent 100%
+        ),
+        var(--frosted-bg) !important;
+
+    border-color: rgba(96, 165, 250, 0.18) !important;
+}
+
+
+/* ================================================ */
+
+.card-mint {
+    background:
+        linear-gradient(
+            135deg,
+            transparent 0%,
+            transparent 55%,
+            rgba(159, 226, 191, 0.06) 78%,
+            rgba(159, 226, 191, 0.12) 100%
+        ),
+        linear-gradient(
+            to right,
+            rgba(255, 255, 255, 0.06) 0%,
+            rgba(255, 255, 255, 0.03) 40%,
+            rgba(255, 255, 255, 0.015) 70%,
+            transparent 100%
+        ),
+        var(--frosted-bg) !important;
+
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+
+    backdrop-filter: var(--frosted-blur) !important;
+    -webkit-backdrop-filter: var(--frosted-blur) !important;
+
+    box-shadow: var(--frosted-shadow) !important;
+}
+
+.card-mint:hover,
+.card-mint:focus,
+.card-mint:focus-visible {
+
+    background:
+        linear-gradient(
+            135deg,
+            transparent 0%,
+            transparent 50%,
+            rgba(159, 226, 191, 0.10) 75%,
+            rgba(159, 226, 191, 0.18) 100%
+        ),
+        linear-gradient(
+            to right,
+            rgba(255, 255, 255, 0.08) 0%,
+            rgba(255, 255, 255, 0.04) 40%,
+            rgba(255, 255, 255, 0.02) 70%,
+            transparent 100%
+        ),
+        var(--frosted-bg) !important;
+
+    border-color: rgba(159, 226, 191, 0.18) !important;
+}
+
+/* ================================================ */
+
+.card-coral {
+    background:
+        linear-gradient(
+            135deg,
+            transparent 0%,
+            transparent 55%,
+            rgba(248, 113, 113, 0.06) 78%,
+            rgba(248, 113, 113, 0.12) 100%
+        ),
+        linear-gradient(
+            to right,
+            rgba(255, 255, 255, 0.06) 0%,
+            rgba(255, 255, 255, 0.03) 40%,
+            rgba(255, 255, 255, 0.015) 70%,
+            transparent 100%
+        ),
+        var(--frosted-bg) !important;
+
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+
+    backdrop-filter: var(--frosted-blur) !important;
+    -webkit-backdrop-filter: var(--frosted-blur) !important;
+
+    box-shadow: var(--frosted-shadow) !important;
+}
+
+.card-coral:hover,
+.card-coral:focus,
+.card-coral:focus-visible {
+
+    background:
+        linear-gradient(
+            135deg,
+            transparent 0%,
+            transparent 50%,
+            rgba(248, 113, 113, 0.10) 75%,
+            rgba(248, 113, 113, 0.18) 100%
+        ),
+        linear-gradient(
+            to right,
+            rgba(255, 255, 255, 0.08) 0%,
+            rgba(255, 255, 255, 0.04) 40%,
+            rgba(255, 255, 255, 0.02) 70%,
+            transparent 100%
+        ),
+        var(--frosted-bg) !important;
+
+    border-color: rgba(248, 113, 113, 0.18) !important;
+}
+
+/* ================================================ */
+
+.card-pink {
+    background:
+        linear-gradient(
+            135deg,
+            transparent 0%,
+            transparent 55%,
+            rgba(244, 114, 182, 0.06) 78%,
+            rgba(244, 114, 182, 0.12) 100%
+        ),
+        linear-gradient(
+            to right,
+            rgba(255, 255, 255, 0.06) 0%,
+            rgba(255, 255, 255, 0.03) 40%,
+            rgba(255, 255, 255, 0.015) 70%,
+            transparent 100%
+        ),
+        var(--frosted-bg) !important;
+
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+
+    backdrop-filter: var(--frosted-blur) !important;
+    -webkit-backdrop-filter: var(--frosted-blur) !important;
+
+    box-shadow: var(--frosted-shadow) !important;
+}
+
+.card-pink:hover,
+.card-pink:focus,
+.card-pink:focus-visible {
+
+    background:
+        linear-gradient(
+            135deg,
+            transparent 0%,
+            transparent 50%,
+            rgba(244, 114, 182, 0.10) 75%,
+            rgba(244, 114, 182, 0.18) 100%
+        ),
+        linear-gradient(
+            to right,
+            rgba(255, 255, 255, 0.08) 0%,
+            rgba(255, 255, 255, 0.04) 40%,
+            rgba(255, 255, 255, 0.02) 70%,
+            transparent 100%
+        ),
+        var(--frosted-bg) !important;
+
+    border-color: rgba(244, 114, 182, 0.18) !important;
+}
+
+/* ================================================ */
+
+.card-purple {
+    background:
+        linear-gradient(
+            135deg,
+            transparent 0%,
+            transparent 55%,
+            rgba(168, 85, 247, 0.06) 78%,
+            rgba(168, 85, 247, 0.12) 100%
+        ),
+        linear-gradient(
+            to right,
+            rgba(255, 255, 255, 0.06) 0%,
+            rgba(255, 255, 255, 0.03) 40%,
+            rgba(255, 255, 255, 0.015) 70%,
+            transparent 100%
+        ),
+        var(--frosted-bg) !important;
+
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+
+    backdrop-filter: var(--frosted-blur) !important;
+    -webkit-backdrop-filter: var(--frosted-blur) !important;
+
+    box-shadow: var(--frosted-shadow) !important;
+}
+
+.card-purple:hover,
+.card-purple:focus,
+.card-purple:focus-visible {
+
+    background:
+        linear-gradient(
+            135deg,
+            transparent 0%,
+            transparent 50%,
+            rgba(168, 85, 247, 0.10) 75%,
+            rgba(168, 85, 247, 0.18) 100%
+        ),
+        linear-gradient(
+            to right,
+            rgba(255, 255, 255, 0.08) 0%,
+            rgba(255, 255, 255, 0.04) 40%,
+            rgba(255, 255, 255, 0.02) 70%,
+            transparent 100%
+        ),
+        var(--frosted-bg) !important;
+
+    border-color: rgba(168, 85, 247, 0.18) !important;
 }
 
 /* ================================================
@@ -1645,4 +1988,75 @@ button.btn-sm {
     font-size: 0.7rem;
     color: var(--text-light);
     user-select: none;
+}
+
+
+/* =========================
+   ICONS DESIGN
+========================= */
+.icon-box {
+    width: 48px;
+    height: 48px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 10px;
+    background: var(--neutral-glass);
+    border: 1px solid var(--neutral-border);
+    color: var(--neutral-color);
+    flex-shrink: 0;
+}
+
+/* ------------------------------------------------
+   ICON-BOX VARIANTS
+   ------------------------------------------------ */
+
+.icon-box-success {
+    background: var(--primary-glass);
+    border-color: var(--primary-border);
+    color: var(--primary-color);
+}
+
+.icon-box-danger {
+    background: var(--danger-glass);
+    border-color: var(--danger-border);
+    color: var(--danger-color);
+}
+
+.icon-box-warning {
+    background: var(--warning-glass);
+    border-color: var(--warning-border);
+    color: var(--warning-color);
+}
+
+.icon-box-info {
+    background: var(--info-glass);
+    border-color: var(--info-border);
+    color: var(--info-color);
+}
+
+.icon-box-mint {
+    background: var(--employee-bg);
+    border-color: var(--employee-border);
+    color: var(--employee);
+}
+
+.icon-box-coral {
+    background: var(--admin-bg);
+    border-color: var(--admin-border);
+    color: var(--admin);
+}
+
+.icon-box-pink {
+    background: var(--manager-bg);
+    border-color: var(--manager-border);
+    color: var(--manager);
+}
+
+.icon-box-purple {
+    background: var(--superadmin-bg);
+    border-color: var(--superadmin-border);
+    color: var(--superadmin);
 }

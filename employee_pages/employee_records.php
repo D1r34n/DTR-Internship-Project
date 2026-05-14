@@ -109,7 +109,7 @@ foreach ($obStmt->fetchAll(PDO::FETCH_ASSOC) as $ob) {
     <div id="main-wrapper">
         <?php include '../topbar_revised.php'; ?>
 
-        <div class="card card-glass records-card">
+        <div class="card card-neutral records-card">
             <div class="card-body d-flex flex-column records-card-body">
 
                 <?php

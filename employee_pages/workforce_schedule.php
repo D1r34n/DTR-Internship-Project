@@ -187,7 +187,7 @@ $currentPage = 'workforce_schedule';
     <div id="main-wrapper">
         <?php include '../topbar_revised.php'; ?>
 
-        <div class="card card-glass logs-card">
+        <div class="card card-neutral logs-card">
             <div class="card-body d-flex flex-column logs-card-body">
 
                 <!-- Title Row -->

@@ -29,7 +29,7 @@
     <div id="main-wrapper">
         <?php include '../topbar_revised.php'; ?>
 
-        <div class="card card-glass schedules-card">
+        <div class="card card-neutral schedules-card">
             <div class="card-body d-flex flex-column schedules-card-body">
 
                 <!-- SHIFT LEGEND -->

@@ -259,133 +259,153 @@ function getActionButtons($type, $id, $status) {
 
         <?php include '../topbar_revised.php'; ?>
 
+        <!-- Summary Card -->
+        <div class="container-fluid flex-shrink-0 px-3 pt-2">
+            <div class="row g-3">
+
+                <!-- Total Pending -->
+                <div class="col-12 col-sm-6 col-md-4 col-xl-2">
+                    <div class="card card-warning p-3">
+                        <div class="card-body d-flex align-items-center gap-3 p-0">
+                            <div class="icon-box icon-box-warning">
+                                <i class="bi bi-hourglass-split fs-4"></i>
+                            </div>
+                            <div class="d-flex flex-column ms-auto text-end">
+                                <div class="stats-number">
+                                    <?= $totalPending ?>
+                                </div>
+                                <div class="text-meta">
+                                    Pending
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Total Approved -->
+                <div class="col-12 col-sm-6 col-md-4 col-xl-2">
+                    <div class="card card-success p-3">
+                        <div class="card-body d-flex align-items-center gap-3 p-0">
+                            <div class="icon-box icon-box-success">
+                                <i class="bi bi-check-circle-fill fs-3"></i>
+                            </div>
+                            <div class="d-flex flex-column ms-auto text-end">
+                                <div class="stats-number">
+                                    <?= $totalApproved ?>
+                                </div>
+                                <div class="text-meta">
+                                    Approved
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Total Rejected -->
+                <div class="col-12 col-sm-6 col-md-4 col-xl-2">
+                    <div class="card card-danger p-3">
+                        <div class="card-body d-flex align-items-center gap-3 p-0">
+                            <div class="icon-box icon-box-danger">
+                                <i class="bi bi-clock-fill fs-3"></i>
+                            </div>
+                            <div class="d-flex flex-column ms-auto text-end">
+                                <div class="stats-number">
+                                    <?= $totalRejected ?>
+                                </div>
+                                <div class="text-meta">
+                                    Rejected
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Total Overtime -->
+                <div class="col-12 col-sm-6 col-md-4 col-xl-2">
+                    <div class="card card-purple p-3">
+                        <div class="card-body d-flex align-items-center gap-3 p-0">
+                            <div class="icon-box icon-box-purple">
+                                <i class="bi bi-x-circle-fill fs-3"></i>
+                            </div>
+                            <div class="d-flex flex-column ms-auto text-end">
+                                <div class="stats-number">
+                                    <?= $totalOvertime ?>
+                                </div>
+                                <div class="text-meta">
+                                    Overtime
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Total Official Business -->
+                <div class="col-12 col-sm-6 col-md-4 col-xl-2">
+                    <div class="card card-info p-3">
+                        <div class="card-body d-flex align-items-center gap-3 p-0">
+                            <div class="icon-box icon-box-info">
+                                <i class="bi bi-x-circle-fill fs-3"></i>
+                            </div>
+                            <div class="d-flex flex-column ms-auto text-end">
+                                <div class="stats-number">
+                                    <?= $totalOB ?>
+                                </div>
+                                <div class="text-meta">
+                                    OB
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Total Official Business -->
+                <div class="col-12 col-sm-6 col-md-4 col-xl-2">
+                    <div class="card card-pink p-3">
+                        <div class="card-body d-flex align-items-center gap-3 p-0">
+                            <div class="icon-box icon-box-pink">
+                                <i class="bi bi-x-circle-fill fs-3"></i>
+                            </div>
+                            <div class="d-flex flex-column ms-auto text-end">
+                                <div class="stats-number">
+                                    <?= $totalLogEdit ?>
+                                </div>
+                                <div class="text-meta">
+                                    Log Edits
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
         <!-- PAGE WRAPPER -->
-        <div class="card card-glass requests-card">
+        <div class="card card-neutral requests-card">
+
+            <div class="card-header p-0">
+                <ul class="nav nav-tabs card-header-tabs" id="reqTab" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" role="tab" data-bs-toggle="tab" data-bs-target="#all">All</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" role="tab" data-bs-toggle="tab" data-bs-target="#leave">Leave</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" role="tab" data-bs-toggle="tab" data-bs-target="#overtime">Overtime</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" role="tab" data-bs-toggle="tab" data-bs-target="#ob">Official Business</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" role="tab" data-bs-toggle="tab" data-bs-target="#log-edit">Log Edit</button>
+                    </li>
+                </ul>
+            </div>
+
             <div class="card-body d-flex flex-column requests-card-body">
 
-                <!-- SUMMARY CARDS -->
-                
-                <div class="row g-2 mb-4">
-                    <!-- Pending -->
-                    <div class="col-6 col-md-4 col-xl-2">
-                        <div class="card card-glass card-pending h-100">
-                            <div class="card-body d-flex align-items-center justify-content-between">
-
-                                <!-- ICON -->
-                                <div class="icon-wrap">
-                                    <i class="bi bi-hourglass-split fs-4"></i>
-                                </div>
-
-                                <!-- TEXT -->
-                                <div class="d-flex flex-column text-end">
-                                    <p class="mb-0 text-meta">Pending</p>
-                                    <h5 class="mb-0 stats-number"><?= $totalPending ?></h5>
-                                </div>
-
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Approved -->
-                    <div class="col-6 col-md-4 col-xl-2">
-                        <div class="card card-glass card-success h-100">
-                            <div class="card-body d-flex align-items-center justify-content-between">
-
-                                <div class="icon-wrap icon-success">
-                                    <i class="bi bi-check-circle-fill fs-4"></i>
-                                </div>
-
-                                <div class="d-flex flex-column text-end">
-                                    <p class="mb-0 text-meta">Approved</p>
-                                    <h5 class="mb-0 stats-number"><?= $totalApproved ?></h5>
-                                </div>
-
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Rejected -->
-                    <div class="col-6 col-md-4 col-xl-2">
-                        <div class="card card-glass card-danger h-100">
-                            <div class="card-body d-flex align-items-center justify-content-between">
-
-                                <div class="icon-wrap icon-danger">
-                                    <i class="bi bi-x-circle-fill fs-4"></i>
-                                </div>
-
-                                <div class="d-flex flex-column text-end">
-                                    <p class="mb-0 text-meta">Rejected</p>
-                                    <h5 class="mb-0 stats-number"><?= $totalRejected ?></h5>
-                                </div>
-
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Overtime -->
-                    <div class="col-6 col-md-4 col-xl-2">
-                        <div class="card card-glass card-overtime h-100">
-                            <div class="card-body d-flex align-items-center justify-content-between">
-
-                                <div class="icon-wrap icon-info">
-                                    <i class="bi bi-clock-history fs-4"></i>
-                                </div>
-
-                                <div class="d-flex flex-column text-end">
-                                    <p class="mb-0 text-meta">Overtime</p>
-                                    <h5 class="mb-0 stats-number"><?= $totalOvertime ?></h5>
-                                </div>
-
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Official Business -->
-                    <div class="col-6 col-md-4 col-xl-2">
-                        <div class="card card-glass card-ob h-100">
-                            <div class="card-body d-flex align-items-center justify-content-between">
-
-                                <div class="icon-wrap icon-info">
-                                    <i class="bi bi-briefcase-fill fs-4"></i>
-                                </div>
-
-                                <div class="d-flex flex-column text-end">
-                                    <p class="mb-0 text-meta">OB</p>
-                                    <h5 class="mb-0 stats-number"><?= $totalOB ?></h5>
-                                </div>
-
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Log Edits -->
-                    <div class="col-6 col-md-4 col-xl-2">
-                        <div class="card card-glass card-log-edit h-100">
-                            <div class="card-body d-flex align-items-center justify-content-between">
-
-                                <div class="icon-wrap icon-warning">
-                                    <i class="bi bi-pencil-square fs-4"></i>
-                                </div>
-
-                                <div class="d-flex flex-column text-end">
-                                    <p class="mb-0 text-meta">Log Edits</p>
-                                    <h5 class="mb-0 stats-number"><?= $totalLogEdit ?></h5>
-                                </div>
-
-                            </div>
-                        </div>
-                    </div>
-
-                </div>
-
-                <!-- TITLE ROW -->
-                <div class="adminTitleRow">
-                    <span class="text-primary">Request Management</span>
-                    <input type="text" id="searchInput" class="searchInput" placeholder="Search employee..." onkeyup="searchTable()">
-                </div>
-
-                <!-- SUCCESS ALERT -->
-               <!-- TOAST -->
+                <!-- TOAST -->
                 <?php if ($success || $error): ?>
                     <div class="custom-toast <?= $success ? 'toast-success' : 'toast-error' ?>" id="customToast">
                         <div class="toast-content">
@@ -400,29 +420,42 @@ function getActionButtons($type, $id, $status) {
                     </div>
                 <?php endif; ?>
 
-                <!-- TABS -->
-                <div class="reqTabButtons">
-                    <button class="reqTabBtn active" onclick="switchReqTab('all', this)">All</button>
-                    <button class="reqTabBtn" onclick="switchReqTab('leave', this)">Leave</button>
-                    <button class="reqTabBtn" onclick="switchReqTab('overtime', this)">Overtime</button>
-                    <button class="reqTabBtn" onclick="switchReqTab('ob', this)">Official Business</button>
-                    <button class="reqTabBtn" onclick="switchReqTab('log-edit', this)">Log Edit</button>
+                <!-- Search row -->
+                <div class="req-search-row">
+                    <div class="input-group input-group-sm" style="max-width:200px;">
+                        <span class="input-group-text">
+                            <i class="bi bi-search"></i>
+                        </span>
+                        <input type="text"
+                            id="search-input"
+                            class="form-control"
+                            placeholder="Search..."
+                            onkeyup="searchTable()">
+                    </div>
                 </div>
 
+                <div class="tab-content">
+
                 <!-- ALL TAB -->
-                <div id="all" class="reqTabContent">
-                    <div class="tableScrollWrapper">
-                        <table class="table table-bordered table-hover mt-0">
-                            <thead>
-                                <tr>
-                                    <th>Employee</th>
-                                    <th>Type</th>
-                                    <th>Details</th>
-                                    <th>Reason</th>
-                                    <th>Status</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
+                <div id="all" class="tab-pane fade show active reqTabContent" role="tabpanel">
+                    <div class="tableHeaderGlass">
+                        <table class="table table-borderless mb-0">
+                            <colgroup>
+                                <col style="width:22%"><col style="width:14%"><col style="width:24%">
+                                <col style="width:20%"><col style="width:10%"><col style="width:10%">
+                            </colgroup>
+                            <thead><tr>
+                                <th>Employee</th><th>Type</th><th>Details</th>
+                                <th>Reason</th><th>Status</th><th>Actions</th>
+                            </tr></thead>
+                        </table>
+                    </div>
+                    <div class="tableScroll">
+                        <table class="table table-hover mb-0">
+                            <colgroup>
+                                <col style="width:22%"><col style="width:14%"><col style="width:24%">
+                                <col style="width:20%"><col style="width:10%"><col style="width:10%">
+                            </colgroup>
                             <tbody>
                                 <?php foreach ($leaveRequests as $row): ?>
                                     <tr>
@@ -459,9 +492,7 @@ function getActionButtons($type, $id, $status) {
                                         <td><?= htmlspecialchars($row['employee_name']) ?></td>
                                         <td><span class="badge request-log-edit">Log Edit</span></td>
                                         <td><?= date('M d, Y', strtotime($row['work_date'])) ?> |
-                                            <?php
-                                            $origTime = $row['original_log_time'] ? date('h:i A', strtotime($row['original_log_time'])) : '—';
-                                            ?>
+                                            <?php $origTime = $row['original_log_time'] ? date('h:i A', strtotime($row['original_log_time'])) : '—'; ?>
                                             <?php if ($row['request_type'] === 'time_in'): ?>
                                                 In: <?= $origTime ?> &rarr; <?= date('h:i A', strtotime($row['requested_time_in'])) ?>
                                             <?php elseif ($row['request_type'] === 'time_out'): ?>
@@ -484,26 +515,31 @@ function getActionButtons($type, $id, $status) {
                 </div>
 
                 <!-- LEAVE TAB -->
-                <div id="leave" class="reqTabContent" style="display:none;">
-                    <div class="tableScrollWrapper">
-                        <table class="table table-bordered table-hover mt-0">
-                            <thead>
-                                <tr>
-                                    <th>Employee</th>
-                                    <th>Leave Type</th>
-                                    <th>Start</th>
-                                    <th>End</th>
-                                    <th>Reason</th>
-                                    <th>Status</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
+                <div id="leave" class="tab-pane fade reqTabContent" role="tabpanel">
+                    <div class="tableHeaderGlass">
+                        <table class="table table-borderless mb-0">
+                            <colgroup>
+                                <col style="width:20%"><col style="width:13%"><col style="width:12%">
+                                <col style="width:12%"><col style="width:20%"><col style="width:10%"><col style="width:13%">
+                            </colgroup>
+                            <thead><tr>
+                                <th>Employee</th><th>Leave Type</th><th>Start</th>
+                                <th>End</th><th>Reason</th><th>Status</th><th>Actions</th>
+                            </tr></thead>
+                        </table>
+                    </div>
+                    <div class="tableScroll">
+                        <table class="table table-hover mb-0">
+                            <colgroup>
+                                <col style="width:20%"><col style="width:13%"><col style="width:12%">
+                                <col style="width:12%"><col style="width:20%"><col style="width:10%"><col style="width:13%">
+                            </colgroup>
                             <tbody>
                                 <?php if (count($leaveRequests) > 0): ?>
                                     <?php foreach ($leaveRequests as $row): ?>
                                         <tr>
                                             <td><?= htmlspecialchars($row['employee_name']) ?></td>
-                                            <td><span class="badge leaveBadge"><?= ucfirst($row['leave_type']) ?></span></td>
+                                            <td><span class="badge request-leave"><?= ucfirst($row['leave_type']) ?></span></td>
                                             <td><?= date('M d, Y', strtotime($row['start_date'])) ?></td>
                                             <td><?= date('M d, Y', strtotime($row['end_date'])) ?></td>
                                             <td class="reasonCol"><?= htmlspecialchars($row['reason']) ?></td>
@@ -520,20 +556,25 @@ function getActionButtons($type, $id, $status) {
                 </div>
 
                 <!-- OVERTIME TAB -->
-                <div id="overtime" class="reqTabContent" style="display:none;">
-                    <div class="tableScrollWrapper">
-                        <table class="table table-bordered table-hover mt-0">
-                            <thead>
-                                <tr>
-                                    <th>Employee</th>
-                                    <th>Date</th>
-                                    <th>Time In</th>
-                                    <th>Time Out</th>
-                                    <th>Reason</th>
-                                    <th>Status</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
+                <div id="overtime" class="tab-pane fade reqTabContent" role="tabpanel">
+                    <div class="tableHeaderGlass">
+                        <table class="table table-borderless mb-0">
+                            <colgroup>
+                                <col style="width:20%"><col style="width:13%"><col style="width:11%">
+                                <col style="width:11%"><col style="width:20%"><col style="width:10%"><col style="width:15%">
+                            </colgroup>
+                            <thead><tr>
+                                <th>Employee</th><th>Date</th><th>Time In</th>
+                                <th>Time Out</th><th>Reason</th><th>Status</th><th>Actions</th>
+                            </tr></thead>
+                        </table>
+                    </div>
+                    <div class="tableScroll">
+                        <table class="table table-hover mb-0">
+                            <colgroup>
+                                <col style="width:20%"><col style="width:13%"><col style="width:11%">
+                                <col style="width:11%"><col style="width:20%"><col style="width:10%"><col style="width:15%">
+                            </colgroup>
                             <tbody>
                                 <?php if (count($overtimeRequests) > 0): ?>
                                     <?php foreach ($overtimeRequests as $row): ?>
@@ -556,21 +597,25 @@ function getActionButtons($type, $id, $status) {
                 </div>
 
                 <!-- LOG EDIT TAB -->
-                <div id="log-edit" class="reqTabContent" style="display:none;">
-                    <div class="tableScrollWrapper">
-                        <table class="table table-bordered table-hover mt-0">
-                            <thead>
-                                <tr>
-                                    <th>Employee</th>
-                                    <th>Date</th>
-                                    <th>Type</th>
-                                    <th>Current Log</th>
-                                    <th>Correction</th>
-                                    <th>Reason</th>
-                                    <th>Status</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
+                <div id="log-edit" class="tab-pane fade reqTabContent" role="tabpanel">
+                    <div class="tableHeaderGlass">
+                        <table class="table table-borderless mb-0">
+                            <colgroup>
+                                <col style="width:15%"><col style="width:10%"><col style="width:9%"><col style="width:10%">
+                                <col style="width:15%"><col style="width:17%"><col style="width:10%"><col style="width:14%">
+                            </colgroup>
+                            <thead><tr>
+                                <th>Employee</th><th>Date</th><th>Type</th><th>Current Log</th>
+                                <th>Correction</th><th>Reason</th><th>Status</th><th>Actions</th>
+                            </tr></thead>
+                        </table>
+                    </div>
+                    <div class="tableScroll">
+                        <table class="table table-hover mb-0">
+                            <colgroup>
+                                <col style="width:15%"><col style="width:10%"><col style="width:9%"><col style="width:10%">
+                                <col style="width:15%"><col style="width:17%"><col style="width:10%"><col style="width:14%">
+                            </colgroup>
                             <tbody>
                                 <?php if (count($logEditRequests) > 0): ?>
                                     <?php foreach ($logEditRequests as $row): ?>
@@ -599,7 +644,7 @@ function getActionButtons($type, $id, $status) {
                                         </tr>
                                     <?php endforeach; ?>
                                 <?php else: ?>
-                                    <tr><td colspan="7" class="text-center">No log edit requests found.</td></tr>
+                                    <tr><td colspan="8" class="text-center">No log edit requests found.</td></tr>
                                 <?php endif; ?>
                             </tbody>
                         </table>
@@ -607,19 +652,25 @@ function getActionButtons($type, $id, $status) {
                 </div>
 
                 <!-- OFFICIAL BUSINESS TAB -->
-                <div id="ob" class="reqTabContent" style="display:none;">
-                    <div class="tableScrollWrapper">
-                        <table class="table table-bordered table-hover mt-0">
-                            <thead>
-                                <tr>
-                                    <th>Employee</th>
-                                    <th>Date</th>
-                                    <th>Client Name</th>
-                                    <th>Reason</th>
-                                    <th>Status</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
+                <div id="ob" class="tab-pane fade reqTabContent" role="tabpanel">
+                    <div class="tableHeaderGlass">
+                        <table class="table table-borderless mb-0">
+                            <colgroup>
+                                <col style="width:20%"><col style="width:12%"><col style="width:18%">
+                                <col style="width:22%"><col style="width:10%"><col style="width:18%">
+                            </colgroup>
+                            <thead><tr>
+                                <th>Employee</th><th>Date</th><th>Client Name</th>
+                                <th>Reason</th><th>Status</th><th>Actions</th>
+                            </tr></thead>
+                        </table>
+                    </div>
+                    <div class="tableScroll">
+                        <table class="table table-hover mb-0">
+                            <colgroup>
+                                <col style="width:20%"><col style="width:12%"><col style="width:18%">
+                                <col style="width:22%"><col style="width:10%"><col style="width:18%">
+                            </colgroup>
                             <tbody>
                                 <?php if (count($obRequests) > 0): ?>
                                     <?php foreach ($obRequests as $row): ?>
@@ -640,6 +691,8 @@ function getActionButtons($type, $id, $status) {
                     </div>
                 </div>
 
+                </div><!-- /.tab-content -->
+
             </div>
         </div>
 
@@ -659,18 +712,10 @@ function getActionButtons($type, $id, $status) {
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
 
-        // ---- TAB SWITCHING ----
-        function switchReqTab(tab, btn) {
-            document.querySelectorAll('.reqTabContent').forEach(t => t.style.display = 'none');
-            document.querySelectorAll('.reqTabBtn').forEach(b => b.classList.remove('active'));
-            document.getElementById(tab).style.display = 'flex';
-            btn.classList.add('active');
-        }
-
         // ---- SEARCH TABLE ----
         function searchTable() {
-            const input = document.getElementById('searchInput').value.toLowerCase();
-            document.querySelectorAll('.reqTabContent:not([style*="display:none"]) tbody tr').forEach(row => {
+            const input = document.getElementById('search-input').value.toLowerCase();
+            document.querySelectorAll('.tab-pane.active tbody tr').forEach(row => {
                 row.style.display = row.textContent.toLowerCase().includes(input) ? '' : 'none';
             });
         }
