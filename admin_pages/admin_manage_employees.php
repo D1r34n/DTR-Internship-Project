@@ -132,6 +132,33 @@ $employees = $pdo->query("
     ORDER BY e.first_name, e.last_name
 ")->fetchAll(PDO::FETCH_ASSOC);
 
+// ---- TODAY'S ATTENDANCE SUMMARY ----
+$today = date('Y-m-d');
+
+$stmt = $pdo->prepare("
+    SELECT COUNT(*) FROM attendances a
+    JOIN employees e ON e.id = a.employee_id
+    WHERE a.work_date = ? AND a.status = 'present'
+");
+$stmt->execute([$today]);
+$presentCount = (int) $stmt->fetchColumn();
+
+$stmt = $pdo->prepare("
+    SELECT COUNT(*) FROM attendances a
+    JOIN employees e ON e.id = a.employee_id
+    WHERE a.work_date = ? AND a.status = 'present' AND a.late_minutes > 0
+");
+$stmt->execute([$today]);
+$lateCount = (int) $stmt->fetchColumn();
+
+$stmt = $pdo->prepare("
+    SELECT COUNT(*) FROM attendances a
+    JOIN employees e ON e.id = a.employee_id
+    WHERE a.work_date = ? AND a.status = 'absent'
+");
+$stmt->execute([$today]);
+$absentCount = (int) $stmt->fetchColumn();
+
 $currentPage = 'manage_employees';
 ?>
 <!doctype html>
@@ -191,10 +218,10 @@ $currentPage = 'manage_employees';
                             </div>
                             <div class="d-flex flex-column ms-auto text-end">
                                 <div class="stats-number">
-                                    <?= count(array_filter($employees, fn($e) => $e['role'] === 'admin')) ?>
+                                    <?= $presentCount ?>
                                 </div>
                                 <div class="text-meta">
-                                    Total Present
+                                    Employee Present
                                 </div>
                             </div>
                         </div>
@@ -210,10 +237,10 @@ $currentPage = 'manage_employees';
                             </div>
                             <div class="d-flex flex-column ms-auto text-end">
                                 <div class="stats-number">
-                                    <?= count(array_filter($employees, fn($e) => $e['role'] === 'admin')) ?>
+                                    <?= $lateCount ?>
                                 </div>
                                 <div class="text-meta">
-                                    Total Late
+                                    Employee Late
                                 </div>
                             </div>
                         </div>
@@ -229,10 +256,10 @@ $currentPage = 'manage_employees';
                             </div>
                             <div class="d-flex flex-column ms-auto text-end">
                                 <div class="stats-number">
-                                    <?= count(array_filter($employees, fn($e) => $e['role'] === 'admin')) ?>
+                                    <?= $absentCount ?>
                                 </div>
                                 <div class="text-meta">
-                                    Total Absent
+                                    Employee Absent
                                 </div>
                             </div>
                         </div>
