@@ -1678,6 +1678,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // ---- FullCalendar (Tab 1) ----
+    let _skipDateClick = false;
     adminCalendar = new FullCalendar.Calendar(document.getElementById('admin-calendar'), {
         initialView:  'dayGridMonth',
         firstDay:     0,
@@ -1768,6 +1769,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 btn.innerHTML = '<i class="bi bi-pencil"></i>';
                 btn.addEventListener('click', e => {
                     e.stopPropagation();
+                    _skipDateClick = true;
+                    setTimeout(() => { _skipDateClick = false; }, 100);
                     if (props.type === 'rest' || props.isRestDay) openRestDayEditModal(props.dateStr);
                     else openEditModal(props.dateStr, props.schedInVal || '', props.schedOutVal || '');
                 });
@@ -1785,6 +1788,7 @@ document.addEventListener('DOMContentLoaded', () => {
         },
 
         dateClick: function(info) {
+            if (_skipDateClick) return;
             openManageModalWithDate(info.dateStr);
         },
     });

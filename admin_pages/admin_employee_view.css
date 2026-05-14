@@ -997,9 +997,9 @@ body {
     transition: background 0.2s;
 }
 
-.sched-cal-action-btn.edit        { background: var(--info-bg);   color: var(--info); }
-.sched-cal-action-btn.edit:hover  { background: var(--info);      color: var(--text-lightest); }
-.sched-cal-action-btn.delete      { background: var(--danger-bg); color: var(--danger-color); }
+.sched-cal-action-btn.edit        { background: var(--info-glass);  color: var(--info-color); }
+.sched-cal-action-btn.edit:hover  { background: var(--info-color);  color: var(--text-lightest); }
+.sched-cal-action-btn.delete      { background: var(--danger-glass); color: var(--danger-color); }
 .sched-cal-action-btn.delete:hover { background: var(--danger-color); color: var(--text-lightest); }
 
 /* ---- FullCalendar dark theme overrides ---- */

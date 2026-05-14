@@ -308,5 +308,75 @@ foreach ($obMap as $obDate => $obStatus) {
     }
 }
 
+// ---- ADMIN: all employees' leave & OB events ----
+if (($_SESSION['user_role'] ?? '') === 'admin') {
+
+    // Leave requests (non-OB) for all employees
+    $stmt = $pdo->prepare("
+        SELECT lr.selected_dates, lr.start_date, lr.end_date, lr.status,
+               CONCAT(e.first_name, ' ', e.last_name) AS full_name
+        FROM leave_requests lr
+        JOIN employees e ON e.id = lr.employee_id
+        WHERE lr.leave_type != 'ob leave'
+          AND (
+              lr.start_date BETWEEN ? AND ?
+              OR lr.end_date   BETWEEN ? AND ?
+              OR (lr.start_date <= ? AND lr.end_date >= ?)
+          )
+    ");
+    $stmt->execute([$start, $end, $start, $end, $start, $end]);
+
+    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $leave) {
+        $name  = $leave['full_name'];
+        $dates = json_decode($leave['selected_dates'], true);
+
+        if (is_array($dates) && !empty($dates)) {
+            $datesToShow = array_filter($dates, fn($d) => $d >= $start && $d <= $end);
+        } else {
+            $datesToShow = [];
+            $cur = new DateTime($leave['start_date']);
+            $fin = new DateTime($leave['end_date']);
+            while ($cur <= $fin) {
+                $d = $cur->format('Y-m-d');
+                if ($d >= $start && $d <= $end) $datesToShow[] = $d;
+                $cur->modify('+1 day');
+            }
+        }
+
+        foreach ($datesToShow as $d) {
+            if ($leave['status'] === 'approved') {
+                $events[] = ['title' => $name . ' – On Leave',       'start' => $d, 'backgroundColor' => '#fd7e14', 'borderColor' => '#e8610a', 'textColor' => '#fff', 'extendedProps' => ['shift_type' => 'leave_approved']];
+            } elseif ($leave['status'] === 'pending') {
+                $events[] = ['title' => $name . ' – Leave Pending',  'start' => $d, 'backgroundColor' => '#f0ad4e', 'borderColor' => '#d99a3a', 'textColor' => '#fff', 'extendedProps' => ['shift_type' => 'leave_pending']];
+            } elseif ($leave['status'] === 'rejected') {
+                $events[] = ['title' => $name . ' – Leave Rejected', 'start' => $d, 'backgroundColor' => '#dc3545', 'borderColor' => '#b02a37', 'textColor' => '#fff', 'extendedProps' => ['shift_type' => 'leave_rejected']];
+            }
+        }
+    }
+
+    // OB requests for all employees
+    $stmt = $pdo->prepare("
+        SELECT lr.start_date AS ob_date, lr.status,
+               CONCAT(e.first_name, ' ', e.last_name) AS full_name
+        FROM leave_requests lr
+        JOIN employees e ON e.id = lr.employee_id
+        WHERE lr.leave_type = 'ob leave'
+          AND lr.start_date BETWEEN ? AND ?
+    ");
+    $stmt->execute([$start, $end]);
+
+    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $ob) {
+        $name = $ob['full_name'];
+        $d    = $ob['ob_date'];
+        if ($ob['status'] === 'approved') {
+            $events[] = ['title' => $name . ' – On OB',       'start' => $d, 'backgroundColor' => '#6f42c1', 'borderColor' => '#59359a', 'textColor' => '#fff', 'extendedProps' => ['shift_type' => 'ob_approved']];
+        } elseif ($ob['status'] === 'pending') {
+            $events[] = ['title' => $name . ' – OB Pending',  'start' => $d, 'backgroundColor' => '#f0ad4e', 'borderColor' => '#d99a3a', 'textColor' => '#fff', 'extendedProps' => ['shift_type' => 'ob_pending']];
+        } elseif ($ob['status'] === 'rejected') {
+            $events[] = ['title' => $name . ' – OB Rejected', 'start' => $d, 'backgroundColor' => '#dc3545', 'borderColor' => '#b02a37', 'textColor' => '#fff', 'extendedProps' => ['shift_type' => 'ob_rejected']];
+        }
+    }
+}
+
 header('Content-Type: application/json');
 echo json_encode(array_values($events));

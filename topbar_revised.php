@@ -55,6 +55,7 @@ $titles = [
         'schedule_requests' => 'Schedule Requests',
         'employee_logs'     => 'Employee Logs',
         'departments'       => 'Departments',
+        'schedule'          => 'Schedule',
     ],
 ];
 
@@ -78,9 +79,15 @@ foreach ($parts as $part) {
     $segments[] = $clean;
 }
 
+$breadcrumbLabels = [
+    'employee_schedule' => 'Schedule',
+    'employee_dashboard' => 'Dashboard',
+    'employee_records'  => 'Records',
+];
+
 $breadcrumbPath = [['label' => 'HSN DTR System']];
 foreach ($segments as $index => $seg) {
-    $label = ucwords(str_replace('_', ' ', $seg));
+    $label = $breadcrumbLabels[$seg] ?? ucwords(str_replace('_', ' ', $seg));
     $breadcrumbPath[] = $index === array_key_last($segments)
         ? ['label' => $label]
         : ['label' => $label, 'url' => '/' . $seg . '.php'];
