@@ -174,7 +174,7 @@ $upcomingEventsCount = count(array_filter($upcomingEvents, fn($e) => strtotime(d
         <!-- ── Row 2 + Info Panels Combined ───────────────────────── -->
                 <div class="dashboardSummary mt-3">
 
-                   <div class="summaryBday card-glass">
+                   <div class="summaryBday card card-neutral">
                         <div class="summaryTop">
                             <div class="summaryIcon bg-blue">
                                 <i class="bi bi-cake"></i>
@@ -230,7 +230,7 @@ $upcomingEventsCount = count(array_filter($upcomingEvents, fn($e) => strtotime(d
                     </div>
 
 
-                    <div class="summaryEvents card-glass">
+                    <div class="summaryEvents card card-neutral">
                         <div class="summaryTop">
                             <div class="summaryIcon bg-green">
                                 <i class="bi bi-calendar-check"></i>
