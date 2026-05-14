@@ -169,6 +169,58 @@ body {
     background: var(--shift-ob-rejected);
 }
 
+.shiftLegendDot.birthday {
+    background: #8b5cf6;
+}
+
+.shiftLegendDot.event-holiday      { background: #ef4444; }
+.shiftLegendDot.event-party        { background: #ec4899; }
+.shiftLegendDot.event-meeting      { background: #3b82f6; }
+.shiftLegendDot.event-announcement { background: #f59e0b; }
+.shiftLegendDot.event-other        { background: #6b7280; }
+
+.schedule-filter-select {
+    appearance: auto;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: var(--text-light);
+    font-size: 0.75rem;
+    font-weight: 500;
+    padding: 4px 10px;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+}
+
+.schedule-filter-select:focus {
+    outline: none;
+    border-color: rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.schedule-filter-select option {
+    background: #1e1e2e;
+    color: #fff;
+}
+
+.btn-add-event {
+    background: rgba(13, 110, 253, 0.15);
+    color: #6ea8fe;
+    border: 1px solid rgba(13, 110, 253, 0.3);
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 4px 12px;
+    border-radius: 20px;
+    transition: background 0.2s, color 0.2s;
+    white-space: nowrap;
+}
+
+.btn-add-event:hover {
+    background: #0d6efd;
+    color: #fff;
+    border-color: #0d6efd;
+}
+
 /* ============================================================
    FULLCALENDAR HEADER TOOLBAR
    ============================================================ */

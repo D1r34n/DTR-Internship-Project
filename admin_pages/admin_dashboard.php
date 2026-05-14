@@ -44,47 +44,29 @@ $totalPending   = $pendingLeave + $pendingOT + $pendingLogEdit;
 
 // ── Birthdays this month ──────────────────────────────────
 $birthdaysThisMonth = $pdo->query("
-    SELECT 
+    SELECT
         CONCAT(first_name, ' ', last_name) AS full_name,
-        birthdate
+        birthdate,
+        profile_image
     FROM employees
     WHERE birthdate IS NOT NULL
       AND MONTH(birthdate) = MONTH(CURDATE())
-    ORDER BY DAY(birthdate) ASC
+    ORDER BY
+        CASE WHEN DAY(birthdate) >= DAY(CURDATE()) THEN 0 ELSE 1 END ASC,
+        DAY(birthdate) ASC
 ")->fetchAll(PDO::FETCH_ASSOC);
 
-// ── HOLIDAYS (FIXED — THIS WAS MISSING) PLACEHOLDER ───────────────────
-$phHolidays = [
-    ['name' => "New Year's Day",        'date' => "$year-01-01"],
-    ['name' => "EDSA People Power",     'date' => "$year-02-25"],
-    ['name' => "Araw ng Kagitingan",    'date' => "$year-04-09"],
-    ['name' => "Labor Day",             'date' => "$year-05-01"],
-    ['name' => "Independence Day",      'date' => "$year-06-12"],
-    ['name' => "National Heroes Day",   'date' => "$year-08-25"],
-    ['name' => "Bonifacio Day",         'date' => "$year-11-30"],
-    ['name' => "Christmas Day",         'date' => "$year-12-25"],
-    ['name' => "Rizal Day",             'date' => "$year-12-30"],
-    ['name' => "Chinese New Year",      'date' => "$year-01-29"],
-    ['name' => "Maundy Thursday",       'date' => "$year-04-17"],
-    ['name' => "Good Friday",           'date' => "$year-04-18"],
-    ['name' => "Black Saturday",        'date' => "$year-04-19"],
-    ['name' => "Eid'l Fitr",            'date' => "$year-05-15"],
-    ['name' => "Eid'l Adha",            'date' => "$year-06-07"],
-    ['name' => "Ninoy Aquino Day",      'date' => "$year-08-21"],
-    ['name' => "All Saints' Day",       'date' => "$year-11-01"],
-    ['name' => "All Souls' Day",        'date' => "$year-11-02"],
-    ['name' => "Feast of Immac. Conc.", 'date' => "$year-12-08"],
-    ['name' => "Christmas Eve",         'date' => "$year-12-24"],
-    ['name' => "Last Day of Year",      'date' => "$year-12-31"],
-];
+// ── Upcoming events ───────────────────────────────────────
+$upcomingEvents = $pdo->query("
+    SELECT title, event_type, start_datetime
+    FROM events
+    ORDER BY
+        CASE WHEN DATE(start_datetime) >= CURDATE() THEN 0 ELSE 1 END ASC,
+        CASE WHEN DATE(start_datetime) >= CURDATE() THEN start_datetime END ASC,
+        CASE WHEN DATE(start_datetime) <  CURDATE() THEN start_datetime END DESC
+")->fetchAll(PDO::FETCH_ASSOC);
+$upcomingEventsCount = count(array_filter($upcomingEvents, fn($e) => strtotime(date('Y-m-d', strtotime($e['start_datetime']))) >= strtotime($today)));
 
-// ── FILTER UPCOMING HOLIDAYS ───────────────────────────────
-$upcomingHolidays = array_filter($phHolidays, fn($h) => $h['date'] >= $today);
-usort($upcomingHolidays, fn($a, $b) => strcmp($a['date'], $b['date']));
-$upcomingHolidays = array_values($upcomingHolidays);
-
-$upcomingHolidayCount  = count($upcomingHolidays);
-$upcomingHolidaysSlice = array_slice($upcomingHolidays, 0, 3);
 ?>
 <!doctype html>
 <html lang="en">
@@ -121,7 +103,7 @@ $upcomingHolidaysSlice = array_slice($upcomingHolidays, 0, 3);
         <div class="dashboardSummary">
 
             <!-- TOTAL EMPLOYEES -->
-        <div class="summaryCard">
+        <div class="summaryCard card-glass">
             <div class="summaryTop">
                 <div class="summaryIcon bg-green">
                     <i class="bi bi-people-fill"></i>
@@ -137,7 +119,7 @@ $upcomingHolidaysSlice = array_slice($upcomingHolidays, 0, 3);
 
 
         <!-- PRESENT TODAY -->
-        <div class="summaryCard">
+        <div class="summaryCard card-glass">
             <div class="summaryTop">
                 <div class="summaryIcon bg-blue">
                     <i class="bi bi-check-circle-fill"></i>
@@ -153,7 +135,7 @@ $upcomingHolidaysSlice = array_slice($upcomingHolidays, 0, 3);
 
 
         <!-- ABSENT TODAY -->
-        <div class="summaryCard">
+        <div class="summaryCard card-glass">
             <div class="summaryTop">
                 <div class="summaryIcon bg-orange">
                     <i class="bi bi-clock-fill"></i>
@@ -169,7 +151,7 @@ $upcomingHolidaysSlice = array_slice($upcomingHolidays, 0, 3);
 
 
             <?php if ($totalPending > 0): ?>
-            <div class="summaryCard">
+            <div class="summaryCard ">
                 <div class="summaryIcon bg-red"><i class="bi bi-bell-fill"></i></div>
                 <div class="summaryInfo">
                     <p>Pending Requests</p>
@@ -192,7 +174,7 @@ $upcomingHolidaysSlice = array_slice($upcomingHolidays, 0, 3);
         <!-- ── Row 2 + Info Panels Combined ───────────────────────── -->
                 <div class="dashboardSummary mt-3">
 
-                   <div class="summaryBday">
+                   <div class="summaryBday card-glass">
                         <div class="summaryTop">
                             <div class="summaryIcon bg-blue">
                                 <i class="bi bi-cake"></i>
@@ -202,46 +184,108 @@ $upcomingHolidaysSlice = array_slice($upcomingHolidays, 0, 3);
 
                         <h5 class="summaryCount"><?= count($birthdaysThisMonth ?? []) ?></h5>
 
+                        <hr class="section-divider">
+
                         <div class="birthdayList">
                             <?php if (empty($birthdaysThisMonth)): ?>
                                 <small class="text-muted">No birthdays this month</small>
                             <?php else: ?>
                                 <ul>
                                     <?php foreach ($birthdaysThisMonth as $b): ?>
+                                        <?php
+                                            $avatarSrc = !empty($b['profile_image'])
+                                                ? '../assets/user_profiles/' . htmlspecialchars($b['profile_image'])
+                                                : '../assets/user_profiles/default_avatar.png';
+
+                                            $bdayThisYear = date('Y') . '-' . date('m-d', strtotime($b['birthdate']));
+                                            $diff = (int) (strtotime($bdayThisYear) - strtotime($today)) / 86400;
+                                            if ($diff === 0) {
+                                                $daysLabel = 'Today!';
+                                                $daysClass = 'bday-days today';
+                                            } elseif ($diff > 0) {
+                                                $daysLabel = 'In ' . $diff . ' ' . ($diff === 1 ? 'day' : 'days');
+                                                $daysClass = 'bday-days upcoming';
+                                            } else {
+                                                $daysLabel = abs($diff) . ' ' . (abs($diff) === 1 ? 'day' : 'days') . ' ago';
+                                                $daysClass = 'bday-days past';
+                                            }
+                                        ?>
                                         <li>
-                                            <strong><?= htmlspecialchars($b['full_name']) ?></strong>
-                                            <span>(<?= date('M d', strtotime($b['birthdate'])) ?>)</span>
+                                            <img src="<?= $avatarSrc ?>" class="bday-avatar" alt="">
+                                            <div class="bday-info">
+                                                <strong><?= htmlspecialchars($b['full_name']) ?></strong>
+                                                <span class="bday-date"><?= date('l', strtotime($b['birthdate'])) ?>,
+                                                <?= date('F d', strtotime($b['birthdate'])) . ' ' ?></span>
+                                            </div>
+                                            <span class="<?= $daysClass ?>"><?= $daysLabel ?></span>
                                         </li>
                                     <?php endforeach; ?>
                                 </ul>
                             <?php endif; ?>
                         </div>
+
+                        <a href="../employee_pages/employee_schedule.php?filter=birthday" class="bday-view-all">
+                            View All Birthdays <i class="bi bi-chevron-right"></i>
+                        </a>
                     </div>
 
 
-                    <div class="summaryHolidays">
+                    <div class="summaryEvents card-glass">
                         <div class="summaryTop">
                             <div class="summaryIcon bg-green">
                                 <i class="bi bi-calendar-check"></i>
                             </div>
-                            <p>Upcoming Holidays</p>
+                            <p>Upcoming Events</p>
                         </div>
 
-                        <h5 class="summaryCount"><?= $upcomingHolidayCount ?></h5>
+                        <h5 class="summaryCount"><?= $upcomingEventsCount ?></h5>
 
-                        <div class="holidayList">
-                            <?php if (empty($upcomingHolidaysSlice)): ?>
-                                <small class="text-muted">No upcoming holidays</small>
+                        <hr class="section-divider">
+
+                        <div class="EventsList">
+                            <?php if (empty($upcomingEvents)): ?>
+                                <small class="text-muted">No events</small>
                             <?php else: ?>
                                 <ul>
-                                    <?php foreach ($upcomingHolidaysSlice as $h): ?>
+                                    <?php foreach ($upcomingEvents as $h): ?>
+                                        <?php
+                                            $diff = (int) ((strtotime(date('Y-m-d', strtotime($h['start_datetime']))) - strtotime($today)) / 86400);
+                                            if ($diff === 0) {
+                                                $evtLabel = 'Today!';
+                                                $evtClass = 'event-days today';
+                                            } elseif ($diff > 0) {
+                                                $evtLabel = 'In ' . $diff . ' ' . ($diff === 1 ? 'day' : 'days');
+                                                $evtClass = 'event-days upcoming';
+                                            } else {
+                                                $evtLabel = abs($diff) . ' ' . (abs($diff) === 1 ? 'day' : 'days') . ' ago';
+                                                $evtClass = 'event-days past';
+                                            }
+                                        ?>
                                         <li>
-                                            <strong><?= htmlspecialchars($h['name']) ?></strong>
-                                            <span><?= date('M d', strtotime($h['date'])) ?></span>
+                                            <div class="event-cal">
+                                                <span class="event-month"><?= date('M', strtotime($h['start_datetime'])) ?></span>
+                                                <span class="event-day"><?= date('d', strtotime($h['start_datetime'])) ?></span>
+                                            </div>
+                                            <div class="event-info">
+                                                <strong><?= htmlspecialchars($h['title']) ?></strong>
+                                                <span class="event-type-label"><?= ucfirst($h['event_type']) ?></span>
+                                            </div>
+                                            <span class="<?= $evtClass ?>"><?= $evtLabel ?></span>
                                         </li>
                                     <?php endforeach; ?>
                                 </ul>
                             <?php endif; ?>
                         </div>
+
+                        <a href="../employee_pages/employee_schedule.php?filter=events" class="bday-view-all">
+                            View All Events <i class="bi bi-chevron-right"></i>
+                        </a>
                     </div>
-              </div>
+              </div><!-- /.dashboardSummary row 2 -->
+
+    </div><!-- /.dashboardContent -->
+</div><!-- /#main-wrapper -->
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

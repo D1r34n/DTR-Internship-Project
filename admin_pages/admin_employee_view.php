@@ -390,18 +390,6 @@ $nextMonth  = date('Y-m', strtotime($monthStart . ' +1 month'));
 $monthLabel = date('F Y', strtotime($monthStart));
 $todayStr   = date('Y-m-d');
 
-// ---- SCHEDULES (calendar) ----
-$schedStmt = $pdo->prepare("
-    SELECT schedule_date, scheduled_start, scheduled_end, is_rest_day, status
-    FROM schedules
-    WHERE employee_id = ? AND schedule_date BETWEEN ? AND ?
-    ORDER BY schedule_date ASC
-");
-$schedStmt->execute([$employeeId, $monthStart, $monthEnd]);
-$schedulesByDate = [];
-foreach ($schedStmt->fetchAll(PDO::FETCH_ASSOC) as $s) {
-    $schedulesByDate[$s['schedule_date']] = $s;
-}
 
 // ---- RECORDS (gantt) ----
 $records       = getAttendanceRecords($pdo, $employeeId, $monthStart, $monthEnd);
@@ -564,17 +552,20 @@ $leaveTypes = [
                     <!-- Month nav + Add button -->
                     <div class="tab-section-header">
                         <div class="d-flex align-items-center gap-2">
-                            <button class="sched-nav-btn" onclick="navigatePrev()">
+                            <button class="sched-nav-btn" onclick="navigatePrev()" title="Previous month">
                                 <i class="bi bi-chevron-left"></i>
                             </button>
                             <span class="sched-month-label"><?= htmlspecialchars($monthLabel) ?></span>
-                            <button class="sched-nav-btn" onclick="navigateNext()">
+                            <button class="sched-nav-btn" onclick="navigateNext()" title="Next month">
                                 <i class="bi bi-chevron-right"></i>
+                            </button>
+                            <button class="sched-nav-btn" onclick="navigateToday()" title="Go to today" style="font-size:0.65rem;width:auto;padding:0 8px;letter-spacing:0.03em;">
+                                Today
                             </button>
                         </div>
                         <div class="tab-summary-chips">
                             <span id="chip-sched-count" class="tab-summary-chip" style="color:var(--text-muted);">
-                                <?= count($schedulesByDate) ?> scheduled day<?= count($schedulesByDate) !== 1 ? 's' : '' ?>
+                                — scheduled days
                             </span>
                             <button class="btn btn-success sched-add-btn" type="button" id="btn-manage-schedule">
                                 <i class="bi bi-plus-lg"></i> Manage Schedule
@@ -582,91 +573,10 @@ $leaveTypes = [
                         </div>
                     </div>
 
-                    <!-- Calendar grid -->
+                    <!-- FullCalendar -->
                     <div class="sched-cal-container">
-                        <div class="sched-cal-grid">
-
-                            <!-- Weekday headers -->
-                            <?php foreach (['Sun','Mon','Tue','Wed','Thu','Fri','Sat'] as $h): ?>
-                                <div class="sched-cal-day-header"><?= $h ?></div>
-                            <?php endforeach; ?>
-
-                            <!-- Leading empty cells -->
-                            <?php
-                            $firstDow    = (int) date('w', strtotime($monthStart));
-                            $daysInMonth = (int) date('t', strtotime($monthStart));
-                            for ($i = 0; $i < $firstDow; $i++): ?>
-                                <div class="sched-cal-day empty"></div>
-                            <?php endfor; ?>
-
-                            <!-- Day cells -->
-                            <?php for ($d = 1; $d <= $daysInMonth; $d++):
-                                $ds    = sprintf('%04d-%02d-%02d', $viewYear, $viewMonthNum, $d);
-                                $sched = $schedulesByDate[$ds] ?? null;
-                                $isToday = $ds === $todayStr;
-                                $isPast  = $ds < $todayStr;
-                                $cls = 'sched-cal-day';
-                                if ($isToday) $cls .= ' is-today';
-                                elseif ($isPast) $cls .= ' is-past';
-                                if ($sched) {
-                                    $cls .= ' has-sched';
-                                    $st = $sched['status'] ?? 'approved';
-                                    if ($st === 'pending')  $cls .= ' sched-pending';
-                                    if ($st === 'rejected') $cls .= ' sched-rejected';
-                                }
-                            ?>
-                            <div class="<?= $cls ?>">
-                                <div class="sched-cal-day-num <?= $isToday ? 'is-today-num' : '' ?>">
-                                    <?= $d ?>
-                                </div>
-
-                                <?php if ($sched && $sched['is_rest_day']): ?>
-                                    <span class="sched-cal-shift-badge" style="background:#6c757d;">Rest</span>
-                                    <div class="sched-cal-times" style="color:#aaa;">Rest Day</div>
-                                    <div class="sched-cal-day-actions">
-                                        <button class="sched-cal-action-btn edit" title="Edit"
-                                            onclick='openEditModal(<?= json_encode($ds) ?>, "", "", true); event.stopPropagation();'>
-                                            <i class="bi bi-pencil"></i>
-                                        </button>
-                                        <button class="sched-cal-action-btn delete" title="Delete"
-                                            onclick='deleteSchedule(<?= json_encode($ds) ?>); event.stopPropagation();'>
-                                            <i class="bi bi-trash"></i>
-                                        </button>
-                                    </div>
-                                <?php elseif ($sched):
-                                    $startTs = strtotime($sched['scheduled_start']);
-                                    $endTs   = strtotime($sched['scheduled_end']);
-                                    $hour    = (int) date('H', $startTs);
-                                    $isNight = $hour >= 18 || $hour < 6;
-                                    $tIn     = date('g:i A', $startTs);
-                                    $tOut    = date('g:i A', $endTs);
-                                    $tInVal  = date('H:i', $startTs);
-                                    $tOutVal = date('H:i', $endTs);
-                                    $status  = $sched['status'] ?? 'approved';
-                                ?>
-                                    <span class="sched-cal-shift-badge <?= $isNight ? 'night' : 'day' ?>">
-                                        <?= $isNight ? 'Night' : 'Day' ?>
-                                    </span>
-                                    <div class="sched-cal-times"><?= $tIn ?><br><?= $tOut ?></div>
-                                    <span class="sched-cal-status-badge sched-status-<?= htmlspecialchars($status) ?>">
-                                        <?= ucfirst($status) ?>
-                                    </span>
-                                    <div class="sched-cal-day-actions">
-                                        <button class="sched-cal-action-btn edit" title="Edit"
-                                            onclick='openEditModal(<?= json_encode($ds) ?>, <?= json_encode($tInVal) ?>, <?= json_encode($tOutVal) ?>); event.stopPropagation();'>
-                                            <i class="bi bi-pencil"></i>
-                                        </button>
-                                        <button class="sched-cal-action-btn delete" title="Delete"
-                                            onclick='deleteSchedule(<?= json_encode($ds) ?>); event.stopPropagation();'>
-                                            <i class="bi bi-trash"></i>
-                                        </button>
-                                    </div>
-                                <?php endif; ?>
-                            </div>
-                            <?php endfor; ?>
-
-                        </div><!-- .sched-cal-grid -->
-                    </div><!-- .sched-cal-container -->
+                        <div id="admin-calendar"></div>
+                    </div>
 
                 </div>
 
@@ -1002,6 +912,7 @@ $leaveTypes = [
 </div>
 
 <!-- ===== MANAGE SCHEDULE MODAL (merged) ===== -->
+
 <div class="modal fade" id="manageScheduleModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content glass-modal">
@@ -1443,6 +1354,7 @@ $leaveTypes = [
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="../system_functions/gantt.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
 <script>
 // ---- Department dropdown (Edit Employee modal) ----
 (function () {
@@ -1505,6 +1417,9 @@ let fpAdd            = null;
 const EMP_ID         = <?= $employeeId ?>;
 let currentMonth  = '<?= $rawMonth ?>';
 const tabLoadedMonth = { '#tab1': null, '#tab2': null, '#tab3': null };
+let adminCalendar    = null;
+let scheduledDates   = new Set();
+let _suppressDatesSet = false;
 
 // ---- Helpers ----
 function pad(n) { return String(n).padStart(2, '0'); }
@@ -1525,55 +1440,19 @@ function loadingHTML() {
     return '<div class="text-center py-5" style="color:var(--text-muted);"><i class="bi bi-arrow-clockwise" style="font-size:1.5rem;"></i></div>';
 }
 
-// ---- Month navigation ----
-function navigateMonth(ym) {
-    currentMonth = ym;
-
-    document.querySelectorAll('.sched-month-label').forEach(el => el.textContent = monthLabel(ym));
-    history.pushState({ month: ym }, '', `?id=${EMP_ID}&month=${ym}`);
-
-    const activeBtn = document.querySelector('#myTab .nav-link.active');
-    const activeTab = activeBtn ? activeBtn.dataset.bsTarget : '#tab1';
-    loadTab(activeTab, ym);
-
-    Object.keys(tabLoadedMonth).forEach(k => { tabLoadedMonth[k] = k === activeTab ? ym : null; });
-}
-function navigatePrev() {
-    const { year, month } = parseYM(currentMonth);
-    const d = new Date(year, month - 2, 1);
-    navigateMonth(`${d.getFullYear()}-${pad(d.getMonth() + 1)}`);
-}
-function navigateNext() {
-    const { year, month } = parseYM(currentMonth);
-    const d = new Date(year, month, 1);
-    navigateMonth(`${d.getFullYear()}-${pad(d.getMonth() + 1)}`);
-}
+// ---- Month navigation (delegates to FullCalendar; datesSet syncs state) ----
+function navigatePrev()  { if (adminCalendar) adminCalendar.prev(); }
+function navigateNext()  { if (adminCalendar) adminCalendar.next(); }
+function navigateToday() { if (adminCalendar) adminCalendar.today(); }
 
 // ---- Load tab by target ----
 function loadTab(tabTarget, ym) {
-    const { year, month }        = parseYM(ym);
     const { startDate, endDate } = monthDates(ym);
-    if      (tabTarget === '#tab1') loadCalendar(year, month);
+    if      (tabTarget === '#tab1') { if (adminCalendar) adminCalendar.updateSize(); }
     else if (tabTarget === '#tab2') loadRecords(startDate, endDate);
     else if (tabTarget === '#tab3') loadLogs(startDate, endDate);
 }
 
-// ---- Tab 1: Calendar ----
-function loadCalendar(year, month) {
-    const container = document.querySelector('.sched-cal-container');
-    container.innerHTML = loadingHTML();
-    fetch(`get_admin_employee_calendar.php?employee_id=${EMP_ID}&year=${year}&month=${month}&_t=${Date.now()}`)
-        .then(r => r.text())
-        .then(html => {
-            container.innerHTML = html;
-            const count = container.querySelectorAll('.sched-cal-day.has-sched').length;
-            const chip  = document.getElementById('chip-sched-count');
-            if (chip) chip.textContent = count + ' scheduled day' + (count !== 1 ? 's' : '');
-        })
-        .catch(() => {
-            container.innerHTML = '<div class="text-center py-4" style="color:var(--danger-color);">Failed to load calendar.</div>';
-        });
-}
 
 // ---- Tab 2: Records / Gantt ----
 function loadRecords(startDate, endDate) {
@@ -1798,6 +1677,125 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    // ---- FullCalendar (Tab 1) ----
+    let _skipDateClick = false;
+    adminCalendar = new FullCalendar.Calendar(document.getElementById('admin-calendar'), {
+        initialView:  'dayGridMonth',
+        firstDay:     0,
+        headerToolbar: false,
+        height:       'auto',
+        initialDate:  '<?= sprintf('%04d-%02d-01', $viewYear, $viewMonthNum) ?>',
+        dayMaxEvents: false,
+        eventDisplay: 'block',
+
+        events: {
+            url:         'get_admin_employee_calendar.php',
+            method:      'GET',
+            extraParams: { employee_id: EMP_ID },
+            failure:     function() { console.error('Failed to fetch schedule events.'); }
+        },
+
+        datesSet: function(info) {
+            if (_suppressDatesSet) { _suppressDatesSet = false; return; }
+            const d    = info.view.currentStart;
+            const newYM = `${d.getFullYear()}-${pad(d.getMonth() + 1)}`;
+            if (newYM === currentMonth) return;
+            currentMonth = newYM;
+            document.querySelectorAll('.sched-month-label').forEach(el => el.textContent = monthLabel(newYM));
+            history.pushState({ month: newYM }, '', `?id=${EMP_ID}&month=${newYM}`);
+            Object.keys(tabLoadedMonth).forEach(k => { tabLoadedMonth[k] = k === '#tab1' ? newYM : null; });
+            const activeBtn2 = document.querySelector('#myTab .nav-link.active');
+            const activeTab2 = activeBtn2 ? activeBtn2.dataset.bsTarget : '#tab1';
+            if (activeTab2 !== '#tab1') { loadTab(activeTab2, newYM); tabLoadedMonth[activeTab2] = newYM; }
+        },
+
+        eventsSet: function(events) {
+            scheduledDates = new Set(
+                events.filter(e => ['day', 'night', 'rest'].includes(e.extendedProps.type)).map(e => e.startStr)
+            );
+            const count = scheduledDates.size;
+            const chip  = document.getElementById('chip-sched-count');
+            if (chip) chip.textContent = count + ' scheduled day' + (count !== 1 ? 's' : '');
+
+            // Show add-overlay only on days that have no events
+            const eventDates = new Set(events.map(e => e.startStr));
+            document.querySelectorAll('#admin-calendar .fc-daygrid-day:not(.fc-day-other)').forEach(cell => {
+                cell.classList.toggle('fc-day-has-events', eventDates.has(cell.dataset.date));
+            });
+        },
+
+        dayCellDidMount: function(info) {
+            if (info.el.classList.contains('fc-day-other')) return;
+            const frame = info.el.querySelector('.fc-daygrid-day-frame');
+            if (!frame) return;
+            const overlay = document.createElement('div');
+            overlay.className = 'fc-day-add-overlay';
+            overlay.innerHTML = '<i class="bi bi-plus-circle"></i>';
+            frame.appendChild(overlay);
+        },
+
+        eventContent: function(arg) {
+            const props = arg.event.extendedProps;
+            let html = '<div class="fc-admin-inner">';
+            html += `<span class="fc-admin-label">${arg.event.title}</span>`;
+            if (props.timeInStr && props.timeOutStr) {
+                html += `<span class="fc-admin-time">${props.timeInStr} - ${props.timeOutStr}</span>`;
+            }
+            html += '</div>';
+            return { html };
+        },
+
+        eventDidMount: function(info) {
+            const props   = info.event.extendedProps;
+            const type    = props.type;
+            const canEdit = !props.hasActiveLeaveOrOB && props.hasSchedule &&
+                            ['day', 'night', 'rest', 'leave-rejected'].includes(type);
+            const canDel  = ['day', 'night', 'rest'].includes(type);
+            if (!canEdit && !canDel) return;
+
+            // Attach buttons to the day cell frame so they sit at the bottom-right
+            // of the date, not inside the event element
+            const cell  = info.el.closest('.fc-daygrid-day');
+            const frame = cell ? cell.querySelector('.fc-daygrid-day-frame') : null;
+            if (!frame || frame.querySelector('.fc-ev-actions')) return; // avoid duplicates
+
+            const wrap = document.createElement('div');
+            wrap.className = 'fc-ev-actions';
+
+            if (canEdit) {
+                const btn = document.createElement('button');
+                btn.className = 'sched-cal-action-btn edit';
+                btn.title = 'Edit';
+                btn.innerHTML = '<i class="bi bi-pencil"></i>';
+                btn.addEventListener('click', e => {
+                    e.stopPropagation();
+                    _skipDateClick = true;
+                    setTimeout(() => { _skipDateClick = false; }, 100);
+                    if (props.type === 'rest' || props.isRestDay) openRestDayEditModal(props.dateStr);
+                    else openEditModal(props.dateStr, props.schedInVal || '', props.schedOutVal || '');
+                });
+                wrap.appendChild(btn);
+            }
+            if (canDel) {
+                const btn = document.createElement('button');
+                btn.className = 'sched-cal-action-btn delete';
+                btn.title = 'Delete';
+                btn.innerHTML = '<i class="bi bi-trash"></i>';
+                btn.addEventListener('click', e => { e.stopPropagation(); deleteSchedule(props.dateStr); });
+                wrap.appendChild(btn);
+            }
+            frame.appendChild(wrap);
+        },
+
+        dateClick: function(info) {
+            if (_skipDateClick) return;
+            openManageModalWithDate(info.dateStr);
+        },
+    });
+
+    adminCalendar.render();
+    tabLoadedMonth['#tab1'] = currentMonth;
+
     initGanttCursors();
 
     const activeBtn = document.querySelector('#myTab .nav-link.active');
@@ -1929,11 +1927,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         if (hasDates) {
-            const existing = new Set(
-                [...document.querySelectorAll('.sched-cal-day.has-sched[data-date]')]
-                    .map(el => el.dataset.date)
-            );
-            const conflicts = datesToSchedule.filter(d => existing.has(d));
+            const conflicts = datesToSchedule.filter(d => scheduledDates.has(d));
             if (conflicts.length > 0) {
                 const msg = conflicts.length === 1
                     ? `A schedule for ${conflicts[0]} already exists. Replace it?`
@@ -1951,10 +1945,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (!r.ok && r.status !== 200) throw new Error('save failed');
                 bootstrap.Modal.getInstance(document.getElementById('manageScheduleModal'))?.hide();
                 showToast('Schedule saved successfully');
-                const { year, month } = parseYM(currentMonth);
-                tabLoadedMonth['#tab1'] = null;
-                loadCalendar(year, month);
-                tabLoadedMonth['#tab1'] = currentMonth;
+                if (adminCalendar) adminCalendar.refetchEvents();
             })
             .catch(() => alert('Failed to save schedule. Please try again.'));
     });
@@ -1969,10 +1960,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (!r.ok && r.status !== 200) throw new Error('save failed');
                 closeSchedModal();
                 showToast('Schedule saved successfully');
-                const { year, month } = parseYM(currentMonth);
-                tabLoadedMonth['#tab1'] = null;
-                loadCalendar(year, month);
-                tabLoadedMonth['#tab1'] = currentMonth;
+                if (adminCalendar) adminCalendar.refetchEvents();
             })
             .catch(() => alert('Failed to save schedule. Please try again.'));
     });
@@ -1989,11 +1977,19 @@ document.addEventListener('DOMContentLoaded', () => {
     // Browser back / forward
     window.addEventListener('popstate', e => {
         if (e.state && e.state.month) {
-            currentMonth = e.state.month;
-            document.querySelectorAll('.sched-month-label').forEach(el => el.textContent = monthLabel(currentMonth));
+            const ym = e.state.month;
+            currentMonth = ym;
+            document.querySelectorAll('.sched-month-label').forEach(el => el.textContent = monthLabel(ym));
+            if (adminCalendar) {
+                _suppressDatesSet = true;
+                const [y, m] = ym.split('-').map(Number);
+                adminCalendar.gotoDate(new Date(y, m - 1, 1));
+            }
+            Object.keys(tabLoadedMonth).forEach(k => { tabLoadedMonth[k] = null; });
+            tabLoadedMonth['#tab1'] = ym;
             const activeBtn = document.querySelector('#myTab .nav-link.active');
             const activeTab = activeBtn ? activeBtn.dataset.bsTarget : '#tab1';
-            loadTab(activeTab, currentMonth);
+            if (activeTab !== '#tab1') { loadTab(activeTab, ym); tabLoadedMonth[activeTab] = ym; }
         }
     });
 
@@ -2243,11 +2239,7 @@ function prepareSubmit() {
     }
     const isEdit = document.getElementById('isEditMode').value === '1';
     if (!isEdit) {
-        const existing = new Set(
-            [...document.querySelectorAll('.sched-cal-day.has-sched[data-date]')]
-                .map(el => el.dataset.date)
-        );
-        const conflicts = selectedDates.filter(d => existing.has(d));
+        const conflicts = selectedDates.filter(d => scheduledDates.has(d));
         if (conflicts.length > 0) {
             const msg = conflicts.length === 1
                 ? `A schedule for ${conflicts[0]} already exists. Replace it?`
@@ -2327,10 +2319,7 @@ document.getElementById('ale-submit-btn').addEventListener('click', () => {
 function deleteSchedule(date) {
     if (!confirm('Delete schedule for ' + date + '?')) return;
     fetch(`admin_employee_view.php?id=${EMP_ID}&ajax_delete=1&emp=${EMP_ID}&date=${date}`)
-        .then(() => {
-            const { year, month } = parseYM(currentMonth);
-            loadCalendar(year, month);
-        });
+        .then(() => { if (adminCalendar) adminCalendar.refetchEvents(); });
 }
 
 // ---- Leave balance inline edit ----

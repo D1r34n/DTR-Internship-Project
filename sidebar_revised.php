@@ -150,7 +150,8 @@ $requestsOpen = in_array($currentPage, ['employee_requests', 'schedule_requests'
             </div>
 
             <?php navLink('../employee_pages/logs_page.php',        'bi-journal-text',  'Logs',        $currentPage === 'employee_logs'); ?>
-            <?php navLink('../admin_pages/admin_departments.php', 'bi-building-gear', 'Departments', $currentPage === 'departments');   ?>
+            <?php navLink('../admin_pages/admin_departments.php',    'bi-building-gear', 'Departments',       $currentPage === 'departments'); ?>
+            <?php navLink('../employee_pages/employee_schedule.php', 'bi-calendar-week',  'Schedule', $currentPage === 'schedule');    ?>
         <?php endif; ?>
 
     </nav>
