@@ -39,9 +39,9 @@
     --status-info-hover:     var(--info-glass-hover);
 }
 
-   /* ================================================
-   DIVIDER
-   ================================================ */
+/* ================================================
+DIVIDER
+================================================ */
 
 .vr {
     color: var(--text-light);
@@ -79,6 +79,79 @@
 *::-webkit-scrollbar-corner {
     background: transparent;
 }
+
+/* ================================================
+   TOAST
+   ================================================ */
+
+.toast {
+    background: var(--frosted-bg) linear-gradient(
+        to right,
+        rgba(255, 255, 255, 0.06) 0%,
+        rgba(255, 255, 255, 0.03) 40%,
+        transparent 100%
+    ) !important;
+    backdrop-filter: var(--frosted-blur) !important;
+    -webkit-backdrop-filter: var(--frosted-blur) !important;
+    border: 1px solid var(--frosted-border) !important;
+    border-radius: 12px !important;
+    box-shadow: var(--frosted-shadow) !important;
+    color: var(--text-light) !important;
+    min-width: 280px;
+}
+
+.toast.toast-success {
+    color: var(--status-success-color) !important;
+    background: var(--status-success-bg) linear-gradient(
+        to right,
+        rgba(255, 255, 255, 0.10) 0%,
+        rgba(255, 255, 255, 0.05) 40%,
+        rgba(255, 255, 255, 0.02) 70%,
+        transparent 100%
+    ) !important;
+    border: 1px solid var(--status-success-border) !important;
+    box-shadow: var(--primary-soft) !important;
+}
+.toast.toast-danger {
+    color: var(--status-danger-color) !important;
+    background: var(--status-danger-bg) linear-gradient(
+        to right,
+        rgba(255, 255, 255, 0.10) 0%,
+        rgba(255, 255, 255, 0.05) 40%,
+        rgba(255, 255, 255, 0.02) 70%,
+        transparent 100%
+    ) !important;
+    border: 1px solid var(--status-danger-border) !important;
+    box-shadow: var(--danger-soft) !important;
+}
+
+.toast.toast-warning {
+    color: var(--status-warning-color) !important;
+    background: var(--status-warning-bg) linear-gradient(
+        to right,
+        rgba(255, 255, 255, 0.10) 0%,
+        rgba(255, 255, 255, 0.05) 40%,
+        rgba(255, 255, 255, 0.02) 70%,
+        transparent 100%
+    ) !important;
+    border: 1px solid var(--status-warning-border) !important;
+    box-shadow: var(--glass-inset) !important;
+}
+
+.toast.toast-info {
+    color: var(--status-info-color) !important;
+    background: var(--status-info-bg) linear-gradient(
+        to right,
+        rgba(255, 255, 255, 0.10) 0%,
+        rgba(255, 255, 255, 0.05) 40%,
+        rgba(255, 255, 255, 0.02) 70%,
+        transparent 100%
+    ) !important;
+    border: 1px solid var(--status-info-border) !important;
+    box-shadow: var(--glass-inset) !important;
+}
+
+.toast .btn-close { filter: invert(1) !important; }
 
 /* ================================================
    SEARCH BAR
@@ -557,7 +630,6 @@ button.btn {
 /* ================================================
    SMALL BUTTON
    ================================================ */
-
 .btn-sm,
 button.btn-sm {
     height: calc(var(--control-height) - 10px) !important;
@@ -840,8 +912,7 @@ button.btn-sm {
     padding: 0.4rem !important;
 
     max-height: 260px;
-    overflow-y: auto;
-    overflow-x: hidden;
+    overflow: visible !important;
 }
 
 .dropdown-menu.show {
@@ -1446,4 +1517,132 @@ button.btn-sm {
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
     box-shadow: none;
+}
+
+/* =========================
+   TABLE HEADER (SEPARATE GLASS)
+========================= */
+.tableHeaderGlass {
+    border-top: none;
+    border-left: none;
+    border-right: none;
+    border-bottom: 1px solid var(--text-dark);
+    margin: 0.5rem 0 0rem;
+}
+
+.tableHeaderGlass th {
+    color: var(--text-muted);
+    font-weight: 500;
+    font-size: 0.9rem;
+    border: none !important;
+    transition: color 0.2s ease;
+}
+
+/* =========================
+   SORTABLE HEADERS
+========================= */
+.sortable {
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+    color: var(--text-muted);
+}
+
+.sortable:hover {
+    color: var(--primary-color) !important;
+}
+
+.sortable.sorted {
+    color: var(--primary-color) !important;
+}
+
+.sortable.sorted .sortIcon {
+    opacity: 1;
+    color: var(--primary-color);
+}
+
+.sortIcon {
+    font-size: 0.65rem;
+    margin-left: 3px;
+    opacity: 0.45;
+    vertical-align: middle;
+    transition: opacity 0.15s;
+}
+
+/* =========================
+   TABLE BODY
+========================= */
+.tableScroll {
+    width: 100%;
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+}
+
+
+/* table base */
+.table {
+    color: var(--text-light);
+    margin: 0;
+    border: none;
+
+    width: 100%;
+    table-layout: fixed;
+    border-collapse: collapse;
+}
+
+/* remove bootstrap borders */
+.table thead th,
+.table tbody td,
+.table tbody tr {
+    border-top: none;
+    border-left: none;
+    border-right: none;
+    border-bottom: 1px solid var(--text-dark);
+}
+
+/* header fallback */
+.table thead th {
+    background: transparent;
+    font-weight: 300;
+    font-size: 0.75rem;
+    user-select: none;
+    text-align: left;
+    color: var(--text-muted);
+    text-transform: none !important;
+}
+
+/* rows */
+.table tbody tr {
+    transition: all 0.2s ease;
+}
+
+.table tbody tr:not(.emptyRow):hover {
+    background: var(--overlay-soft);
+    backdrop-filter: blur(6px);
+    box-shadow: 0 4px 20px var(--shadow);
+}
+
+.table tbody tr.emptyRow,
+.table tbody tr.emptyRow:hover {
+    background: transparent !important;
+    backdrop-filter: none !important;
+    box-shadow: none !important;
+    transform: none !important;
+    border-bottom: none;
+}
+
+.table tbody tr.emptyRow td {
+    background: transparent !important;
+    border-bottom: none !important;
+    pointer-events: none;
+}
+
+/* cells */
+.table tbody td {
+    padding: 1rem 0.5rem;
+    background: transparent;
+    font-size: 0.7rem;
+    color: var(--text-light);
+    user-select: none;
 }
