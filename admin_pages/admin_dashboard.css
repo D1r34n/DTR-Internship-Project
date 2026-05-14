@@ -56,9 +56,13 @@ body {
 .dashboardContent {
     position: fixed;
     top: 80px;
-    left: calc(20px + var(--sidebar-width));  /* ← reacts to sidebar hover */
+    left: calc(20px + var(--sidebar-width));
     color: white;
-    transition: left 0.38s cubic-bezier(0.4, 0, 0.2, 1);  /* ← matches sidebar transition */
+    transition: left 0.38s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+#sidebar.collapsed ~ #main-wrapper .dashboardContent {
+    left: calc(20px + var(--sidebar-collapsed-width));
 }
 
 #currentDate {
