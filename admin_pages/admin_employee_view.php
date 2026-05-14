@@ -1717,15 +1717,14 @@ document.addEventListener('DOMContentLoaded', () => {
             const chip  = document.getElementById('chip-sched-count');
             if (chip) chip.textContent = count + ' scheduled day' + (count !== 1 ? 's' : '');
 
-            // Show add-overlay only on days that have no events
+            // Show add-overlay on days (including other-month days) that have no events
             const eventDates = new Set(events.map(e => e.startStr));
-            document.querySelectorAll('#admin-calendar .fc-daygrid-day:not(.fc-day-other)').forEach(cell => {
+            document.querySelectorAll('#admin-calendar .fc-daygrid-day').forEach(cell => {
                 cell.classList.toggle('fc-day-has-events', eventDates.has(cell.dataset.date));
             });
         },
 
         dayCellDidMount: function(info) {
-            if (info.el.classList.contains('fc-day-other')) return;
             const frame = info.el.querySelector('.fc-daygrid-day-frame');
             if (!frame) return;
             const overlay = document.createElement('div');
