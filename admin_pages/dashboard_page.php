@@ -100,7 +100,7 @@ foreach ($weeklyRows as $row) {
     <link rel="stylesheet" href="../assets/css/components.css">
     <link rel="stylesheet" href="../navbars_revised.css">
 
-    <link rel="stylesheet" href="admin_dashboard.css">
+    <link rel="stylesheet" href="dashboard_page.css">
 </head>
 <body>
 

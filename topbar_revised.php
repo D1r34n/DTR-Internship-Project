@@ -36,8 +36,8 @@ if (!in_array($role, ['admin', 'employee'])) {
 $titles = [
     'employee' => [
         'dashboard' => 'Employee Dashboard',
-        'records'   => 'Admin Records',
-        'schedule'  => 'Admin Schedule',
+        'records'   => 'Employee Records',
+        'schedule'  => 'Employee Schedule',
         'logs'      => 'Activity Logs',
     ],
     'admin' => [

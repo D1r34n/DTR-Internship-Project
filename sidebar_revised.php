@@ -23,10 +23,6 @@ if (!empty($_SESSION['must_change_password'])) {
     exit();
 }
 
-$dashboardLink = ($role === 'admin')
-    ? 'admin_dashboard.php'
-    : 'employee_dashboard.php';
-
 $requestsOpen = in_array($currentPage, ['employee_requests', 'schedule_requests']);
 ?>
 
@@ -34,7 +30,7 @@ $requestsOpen = in_array($currentPage, ['employee_requests', 'schedule_requests'
 
     <!-- Brand / Logo -->
     <div class="sidebar-brand" id="sidebar-brand">
-        <a id="brand-link" href="<?= $dashboardLink ?>" class="brand-item">
+        <a id="brand-link" href="../dashboard_page.php" class="brand-item">
             <img src="../assets/images/hsn_logo_white.png" height="20" alt="HSN Logo">
             <span>DTR System</span>
         </a>
@@ -70,17 +66,17 @@ $requestsOpen = in_array($currentPage, ['employee_requests', 'schedule_requests'
         ?>
 
         <!-- ALL EMPLOYEE MENU -->
-        <?php navLink('../admin_pages/admin_dashboard.php', 'bi-columns-gap',       'Dashboard',     $currentPage === 'dashboard'); ?>
+        <?php navLink('../admin_pages/dashboard_page.php', 'bi-columns-gap', 'Dashboard', $currentPage === 'dashboard'); ?>
         <?php navLink('../employee_pages/records_page.php', 'bi-bar-chart-steps',  'Records', $currentPage === 'records');    ?>
         <?php navLink('../employee_pages/employee_schedule.php', 'bi-calendar-week',  'Schedule', $currentPage === 'schedule');    ?>
-        <?php navLink('../employee_pages/logs_page.php',        'bi-journal-text',  'Activity Logs',        $currentPage === 'employee_logs'); ?>
+        <?php navLink('../employee_pages/logs_page.php',        'bi-journal-text',  'Activity Logs',        $currentPage === 'logs'); ?>
 
 
         <!-- ADMIN MENU -->
         <?php if ($role === 'admin'): ?>
 
             <!-- MANAGE EMPLOYEES -->
-            <?php navLink('../admin_pages/admin_manage_employees.php',    'bi-people-fill', 'Manage Employees',   $currentPage === 'manage employees');   ?>
+            <?php navLink('../admin_pages/admin_manage_employees.php',    'bi-people-fill', 'Manage Employees',   $currentPage === 'manage_employees');   ?>
 
             <!-- REQUESTS DROPDOWN -->
             <div class="sidebar-dropdown">

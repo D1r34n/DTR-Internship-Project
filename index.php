@@ -4,7 +4,7 @@ session_start();
 if (isset($_SESSION['user_id'])) {
 
     if ($_SESSION['user_role'] === 'admin') {
-        header("Location: admin_pages/admin_dashboard.php");
+        header("Location: admin_pages/dashboard_page.php");
         exit();
     }
 

@@ -80,7 +80,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         }
 
         if ($employee['role'] === 'admin') {
-            header("Location: ../admin_pages/admin_dashboard.php");
+            header("Location: ../admin_pages/dashboard_page.php");
         } else {
             header("Location: ../employee_pages/employee_dashboard.php");
         }
