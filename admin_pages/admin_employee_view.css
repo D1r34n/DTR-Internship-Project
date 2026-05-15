@@ -167,10 +167,10 @@ body {
 }
 
 .ev-avatar {
-    font-size: 2.8rem;
-    color: var(--text-light);
-    flex-shrink: 0;
-    line-height: 1;
+    width: 55px;
+    height: 55px;
+    border-radius: 50%;
+    object-fit: cover;
 }
 
 .ev-emp-details {

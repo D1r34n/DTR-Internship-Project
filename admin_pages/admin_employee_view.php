@@ -14,24 +14,47 @@ require_once '../system_functions/system_service.php';
 require_once '../system_functions/system_library.php';
 date_default_timezone_set('Asia/Manila');
 
-if (!isset($_GET['id'])) {
-    header("Location: admin_employees_list.php");
+if (!isset($_GET['employee_id'])) {
+    header("Location: admin_manage_employees.php");
     exit();
 }
 
-$employeeId = intval($_GET['id']);
+$refStmt = $pdo->prepare("SELECT id, employee_id FROM employees WHERE employee_id = ? LIMIT 1");
+$refStmt->execute([trim($_GET['employee_id'])]);
+$empLookup = $refStmt->fetch(PDO::FETCH_ASSOC);
+if (!$empLookup) {
+    header("Location: admin_manage_employees.php");
+    exit();
+}
+$employeeId = (int) $empLookup['id'];
+$urlEmpId   = $empLookup['employee_id'];
 
 // ---- HANDLE EMPLOYEE EDIT ----
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'edit_employee') {
 
-    $fullName   = trim($_POST['name'] ?? '');
-    $nameParts  = preg_split('/\s+/', $fullName, 2);
-    $firstName  = $nameParts[0] ?? '';
-    $lastName   = $nameParts[1] ?? '';
+    $fullName      = trim($_POST['name'] ?? '');
+    $nameParts     = preg_split('/\s+/', $fullName, 2);
+    $firstName     = $nameParts[0] ?? '';
+    $lastName      = $nameParts[1] ?? '';
     $resetPassword = isset($_POST['reset_password']);
-    $email      = trim($_POST['email'] ?? '');
-    $roleKey    = $_POST['role'] ?? 'employee';
-    $department = !empty($_POST['department_id']) ? $_POST['department_id'] : null;
+    $email         = trim($_POST['email'] ?? '');
+    $roleKey       = $_POST['role'] ?? 'employee';
+    $department    = !empty($_POST['department_id']) ? $_POST['department_id'] : null;
+    $empRefId      = trim($_POST['employee_ref_id'] ?? '');
+
+    if ($empRefId !== '' && !preg_match('/^\d{6}$/', $empRefId)) {
+        header("Location: admin_employee_view.php?employee_id=$urlEmpId&edit_error=invalid_emp_id");
+        exit();
+    }
+
+    if ($empRefId !== '') {
+        $dupIdStmt = $pdo->prepare("SELECT id FROM employees WHERE employee_id = ? AND id != ? LIMIT 1");
+        $dupIdStmt->execute([$empRefId, $employeeId]);
+        if ($dupIdStmt->fetch()) {
+            header("Location: admin_employee_view.php?employee_id=$urlEmpId&edit_error=duplicate_emp_id");
+            exit();
+        }
+    }
 
     $roleRow = $pdo->prepare("SELECT id FROM roles WHERE role_key = ?");
     $roleRow->execute([$roleKey]);
@@ -48,7 +71,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'edit_
     $dup->execute([$email, $employeeId]);
 
     if ($dup->fetch()) {
-        header("Location: admin_employee_view.php?id=$employeeId&edit_error=duplicate_email");
+        header("Location: admin_employee_view.php?employee_id=$urlEmpId&edit_error=duplicate_email");
         exit();
     }
 
@@ -60,6 +83,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'edit_
     $pdo->prepare("
         UPDATE employees
         SET
+            employee_id = ?,
             first_name = ?,
             last_name = ?,
             email = ?,
@@ -67,6 +91,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'edit_
             department_id = ?
         WHERE id = ?
     ")->execute([
+        $empRefId !== '' ? $empRefId : null,
         $firstName,
         $lastName,
         $email,
@@ -121,7 +146,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'edit_
         );
     }
 
-    header("Location: admin_employee_view.php?id=$employeeId");
+    header("Location: admin_employee_view.php?employee_id=$urlEmpId");
     exit();
 }
 
@@ -192,7 +217,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' &&
         }
     }
 
-    header("Location: admin_employee_view.php?id=$employeeId");
+    header("Location: admin_employee_view.php?employee_id=$urlEmpId");
     exit();
 }
 // ---- HANDLE SAVE COMBINED (schedule dates + rest days in one submit) ----
@@ -289,7 +314,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save_
         }
     }
 
-    header("Location: admin_employee_view.php?id=$employeeId");
+    header("Location: admin_employee_view.php?employee_id=$urlEmpId");
     exit();
 }
 // ---- HANDLE SAVE REST DAY ----
@@ -334,7 +359,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save_
         }
     }
 
-    header("Location: admin_employee_view.php?id=$employeeId");
+    header("Location: admin_employee_view.php?employee_id=$urlEmpId");
     exit();
 }
 
@@ -463,7 +488,15 @@ $leaveTypes = [
 
                 <!-- Avatar + info -->
                 <div class="ev-emp-info">
-                    <i class="bi bi-person-circle ev-avatar"></i>
+                  <div class="d-flex align-items-center gap-2">
+                        <?php
+                        $avatar = !empty($emp['profile_image'])
+                            ? $emp['profile_image']
+                            : 'default_profile.png';
+                        ?>
+                        <img src="../assets/user_profiles/<?= htmlspecialchars($avatar) ?>"
+                            class="ev-avatar" alt="avatar">
+                    </div>
                     <div class="ev-emp-details">
                         <div class="d-flex align-items-center gap-2 flex-wrap">
                             <span class="ev-emp-name"><?= htmlspecialchars($emp['name']) ?></span>
@@ -474,7 +507,7 @@ $leaveTypes = [
                         <div class="ev-emp-metas">
                             <span class="ev-emp-meta">
                                 <i class="bi bi-person-badge"></i>
-                                ID: <?= htmlspecialchars($emp['id']) ?>
+                                ID: <?= htmlspecialchars($emp['employee_id'] ?? '—') ?>
                             </span>
                             <?php if (!empty($emp['department_name'])): ?>
                                 <span class="ev-emp-meta">
@@ -504,12 +537,19 @@ $leaveTypes = [
         </div>
     </div>
 
-    <?php if (($_GET['edit_error'] ?? '') === 'duplicate_email'): ?>
-        <div class="alert alert-danger alert-dismissible fade show mx-3" role="alert">
-            <i class="bi bi-exclamation-triangle-fill"></i>
-            That email is already in use by another employee.
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
+    <?php
+    $editError = $_GET['edit_error'] ?? '';
+    $editErrorMessages = [
+        'duplicate_email'  => 'That email is already in use by another employee.',
+        'duplicate_emp_id' => 'That Employee ID is already in use by another employee.',
+        'invalid_emp_id'   => 'Employee ID must be exactly 6 digits.',
+    ];
+    if (isset($editErrorMessages[$editError])): ?>
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        showToast(<?= json_encode($editErrorMessages[$editError]) ?>, 'danger');
+    });
+    </script>
     <?php endif; ?>
 
     <!-- Tabs -->
@@ -922,7 +962,7 @@ $leaveTypes = [
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
 
-            <form method="POST" action="admin_employee_view.php?id=<?= $employeeId ?>" id="addSchedForm">
+            <form method="POST" action="admin_employee_view.php?employee_id=<?= htmlspecialchars($urlEmpId) ?>" id="addSchedForm">
                 <input type="hidden" name="action" value="save_combined">
                 <input type="hidden" name="employee_id" value="<?= $employeeId ?>">
                 <input type="hidden" name="selected_dates" id="addSelectedDatesInput">
@@ -1073,7 +1113,7 @@ $leaveTypes = [
                 <button type="button" class="btn-close btn-close-white" onclick="closeSchedModal()"></button>
             </div>
 
-            <form method="POST" action="admin_employee_view.php?id=<?= $employeeId ?>" id="schedForm">
+            <form method="POST" action="admin_employee_view.php?employee_id=<?= htmlspecialchars($urlEmpId) ?>" id="schedForm">
                 <input type="hidden" name="action" value="save_schedule">
                 <div class="modal-body">
 
@@ -1140,12 +1180,19 @@ $leaveTypes = [
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
 
-            <form method="POST" action="admin_employee_view.php?id=<?= $employeeId ?>">
+            <form method="POST" action="admin_employee_view.php?employee_id=<?= htmlspecialchars($urlEmpId) ?>">
 
                 <input type="hidden" name="action" value="edit_employee">
 
                 <div class="modal-body">
                     <div class="row g-3">
+
+                        <div class="col-md-6">
+                            <label class="form-label">Employee ID</label>
+                            <input type="text" name="employee_ref_id" id="editEmpRefId" class="form-control"
+                                   value="<?= htmlspecialchars($emp['employee_id'] ?? '') ?>"
+                                   maxlength="6" placeholder="6-digit number">
+                        </div>
 
                         <div class="col-md-6">
                             <label class="form-label">First Name</label>
@@ -1192,7 +1239,10 @@ $leaveTypes = [
                                 </ul>
                             </div>
 
-                            <input type="hidden" name="role" id="roleInput" value="">
+                            <input type="hidden"
+                                name="role"
+                                id="roleInput"
+                                value="<?= htmlspecialchars($emp['role']) ?>">
                         </div>
 
                         <div class="col-md-6">
@@ -1242,7 +1292,7 @@ $leaveTypes = [
 
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <a href="admin_employee_view.php?id=<?= $employeeId ?>&action=delete_employee" class="btn btn-danger">
+                <a href="admin_employee_view.php?employee_id=<?= htmlspecialchars($urlEmpId) ?>&action=delete_employee" class="btn btn-danger">
                     <i class="bi bi-trash"></i> Delete
                 </a>
             </div>
@@ -1325,8 +1375,6 @@ $leaveTypes = [
                         placeholder="Enter reason for edit..."
                         style="resize:none;height:auto;"></textarea>
                 </div>
-                <div id="ale-error"   class="mt-2" style="color:#ff8a8a;font-size:0.875rem;display:none;"></div>
-                <div id="ale-success" class="mt-2" style="color:#97be41;font-size:0.875rem;display:none;"></div>
             </div>
 
             <div class="modal-footer">
@@ -1340,15 +1388,7 @@ $leaveTypes = [
     </div>
 </div>
 
-<!-- Toast notification -->
-<div class="position-fixed top-0 end-0 p-3" style="z-index:9999">
-    <div id="appToast" class="toast align-items-center border-0" role="alert" aria-live="assertive" aria-atomic="true">
-        <div class="d-flex">
-            <div class="toast-body" id="appToastMsg"></div>
-            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
-        </div>
-    </div>
-</div>
+<?php include '../toast.php'; ?>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
@@ -1415,6 +1455,7 @@ let selectedRestDays = [];
 let fp               = null;
 let fpAdd            = null;
 const EMP_ID         = <?= $employeeId ?>;
+const EMP_URL_ID     = '<?= htmlspecialchars($urlEmpId) ?>';
 let currentMonth  = '<?= $rawMonth ?>';
 const tabLoadedMonth = { '#tab1': null, '#tab2': null, '#tab3': null };
 let adminCalendar    = null;
@@ -1657,8 +1698,16 @@ if (mapPopup) {
     });
 }
 
+function padEmpId(input) {
+    const v = input.value.trim();
+    if (v !== '') input.value = v.padStart(6, '0');
+}
+
 // ---- DOMContentLoaded ----
 document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('editEmpRefId')
+        ?.addEventListener('blur', function () { padEmpId(this); });
+
     const key    = 'empViewTab_' + EMP_ID;
     const stored = localStorage.getItem(key);
     if (stored) {
@@ -1702,7 +1751,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (newYM === currentMonth) return;
             currentMonth = newYM;
             document.querySelectorAll('.sched-month-label').forEach(el => el.textContent = monthLabel(newYM));
-            history.pushState({ month: newYM }, '', `?id=${EMP_ID}&month=${newYM}`);
+            history.pushState({ month: newYM }, '', `?employee_id=${EMP_URL_ID}&month=${newYM}`);
             Object.keys(tabLoadedMonth).forEach(k => { tabLoadedMonth[k] = k === '#tab1' ? newYM : null; });
             const activeBtn2 = document.querySelector('#myTab .nav-link.active');
             const activeTab2 = activeBtn2 ? activeBtn2.dataset.bsTarget : '#tab1';
@@ -1921,7 +1970,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const hasSingleRest = singleRestDates.length > 0;
 
         if (!hasDates && !hasRestDays && !hasSingleRest) {
-            alert('Please select dates or set rest days.');
+            showToast('Please select dates or set rest days.', 'warning');
             return;
         }
 
@@ -1943,10 +1992,10 @@ document.addEventListener('DOMContentLoaded', () => {
             .then(r => {
                 if (!r.ok && r.status !== 200) throw new Error('save failed');
                 bootstrap.Modal.getInstance(document.getElementById('manageScheduleModal'))?.hide();
-                showToast('Schedule saved successfully');
+                showToast('Schedule saved successfully', 'success');
                 if (adminCalendar) adminCalendar.refetchEvents();
             })
-            .catch(() => alert('Failed to save schedule. Please try again.'));
+            .catch(() => showToast('Failed to save schedule. Please try again.', 'danger'));
     });
 
     // ---- Edit Schedule form (inside Edit modal, opened from calendar pencil) ----
@@ -1958,10 +2007,10 @@ document.addEventListener('DOMContentLoaded', () => {
             .then(r => {
                 if (!r.ok && r.status !== 200) throw new Error('save failed');
                 closeSchedModal();
-                showToast('Schedule saved successfully');
+                showToast('Schedule saved successfully', 'success');
                 if (adminCalendar) adminCalendar.refetchEvents();
             })
-            .catch(() => alert('Failed to save schedule. Please try again.'));
+            .catch(() => showToast('Failed to save schedule. Please try again.', 'danger'));
     });
 
     // ---- Rest Day checkbox in edit modal ----
@@ -1992,7 +2041,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    history.replaceState({ month: currentMonth }, '', `?id=${EMP_ID}&month=${currentMonth}`);
+    history.replaceState({ month: currentMonth }, '', `?employee_id=${EMP_URL_ID}&month=${currentMonth}`);
 
     // ---- Edit Log ----
     let editingLogId   = null;
@@ -2219,13 +2268,6 @@ function openRestDayModal() {
 function deleteScheduleDay(empId, date) { deleteSchedule(date); }
 function openEditAttModal() { /* not available on this page */ }
 
-function showToast(msg, type = 'success') {
-    const el = document.getElementById('appToast');
-    document.getElementById('appToastMsg').textContent = msg;
-    el.className = `toast align-items-center border-0 text-bg-${type}`;
-    bootstrap.Toast.getOrCreateInstance(el, { delay: 3000 }).show();
-}
-
 function closeSchedModal() {
     bootstrap.Modal.getOrCreateInstance(document.getElementById('schedModal')).hide();
 }
@@ -2233,7 +2275,7 @@ function closeSchedModal() {
 function prepareSubmit() {
     document.getElementById('selectedDatesInput').value = JSON.stringify(selectedDates);
     if (selectedDates.length === 0) {
-        alert('Please select at least one date.');
+        showToast('Please select at least one date.', 'warning');
         return false;
     }
     const isEdit = document.getElementById('isEditMode').value === '1';
@@ -2268,15 +2310,9 @@ function openAdminLogEditModal(btn) {
 document.getElementById('ale-submit-btn').addEventListener('click', () => {
     const newDatetime = document.getElementById('ale-new-datetime').value;
     const reason      = document.getElementById('ale-reason').value.trim();
-    const errEl       = document.getElementById('ale-error');
-    const okEl        = document.getElementById('ale-success');
-
-    errEl.style.display = 'none';
-    okEl.style.display  = 'none';
 
     if (!newDatetime) {
-        errEl.textContent   = 'Please enter a new date and time.';
-        errEl.style.display = 'block';
+        showToast('Please enter a new date and time.', 'danger');
         return;
     }
 
@@ -2296,28 +2332,23 @@ document.getElementById('ale-submit-btn').addEventListener('click', () => {
             btn.disabled  = false;
             btn.innerHTML = '<i class="bi bi-check-circle-fill"></i> Apply Edit';
             if (data.success) {
-                okEl.textContent   = data.message;
-                okEl.style.display = 'block';
-                setTimeout(() => {
-                    bootstrap.Modal.getInstance(document.getElementById('adminLogEditModal'))?.hide();
-                    fetchAdminLogs();
-                }, 1200);
+                bootstrap.Modal.getInstance(document.getElementById('adminLogEditModal'))?.hide();
+                fetchAdminLogs();
+                showToast(data.message || 'Log updated successfully.', 'success');
             } else {
-                errEl.textContent   = data.message;
-                errEl.style.display = 'block';
+                showToast(data.message || 'Failed to update log.', 'danger');
             }
         })
         .catch(() => {
             btn.disabled  = false;
             btn.innerHTML = '<i class="bi bi-check-circle-fill"></i> Apply Edit';
-            errEl.textContent   = 'An error occurred. Please try again.';
-            errEl.style.display = 'block';
+            showToast('An error occurred. Please try again.', 'danger');
         });
 });
 
 function deleteSchedule(date) {
     if (!confirm('Delete schedule for ' + date + '?')) return;
-    fetch(`admin_employee_view.php?id=${EMP_ID}&ajax_delete=1&emp=${EMP_ID}&date=${date}`)
+    fetch(`admin_employee_view.php?employee_id=${EMP_URL_ID}&ajax_delete=1&emp=${EMP_ID}&date=${date}`)
         .then(() => { if (adminCalendar) adminCalendar.refetchEvents(); });
 }
 

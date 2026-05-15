@@ -44,7 +44,7 @@ $titles = [
         'dashboard'          => 'Employee Dashboard',
         'records'            => 'Employee Records',
         'schedule'           => 'Employee Schedule',
-        'logs'               => 'Employee Activity Logs',
+        'logs'               => 'Activity Logs',
         'workforce_schedule' => 'Manage Schedules',
         'workforce_logs'     => 'Manage Logs',
     ],
@@ -53,7 +53,7 @@ $titles = [
         'manage_employees'  => 'Manage Employees',
         'employee_requests' => 'Employee Requests',
         'schedule_requests' => 'Schedule Requests',
-        'employee_logs'     => 'Employee Logs',
+        'logs'              => 'Activity Logs',
         'departments'       => 'Departments',
         'schedule'          => 'Schedule',
     ],
@@ -337,77 +337,91 @@ $breakDisabled = !$timedIn || $isBreakOut;
                 <h5 class="modal-title" id="editProfileImageModalLabel">
                     Edit Profile Image
                 </h5>
-
-                <button type="button"
-                        class="btn-close"
-                        data-bs-dismiss="modal"
-                        aria-label="Close">
-                </button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
 
             <!-- BODY -->
-            <div class="modal-body text-center p-3">
+            <div class="modal-body p-3">
 
-                <div class="webcam-wrapper profile-image-wrapper">
+                <!-- Current preview (always visible) -->
+                <div class="d-flex justify-content-center mb-3">
+                    <div class="profile-preview-ring">
+                        <img
+                            id="profileImagePreview"
+                            src="../assets/user_profiles/<?= htmlspecialchars($_SESSION['profile_image'] ?? 'default_profile.png') ?>"
+                            alt="Profile Preview"
+                            class="profile-image-preview"
+                        >
+                        <video id="profileWebcam" autoplay playsinline
+                            class="profile-image-preview"
+                            style="display:none; transform:scaleX(-1);">
+                        </video>
+                    </div>
+                </div>
 
-                    <!-- IMAGE PREVIEW -->
-                    <img
-                        id="profileImagePreview"
-                        src="../assets/user_profiles/default_profile.png"
-                        alt="Profile Preview"
-                        class="profile-image-preview"
-                    >
+                <canvas id="profileCanvas" style="display:none;"></canvas>
 
-                    <!-- FILE INPUT -->
-                    <input
-                        type="file"
-                        id="profileImageInput"
-                        accept="image/*"
-                        class="form-control mt-3"
-                    >
+                <!-- TWO OPTION CARDS -->
+                <div class="row g-3" id="profileOptionCards">
 
-                    <!-- ERROR -->
-                    <div
-                        id="profileImageError"
-                        style="display:none;"
-                        class="webcam-error mt-3">
-
-                        <i class="bi bi-exclamation-triangle-fill"></i>
-                        <p>Failed to load image</p>
-
+                    <!-- UPLOAD CARD -->
+                    <div class="col-6">
+                        <label class="profile-option-card <?= 'active' ?>" id="uploadOptionCard"
+                            onclick="switchProfileTab('upload')" style="cursor:pointer;">
+                            <div class="profile-option-card-icon">
+                                <i class="bi bi-cloud-arrow-up-fill"></i>
+                            </div>
+                            <div class="profile-option-card-title">Upload File</div>
+                            <div class="profile-option-card-sub">JPG, PNG, WEBP</div>
+                        </label>
                     </div>
 
+                    <!-- CAMERA CARD -->
+                    <div class="col-6">
+                        <label class="profile-option-card" id="cameraOptionCard"
+                            onclick="switchProfileTab('camera')" style="cursor:pointer;">
+                            <div class="profile-option-card-icon">
+                                <i class="bi bi-camera-fill"></i>
+                            </div>
+                            <div class="profile-option-card-title">Take Photo</div>
+                            <div class="profile-option-card-sub">Use your camera</div>
+                        </label>
+                    </div>
+
+                </div>
+
+                <!-- UPLOAD SECTION -->
+                <div id="profileUploadSection" class="mt-3">
+                    <input type="file" id="profileImageInput" accept="image/*" class="form-control">
+                </div>
+
+                <!-- CAMERA SECTION -->
+                <div id="profileCameraSection" style="display:none;" class="mt-3">
+                    <button type="button" class="btn btn-info w-100"
+                            id="profileCameraActionBtn" onclick="handleCameraAction()">
+                        <i class="bi bi-camera-fill"></i> Capture
+                    </button>
+                    <div id="profileCameraError" style="display:none;" class="webcam-error mt-3">
+                        <i class="bi bi-exclamation-triangle-fill"></i>
+                        <p>Camera not available</p>
+                    </div>
                 </div>
 
             </div>
 
             <!-- FOOTER -->
             <div class="modal-footer justify-content-between">
-
-                <button type="button"
-                        class="btn btn-secondary"
-                        data-bs-dismiss="modal">
-
-                    Cancel
-
-                </button>
-
-                <button type="button"
-                        class="btn btn-success"
-                        id="saveProfileImageBtn"
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-success" id="saveProfileImageBtn"
                         onclick="saveProfileImage()">
-
-                    <i class="bi bi-check-circle-fill"></i>
-                    Save Image
-
+                    <i class="bi bi-check-circle-fill"></i> Save Image
                 </button>
-
             </div>
 
         </div>
     </div>
 </div>
-
+<?php include '../toast.php'; ?>
 <script defer>
 let isProcessing      = false;
 let isBreakProcessing = false;
@@ -782,60 +796,182 @@ window.confirmAttendance = confirmAttendance;
 /* -------------------------------------------------------
    EDIT PROFILE MODAL
 ------------------------------------------------------- */
-document.getElementById('profileImageInput')
-    .addEventListener('change', function (e) {
+let profileWebcamStream  = null;
+let profileCapturedBlob  = null;
+let currentProfileImgSrc = '../assets/user_profiles/<?= htmlspecialchars($_SESSION['profile_image'] ?? 'default_profile.png') ?>';
 
-        const file = e.target.files[0];
+document.getElementById('editProfileImageModal').addEventListener('hidden.bs.modal', () => {
+    stopProfileWebcam();
+    switchProfileTab('upload');
+    profileCapturedBlob = null;
+    document.getElementById('profileImageInput').value = '';
+    document.getElementById('profileImagePreview').src = currentProfileImgSrc + '?t=' + Date.now();
+});
 
-        if (!file) return;
+function switchProfileTab(tab) {
+    const isUpload = tab === 'upload';
 
-        const preview = document.getElementById('profileImagePreview');
+    document.getElementById('profileUploadSection').style.display = isUpload ? '' : 'none';
+    document.getElementById('profileCameraSection').style.display = isUpload ? 'none' : '';
 
-        preview.src = URL.createObjectURL(file);
-    });
+    document.getElementById('uploadOptionCard').classList.toggle('active', isUpload);
+    document.getElementById('cameraOptionCard').classList.toggle('active', !isUpload);
+
+    if (isUpload) {
+        stopProfileWebcam();
+    } else {
+        profileCapturedBlob = null;
+        setCameraBtn('ready');   // reset button state when switching to camera
+        startProfileWebcam();
+    }
+}
+
+// Single action button — toggles between Capture and Retake
+function handleCameraAction() {
+    const btn = document.getElementById('profileCameraActionBtn');
+    const isCaptured = btn.dataset.state === 'captured';
+
+    if (isCaptured) {
+        retakeProfilePhoto();
+    } else {
+        captureProfilePhoto();
+    }
+}
+
+function setCameraBtn(state) {
+    const btn = document.getElementById('profileCameraActionBtn');
+    if (!btn) return;
+    btn.dataset.state = state;
+
+    if (state === 'captured') {
+        btn.className = 'btn btn-warning w-100';
+        btn.innerHTML = '<i class="bi bi-arrow-counterclockwise"></i> Retake';
+    } else {
+        btn.className = 'btn btn-info w-100';
+        btn.innerHTML = '<i class="bi bi-camera-fill"></i> Capture';
+    }
+}
+
+function startProfileWebcam() {
+    const video   = document.getElementById('profileWebcam');
+    const preview = document.getElementById('profileImagePreview');
+    const errEl   = document.getElementById('profileCameraError');
+
+    preview.style.display = 'none';
+    video.style.display   = '';
+    errEl.style.display   = 'none';
+
+    setCameraBtn('ready');
+
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } })
+        .then(stream => {
+            profileWebcamStream = stream;
+            video.srcObject     = stream;
+        })
+        .catch(() => {
+            video.style.display   = 'none';
+            preview.style.display = '';
+            errEl.style.display   = 'flex';
+        });
+}
+
+function stopProfileWebcam() {
+    if (profileWebcamStream) {
+        profileWebcamStream.getTracks().forEach(t => t.stop());
+        profileWebcamStream = null;
+    }
+    const video   = document.getElementById('profileWebcam');
+    const preview = document.getElementById('profileImagePreview');
+    if (video)   { video.srcObject = null; video.style.display = 'none'; }
+    if (preview) preview.style.display = '';
+}
+
+function captureProfilePhoto() {
+    const video   = document.getElementById('profileWebcam');
+    const canvas  = document.getElementById('profileCanvas');
+    const preview = document.getElementById('profileImagePreview');
+
+    const vw   = video.videoWidth;
+    const vh   = video.videoHeight;
+    const size = Math.min(vw, vh);
+    const sx   = (vw - size) / 2;
+    const sy   = (vh - size) / 2;
+
+    canvas.width  = size;
+    canvas.height = size;
+
+    const ctx = canvas.getContext('2d');
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.translate(size, 0);
+    ctx.scale(-1, 1);
+    ctx.drawImage(video, sx, sy, size, size, 0, 0, size, size);
+
+    canvas.toBlob(blob => {
+        profileCapturedBlob   = blob;
+        preview.src           = URL.createObjectURL(blob);
+        video.style.display   = 'none';
+        preview.style.display = '';
+
+        setCameraBtn('captured');
+        stopProfileWebcam();
+    }, 'image/png');
+}
+
+function retakeProfilePhoto() {
+    profileCapturedBlob = null;
+    startProfileWebcam();
+}
+
+document.getElementById('profileImageInput').addEventListener('change', function () {
+    const file = this.files[0];
+    if (!file) return;
+    profileCapturedBlob = null;
+    document.getElementById('profileImagePreview').src = URL.createObjectURL(file);
+});
+
+function updateProfileImageUI(src) {
+    const cacheBusted = src + '?t=' + Date.now();
+    document.querySelectorAll('.topbar-profile-image, #profileImagePreview')
+        .forEach(img => img.src = cacheBusted);
+    currentProfileImgSrc = src;
+}
 
 function saveProfileImage() {
+    const input      = document.getElementById('profileImageInput');
+    const hasFile    = input.files.length > 0;
+    const hasCapture = !!profileCapturedBlob;
 
-    const input = document.getElementById('profileImageInput');
-
-    if (!input.files.length) {
-        alert('Please select an image.');
+    if (!hasFile && !hasCapture) {
+        showToast('Please select an image or take a photo.', 'warning');
         return;
     }
 
-    const file = input.files[0];
-
     const formData = new FormData();
-    formData.append('profile_image', file);
+    formData.append('profile_image', hasCapture ? profileCapturedBlob : input.files[0],
+                    hasCapture ? 'capture.png' : input.files[0].name);
 
-    fetch('../system_functions/upload_profile_image.php', {
-        method: 'POST',
-        body: formData
-    })
-    .then(res => res.json())
-    .then(data => {
+    const btn = document.getElementById('saveProfileImageBtn');
+    btn.disabled  = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Saving...';
 
-        if (data.success) {
-
-            // update image immediately in UI
-            const img = document.querySelector('.topbar-profile-image');
-            if (img) {
-                img.src = '../assets/user_profiles/' + data.filename + '?t=' + Date.now();
+    fetch('../system_functions/upload_profile_image.php', { method: 'POST', body: formData })
+        .then(r => r.json())
+        .then(data => {
+            btn.disabled  = false;
+            btn.innerHTML = '<i class="bi bi-check-circle-fill"></i> Save Image';
+            if (data.success) {
+                updateProfileImageUI('../assets/user_profiles/' + data.filename);
+                bootstrap.Modal.getInstance(document.getElementById('editProfileImageModal')).hide();
+                
+                showToast('Profile image updated.', 'success');
+            } else {
+                showToast(data.error || 'Upload failed.', 'danger');
             }
-
-            // close modal
-            const modal = bootstrap.Modal.getInstance(
-                document.getElementById('editProfileImageModal')
-            );
-            modal.hide();
-
-        } else {
-            alert(data.error || 'Upload failed');
-        }
-    })
-    .catch(err => {
-        console.error(err);
-        alert('Upload error');
-    });
+        })
+        .catch(() => {
+            btn.disabled  = false;
+            btn.innerHTML = '<i class="bi bi-check-circle-fill"></i> Save Image';
+            showToast('Upload error. Please try again.', 'danger');
+        });
 }
 </script>

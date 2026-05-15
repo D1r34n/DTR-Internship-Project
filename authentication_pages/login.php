@@ -73,6 +73,12 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
         unset($_SESSION['error_email'], $_SESSION['error_password'], $_SESSION['old_email']);
 
+        if ($employee['password'] === 'HSN.123') {
+            $_SESSION['must_change_password'] = true;
+            header("Location: change_password.php");
+            exit();
+        }
+
         if ($employee['role'] === 'admin') {
             header("Location: ../admin_pages/admin_dashboard.php");
         } else {

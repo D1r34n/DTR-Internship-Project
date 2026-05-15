@@ -18,6 +18,11 @@ if (!in_array($role, ['admin', 'employee', 'workforce'])) {
     exit();
 }
 
+if (!empty($_SESSION['must_change_password'])) {
+    header("Location: ../authentication_pages/change_password.php");
+    exit();
+}
+
 $dashboardLink = ($role === 'admin')
     ? 'admin_dashboard.php'
     : 'employee_dashboard.php';
@@ -66,10 +71,10 @@ $requestsOpen = in_array($currentPage, ['employee_requests', 'schedule_requests'
 
         <!-- EMPLOYEE MENU -->
         <?php if ($role === 'employee'): ?>
-            <?php navLink('employee_dashboard.php', 'bi-columns-gap',     'Dashboard', $currentPage === 'dashboard'); ?>
-            <?php navLink('employee_records.php',   'bi-bar-chart-steps', 'Records',   $currentPage === 'records');   ?>
-            <?php navLink('employee_schedule.php',  'bi-calendar-week',   'Schedules', $currentPage === 'schedule');  ?>
-            <?php navLink('logs_page.php',      'bi-clipboard-minus', 'Logs',      $currentPage === 'logs');      ?>
+            <?php navLink('employee_dashboard.php', 'bi-columns-gap',       'Dashboard',     $currentPage === 'dashboard'); ?>
+            <?php navLink('employee_records.php',   'bi-bar-chart-steps',   'Records',       $currentPage === 'records');   ?>
+            <?php navLink('employee_schedule.php',  'bi-calendar-week',     'Schedules',     $currentPage === 'schedule');  ?>
+            <?php navLink('logs_page.php',          'bi-clipboard-minus',   'Activity Logs', $currentPage === 'logs');      ?>
         <?php endif; ?>
 
         <!-- WORKFORCE MENU -->
@@ -77,7 +82,7 @@ $requestsOpen = in_array($currentPage, ['employee_requests', 'schedule_requests'
             <?php navLink('employee_dashboard.php', 'bi-columns-gap',     'Dashboard', $currentPage === 'dashboard'); ?>
             <?php navLink('employee_records.php',   'bi-bar-chart-steps', 'Records',   $currentPage === 'records'); ?>
             <?php navLink('employee_schedule.php',  'bi-calendar-week',   'Schedules', $currentPage === 'schedule'); ?>
-            <?php navLink('employee_logs.php',      'bi-clipboard-minus', 'Logs',      $currentPage === 'logs'); ?>
+            <?php navLink('employee_logs.php',      'bi-clipboard-minus', 'Activity Logs',      $currentPage === 'logs'); ?>
 
     <?php 
         $manageEmpOpen = in_array($currentPage, ['workforce_schedule', 'workforce_logs']); 
@@ -148,10 +153,10 @@ $requestsOpen = in_array($currentPage, ['employee_requests', 'schedule_requests'
                     </a>
                 </div>
             </div>
-
-            <?php navLink('../employee_pages/logs_page.php',        'bi-journal-text',  'Logs',        $currentPage === 'employee_logs'); ?>
-            <?php navLink('../admin_pages/admin_departments.php',    'bi-building-gear', 'Departments',       $currentPage === 'departments'); ?>
+            
             <?php navLink('../employee_pages/employee_schedule.php', 'bi-calendar-week',  'Schedule', $currentPage === 'schedule');    ?>
+            <?php navLink('../employee_pages/logs_page.php',        'bi-journal-text',  'Activity Logs',        $currentPage === 'employee_logs'); ?>
+            <?php navLink('../admin_pages/admin_departments.php',    'bi-building-gear', 'Departments',       $currentPage === 'departments'); ?>
         <?php endif; ?>
 
     </nav>
