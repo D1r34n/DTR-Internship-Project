@@ -72,6 +72,7 @@ body {
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    padding: 0rem;
 }
 
 .recordBoxWrapper {
@@ -112,13 +113,14 @@ body {
     flex-direction: column;
 }
 
-.recordHeader {
+.record-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 1rem;
+    padding: 1rem 1rem 0rem;
+    flex-shrink: 0;
+    gap: 1rem;
     flex-wrap: wrap;
-    gap: 0.5rem;
 }
 
 .sched-nav-btn {
@@ -286,22 +288,22 @@ body {
     color: var(--text-lightest);
 }
 
-.ganttContainer {
+.gantt-container {
     display: flex;
     flex-direction: column;
     gap: 3rem;
 
     padding: 1rem;
-    max-height: 100%;
+    min-height: 100%;
     overflow-y: auto;
     overflow-x: hidden;
 }
 
 /* custom scrollbar (Chrome/Edge) */
-.ganttContainer::-webkit-scrollbar {
+.gantt-container::-webkit-scrollbar {
     width: 6px;
 }
-.ganttContainer::-webkit-scrollbar-thumb {
+.gantt-container::-webkit-scrollbar-thumb {
     background: var(--text-muted);
     border-radius: 10px;
 }
@@ -312,20 +314,18 @@ body {
     gap: 10px;
 }
 
-.ganttEmpty {
+.gantt-empty {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
-    padding: 3rem;
-    color: #aaa;
-    font-size: 0.9rem;
-}
 
-.ganttEmptyIcon {
-    font-size: 2rem;
-    opacity: 0.4;
+    height: 100%;
+    min-height: 100%;
+
+    color: #aaa;
+    font-size: 5rem;
 }
 
 .ganttCursor {

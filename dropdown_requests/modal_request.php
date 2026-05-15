@@ -424,7 +424,7 @@
     formData.append('time_out', otSelectedRecord.time_out);
     formData.append('reason',   reason);
 
-    fetch('/DTR-Internship-Project/employee_pages/submit_ot_request.php', {
+    fetch('/DTR-Internship-Project/dropdown_requests/request_ot.php', {
       method: 'POST',
       body: formData
     })
@@ -668,7 +668,7 @@
     formData.append('selected_dates', JSON.stringify(leaveSelectedDates));
     formData.append('reason',         reason);
 
-    fetch('/DTR-Internship-Project/employee_pages/submit_leave_request.php', {
+    fetch('/DTR-Internship-Project/dropdown_requests/request_leave.php', {
       method: 'POST',
       body: formData
     })
@@ -830,7 +830,7 @@
     formData.append('client_name', clientName);
     formData.append('reason',      reason);
 
-    fetch('/DTR-Internship-Project/employee_pages/submit_ob_request.php', {
+    fetch('/DTR-Internship-Project/dropdown_requests/request_ob.php', {
       method: 'POST',
       body: formData
     })
@@ -974,7 +974,7 @@
     formData.append('new_datetime', newDatetime.replace('T', ' ') + ':00');
     formData.append('reason',       reason);
 
-    fetch('/DTR-Internship-Project/employee_pages/log_edit_request.php', {
+    fetch('/DTR-Internship-Project/dropdown_requests/request_log_edit.php', {
       method: 'POST',
       body: formData
     })

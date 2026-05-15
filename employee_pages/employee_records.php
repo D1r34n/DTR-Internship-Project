@@ -80,6 +80,14 @@ foreach ($obStmt->fetchAll(PDO::FETCH_ASSOC) as $ob) {
     <!-- 1. Third-party CSS FIRST -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/monthSelect/style.css">
+
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/monthSelect/index.js"></script>
+
     <!-- 2. Your global CSS -->
     <link rel="stylesheet" href="../assets/css/root.css">
     <link rel="stylesheet" href="../assets/css/typography.css">
@@ -89,77 +97,95 @@ foreach ($obStmt->fetchAll(PDO::FETCH_ASSOC) as $ob) {
     <!-- 3. Page-specific CSS -->
     <link rel="stylesheet" href="employee_records.css">
 
-    <style>
-        html, body { height: 100%; margin: 0; }
-        body { display: flex; min-height: 100vh; }
-        #sidebar { flex-shrink: 0; }
-        #main-wrapper {
-            display: flex;
-            flex-direction: column;
-            flex-grow: 1;
-            min-width: 0;
-            overflow-y: auto;
-        }
-        #topbar { flex-shrink: 0; position: sticky; top: 0; z-index: 100; }
-    </style>
 </head>
 <body>
     <?php $currentPage = 'records'; include '../sidebar_revised.php'; ?>
 
+    <!-- MAIN WRAPPER -->
     <div id="main-wrapper">
         <?php include '../topbar_revised.php'; ?>
 
-        <div class="card card-neutral records-card">
-            <div class="card-body d-flex flex-column records-card-body">
-
-                <?php
-                $cPresent = $cAbsent = $cIncomplete = 0;
+        <!-- SUMMARY CARDS -->
+        <div class="container-fluid flex-shrink-0 px-3 pt-2">
+            <?php
+                $presenCount = $absentCount = $pendingCount = 0;
                 foreach ($records as $r) {
-                    if ($r['status'] === 'present')    $cPresent++;
-                    elseif ($r['status'] === 'absent') $cAbsent++;
-                    else                               $cIncomplete++;
+                    if ($r['status'] === 'present')    $presenCount++;
+                    elseif ($r['status'] === 'absent') $absentCount++;
+                    else                               $pendingCount++;
                 }
-                ?>
-                <div class="recordHeader">
-                    <div class="d-flex align-items-center gap-2">
-                        <button class="sched-nav-btn" onclick="navigatePrev()">
-                            <i class="bi bi-chevron-left"></i>
-                        </button>
-                        <span class="sched-month-label"><?= htmlspecialchars($monthLabel) ?></span>
-                        <button class="sched-nav-btn" onclick="navigateNext()">
-                            <i class="bi bi-chevron-right"></i>
-                        </button>
-                    </div>
-                    <div class="tab-summary-chips">
-                        <span class="tab-summary-chip" style="color:var(--primary-color);">
-                            <i class="bi bi-check-circle-fill"></i> <?= $cPresent ?> Present
-                        </span>
-                        <span class="tab-summary-chip" style="color:var(--neutral-color);">
-                            <i class="bi bi-clock-fill"></i> <?= $cIncomplete ?> Incomplete
-                        </span>
-                        <span class="tab-summary-chip" style="color:var(--danger-color);">
-                            <i class="bi bi-x-circle-fill"></i> <?= $cAbsent ?> Absent
-                        </span>
+            ?>
+
+            <div class="row g-3">
+
+                <!-- PENDING -->
+                <div class="col-12 col-sm-6 col-lg-4">
+                    <div class="card card-warning p-3 h-100">
+                        <div class="card-body d-flex align-items-center gap-3 p-0">
+                            <div class="icon-box icon-box-warning">
+                                <i class="bi bi-hourglass-split fs-4"></i>
+                            </div>
+                            <div class="d-flex flex-column ms-auto text-end">
+                                <div class="stats-number"><?= $pendingCount ?></div>
+                                <div class="text-meta">Pending</div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <script>
-                    const currentMonth = '<?= sprintf('%04d-%02d', $yr, $mn) ?>';
-                    function pad(n) { return String(n).padStart(2, '0'); }
-                    function navigatePrev() {
-                        const d = new Date(currentMonth + '-01');
-                        d.setMonth(d.getMonth() - 1);
-                        window.location.href = `?month=${d.getFullYear()}-${pad(d.getMonth() + 1)}`;
-                    }
-                    function navigateNext() {
-                        const d = new Date(currentMonth + '-01');
-                        d.setMonth(d.getMonth() + 1);
-                        window.location.href = `?month=${d.getFullYear()}-${pad(d.getMonth() + 1)}`;
-                    }
-                </script>
+                <!-- PRESENT -->
+                <div class="col-12 col-sm-6 col-lg-4">
+                    <div class="card card-success p-3 h-100">
+                        <div class="card-body d-flex align-items-center gap-3 p-0">
+                            <div class="icon-box icon-box-success">
+                                <i class="bi bi-check-circle-fill fs-3"></i>
+                            </div>
+                            <div class="d-flex flex-column ms-auto text-end">
+                                <div class="stats-number"><?= $presenCount ?></div>
+                                <div class="text-meta">Present</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-                <!-- Gantt chart: one row per attendance record -->
-                <div class="ganttContainer">
+                <!-- ABSENT -->
+                <div class="col-12 col-sm-6 col-lg-4">
+                    <div class="card card-danger p-3 h-100">
+                        <div class="card-body d-flex align-items-center gap-3 p-0">
+                            <div class="icon-box icon-box-danger">
+                                <i class="bi bi-x-circle-fill fs-3"></i>
+                            </div>
+                            <div class="d-flex flex-column ms-auto text-end">
+                                <div class="stats-number"><?= $absentCount ?></div>
+                                <div class="text-meta">Absent</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- MAIN CARD -->
+        <div class="card card-neutral records-card">
+
+                <!-- HEADER -->
+                <div class="record-header">
+                   <div class="d-flex align-items-center gap-2">
+                        <div class="dropdown">
+                            <button class="btn btn-sm dropdown-toggle" id="month-picker-btn" type="button">
+                                <i class="bi bi-calendar3"></i>
+                                <span id="dateRangeLabel"><?= $monthLabel ?></span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+            <!-- BODY -->
+            <div class="card-body d-flex flex-column records-card-body">
+
+                <!-- GANTT CHART -->
+                <div class="gantt-container">
                     <?php 
                     $hasRows = false;
                     foreach ($records as $row): ?>
@@ -196,6 +222,7 @@ foreach ($obStmt->fetchAll(PDO::FETCH_ASSOC) as $ob) {
                     }
                     ?>
 
+                    <!-- For absent or pending schedules -->
                     <?php if ($ganttBar['type'] === 'absent_or_future'): ?>
                     <div class="ganttRow">
                         <div class="ganttLabel">
@@ -331,11 +358,12 @@ foreach ($obStmt->fetchAll(PDO::FETCH_ASSOC) as $ob) {
 
                     <?php endif; ?>
                     <?php endforeach; ?>
-
+                    
+                    <!-- Show empty card if no records -->
                     <?php if (!$hasRows): ?>
-                        <div class="ganttEmpty">
-                            <i class="bi bi-calendar-x ganttEmptyIcon"></i>
-                            <div>No records found for this period.</div>
+                        <div class="gantt-empty">
+                            <i class="bi bi-calendar2-x-fill"></i>
+                            <div class="text-meta">No records found for this period.</div>
                         </div>
                     <?php endif; ?>
 
@@ -401,6 +429,21 @@ foreach ($obStmt->fetchAll(PDO::FETCH_ASSOC) as $ob) {
     document.addEventListener('DOMContentLoaded', () => {
         // Wire up cursor tracking and tooltip behavior for all Gantt rows
         initGanttCursors();
+    });
+
+    flatpickr("#month-picker-btn", {
+        plugins: [
+            new monthSelectPlugin({
+                shorthand: true,
+                dateFormat: "Y-m",
+                altFormat: "F Y"
+            })
+        ],
+        defaultDate: "<?= sprintf('%04d-%02d', $yr, $mn) ?>",
+        onChange: function(selectedDates, dateStr) {
+            // dateStr = YYYY-MM
+            window.location.href = `?month=${dateStr}`;
+        }
     });
 </script>
 </body>

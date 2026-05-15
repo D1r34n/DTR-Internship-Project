@@ -26,7 +26,7 @@ $employee = $stmt->fetch(PDO::FETCH_ASSOC);
 $role       = $_SESSION['user_role'];
 
 // Validate role
-if (!in_array($role, ['admin', 'employee', 'workforce'])) {
+if (!in_array($role, ['admin', 'employee'])) {
     session_destroy();
     header("Location: ../index.php");
     exit();
@@ -36,26 +36,19 @@ if (!in_array($role, ['admin', 'employee', 'workforce'])) {
 $titles = [
     'employee' => [
         'dashboard' => 'Employee Dashboard',
-        'records'   => 'Employee Records',
-        'schedule'  => 'Schedule',
+        'records'   => 'Admin Records',
+        'schedule'  => 'Admin Schedule',
         'logs'      => 'Activity Logs',
-    ],
-    'workforce' => [
-        'dashboard'          => 'Employee Dashboard',
-        'records'            => 'Employee Records',
-        'schedule'           => 'Employee Schedule',
-        'logs'               => 'Activity Logs',
-        'workforce_schedule' => 'Manage Schedules',
-        'workforce_logs'     => 'Manage Logs',
     ],
     'admin' => [
         'dashboard'         => 'Admin Dashboard',
+        'records'           => 'Admin Records',
+        'schedule'          => 'Admin Schedule',
+        'logs'              => 'Activity Logs',
         'manage_employees'  => 'Manage Employees',
         'employee_requests' => 'Employee Requests',
         'schedule_requests' => 'Schedule Requests',
-        'logs'              => 'Activity Logs',
         'departments'       => 'Departments',
-        'schedule'          => 'Schedule',
     ],
 ];
 
@@ -68,7 +61,7 @@ $parts = array_values(array_filter(explode('/', $_SERVER['PHP_SELF'])));
 
 $excludeSegments = [
     'localhost', 'DTR-Internship-Project', 'DTR Internship Project',
-    'admin_pages', 'employee_pages', 'workforce_pages',
+    'admin_pages', 'employee_pages',
     'system_functions', 'dropdown_requests', 'assets', 'includes', 'db',
 ];
 

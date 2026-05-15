@@ -14,7 +14,7 @@ $employeeId    = $_SESSION['user_id']   ?? null;
 $currentUserId = (int)($_SESSION['user_id'] ?? 0);
 
 // Admin viewing a specific employee's profile — scope to that employee, hide employee columns
-$scopedToEmployee = in_array($userRole, ['admin', 'workforce']) && !empty($_GET['employee_id']);
+$scopedToEmployee = $userRole === 'admin' && !empty($_GET['employee_id']);
 if ($scopedToEmployee) $employeeId = intval($_GET['employee_id']);
 date_default_timezone_set('Asia/Manila');
 
@@ -109,6 +109,7 @@ $editSql = "
     SELECT ler.log_id, ler.status,
            ler.initiated_by_id, r_init.role_key AS initiator_role, e_init.first_name AS initiator_name
     FROM log_edit_requests ler
+    JOIN logs l ON l.id = ler.log_id
     LEFT JOIN employees e_init ON ler.initiated_by_id = e_init.id
     LEFT JOIN roles r_init ON r_init.id = e_init.role_id
     WHERE 1=1
@@ -120,21 +121,11 @@ if ($userRole !== 'admin' || $scopedToEmployee) {
     $editParams[] = $employeeId;
 }
 if ($startDate !== '') {
-    if ($userRole !== 'admin' || $scopedToEmployee) {
-        $editSql    .= " AND ler.log_id IN (SELECT id FROM logs WHERE employee_id = ? AND log_time >= ?)";
-        $editParams[] = $employeeId;
-    } else {
-        $editSql    .= " AND ler.log_id IN (SELECT id FROM logs WHERE log_time >= ?)";
-    }
+    $editSql    .= " AND l.log_time >= ?";
     $editParams[] = $startDate;
 }
 if ($endDate !== '') {
-    if ($userRole !== 'admin' || $scopedToEmployee) {
-        $editSql    .= " AND ler.log_id IN (SELECT id FROM logs WHERE employee_id = ? AND log_time < DATE_ADD(?, INTERVAL 1 DAY))";
-        $editParams[] = $employeeId;
-    } else {
-        $editSql    .= " AND ler.log_id IN (SELECT id FROM logs WHERE log_time < DATE_ADD(?, INTERVAL 1 DAY))";
-    }
+    $editSql    .= " AND l.log_time < DATE_ADD(?, INTERVAL 1 DAY)";
     $editParams[] = $endDate;
 }
 $editSql .= " ORDER BY ler.created_at DESC";

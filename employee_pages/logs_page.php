@@ -229,9 +229,7 @@ function renderRows({ meta, rows }) {
         const typeLabel = LOG_TYPE_LABEL[row.log_type] ?? row.log_type;
 
         let editRoleHtml = `<span style="color:rgba(255,255,255,0.15);font-size:0.75rem;">—</span>`;
-        if (row.edit_role === 'workforce') {
-            editRoleHtml = `<span class="pill empRole-workforce"><i class="bi bi-person-badge-fill"></i> ${esc(row.initiator_name ?? 'Workforce')}</span>`;
-        } else if (row.edit_role === 'admin') {
+        if (row.edit_role === 'admin') {
             editRoleHtml = `<span class="pill empRole-admin"><i class="bi bi-shield-fill"></i> ${esc(row.initiator_name ?? 'Admin')}</span>`;
         } else if (row.edit_role === 'self') {
             editRoleHtml = `<span class="pill"><i class="bi bi-person-fill"></i> You</span>`;

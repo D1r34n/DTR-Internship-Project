@@ -1,9 +1,9 @@
-<?php
+﻿<?php
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-if (!isset($_SESSION['user_id']) || !in_array($_SESSION['user_role'], ['admin', 'workforce'])) {
+if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'admin') {
     header("Location: ../index.php");
     exit();
 }
@@ -28,8 +28,7 @@ if (!$empLookup) {
 }
 $employeeId     = (int) $empLookup['id'];
 $urlEmpId   = $empLookup['employee_id'];
-$scheduleStatus = ($_SESSION['user_role'] === 'workforce') ? 'pending' : 'approved';
-$isWorkforce    = ($_SESSION['user_role'] === 'workforce');
+$scheduleStatus = 'approved';
 
 // ---- HANDLE EMPLOYEE EDIT ----
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'edit_employee') {
@@ -209,13 +208,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' &&
                 $existsStmt->execute([$postEmpId, $date]);
                 if ($existsStmt->fetch()) {
                     $updateStmt->execute([$startDT, $endDT, $scheduleStatus, $postEmpId, $date]);
-                    if (!$isWorkforce) $updateAttendance->execute([$startDT, $endDT, $postEmpId, $date]);
+                    $updateAttendance->execute([$startDT, $endDT, $postEmpId, $date]);
                 } else {
                     $insertSchedule->execute([$postEmpId, $date, $startDT, $endDT, $scheduleStatus, $_SESSION['user_id']]);
-                    if (!$isWorkforce) {
-                        $schedId = $pdo->lastInsertId() ?: null;
+            $schedId = $pdo->lastInsertId() ?: null;
                         $insertAttendance->execute([$postEmpId, $schedId, $date, $startDT, $endDT]);
-                    }
                 }
             }
         }
@@ -254,13 +251,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save_
             $existsStmt->execute([$postEmpId, $date]);
             if ($existsStmt->fetch()) {
                 $updateStmt->execute([$startDT, $endDT, $scheduleStatus, $postEmpId, $date]);
-                if (!$isWorkforce) $updateAttendance->execute([$startDT, $endDT, $postEmpId, $date]);
+                $updateAttendance->execute([$startDT, $endDT, $postEmpId, $date]);
             } else {
                 $insertSchedule->execute([$postEmpId, $date, $startDT, $endDT, $scheduleStatus, $_SESSION['user_id']]);
-                if (!$isWorkforce) {
-                    $schedId = $pdo->lastInsertId() ?: null;
+            $schedId = $pdo->lastInsertId() ?: null;
                     $insertAttendance->execute([$postEmpId, $schedId, $date, $startDT, $endDT]);
-                }
             }
         }
     }
@@ -1102,7 +1097,7 @@ $leaveTypes = [
 
                 <div class="modal-footer">
                     <button type="submit" class="btn btn-success w-100">
-                        <i class="bi bi-check-circle-fill me-1"></i> <?= $isWorkforce ? 'Submit for Approval' : 'Save Schedule' ?>
+                        <i class="bi bi-check-circle-fill me-1"></i> Save Schedule
                     </button>
                 </div>
             </form>
@@ -1168,7 +1163,7 @@ $leaveTypes = [
                 <div class="modal-footer">
                     <button type="submit" class="btn btn-success">
                         <i class="bi bi-check-circle-fill"></i>
-                        <span id="schedSubmitLabel"><?= $isWorkforce ? 'Submit for Approval' : 'Save Schedule' ?></span>
+                        <span id="schedSubmitLabel">Save Schedule</span>
                     </button>
                 </div>
             </form>
@@ -1388,7 +1383,7 @@ $leaveTypes = [
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                 <button type="button" class="btn btn-primary" id="ale-submit-btn">
-                    <i class="bi bi-check-circle-fill"></i> <?= $isWorkforce ? 'Submit for Approval' : 'Apply Edit' ?>
+                    <i class="bi bi-check-circle-fill"></i> Apply Edit
                 </button>
             </div>
 
@@ -1464,7 +1459,6 @@ let fp               = null;
 let fpAdd            = null;
 const EMP_ID         = <?= $employeeId ?>;
 const EMP_URL_ID     = '<?= htmlspecialchars($urlEmpId) ?>';
-const IS_WORKFORCE   = <?= $isWorkforce ? 'true' : 'false' ?>;
 let currentMonth  = '<?= $rawMonth ?>';
 const tabLoadedMonth = { '#tab1': null, '#tab2': null, '#tab3': null };
 let adminCalendar    = null;
@@ -1578,9 +1572,7 @@ function fetchAdminLogs() {
                 const typeLabel = LOG_TYPE_LABEL[row.log_type] ?? row.log_type;
 
                 let editRoleHtml = `<span style="color:rgba(255,255,255,0.15);font-size:0.75rem;">—</span>`;
-                if (row.edit_role === 'workforce') {
-                    editRoleHtml = `<span class="pill empRole-workforce"><i class="bi bi-person-badge-fill"></i> ${escHtml(row.initiator_name ?? 'Workforce')}</span>`;
-                } else if (row.edit_role === 'admin') {
+                if (row.edit_role === 'admin') {
                     editRoleHtml = `<span class="pill empRole-admin"><i class="bi bi-shield-fill"></i> ${escHtml(row.initiator_name ?? 'Admin')}</span>`;
                 } else if (row.edit_role === 'employee') {
                     editRoleHtml = `<span class="pill"><i class="bi bi-person-fill"></i> ${escHtml(row.initiator_name ?? 'Employee')}</span>`;
@@ -2001,7 +1993,7 @@ document.addEventListener('DOMContentLoaded', () => {
             .then(r => {
                 if (!r.ok && r.status !== 200) throw new Error('save failed');
                 bootstrap.Modal.getInstance(document.getElementById('manageScheduleModal'))?.hide();
-                showToast(IS_WORKFORCE ? 'Schedule submitted for approval' : 'Schedule saved successfully', 'success');
+                showToast('Schedule saved successfully', 'success');
                 if (adminCalendar) adminCalendar.refetchEvents();
             })
             .catch(() => showToast('Failed to save schedule. Please try again.', 'danger'));
@@ -2016,7 +2008,7 @@ document.addEventListener('DOMContentLoaded', () => {
             .then(r => {
                 if (!r.ok && r.status !== 200) throw new Error('save failed');
                 closeSchedModal();
-                showToast(IS_WORKFORCE ? 'Schedule submitted for approval' : 'Schedule saved successfully', 'success');
+                showToast('Schedule saved successfully', 'success');
                 if (adminCalendar) adminCalendar.refetchEvents();
             })
             .catch(() => showToast('Failed to save schedule. Please try again.', 'danger'));
@@ -2089,7 +2081,7 @@ document.addEventListener('DOMContentLoaded', () => {
         body.append('new_datetime', newDatetime.replace('T', ' ') + ':00');
         body.append('reason',       reason);
 
-        fetch('/DTR-Internship-Project/system_functions/log_edit_request.php', {
+        fetch('/DTR-Internship-Project/dropdown_requests/request_log_edit.php', {
             method: 'POST',
             body
         })
@@ -2221,7 +2213,7 @@ function clearDateSelection() {
 
 function openAddModal() {
     document.getElementById('schedModalTitle').textContent  = 'Add Schedule';
-    document.getElementById('schedSubmitLabel').textContent = IS_WORKFORCE ? 'Submit for Approval' : 'Save Schedule';
+    document.getElementById('schedSubmitLabel').textContent = 'Save Schedule';
     document.getElementById('isEditMode').value             = '0';
     document.getElementById('modalTimeIn').value            = '';
     document.getElementById('modalTimeOut').value           = '';
@@ -2338,15 +2330,14 @@ document.getElementById('ale-submit-btn').addEventListener('click', () => {
     form.append('new_datetime', newDatetime);
     form.append('reason',       reason);
 
-    fetch('../employee_pages/log_edit_request.php', { method: 'POST', body: form })
+    fetch('../dropdown_requests/request_log_edit.php', { method: 'POST', body: form })
         .then(r => r.json())
         .then(data => {
             btn.disabled  = false;
-            btn.innerHTML = IS_WORKFORCE ? '<i class="bi bi-check-circle-fill"></i> Submit for Approval' : '<i class="bi bi-check-circle-fill"></i> Apply Edit';
+            btn.innerHTML = '<i class="bi bi-check-circle-fill"></i> Apply Edit';
             if (data.success) {
                 bootstrap.Modal.getInstance(document.getElementById('adminLogEditModal'))?.hide();
                 fetchAdminLogs();
-                    if (IS_WORKFORCE) showToast('Log edit submitted for approval');
                 showToast(data.message || 'Log updated successfully.', 'success');
             } else {
                 showToast(data.message || 'Failed to update log.', 'danger');
@@ -2354,7 +2345,7 @@ document.getElementById('ale-submit-btn').addEventListener('click', () => {
         })
         .catch(() => {
             btn.disabled  = false;
-            btn.innerHTML = IS_WORKFORCE ? '<i class="bi bi-check-circle-fill"></i> Submit for Approval' : '<i class="bi bi-check-circle-fill"></i> Apply Edit';
+            btn.innerHTML = '<i class="bi bi-check-circle-fill"></i> Apply Edit';
             showToast('An error occurred. Please try again.', 'danger');
         });
 });
