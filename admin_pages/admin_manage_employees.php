@@ -208,7 +208,7 @@ $currentPage = 'manage_employees';
                             </div>
                             <div class="d-flex flex-column ms-auto text-end">
                                 <div class="stats-number">
-                                    <?= count($employees) ?>
+                                    <?= count(array_filter($employees, fn($e) => $e['role'] === 'employee')) ?>
                                 </div>
                                 <div class="text-meta">
                                     Total Employees

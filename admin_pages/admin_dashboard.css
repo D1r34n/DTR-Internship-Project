@@ -57,9 +57,19 @@ body {
     position: fixed;
     top: 80px;
     left: calc(20px + var(--sidebar-width));
+    right: 0;
     color: white;
     transition: left 0.38s cubic-bezier(0.4, 0, 0.2, 1);
+    height: calc(100vh - 80px);
+    overflow-y: auto;
+    padding-bottom: 32px;
+    padding-right: 20px;
 }
+
+.dashboardContent::-webkit-scrollbar        { width: 4px; }
+.dashboardContent::-webkit-scrollbar-track  { background: transparent; }
+.dashboardContent::-webkit-scrollbar-thumb  { background: rgba(255,255,255,0.2); border-radius: 10px; }
+.dashboardContent::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.4); }
 
 #sidebar.collapsed ~ #main-wrapper .dashboardContent {
     left: calc(20px + var(--sidebar-collapsed-width));
@@ -76,18 +86,34 @@ body {
     text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.5);
 }
 
+.dashRow {
+    display: flex;
+    flex-direction: row;
+    gap: 2rem;
+    align-items: flex-start;
+    margin-top: 5rem;
+}
+
+.dashLeft {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    flex-shrink: 0;
+    margin-top: 13rem;
+}
+
 .dashboardSummary {
     display: flex;
     flex-direction: row;
     gap: 2rem;
-    margin-top: 5rem;
 }
 
 .summaryCard {
     background: var(--glass-bg-dark);
     padding: 20px;
-    border-radius: 12px;
+    border-radius: 5px;
     width: 240px;
+    height: 175px;
     text-align: left;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
 }
@@ -456,4 +482,24 @@ border: 1px solid rgba(25, 200, 100, 0.35);
     font-size: 13px;
     padding: 9px 0;
     border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+
+/* ── Attendance Overview Graph ────────────────────────────── */
+.attendanceOverviewCard {
+    flex: none;
+    width: 800px;
+    height: 349px;
+    padding: 20px;
+    overflow: hidden;
+    display: flex;
+    margin-top: 25rem;
+    flex-direction: column;
+    transform: none !important;
+}
+
+.attendanceChartWrap {
+    flex: 1;
+    min-height: 0;
+    position: relative;
+    margin-top: 8px;
 }
