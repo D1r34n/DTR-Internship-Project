@@ -15,22 +15,14 @@ $today = date('Y-m-d');
 $year  = date('Y');
 
 // ── Total employees ───────────────────────────────────────
-$count = (int) $pdo->query("
-    SELECT COUNT(*)
-    FROM employees e
-    JOIN roles r ON r.id = e.role_id
-    WHERE r.role_key = 'employee'
-")->fetchColumn();
+$count = (int) $pdo->query("SELECT COUNT(*) FROM employees")->fetchColumn();
 
 // ── Present today ─────────────────────────────────────────
 $stmt = $pdo->prepare("
     SELECT COUNT(*)
     FROM attendances a
-    JOIN employees e ON e.id = a.employee_id
-    JOIN roles r     ON r.id = e.role_id
     WHERE a.work_date = ?
       AND a.status    = 'present'
-      AND r.role_key  = 'employee'
 ");
 $stmt->execute([$today]);
 $present = (int) $stmt->fetchColumn();
@@ -67,6 +59,31 @@ $upcomingEvents = $pdo->query("
 ")->fetchAll(PDO::FETCH_ASSOC);
 $upcomingEventsCount = count(array_filter($upcomingEvents, fn($e) => strtotime(date('Y-m-d', strtotime($e['start_datetime']))) >= strtotime($today)));
 
+// ── Weekly attendance overview (Mon–Sun of current week) ──
+$todayDow = (int)date('N'); // 1=Mon, 7=Sun
+$weekMon  = date('Y-m-d', strtotime('-' . ($todayDow - 1) . ' days'));
+$weekSun  = date('Y-m-d', strtotime('+' . (7 - $todayDow) . ' days'));
+
+$weeklyStmt = $pdo->prepare("
+    SELECT
+        a.work_date,
+        SUM(CASE WHEN a.status = 'present' THEN 1 ELSE 0 END) AS present_count
+    FROM attendances a
+    WHERE a.work_date BETWEEN ? AND ?
+    GROUP BY a.work_date
+    ORDER BY a.work_date
+");
+$weeklyStmt->execute([$weekMon, $weekSun]);
+$weeklyRows = $weeklyStmt->fetchAll(PDO::FETCH_ASSOC);
+
+$weeklyPresent = array_fill(0, 7, null);
+$weeklyAbsent  = array_fill(0, 7, null);
+foreach ($weeklyRows as $row) {
+    $idx = (int)date('N', strtotime($row['work_date'])) - 1; // 0=Mon … 6=Sun
+    $weeklyPresent[$idx] = (int)$row['present_count'];
+    $weeklyAbsent[$idx]  = $count - (int)$row['present_count']; // absent = total - present
+}
+
 ?>
 <!doctype html>
 <html lang="en">
@@ -98,6 +115,10 @@ $upcomingEventsCount = count(array_filter($upcomingEvents, fn($e) => strtotime(d
         <!-- Clock -->
         <p id="currentDate"></p>
         <h1 id="currentTime"></h1>
+
+        <!-- ── Two-column layout: left cards | right chart ──────── -->
+        <div class="dashRow">
+        <div class="dashLeft">
 
         <!-- ── Row 1: Attendance Summary Cards ────────────────── -->
         <div class="dashboardSummary">
@@ -282,10 +303,120 @@ $upcomingEventsCount = count(array_filter($upcomingEvents, fn($e) => strtotime(d
                         </a>
                     </div>
               </div><!-- /.dashboardSummary row 2 -->
+        </div><!-- /.dashLeft -->
+
+            <!-- ── Attendance Overview Chart ──────────────── -->
+            <div class="attendanceOverviewCard card card-neutral">
+                <div class="summaryTop">
+                    <div class="summaryIcon bg-blue">
+                        <i class="bi bi-bar-chart-line-fill"></i>
+                    </div>
+                    <p>Attendance Overview</p>
+                </div>
+                <div class="attendanceChartWrap">
+                    <canvas id="attendanceChart"></canvas>
+                </div>
+            </div>
+
+        </div><!-- /.dashRow -->
 
     </div><!-- /.dashboardContent -->
 </div><!-- /#main-wrapper -->
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+(function () {
+    const present = <?= json_encode(array_values($weeklyPresent)) ?>;
+    const absent  = <?= json_encode(array_values($weeklyAbsent)) ?>;
+    const total   = <?= $count ?>;
+
+    new Chart(document.getElementById('attendanceChart'), {
+        type: 'line',
+        data: {
+            labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+            datasets: [
+                {
+                    label: 'Present',
+                    data: present,
+                    borderColor: '#0d6efd',
+                    backgroundColor: 'rgba(13,110,253,0.15)',
+                    fill: 'start',
+                    tension: 0.4,
+                    pointBackgroundColor: '#0d6efd',
+                    pointBorderColor: '#0d6efd',
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                    borderWidth: 2,
+                },
+                {
+                    label: 'Absent',
+                    data: absent,
+                    borderColor: '#ff9900',
+                    backgroundColor: 'rgba(255,153,0,0.15)',
+                    fill: 'start',
+                    tension: 0.4,
+                    pointBackgroundColor: '#ff9900',
+                    pointBorderColor: '#ff9900',
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                    borderWidth: 2,
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            layout: {
+                padding: { top: 10, bottom: 0 }
+            },
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'bottom',
+                    labels: {
+                        color: 'rgba(255,255,255,0.7)',
+                        usePointStyle: true,
+                        pointStyle: 'circle',
+                        padding: 20,
+                        font: { size: 12, family: 'Poppins' }
+                    }
+                },
+                tooltip: {
+                    mode: 'index',
+                    intersect: false,
+                    backgroundColor: 'rgba(15,15,30,0.85)',
+                    titleColor: '#fff',
+                    bodyColor: 'rgba(255,255,255,0.7)',
+                    borderColor: 'rgba(255,255,255,0.1)',
+                    borderWidth: 1,
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    suggestedMax: total + 1,
+                    ticks: {
+                        precision: 0,
+                        color: 'rgba(255,255,255,0.5)',
+                        font: { size: 11, family: 'Poppins' }
+                    },
+                    grid:   { color: 'rgba(255,255,255,0.07)' },
+                    border: { color: 'transparent' }
+                },
+                x: {
+                    ticks: {
+                        color: 'rgba(255,255,255,0.5)',
+                        font: { size: 11, family: 'Poppins' }
+                    },
+                    grid:   { color: 'rgba(255,255,255,0.07)' },
+                    border: { color: 'transparent' }
+                }
+            }
+        }
+    });
+})();
+</script>
 </body>
 </html>

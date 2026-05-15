@@ -5,21 +5,32 @@ $isAdmin = isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'admin';
 require_once '../db.php';
 date_default_timezone_set('Asia/Manila');
 
-// ── Handle save-event POST ────────────────────────────────
+// ── Handle POST (create / update / delete) ───────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     header('Content-Type: application/json');
     if (!$isAdmin) { http_response_code(403); echo json_encode(['error' => 'Unauthorized']); exit(); }
 
-    $data        = json_decode(file_get_contents('php://input'), true);
+    $data   = json_decode(file_get_contents('php://input'), true);
+    $action = $data['action'] ?? 'create';
+
+    // ── Delete ──
+    if ($action === 'delete') {
+        $id = intval($data['id'] ?? 0);
+        if (!$id) { http_response_code(400); echo json_encode(['error' => 'Missing id.']); exit(); }
+        $pdo->prepare("DELETE FROM events WHERE id = ?")->execute([$id]);
+        echo json_encode(['success' => true]);
+        exit();
+    }
+
+    // ── Create or Update ──
     $title       = trim($data['title']       ?? '');
     $eventType   = $data['event_type']       ?? 'other';
     $startDate   = $data['start_date']       ?? '';
-    $endDate     = $data['end_date']         ?? null;
     $description = trim($data['description'] ?? '');
 
     if (!$title || !$startDate) {
         http_response_code(400);
-        echo json_encode(['error' => 'Title and start date are required.']);
+        echo json_encode(['error' => 'Title and date are required.']);
         exit();
     }
 
@@ -31,18 +42,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'meeting' => '#3b82f6', 'announcement' => '#f59e0b', 'other' => '#6b7280',
     ];
 
-    $stmt = $pdo->prepare("
-        INSERT INTO events (title, description, event_type, start_datetime, end_datetime, color, created_by)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-    ");
-    $stmt->execute([$title, $description ?: null, $eventType, $startDate, $endDate ?: null, $colors[$eventType], $_SESSION['user_id']]);
-    echo json_encode(['success' => true, 'id' => (int) $pdo->lastInsertId()]);
+    if ($action === 'update') {
+        $id = intval($data['id'] ?? 0);
+        if (!$id) { http_response_code(400); echo json_encode(['error' => 'Missing id.']); exit(); }
+        $pdo->prepare("UPDATE events SET title=?, description=?, event_type=?, start_datetime=?, end_datetime=NULL, color=? WHERE id=?")
+            ->execute([$title, $description ?: null, $eventType, $startDate, $colors[$eventType], $id]);
+        echo json_encode(['success' => true]);
+    } else {
+        $stmt = $pdo->prepare("INSERT INTO events (title, description, event_type, start_datetime, end_datetime, color, created_by) VALUES (?, ?, ?, ?, NULL, ?, ?)");
+        $stmt->execute([$title, $description ?: null, $eventType, $startDate, $colors[$eventType], $_SESSION['user_id']]);
+        echo json_encode(['success' => true, 'id' => (int) $pdo->lastInsertId()]);
+    }
     exit();
 }
 
 // ── Fetch calendar events (all users) ────────────────────
 $calEvents = [];
-foreach ($pdo->query("SELECT id, title, event_type, start_datetime, end_datetime, color FROM events ORDER BY start_datetime ASC")->fetchAll(PDO::FETCH_ASSOC) as $r) {
+foreach ($pdo->query("SELECT id, title, description, event_type, start_datetime, end_datetime, color FROM events ORDER BY start_datetime ASC")->fetchAll(PDO::FETCH_ASSOC) as $r) {
     $calEvents[] = [
         'id'            => $r['id'],
         'title'         => $r['title'],
@@ -51,7 +67,7 @@ foreach ($pdo->query("SELECT id, title, event_type, start_datetime, end_datetime
         'allDay'        => true,
         'color'         => $r['color'] ?: '#0d6efd',
         'textColor'     => '#fff',
-        'extendedProps' => ['shift_type' => 'cal_event', 'event_type' => $r['event_type']],
+        'extendedProps' => ['shift_type' => 'cal_event', 'event_type' => $r['event_type'], 'description' => $r['description']],
     ];
 }
 
@@ -293,6 +309,83 @@ if ($isAdmin) {
                     }
                 },
 
+                <?php if ($isAdmin): ?>
+                eventClick: function(info) {
+                    const props = info.event.extendedProps;
+                    if (props.shift_type !== 'cal_event') return;
+                    info.jsEvent.preventDefault();
+
+                    const iconMap = {
+                        holiday: 'bi-umbrella-fill', party: 'bi-balloon-fill',
+                        meeting: 'bi-people-fill', announcement: 'bi-megaphone-fill', other: 'bi-pin-fill',
+                    };
+                    const colorMap = {
+                        holiday: '#ef4444', party: '#ec4899',
+                        meeting: '#3b82f6', announcement: '#f59e0b', other: '#6b7280',
+                    };
+                    const et    = props.event_type || 'other';
+                    const icon  = iconMap[et]  || 'bi-pin-fill';
+                    const color = colorMap[et] || '#6b7280';
+
+                    const dateObj = info.event.start;
+                    const dateStr = dateObj ? dateObj.toLocaleDateString('en-CA') : '—';
+
+                    document.getElementById('viewEvtTitle').textContent    = info.event.title;
+                    document.getElementById('viewEvtTypeBadge').innerHTML  = `<i class="bi ${icon} me-1"></i>${et.charAt(0).toUpperCase()+et.slice(1)}`;
+                    document.getElementById('viewEvtTypeBadge').style.color = color;
+                    document.getElementById('viewEvtDate').textContent     = dateStr;
+                    document.getElementById('viewEvtDesc').textContent     = props.description || '—';
+                    document.getElementById('viewEvtEditBtn').dataset.id   = info.event.id;
+                    document.getElementById('viewEvtDeleteBtn').dataset.id = info.event.id;
+
+                    _editPayload = {
+                        id:          info.event.id,
+                        title:       info.event.title,
+                        event_type:  et,
+                        description: props.description || '',
+                        date:        dateStr,
+                    };
+
+                    bootstrap.Modal.getOrCreateInstance(document.getElementById('viewEventModal')).show();
+                },
+
+                dayCellDidMount: function(info) {
+                    const overlay = document.createElement('div');
+                    overlay.className = 'es-day-add-overlay';
+                    overlay.innerHTML = '<i class="bi bi-plus-circle"></i>';
+                    info.el.appendChild(overlay);
+                    const tip = new bootstrap.Tooltip(info.el, {
+                        title:     'Add Event',
+                        trigger:   'hover',
+                        placement: 'top',
+                        container: 'body',
+                    });
+                    tip.disable();
+                },
+
+                dayCellWillUnmount: function(info) {
+                    bootstrap.Tooltip.getInstance(info.el)?.dispose();
+                },
+
+                eventsSet: function(events) {
+                    const eventDates = new Set(events.map(e => e.startStr));
+                    document.querySelectorAll('#calendar .fc-daygrid-day').forEach(cell => {
+                        const hasEvent = eventDates.has(cell.dataset.date);
+                        cell.classList.toggle('fc-day-has-events', hasEvent);
+                        const tip = bootstrap.Tooltip.getInstance(cell);
+                        if (tip) { if (hasEvent) tip.disable(); else tip.enable(); }
+                    });
+                },
+
+                dateClick: function(info) {
+                    const cell = document.querySelector(`#calendar .fc-daygrid-day[data-date="${info.dateStr}"]`);
+                    if (cell && cell.classList.contains('fc-day-has-events')) return;
+                    _pendingDate  = info.dateStr;
+                    _editPayload  = null;
+                    bootstrap.Modal.getOrCreateInstance(document.getElementById('addEventModal')).show();
+                },
+                <?php endif; ?>
+
                 eventDisplay: 'block',
                 dayMaxEvents: false,
                 height:       '100%',
@@ -331,17 +424,18 @@ if ($isAdmin) {
     </script>
 
     <?php if ($isAdmin): ?>
-    <!-- ── Add Event Modal ──────────────────────────────────── -->
-    <div class="modal fade" id="addEventModal" tabindex="-1" aria-labelledby="addEventModalLabel" aria-hidden="true">
+    <!-- ── Add / Edit Event Modal ───────────────────────────── -->
+    <div class="modal fade" id="addEventModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title" id="addEventModalLabel">
-                        <i class="bi bi-calendar-plus me-2"></i>Add Event
+                        <i class="bi bi-calendar-plus me-2"></i><span id="addEventModalTitleText">Add Event</span>
                     </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
+                    <input type="hidden" id="evtId">
                     <div id="addEventError" class="alert alert-danger d-none"></div>
 
                     <div class="mb-3">
@@ -360,15 +454,9 @@ if ($isAdmin) {
                         </select>
                     </div>
 
-                    <div class="row g-3 mb-3">
-                        <div class="col">
-                            <label class="form-label">Start Date <span class="text-danger">*</span></label>
-                            <input type="text" id="evtStartDate" class="form-control" placeholder="Select date">
-                        </div>
-                        <div class="col">
-                            <label class="form-label">End Date <small class="text-muted">(optional)</small></label>
-                            <input type="text" id="evtEndDate" class="form-control" placeholder="Select date">
-                        </div>
+                    <div class="mb-3">
+                        <label class="form-label">Select Date <span class="text-danger">*</span></label>
+                        <input type="text" id="evtDate" class="form-control" placeholder="Select date" readonly>
                     </div>
 
                     <div class="mb-3">
@@ -386,34 +474,88 @@ if ($isAdmin) {
         </div>
     </div>
 
+    <!-- ── View Event Modal ──────────────────────────────────── -->
+    <div class="modal fade" id="viewEventModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="viewEvtTitle">Event Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-2">
+                        <small class="text-meta">Type</small>
+                        <div id="viewEvtTypeBadge" class="fw-semibold mt-1"></div>
+                    </div>
+                    <div class="mb-2">
+                        <small class="text-meta">Date</small>
+                        <div id="viewEvtDate" class="fw-semibold mt-1"></div>
+                    </div>
+                    <div>
+                        <small class="text-meta">Description</small>
+                        <div id="viewEvtDesc" class="mt-1"></div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-warning" id="viewEvtEditBtn">
+                        <i class="bi bi-pencil me-1"></i>Edit
+                    </button>
+                    <button type="button" class="btn btn-danger" id="viewEvtDeleteBtn">
+                        <i class="bi bi-trash me-1"></i>Delete
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
+    let _pendingDate = null;
+    let _editPayload = null;
+
     (function () {
-        let fpStart, fpEnd;
+        let fpDate;
 
         document.addEventListener('DOMContentLoaded', function () {
-            fpStart = flatpickr('#evtStartDate', { dateFormat: 'Y-m-d' });
-            fpEnd   = flatpickr('#evtEndDate',   { dateFormat: 'Y-m-d' });
+            fpDate = flatpickr('#evtDate', {
+                dateFormat:          'Y-m-d',
+                monthSelectorType:   'dropdown',
+                disableMobile:       true,
+            });
 
-            // Clear form when modal opens
+            // Populate form when modal opens
             document.getElementById('addEventModal').addEventListener('show.bs.modal', function () {
-                document.getElementById('evtTitle').value       = '';
-                document.getElementById('evtType').value        = 'other';
-                document.getElementById('evtDescription').value = '';
                 document.getElementById('addEventError').classList.add('d-none');
-                fpStart.clear();
-                fpEnd.clear();
+                if (_editPayload) {
+                    document.getElementById('addEventModalTitleText').textContent = 'Edit Event';
+                    document.getElementById('evtId').value          = _editPayload.id;
+                    document.getElementById('evtTitle').value       = _editPayload.title;
+                    document.getElementById('evtType').value        = _editPayload.event_type;
+                    document.getElementById('evtDescription').value = _editPayload.description;
+                    if (fpDate) fpDate.setDate(_editPayload.date, false);
+                } else {
+                    document.getElementById('addEventModalTitleText').textContent = 'Add Event';
+                    document.getElementById('evtId').value          = '';
+                    document.getElementById('evtTitle').value       = '';
+                    document.getElementById('evtType').value        = 'other';
+                    document.getElementById('evtDescription').value = '';
+                    if (fpDate && _pendingDate) fpDate.setDate(_pendingDate, false);
+                    else if (fpDate) fpDate.clear();
+                }
+                _editPayload = null;
+                _pendingDate = null;
             });
 
             document.getElementById('saveEventBtn').addEventListener('click', async function () {
                 const btn   = this;
                 const title = document.getElementById('evtTitle').value.trim();
-                const start = document.getElementById('evtStartDate').value.trim();
+                const date  = document.getElementById('evtDate').value.trim();
+                const id    = document.getElementById('evtId').value.trim();
                 const errEl = document.getElementById('addEventError');
 
                 errEl.classList.add('d-none');
-
-                if (!title || !start) {
-                    errEl.textContent = 'Title and start date are required.';
+                if (!title || !date) {
+                    errEl.textContent = 'Title and date are required.';
                     errEl.classList.remove('d-none');
                     return;
                 }
@@ -422,24 +564,24 @@ if ($isAdmin) {
                 btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Saving…';
 
                 try {
+                    const payload = {
+                        action:      id ? 'update' : 'create',
+                        title:       title,
+                        event_type:  document.getElementById('evtType').value,
+                        start_date:  date,
+                        description: document.getElementById('evtDescription').value.trim(),
+                    };
+                    if (id) payload.id = id;
+
                     const res  = await fetch(location.pathname, {
                         method:  'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            title:       title,
-                            event_type:  document.getElementById('evtType').value,
-                            start_date:  start,
-                            end_date:    document.getElementById('evtEndDate').value || null,
-                            description: document.getElementById('evtDescription').value.trim(),
-                        })
+                        body:    JSON.stringify(payload),
                     });
                     const data = await res.json();
 
                     if (data.success) {
                         bootstrap.Modal.getInstance(document.getElementById('addEventModal')).hide();
-                        // Refetch calendar sources so the new event appears
-                        document.querySelector('#calendar').__fc?.refetchEvents?.();
-                        // Fallback: reload if needed
                         window.location.reload();
                     } else {
                         errEl.textContent = data.error || 'Failed to save event.';
@@ -452,6 +594,33 @@ if ($isAdmin) {
                     btn.disabled = false;
                     btn.innerHTML = '<i class="bi bi-check-lg me-1"></i>Save Event';
                 }
+            });
+
+            // View modal — Edit button
+            document.getElementById('viewEvtEditBtn').addEventListener('click', function () {
+                bootstrap.Modal.getInstance(document.getElementById('viewEventModal')).hide();
+                document.getElementById('viewEventModal').addEventListener('hidden.bs.modal', function openEdit() {
+                    this.removeEventListener('hidden.bs.modal', openEdit);
+                    bootstrap.Modal.getOrCreateInstance(document.getElementById('addEventModal')).show();
+                });
+            });
+
+            // View modal — Delete button
+            document.getElementById('viewEvtDeleteBtn').addEventListener('click', async function () {
+                const id = this.dataset.id;
+                if (!id || !confirm('Delete this event? This cannot be undone.')) return;
+                try {
+                    const res  = await fetch(location.pathname, {
+                        method:  'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body:    JSON.stringify({ action: 'delete', id }),
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        bootstrap.Modal.getInstance(document.getElementById('viewEventModal')).hide();
+                        window.location.reload();
+                    }
+                } catch (e) { alert('Network error. Please try again.'); }
             });
         });
     })();

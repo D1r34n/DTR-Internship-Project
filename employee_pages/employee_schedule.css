@@ -274,3 +274,25 @@ body {
 .fc .fc-daygrid-day-events {
     margin-bottom: 2px;
 }
+
+/* ---- Empty-day add overlay (plus icon on hover, admin only) ---- */
+
+#calendar .fc-daygrid-day { position: relative; }
+
+.es-day-add-overlay {
+    position:        absolute;
+    inset:           0;
+    display:         flex;
+    align-items:     center;
+    justify-content: center;
+    font-size:       1.4rem;
+    color:           var(--primary-color);
+    opacity:         0;
+    transition:      opacity 0.15s;
+    pointer-events:  none;
+    z-index:         1;
+}
+
+#calendar .fc-daygrid-day:not(.fc-day-has-events):hover .es-day-add-overlay {
+    opacity: 1;
+}
