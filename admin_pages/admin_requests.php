@@ -308,7 +308,7 @@ function getActionButtons($type, $id, $status) {
                     <div class="card card-danger p-3">
                         <div class="card-body d-flex align-items-center gap-3 p-0">
                             <div class="icon-box icon-box-danger">
-                                <i class="bi bi-clock-fill fs-3"></i>
+                                <i class="bi bi-x-circle-fill fs-3"></i>
                             </div>
                             <div class="d-flex flex-column ms-auto text-end">
                                 <div class="stats-number">
@@ -327,7 +327,7 @@ function getActionButtons($type, $id, $status) {
                     <div class="card card-purple p-3">
                         <div class="card-body d-flex align-items-center gap-3 p-0">
                             <div class="icon-box icon-box-purple">
-                                <i class="bi bi-x-circle-fill fs-3"></i>
+                                <i class="bi bi-clock-fill fs-3"></i>
                             </div>
                             <div class="d-flex flex-column ms-auto text-end">
                                 <div class="stats-number">
@@ -346,7 +346,7 @@ function getActionButtons($type, $id, $status) {
                     <div class="card card-info p-3">
                         <div class="card-body d-flex align-items-center gap-3 p-0">
                             <div class="icon-box icon-box-info">
-                                <i class="bi bi-x-circle-fill fs-3"></i>
+                                <i class="bi bi-briefcase-fill fs-3"></i>
                             </div>
                             <div class="d-flex flex-column ms-auto text-end">
                                 <div class="stats-number">
@@ -360,12 +360,12 @@ function getActionButtons($type, $id, $status) {
                     </div>
                 </div>
 
-                <!-- Total Official Business -->
+                <!-- Total Log Edits -->
                 <div class="col-12 col-sm-6 col-md-4 col-xl-2">
                     <div class="card card-pink p-3">
                         <div class="card-body d-flex align-items-center gap-3 p-0">
                             <div class="icon-box icon-box-pink">
-                                <i class="bi bi-x-circle-fill fs-3"></i>
+                                <i class="bi bi-pencil-square fs-3"></i>
                             </div>
                             <div class="d-flex flex-column ms-auto text-end">
                                 <div class="stats-number">
