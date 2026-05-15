@@ -198,11 +198,13 @@ $logEditRequests = $pdo->query("
         le.created_at,
         CONCAT(e.first_name, ' ', e.last_name) AS employee_name,
         COALESCE(a.work_date, le.work_date) AS work_date,
-        l.log_time AS original_log_time
+        l.log_time AS original_log_time,
+        CONCAT(r.first_name, ' ', r.last_name) AS requested_by_name
     FROM log_edit_requests le
     JOIN employees e ON le.employee_id = e.id
     LEFT JOIN attendances a ON le.attendance_id = a.id
     LEFT JOIN logs l ON le.log_id = l.id
+    LEFT JOIN employees r ON le.initiated_by_id = r.id
     ORDER BY le.created_at DESC
 ")->fetchAll(PDO::FETCH_ASSOC);
 
@@ -601,20 +603,20 @@ function getActionButtons($type, $id, $status) {
                     <div class="tableHeaderGlass">
                         <table class="table table-borderless mb-0">
                             <colgroup>
-                                <col style="width:15%"><col style="width:10%"><col style="width:9%"><col style="width:10%">
-                                <col style="width:15%"><col style="width:17%"><col style="width:10%"><col style="width:14%">
+                                <col style="width:13%"><col style="width:8%"><col style="width:8%"><col style="width:9%">
+                                <col style="width:13%"><col style="width:14%"><col style="width:12%"><col style="width:9%"><col style="width:14%">
                             </colgroup>
                             <thead><tr>
                                 <th>Employee</th><th>Date</th><th>Type</th><th>Current Log</th>
-                                <th>Correction</th><th>Reason</th><th>Status</th><th>Actions</th>
+                                <th>Correction</th><th>Reason</th><th>Requested By</th><th>Status</th><th>Actions</th>
                             </tr></thead>
                         </table>
                     </div>
                     <div class="tableScroll">
                         <table class="table table-hover mb-0">
                             <colgroup>
-                                <col style="width:15%"><col style="width:10%"><col style="width:9%"><col style="width:10%">
-                                <col style="width:15%"><col style="width:17%"><col style="width:10%"><col style="width:14%">
+                                <col style="width:13%"><col style="width:8%"><col style="width:8%"><col style="width:9%">
+                                <col style="width:13%"><col style="width:14%"><col style="width:12%"><col style="width:9%"><col style="width:14%">
                             </colgroup>
                             <tbody>
                                 <?php if (count($logEditRequests) > 0): ?>
@@ -639,12 +641,13 @@ function getActionButtons($type, $id, $status) {
                                                 <?php endif; ?>
                                             </td>
                                             <td class="reasonCol"><?= htmlspecialchars($row['reason']) ?></td>
+                                            <td><?= $row['requested_by_name'] ? htmlspecialchars($row['requested_by_name']) : '—' ?></td>
                                             <td><?= getStatusBadge($row['status']) ?></td>
                                             <td class="actionsCol"><?= getActionButtons('log_edit', $row['id'], $row['status']) ?></td>
                                         </tr>
                                     <?php endforeach; ?>
                                 <?php else: ?>
-                                    <tr><td colspan="8" class="text-center">No log edit requests found.</td></tr>
+                                    <tr><td colspan="9" class="text-center">No log edit requests found.</td></tr>
                                 <?php endif; ?>
                             </tbody>
                         </table>

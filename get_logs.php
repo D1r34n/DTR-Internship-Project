@@ -14,7 +14,7 @@ $employeeId    = $_SESSION['user_id']   ?? null;
 $currentUserId = (int)($_SESSION['user_id'] ?? 0);
 
 // Admin viewing a specific employee's profile — scope to that employee, hide employee columns
-$scopedToEmployee = $userRole === 'admin' && !empty($_GET['employee_id']);
+$scopedToEmployee = in_array($userRole, ['admin', 'workforce']) && !empty($_GET['employee_id']);
 if ($scopedToEmployee) $employeeId = intval($_GET['employee_id']);
 date_default_timezone_set('Asia/Manila');
 

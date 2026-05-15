@@ -64,10 +64,12 @@ $rejectedCount = $pdo->query("SELECT COUNT(*) FROM schedules WHERE status = 'rej
 
 // ---- GET SCHEDULE REQUESTS ----
 $scheduleRequests = $pdo->query("
-    SELECT s.*, CONCAT(e.first_name, ' ', e.last_name) AS employee_name, d.department_code
+    SELECT s.*, CONCAT(e.first_name, ' ', e.last_name) AS employee_name, d.department_code,
+           CONCAT(r.first_name, ' ', r.last_name) AS requested_by_name
     FROM schedules s
     JOIN employees e ON s.employee_id = e.id
     LEFT JOIN departments d ON e.department_id = d.id
+    LEFT JOIN employees r ON s.requested_by = r.id
     WHERE s.is_rest_day = 0
     ORDER BY FIELD(s.status, 'pending', 'approved', 'rejected'), s.schedule_date DESC
     LIMIT 300
@@ -203,23 +205,23 @@ function getStatusBadge(string $status): string {
                 <div class="tableHeaderGlass">
                     <table class="table table-borderless mb-0">
                         <colgroup>
-                            <col style="width:20%"><col style="width:10%"><col style="width:12%">
-                            <col style="width:10%"><col style="width:10%"><col style="width:10%">
-                            <col style="width:10%"><col style="width:18%">
+                            <col style="width:18%"><col style="width:10%"><col style="width:12%">
+                            <col style="width:10%"><col style="width:10%"><col style="width:8%">
+                            <col style="width:14%"><col style="width:9%"><col style="width:9%">
                         </colgroup>
                         <thead><tr>
                             <th>Employee</th><th>Department</th><th>Date</th>
                             <th>Time In</th><th>Time Out</th><th>Shift</th>
-                            <th>Status</th><th>Actions</th>
+                            <th>Requested By</th><th>Status</th><th>Actions</th>
                         </tr></thead>
                     </table>
                 </div>
                 <div class="tableScroll">
                     <table class="table table-hover mb-0">
                         <colgroup>
-                            <col style="width:20%"><col style="width:10%"><col style="width:12%">
-                            <col style="width:10%"><col style="width:10%"><col style="width:10%">
-                            <col style="width:10%"><col style="width:18%">
+                            <col style="width:18%"><col style="width:10%"><col style="width:12%">
+                            <col style="width:10%"><col style="width:10%"><col style="width:8%">
+                            <col style="width:14%"><col style="width:9%"><col style="width:9%">
                         </colgroup>
                         <tbody>
                             <?php if (count($scheduleRequests) > 0): ?>
@@ -241,6 +243,7 @@ function getStatusBadge(string $status): string {
                                                 <span class="badge status-info">Day</span>
                                             <?php endif; ?>
                                         </td>
+                                        <td><?= $row['requested_by_name'] ? htmlspecialchars($row['requested_by_name']) : '—' ?></td>
                                         <td><?= getStatusBadge($row['status']) ?></td>
                                         <td class="actionsCol">
                                             <?php if ($row['status'] === 'pending'): ?>
@@ -261,7 +264,7 @@ function getStatusBadge(string $status): string {
                                     </tr>
                                 <?php endforeach; ?>
                             <?php else: ?>
-                                <tr><td colspan="8" class="text-center">No schedule requests found.</td></tr>
+                                <tr><td colspan="9" class="text-center">No schedule requests found.</td></tr>
                             <?php endif; ?>
                         </tbody>
                     </table>

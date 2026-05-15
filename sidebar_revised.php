@@ -79,38 +79,7 @@ $requestsOpen = in_array($currentPage, ['employee_requests', 'schedule_requests'
             <?php navLink('employee_schedule.php',  'bi-calendar-week',   'Schedules', $currentPage === 'schedule'); ?>
             <?php navLink('employee_logs.php',      'bi-clipboard-minus', 'Logs',      $currentPage === 'logs'); ?>
 
-    <?php 
-        $manageEmpOpen = in_array($currentPage, ['workforce_schedule', 'workforce_logs']); 
-    ?>
-
-    <!-- Manage Employees dropdown (ADMIN STYLE) -->
-    <div class="sidebar-dropdown">
-        <button
-            class="sidebar-link sidebar-dropdown-toggle <?= $manageEmpOpen ? 'active' : '' ?>"
-            data-bs-toggle="collapse"
-            data-bs-target="#workforce-submenu"
-            aria-expanded="<?= $manageEmpOpen ? 'true' : 'false' ?>"
-            data-tooltip-title="Manage Employees"
-        >
-            <i class="bi bi-people-fill"></i>
-            <span>Manage Employees</span>
-            <i class="bi bi-chevron-down transition-chevron"></i>
-        </button>
-
-        <div id="workforce-submenu" class="collapse <?= $manageEmpOpen ? 'show' : '' ?>">
-            <a href="workforce_schedule.php"
-               class="sidebar-sub-link <?= ($currentPage === 'workforce_schedule') ? 'active' : '' ?>">
-                <i class="bi bi-calendar-plus"></i>
-                <span>Employee Schedules</span>
-            </a>
-
-            <a href="workforce_logs.php"
-               class="sidebar-sub-link <?= ($currentPage === 'workforce_logs') ? 'active' : '' ?>">
-                <i class="bi bi-journal-text"></i>
-                <span>Employee Logs</span>
-            </a>
-            </div>
-        </div>
+            <?php navLink('../admin_pages/admin_manage_employees.php', 'bi-people-fill', 'Manage Employees', $currentPage === 'manage_employees'); ?>
         <?php endif; ?>
 
         <!-- ADMIN MENU -->

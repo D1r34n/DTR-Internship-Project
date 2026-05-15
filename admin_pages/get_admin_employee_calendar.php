@@ -1,6 +1,6 @@
 <?php
 session_start();
-if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'admin') {
+if (!isset($_SESSION['user_id']) || !in_array($_SESSION['user_role'], ['admin', 'workforce'])) {
     http_response_code(401);
     exit();
 }
@@ -166,6 +166,18 @@ foreach ($allDates as $dateStr) {
         $eventType           = 'leave-rejected';
         $eventTitle          = 'OB Rejected';
         $isRejectedLeaveOrOB = true;
+    } elseif ($sched && $sched['status'] === 'pending') {
+        $eventType = 'pending-schedule';
+        $eventTitle = 'Pending Schedule';
+        $isRestDay  = (bool)$sched['is_rest_day'];
+        if (!$sched['is_rest_day'] && $sched['scheduled_start']) {
+            $endTs       = strtotime($sched['scheduled_end']);
+            $isOvernight = date('Y-m-d', $endTs) > $dateStr;
+            $timeInStr   = date('g:i A', strtotime($sched['scheduled_start']));
+            $timeOutStr  = date('g:i A', $endTs) . ($isOvernight ? ' ↪' : '');
+            $schedInVal  = date('H:i', strtotime($sched['scheduled_start']));
+            $schedOutVal = date('H:i', $endTs);
+        }
     } elseif ($sched && $sched['is_rest_day']) {
         $eventType  = 'rest';
         $eventTitle = 'Rest Day';

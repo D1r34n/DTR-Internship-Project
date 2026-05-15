@@ -3,7 +3,7 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'admin') {
+if (!isset($_SESSION['user_id']) || !in_array($_SESSION['user_role'], ['admin', 'workforce'])) {
     header("Location: ../index.php");
     exit();
 }
@@ -121,16 +121,39 @@ $_SESSION['form_token'] = bin2hex(random_bytes(16));
 // ---- GET ALL ROLES ----
 $roles = $pdo->query("SELECT role_key, role_name FROM roles ORDER BY id")->fetchAll(PDO::FETCH_ASSOC);
 
+// ---- WORKFORCE: restrict to own department ----
+$workforceDeptId = null;
+if ($_SESSION['user_role'] === 'workforce') {
+    $deptStmt = $pdo->prepare("SELECT department_id FROM employees WHERE id = ?");
+    $deptStmt->execute([$_SESSION['user_id']]);
+    $workforceDeptId = $deptStmt->fetchColumn();
+}
+
 // ---- GET ALL EMPLOYEES ----
-$employees = $pdo->query("
-    SELECT e.*, CONCAT(e.first_name, ' ', e.last_name) AS name,
-           r.role_key AS role, r.role_name,
-           d.department_name, d.department_code
-    FROM employees e
-    LEFT JOIN roles r ON r.id = e.role_id
-    LEFT JOIN departments d ON e.department_id = d.id
-    ORDER BY e.first_name, e.last_name
-")->fetchAll(PDO::FETCH_ASSOC);
+if ($workforceDeptId) {
+    $empStmt = $pdo->prepare("
+        SELECT e.*, CONCAT(e.first_name, ' ', e.last_name) AS name,
+               r.role_key AS role, r.role_name,
+               d.department_name, d.department_code
+        FROM employees e
+        LEFT JOIN roles r ON r.id = e.role_id
+        LEFT JOIN departments d ON e.department_id = d.id
+        WHERE e.department_id = ?
+        ORDER BY e.first_name, e.last_name
+    ");
+    $empStmt->execute([$workforceDeptId]);
+    $employees = $empStmt->fetchAll(PDO::FETCH_ASSOC);
+} else {
+    $employees = $pdo->query("
+        SELECT e.*, CONCAT(e.first_name, ' ', e.last_name) AS name,
+               r.role_key AS role, r.role_name,
+               d.department_name, d.department_code
+        FROM employees e
+        LEFT JOIN roles r ON r.id = e.role_id
+        LEFT JOIN departments d ON e.department_id = d.id
+        ORDER BY e.first_name, e.last_name
+    ")->fetchAll(PDO::FETCH_ASSOC);
+}
 
 // ---- TODAY'S ATTENDANCE SUMMARY ----
 $today = date('Y-m-d');

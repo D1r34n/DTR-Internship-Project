@@ -1066,7 +1066,8 @@ body {
 #admin-calendar .fc-ev-day            .fc-admin-label { color: #97be41; }
 #admin-calendar .fc-ev-night          .fc-admin-label { color: #4da3ff; }
 #admin-calendar .fc-ev-night-cont     .fc-admin-label { color: #4da3ff; }
-#admin-calendar .fc-ev-rest           .fc-admin-label { color: #fbbf24; }
+#admin-calendar .fc-ev-pending-schedule .fc-admin-label { color: #f59e0b; }
+#admin-calendar .fc-ev-rest             .fc-admin-label { color: #fbbf24; }
 #admin-calendar .fc-ev-on-leave       .fc-admin-label { color: #fd7e14; }
 #admin-calendar .fc-ev-on-ob          .fc-admin-label { color: #a07de0; }
 #admin-calendar .fc-ev-leave-pending  .fc-admin-label { color: #f0ad4e; }
@@ -1088,7 +1089,8 @@ body {
 
 #admin-calendar .fc-ev-day        .fc-admin-time { background: rgba(151,190,65,0.2);  color: #97be41; }
 #admin-calendar .fc-ev-night      .fc-admin-time { background: rgba(77,163,255,0.18); color: #4da3ff; }
-#admin-calendar .fc-ev-night-cont .fc-admin-time { background: rgba(77,163,255,0.12); color: #4da3ff; }
+#admin-calendar .fc-ev-night-cont       .fc-admin-time { background: rgba(77,163,255,0.12);  color: #4da3ff; }
+#admin-calendar .fc-ev-pending-schedule .fc-admin-time { background: rgba(245,158,11,0.15);  color: #f59e0b; }
 
 /* ---- Empty-day add overlay (plus icon on hover) ---- */
 

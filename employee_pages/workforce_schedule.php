@@ -58,12 +58,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } elseif ($is_edit) {
             $existsStmt = $pdo->prepare("SELECT id FROM schedules WHERE employee_id = ? AND schedule_date = ?");
             $updateStmt = $pdo->prepare("
-                UPDATE schedules SET scheduled_start = ?, scheduled_end = ?, status = 'pending'
+                UPDATE schedules SET scheduled_start = ?, scheduled_end = ?, status = 'pending', requested_by = ?
                 WHERE employee_id = ? AND schedule_date = ?
             ");
             $insertStmt = $pdo->prepare("
-                INSERT INTO schedules (employee_id, schedule_date, scheduled_start, scheduled_end, is_rest_day, status)
-                VALUES (?, ?, ?, ?, 0, 'pending')
+                INSERT INTO schedules (employee_id, schedule_date, scheduled_start, scheduled_end, is_rest_day, status, requested_by)
+                VALUES (?, ?, ?, ?, 0, 'pending', ?)
             ");
 
             foreach ($dates as $date) {
@@ -74,9 +74,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 $existsStmt->execute([$targetId, $date]);
                 if ($existsStmt->fetch()) {
-                    $updateStmt->execute([$startDT, $endDT, $targetId, $date]);
+                    $updateStmt->execute([$startDT, $endDT, $employeeId, $targetId, $date]);
                 } else {
-                    $insertStmt->execute([$targetId, $date, $startDT, $endDT]);
+                    $insertStmt->execute([$targetId, $date, $startDT, $endDT, $employeeId]);
                 }
             }
             $_SESSION['flash_success'] = count($dates) . " schedule" . (count($dates) > 1 ? "s" : "") . " re-submitted for approval.";
@@ -95,8 +95,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['flash_error'] = "Schedule already exists for: " . implode(', ', $duplicateDates) . ".";
             } else {
                 $insertStmt = $pdo->prepare("
-                    INSERT INTO schedules (employee_id, schedule_date, scheduled_start, scheduled_end, is_rest_day, status)
-                    VALUES (?, ?, ?, ?, 0, 'pending')
+                    INSERT INTO schedules (employee_id, schedule_date, scheduled_start, scheduled_end, is_rest_day, status, requested_by)
+                    VALUES (?, ?, ?, ?, 0, 'pending', ?)
                 ");
                 foreach ($dates as $date) {
                     $startDT = $date . ' ' . $timeIn  . ':00';
@@ -104,7 +104,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         ? date('Y-m-d', strtotime($date . ' +1 day')) . ' ' . $timeOut . ':00'
                         : $date . ' ' . $timeOut . ':00';
 
-                    $insertStmt->execute([$targetId, $date, $startDT, $endDT]);
+                    $insertStmt->execute([$targetId, $date, $startDT, $endDT, $employeeId]);
                 }
                 $_SESSION['flash_success'] = count($dates) . " schedule" . (count($dates) > 1 ? "s" : "") . " submitted for approval.";
             }

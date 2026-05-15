@@ -3,7 +3,7 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'admin') {
+if (!isset($_SESSION['user_id']) || !in_array($_SESSION['user_role'], ['admin', 'workforce'])) {
     header("Location: ../index.php");
     exit();
 }
@@ -19,7 +19,9 @@ if (!isset($_GET['id'])) {
     exit();
 }
 
-$employeeId = intval($_GET['id']);
+$employeeId     = intval($_GET['id']);
+$scheduleStatus = ($_SESSION['user_role'] === 'workforce') ? 'pending' : 'approved';
+$isWorkforce    = ($_SESSION['user_role'] === 'workforce');
 
 // ---- HANDLE EMPLOYEE EDIT ----
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'edit_employee') {
@@ -153,20 +155,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' &&
         $existsStmt = $pdo->prepare("SELECT id FROM schedules WHERE employee_id = ? AND schedule_date = ?");
 
         if ($is_rest_day) {
-            $updRest = $pdo->prepare("UPDATE schedules SET is_rest_day = 1, scheduled_start = NULL, scheduled_end = NULL WHERE employee_id = ? AND schedule_date = ?");
-            $insRest = $pdo->prepare("INSERT INTO schedules (employee_id, schedule_date, scheduled_start, scheduled_end, is_rest_day) VALUES (?, ?, NULL, NULL, 1)");
+            $updRest = $pdo->prepare("UPDATE schedules SET is_rest_day = 1, scheduled_start = NULL, scheduled_end = NULL, status = ? WHERE employee_id = ? AND schedule_date = ?");
+            $insRest = $pdo->prepare("INSERT INTO schedules (employee_id, schedule_date, scheduled_start, scheduled_end, is_rest_day, status, requested_by) VALUES (?, ?, NULL, NULL, 1, ?, ?)");
             foreach ($dates as $date) {
                 $existsStmt->execute([$postEmpId, $date]);
                 if ($existsStmt->fetch()) {
-                    $updRest->execute([$postEmpId, $date]);
+                    $updRest->execute([$scheduleStatus, $postEmpId, $date]);
                 } else {
-                    $insRest->execute([$postEmpId, $date]);
+                    $insRest->execute([$postEmpId, $date, $scheduleStatus, $_SESSION['user_id']]);
                 }
             }
         } else {
-            $updateStmt       = $pdo->prepare("UPDATE schedules SET scheduled_start = ?, scheduled_end = ?, is_rest_day = 0 WHERE employee_id = ? AND schedule_date = ?");
+            $updateStmt       = $pdo->prepare("UPDATE schedules SET scheduled_start = ?, scheduled_end = ?, is_rest_day = 0, status = ? WHERE employee_id = ? AND schedule_date = ?");
             $updateAttendance = $pdo->prepare("UPDATE attendances SET scheduled_start = ?, scheduled_end = ? WHERE employee_id = ? AND work_date = ? AND actual_time_in IS NULL");
-            $insertSchedule   = $pdo->prepare("INSERT INTO schedules (employee_id, schedule_date, scheduled_start, scheduled_end, is_rest_day) VALUES (?, ?, ?, ?, 0)");
+            $insertSchedule   = $pdo->prepare("INSERT INTO schedules (employee_id, schedule_date, scheduled_start, scheduled_end, is_rest_day, status, requested_by) VALUES (?, ?, ?, ?, 0, ?, ?)");
             $insertAttendance = $pdo->prepare("
                 INSERT INTO attendances (employee_id, schedule_id, work_date, scheduled_start, scheduled_end, actual_time_in, actual_time_out, total_work_minutes, late_minutes, undertime_minutes, overtime_minutes, status, missed_time_out)
                 VALUES (?, ?, ?, ?, ?, NULL, NULL, 0, 0, 0, 0, 'incomplete', 0)
@@ -181,12 +183,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' &&
 
                 $existsStmt->execute([$postEmpId, $date]);
                 if ($existsStmt->fetch()) {
-                    $updateStmt->execute([$startDT, $endDT, $postEmpId, $date]);
-                    $updateAttendance->execute([$startDT, $endDT, $postEmpId, $date]);
+                    $updateStmt->execute([$startDT, $endDT, $scheduleStatus, $postEmpId, $date]);
+                    if (!$isWorkforce) $updateAttendance->execute([$startDT, $endDT, $postEmpId, $date]);
                 } else {
-                    $insertSchedule->execute([$postEmpId, $date, $startDT, $endDT]);
-                    $schedId = $pdo->lastInsertId() ?: null;
-                    $insertAttendance->execute([$postEmpId, $schedId, $date, $startDT, $endDT]);
+                    $insertSchedule->execute([$postEmpId, $date, $startDT, $endDT, $scheduleStatus, $_SESSION['user_id']]);
+                    if (!$isWorkforce) {
+                        $schedId = $pdo->lastInsertId() ?: null;
+                        $insertAttendance->execute([$postEmpId, $schedId, $date, $startDT, $endDT]);
+                    }
                 }
             }
         }
@@ -207,9 +211,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save_
 
     if (!empty($dates) && $postEmpId && $time_in && $time_out) {
         $existsStmt       = $pdo->prepare("SELECT id FROM schedules WHERE employee_id = ? AND schedule_date = ?");
-        $updateStmt       = $pdo->prepare("UPDATE schedules SET scheduled_start = ?, scheduled_end = ?, is_rest_day = 0 WHERE employee_id = ? AND schedule_date = ?");
+        $updateStmt       = $pdo->prepare("UPDATE schedules SET scheduled_start = ?, scheduled_end = ?, is_rest_day = 0, status = ? WHERE employee_id = ? AND schedule_date = ?");
         $updateAttendance = $pdo->prepare("UPDATE attendances SET scheduled_start = ?, scheduled_end = ? WHERE employee_id = ? AND work_date = ? AND actual_time_in IS NULL");
-        $insertSchedule   = $pdo->prepare("INSERT INTO schedules (employee_id, schedule_date, scheduled_start, scheduled_end, is_rest_day) VALUES (?, ?, ?, ?, 0)");
+        $insertSchedule   = $pdo->prepare("INSERT INTO schedules (employee_id, schedule_date, scheduled_start, scheduled_end, is_rest_day, status, requested_by) VALUES (?, ?, ?, ?, 0, ?, ?)");
         $insertAttendance = $pdo->prepare("
             INSERT INTO attendances (employee_id, schedule_id, work_date, scheduled_start, scheduled_end, actual_time_in, actual_time_out, total_work_minutes, late_minutes, undertime_minutes, overtime_minutes, status, missed_time_out)
             VALUES (?, ?, ?, ?, ?, NULL, NULL, 0, 0, 0, 0, 'incomplete', 0)
@@ -224,12 +228,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save_
 
             $existsStmt->execute([$postEmpId, $date]);
             if ($existsStmt->fetch()) {
-                $updateStmt->execute([$startDT, $endDT, $postEmpId, $date]);
-                $updateAttendance->execute([$startDT, $endDT, $postEmpId, $date]);
+                $updateStmt->execute([$startDT, $endDT, $scheduleStatus, $postEmpId, $date]);
+                if (!$isWorkforce) $updateAttendance->execute([$startDT, $endDT, $postEmpId, $date]);
             } else {
-                $insertSchedule->execute([$postEmpId, $date, $startDT, $endDT]);
-                $schedId = $pdo->lastInsertId() ?: null;
-                $insertAttendance->execute([$postEmpId, $schedId, $date, $startDT, $endDT]);
+                $insertSchedule->execute([$postEmpId, $date, $startDT, $endDT, $scheduleStatus, $_SESSION['user_id']]);
+                if (!$isWorkforce) {
+                    $schedId = $pdo->lastInsertId() ?: null;
+                    $insertAttendance->execute([$postEmpId, $schedId, $date, $startDT, $endDT]);
+                }
             }
         }
     }
@@ -238,16 +244,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save_
     $singleRestDates = json_decode($_POST['single_rest_dates'] ?? '[]', true);
     if (!empty($singleRestDates) && $postEmpId && is_array($singleRestDates)) {
         $chkStmt = $pdo->prepare("SELECT id FROM schedules WHERE employee_id = ? AND schedule_date = ?");
-        $insRest = $pdo->prepare("INSERT INTO schedules (employee_id, schedule_date, scheduled_start, scheduled_end, is_rest_day) VALUES (?, ?, NULL, NULL, 1)");
-        $updRest = $pdo->prepare("UPDATE schedules SET is_rest_day = 1, scheduled_start = NULL, scheduled_end = NULL WHERE employee_id = ? AND schedule_date = ?");
+        $insRest = $pdo->prepare("INSERT INTO schedules (employee_id, schedule_date, scheduled_start, scheduled_end, is_rest_day, status, requested_by) VALUES (?, ?, NULL, NULL, 1, ?, ?)");
+        $updRest = $pdo->prepare("UPDATE schedules SET is_rest_day = 1, scheduled_start = NULL, scheduled_end = NULL, status = ? WHERE employee_id = ? AND schedule_date = ?");
         $delAtt  = $pdo->prepare("DELETE FROM attendances WHERE employee_id = ? AND work_date = ? AND actual_time_in IS NULL");
         foreach ($singleRestDates as $date) {
             if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) continue;
             $chkStmt->execute([$postEmpId, $date]);
             if ($chkStmt->fetch()) {
-                $updRest->execute([$postEmpId, $date]);
+                $updRest->execute([$scheduleStatus, $postEmpId, $date]);
             } else {
-                $insRest->execute([$postEmpId, $date]);
+                $insRest->execute([$postEmpId, $date, $scheduleStatus, $_SESSION['user_id']]);
             }
             $delAtt->execute([$postEmpId, $date]);
         }
@@ -490,6 +496,7 @@ $leaveTypes = [
                     </div>
                 </div>
 
+                <?php if ($_SESSION['user_role'] === 'admin'): ?>
                 <!-- Actions -->
                 <div class="ev-actions">
                     <a href="#" data-bs-toggle="modal" data-bs-target="#edit-employee-modal" class="btn btn-info">
@@ -499,6 +506,7 @@ $leaveTypes = [
                         <i class="bi bi-trash"></i> Delete
                     </button>
                 </div>
+                <?php endif; ?>
 
             </div>
         </div>
@@ -1054,7 +1062,7 @@ $leaveTypes = [
 
                 <div class="modal-footer">
                     <button type="submit" class="btn btn-success w-100">
-                        <i class="bi bi-check-circle-fill me-1"></i> Save Schedule
+                        <i class="bi bi-check-circle-fill me-1"></i> <?= $isWorkforce ? 'Submit for Approval' : 'Save Schedule' ?>
                     </button>
                 </div>
             </form>
@@ -1120,7 +1128,7 @@ $leaveTypes = [
                 <div class="modal-footer">
                     <button type="submit" class="btn btn-success">
                         <i class="bi bi-check-circle-fill"></i>
-                        <span id="schedSubmitLabel">Save Schedule</span>
+                        <span id="schedSubmitLabel"><?= $isWorkforce ? 'Submit for Approval' : 'Save Schedule' ?></span>
                     </button>
                 </div>
             </form>
@@ -1332,7 +1340,7 @@ $leaveTypes = [
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                 <button type="button" class="btn btn-primary" id="ale-submit-btn">
-                    <i class="bi bi-check-circle-fill"></i> Apply Edit
+                    <i class="bi bi-check-circle-fill"></i> <?= $isWorkforce ? 'Submit for Approval' : 'Apply Edit' ?>
                 </button>
             </div>
 
@@ -1415,6 +1423,7 @@ let selectedRestDays = [];
 let fp               = null;
 let fpAdd            = null;
 const EMP_ID         = <?= $employeeId ?>;
+const IS_WORKFORCE   = <?= $isWorkforce ? 'true' : 'false' ?>;
 let currentMonth  = '<?= $rawMonth ?>';
 const tabLoadedMonth = { '#tab1': null, '#tab2': null, '#tab3': null };
 let adminCalendar    = null;
@@ -1748,8 +1757,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const props   = info.event.extendedProps;
             const type    = props.type;
             const canEdit = !props.hasActiveLeaveOrOB && props.hasSchedule &&
-                            ['day', 'night', 'rest', 'leave-rejected'].includes(type);
-            const canDel  = ['day', 'night', 'rest'].includes(type);
+                            ['day', 'night', 'rest', 'leave-rejected', 'pending-schedule'].includes(type);
+            const canDel  = ['day', 'night', 'rest', 'pending-schedule'].includes(type);
             if (!canEdit && !canDel) return;
 
             // Attach buttons to the day cell frame so they sit at the bottom-right
@@ -1943,7 +1952,7 @@ document.addEventListener('DOMContentLoaded', () => {
             .then(r => {
                 if (!r.ok && r.status !== 200) throw new Error('save failed');
                 bootstrap.Modal.getInstance(document.getElementById('manageScheduleModal'))?.hide();
-                showToast('Schedule saved successfully');
+                showToast(IS_WORKFORCE ? 'Schedule submitted for approval' : 'Schedule saved successfully');
                 if (adminCalendar) adminCalendar.refetchEvents();
             })
             .catch(() => alert('Failed to save schedule. Please try again.'));
@@ -1958,7 +1967,7 @@ document.addEventListener('DOMContentLoaded', () => {
             .then(r => {
                 if (!r.ok && r.status !== 200) throw new Error('save failed');
                 closeSchedModal();
-                showToast('Schedule saved successfully');
+                showToast(IS_WORKFORCE ? 'Schedule submitted for approval' : 'Schedule saved successfully');
                 if (adminCalendar) adminCalendar.refetchEvents();
             })
             .catch(() => alert('Failed to save schedule. Please try again.'));
@@ -2163,7 +2172,7 @@ function clearDateSelection() {
 
 function openAddModal() {
     document.getElementById('schedModalTitle').textContent  = 'Add Schedule';
-    document.getElementById('schedSubmitLabel').textContent = 'Save Schedule';
+    document.getElementById('schedSubmitLabel').textContent = IS_WORKFORCE ? 'Submit for Approval' : 'Save Schedule';
     document.getElementById('isEditMode').value             = '0';
     document.getElementById('modalTimeIn').value            = '';
     document.getElementById('modalTimeOut').value           = '';
@@ -2250,10 +2259,12 @@ function prepareSubmit() {
 }
 
 // ---- Admin Log Edit ----
-let currentAdminEditLogId = null;
+let currentAdminEditLogId   = null;
+let currentAdminEditLogType = null;
 
 function openAdminLogEditModal(btn) {
-    currentAdminEditLogId = btn.dataset.logId;
+    currentAdminEditLogId   = btn.dataset.logId;
+    currentAdminEditLogType = btn.dataset.logType;
     const typeLabels = { 'IN': 'Time In', 'OUT': 'Time Out', 'BREAK_IN': 'Break In', 'BREAK_OUT': 'Break Out' };
     document.getElementById('ale-date').textContent         = btn.dataset.logDateLabel;
     document.getElementById('ale-type').textContent         = typeLabels[btn.dataset.logType] || btn.dataset.logType;
@@ -2286,6 +2297,7 @@ document.getElementById('ale-submit-btn').addEventListener('click', () => {
 
     const form = new FormData();
     form.append('log_id',       currentAdminEditLogId);
+    form.append('log_type',     currentAdminEditLogType);
     form.append('employee_id',  EMP_ID);
     form.append('new_datetime', newDatetime);
     form.append('reason',       reason);
@@ -2294,13 +2306,14 @@ document.getElementById('ale-submit-btn').addEventListener('click', () => {
         .then(r => r.json())
         .then(data => {
             btn.disabled  = false;
-            btn.innerHTML = '<i class="bi bi-check-circle-fill"></i> Apply Edit';
+            btn.innerHTML = IS_WORKFORCE ? '<i class="bi bi-check-circle-fill"></i> Submit for Approval' : '<i class="bi bi-check-circle-fill"></i> Apply Edit';
             if (data.success) {
                 okEl.textContent   = data.message;
                 okEl.style.display = 'block';
                 setTimeout(() => {
                     bootstrap.Modal.getInstance(document.getElementById('adminLogEditModal'))?.hide();
                     fetchAdminLogs();
+                    if (IS_WORKFORCE) showToast('Log edit submitted for approval');
                 }, 1200);
             } else {
                 errEl.textContent   = data.message;
@@ -2309,7 +2322,7 @@ document.getElementById('ale-submit-btn').addEventListener('click', () => {
         })
         .catch(() => {
             btn.disabled  = false;
-            btn.innerHTML = '<i class="bi bi-check-circle-fill"></i> Apply Edit';
+            btn.innerHTML = IS_WORKFORCE ? '<i class="bi bi-check-circle-fill"></i> Submit for Approval' : '<i class="bi bi-check-circle-fill"></i> Apply Edit';
             errEl.textContent   = 'An error occurred. Please try again.';
             errEl.style.display = 'block';
         });
