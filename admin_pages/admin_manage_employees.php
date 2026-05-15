@@ -24,12 +24,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     unset($_SESSION['form_token']);
 
-    $first_name = trim($_POST['first_name'] ?? '');
-    $last_name  = trim($_POST['last_name'] ?? '');
-    $email      = trim($_POST['email'] ?? '');
-    $birthdate  = !empty($_POST['birthdate']) ? $_POST['birthdate'] : null;
-    $role       = $_POST['role'] ?? 'employee';
-    $department = !empty($_POST['department_id']) ? $_POST['department_id'] : null;
+    $first_name      = trim($_POST['first_name'] ?? '');
+    $last_name       = trim($_POST['last_name'] ?? '');
+    $email           = trim($_POST['email'] ?? '');
+    $birthdate       = !empty($_POST['birthdate']) ? $_POST['birthdate'] : null;
+    $role            = $_POST['role'] ?? 'employee';
+    $department      = !empty($_POST['department_id']) ? $_POST['department_id'] : null;
+    $employee_ref_id = trim($_POST['employee_ref_id'] ?? '');
 
     // ---- GET ROLE ID ----
     $roleStmt = $pdo->prepare("SELECT id FROM roles WHERE role_key = ?");
@@ -43,41 +44,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     // =========================================================
-    // EDIT EMPLOYEE
-    // =========================================================
-    if (!empty($_POST['employee_id'])) {
-
-        $employeeId = $_POST['employee_id'];
-
-        $oldStmt = $pdo->prepare("SELECT email, first_name, last_name FROM employees WHERE id = ?");
-        $oldStmt->execute([$employeeId]);
-        $oldEmployee = $oldStmt->fetch(PDO::FETCH_ASSOC);
-        $oldEmail    = $oldEmployee['email'] ?? null;
-
-        if ($oldEmail && strtolower($oldEmail) !== strtolower($email)) {
-            $fullName = htmlspecialchars($first_name . ' ' . $last_name);
-            sendMail(
-                $oldEmail,
-                $fullName,
-                'Your HSN DTR Account Email Has Been Updated',
-                "
-                <p>Hi {$fullName},</p>
-                <p>This is a notification that your account email has been changed.</p>
-                <p><strong>Old Email:</strong> {$oldEmail}<br>
-                   <strong>New Email:</strong> {$email}</p>
-                <p>— HSN DTR System</p>
-                "
-            );
-        }
-
-        // update query here if needed
-
-    }
-
-    // =========================================================
     // ADD EMPLOYEE
     // =========================================================
-    else {
+    {
+        if (!preg_match('/^\d{6}$/', $employee_ref_id)) {
+            $_SESSION['error'] = "Employee ID must be exactly 6 digits.";
+            header("Location: admin_manage_employees.php");
+            exit();
+        }
+
+        $dupIdStmt = $pdo->prepare("SELECT id FROM employees WHERE employee_id = ?");
+        $dupIdStmt->execute([$employee_ref_id]);
+        if ($dupIdStmt->fetchColumn()) {
+            $_SESSION['error'] = "An employee with that ID already exists.";
+            header("Location: admin_manage_employees.php");
+            exit();
+        }
+
         $dupStmt = $pdo->prepare("SELECT id FROM employees WHERE LOWER(email) = LOWER(?)");
         $dupStmt->execute([$email]);
         if ($dupStmt->fetchColumn()) {
@@ -87,10 +70,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         $stmt = $pdo->prepare("
-            INSERT INTO employees (first_name, last_name, email, role_id, department_id, birthdate, hired_date)
-            VALUES (?, ?, ?, ?, ?, ?, CURDATE())
+            INSERT INTO employees (employee_id, first_name, last_name, email, role_id, department_id, birthdate, hired_date)
+            VALUES (?, ?, ?, ?, ?, ?, ?, CURDATE())
         ");
-        $stmt->execute([$first_name, $last_name, $email, $roleId, $department, $birthdate]);
+        $stmt->execute([$employee_ref_id, $first_name, $last_name, $email, $roleId, $department, $birthdate]);
 
         $employeeId   = $pdo->lastInsertId();
         $fullName     = $first_name . ' ' . $last_name;
@@ -98,6 +81,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $pdo->prepare("UPDATE employees SET profile_image = ? WHERE id = ?")
             ->execute([$profileImage, $employeeId]);
+
+        $pdo->prepare("INSERT INTO employee_leave_balances (employee_id) VALUES (?)")
+            ->execute([$employeeId]);
 
         $safeName = htmlspecialchars($fullName);
         sendMail($email, $safeName, 'Your HSN DTR Account', "
@@ -432,7 +418,7 @@ $currentPage = 'manage_employees';
                         </colgroup>
                         <thead>
                             <tr>
-                                <th class="sortable" onclick="sortBy('id')">ID <i class="bi bi-arrow-down-up sortIcon" id="sort-id"></i></th>
+                                <th class="sortable" onclick="sortBy('employeeId')">Emp. ID <i class="bi bi-arrow-down-up sortIcon" id="sort-employeeId"></i></th>
                                 <th class="sortable" onclick="sortBy('name')">Name <i class="bi bi-arrow-down-up sortIcon" id="sort-name"></i></th>
                                 <th class="sortable" onclick="sortBy('email')">Email <i class="bi bi-arrow-down-up sortIcon" id="sort-email"></i></th>
                                 <th class="sortable" onclick="sortBy('role')">Role <i class="bi bi-arrow-down-up sortIcon" id="sort-role"></i></th>
@@ -458,6 +444,7 @@ $currentPage = 'manage_employees';
                             <?php foreach ($employees as $emp): ?>
                                 <tr class="empRow"
                                     data-id="<?= $emp['id'] ?>"
+                                    data-employee-id="<?= htmlspecialchars($emp['employee_id'] ?? '') ?>"
                                     data-first-name="<?= htmlspecialchars($emp['first_name']) ?>"
                                     data-last-name="<?= htmlspecialchars($emp['last_name']) ?>"
                                     data-email="<?= htmlspecialchars($emp['email']) ?>"
@@ -466,7 +453,7 @@ $currentPage = 'manage_employees';
                                     data-dept="<?= htmlspecialchars($emp['department_id'] ?? '') ?>"
                                     data-dept-name="<?= htmlspecialchars($emp['department_name'] ?? '') ?>">
 
-                                    <td><?= $emp['id'] ?></td>
+                                    <td><?= htmlspecialchars($emp['employee_id'] ?? '—') ?></td>
                                     <td>
                                         <div class="d-flex align-items-center gap-2">
                                             <?php
@@ -488,7 +475,7 @@ $currentPage = 'manage_employees';
                                     <td><?= htmlspecialchars($emp['department_name'] ?? 'No Department') ?></td>
                                     <td class="text-end">
                                         <a class="btn btn-sm btn-success d-flex align-items-center gap-2"
-                                           href="admin_employee_view.php?id=<?= $emp['id'] ?>">
+                                           href="admin_employee_view.php?employee_id=<?= $emp['employee_id'] ?>">
                                             <i class="bi bi-eye-fill"></i> View
                                         </a>
                                     </td>
@@ -562,7 +549,6 @@ $currentPage = 'manage_employees';
                     </div>
 
                     <form method="POST" action="admin_manage_employees.php" onsubmit="validateAddEmployeeForm(event)">
-                        <input type="hidden" name="employee_id" id="modalEmpId">
                         <input type="hidden" name="form_token" value="<?= $_SESSION['form_token'] ?>">
 
                         <div class="modal-body">
@@ -583,6 +569,12 @@ $currentPage = 'manage_employees';
                                 <!-- RIGHT: Form inputs -->
                                 <div class="col-md-8">
                                     <div class="row g-3">
+
+                                        <div class="col-md-12">
+                                            <label class="form-label">Employee ID</label>
+                                            <input type="text" name="employee_ref_id" id="modalEmpRefId"
+                                                   class="form-control" maxlength="6" placeholder="6-digit number">
+                                        </div>
 
                                         <div class="col-md-6">
                                             <label class="form-label">First Name</label>
@@ -896,7 +888,6 @@ $currentPage = 'manage_employees';
                 </div>
             </div>
         </div>
-        <?php include '../toast.php'; ?>
         <?php if (!empty($_SESSION['error'])): ?>
         <script>document.addEventListener('DOMContentLoaded', () => showToast('<?= addslashes(htmlspecialchars($_SESSION['error'])) ?>', 'danger'));</script>
         <?php unset($_SESSION['error']); ?>
@@ -919,7 +910,7 @@ $currentPage = 'manage_employees';
         let currentEnd        = '<?= date('Y-m-t') ?>';
 
         // ---- TABLE STATE ----
-        let ROWS_PER_PAGE = 10;
+        let ROWS_PER_PAGE = parseInt(localStorage.getItem('empRowsPerPage') || '10');
         let allRows       = [];
         let sortCol       = null;
         let sortDir       = 1;
@@ -931,6 +922,18 @@ $currentPage = 'manage_employees';
 
             allRows = Array.from(document.querySelectorAll('#empList .empRow'));
             applyFilters();
+
+            document.getElementById('empList').addEventListener('click', e => {
+                if (e.target.closest('a, button')) return;
+                const row = e.target.closest('.empRow');
+                if (row) window.location.href = `admin_employee_view.php?employee_id=${row.dataset.employeeId}`;
+            });
+
+            document.getElementById('modalEmpRefId')
+                ?.addEventListener('blur', function () {
+                    const v = this.value.trim();
+                    if (v !== '') this.value = v.padStart(6, '0');
+                });
 
             document.getElementById('empSearch')
                 .addEventListener('input', () => { currentPage = 1; applyFilters(); });
@@ -957,6 +960,7 @@ $currentPage = 'manage_employees';
                     document.getElementById('deptSearchInMenu').value       = '';
                     document.getElementById('roleLabel').textContent        = 'Select Role';
                     document.getElementById('roleInput').value              = '';
+                    document.getElementById('modalEmpRefId').value          = '';
                     document.getElementById('modalFirstName').value         = '';
                     document.getElementById('modalLastName').value          = '';
                     document.getElementById('modalEmail').value             = '';
@@ -1103,9 +1107,6 @@ $currentPage = 'manage_employees';
 
             if (sortCol) {
                 filtered.sort((a, b) => {
-                    if (sortCol === 'id') {
-                        return sortDir * (parseInt(a.dataset.id) - parseInt(b.dataset.id));
-                    }
                     const av = (a.dataset[sortCol] || '').toLowerCase();
                     const bv = (b.dataset[sortCol] || '').toLowerCase();
                     return sortDir * av.localeCompare(bv);
@@ -1243,6 +1244,7 @@ $currentPage = 'manage_employees';
 
         function changeRowsPerPage(value) {
             ROWS_PER_PAGE = parseInt(value);
+            localStorage.setItem('empRowsPerPage', value);
             currentPage   = 1;
             applyFilters();
         }
@@ -1377,6 +1379,7 @@ $currentPage = 'manage_employees';
         function validateAddEmployeeForm(e) {
             e.preventDefault();
 
+            const empRefId  = document.getElementById('modalEmpRefId').value.trim();
             const firstName = document.getElementById('modalFirstName').value.trim();
             const lastName  = document.getElementById('modalLastName').value.trim();
             const email     = document.getElementById('modalEmail').value.trim();
@@ -1384,6 +1387,12 @@ $currentPage = 'manage_employees';
             const role      = document.getElementById('roleInput').value.trim();
             const dept      = document.getElementById('deptInput').value.trim();
 
+            if (!empRefId) {
+                showToast('Employee ID is required.', 'danger'); return;
+            }
+            if (!/^\d{6}$/.test(empRefId)) {
+                showToast('Employee ID must be exactly 6 digits.', 'danger'); return;
+            }
             if (!firstName) {
                 showToast('First name is required.', 'danger'); return;
             }

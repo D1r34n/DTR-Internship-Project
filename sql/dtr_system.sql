@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: May 13, 2026 at 07:39 AM
+-- Generation Time: May 15, 2026 at 05:02 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -146,7 +146,8 @@ INSERT INTO `attendances` (`id`, `employee_id`, `schedule_id`, `work_date`, `sch
 (258, 25, 385, '2026-05-30', '2026-05-30 08:30:00', '2026-05-30 17:30:00', NULL, NULL, 0, 0, 0, 0, 0, 'incomplete', 'none', 0, '2026-05-11 09:43:13', '2026-05-11 09:43:13'),
 (260, 25, 390, '2026-05-23', '2026-05-23 08:30:00', '2026-05-23 17:30:00', NULL, NULL, 0, 0, 0, 0, 0, 'incomplete', 'none', 0, '2026-05-11 09:46:43', '2026-05-11 09:46:43'),
 (269, 22, NULL, '2026-05-11', '2026-05-11 08:30:00', '2026-05-11 17:30:00', NULL, NULL, 0, 0, 0, 0, 0, 'absent', 'none', 0, '2026-05-12 08:21:37', '2026-05-12 08:21:37'),
-(270, 22, NULL, '2026-05-12', '2026-05-12 08:30:00', '2026-05-12 17:30:00', '2026-05-12 07:21:00', '2026-05-12 18:22:00', 661, 0, 0, 52, 0, 'present', 'approved', 0, '2026-05-12 08:21:37', '2026-05-12 08:24:57');
+(270, 22, NULL, '2026-05-12', '2026-05-12 08:30:00', '2026-05-12 17:30:00', '2026-05-12 07:21:00', '2026-05-12 18:22:00', 661, 0, 0, 52, 0, 'present', 'approved', 0, '2026-05-12 08:21:37', '2026-05-12 08:24:57'),
+(273, 22, 456, '2026-05-18', '2026-05-18 08:30:00', '2026-05-18 17:30:00', NULL, NULL, 0, 0, 0, 0, 0, 'incomplete', 'none', 0, '2026-05-14 03:59:09', '2026-05-14 03:59:09');
 
 -- --------------------------------------------------------
 
@@ -177,7 +178,9 @@ INSERT INTO `departments` (`id`, `department_code`, `department_name`, `parent_i
 (11, 'AUSA', 'Acer USA', 3, '2026-04-29 05:59:44', '#ee1111'),
 (12, 'AOCC', 'Acer Oceania', 3, '2026-04-29 06:01:24', '#c55c16'),
 (13, 'KNDT', 'Kampon ni Dad Thonie', NULL, '2026-04-29 07:53:22', '#4e73df'),
-(14, 'SOCMED', 'Social Media', 3, '2026-05-05 04:05:07', '#f529b4');
+(14, 'SOCMED', 'Social Media', 3, '2026-05-05 04:05:07', '#f529b4'),
+(15, 'CSD', 'Customer Service Department', NULL, '2026-05-14 09:15:43', '#4e73df'),
+(16, 'CSD-RCT', 'Customer Service Repair', 15, '2026-05-14 09:19:54', '#4e73df');
 
 -- --------------------------------------------------------
 
@@ -187,6 +190,7 @@ INSERT INTO `departments` (`id`, `department_code`, `department_name`, `parent_i
 
 CREATE TABLE `employees` (
   `id` int(11) NOT NULL,
+  `employee_id` char(6) DEFAULT NULL,
   `profile_image` varchar(255) DEFAULT NULL,
   `first_name` varchar(100) NOT NULL,
   `last_name` varchar(100) NOT NULL,
@@ -196,26 +200,28 @@ CREATE TABLE `employees` (
   `department_id` int(10) UNSIGNED DEFAULT NULL,
   `hired_date` date NOT NULL,
   `tenure` int(11) DEFAULT 0,
-  `birthdate` date DEFAULT NULL
+  `birthdate` date DEFAULT NULL,
+  `employement_status` enum('active','resigned') NOT NULL DEFAULT 'active'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `employees`
 --
 
-INSERT INTO `employees` (`id`, `profile_image`, `first_name`, `last_name`, `email`, `password`, `role_id`, `department_id`, `hired_date`, `tenure`, `birthdate`) VALUES
-(2, 'avatar_user_2.png', 'User', 'Employee', 'user@gmail.com', 'user123', 5, 2, '2026-05-11', 0, '2000-01-01'),
-(3, 'avatar_user_3.png', 'User', 'Admin', 'admin@gmail.com', 'admin123', 3, 7, '2026-05-11', 0, '2000-01-01'),
-(4, NULL, 'User', 'Workforce', 'user1@gmail.com', 'user123', 4, 14, '2026-05-11', 0, '2000-01-01'),
-(7, NULL, 'Jignesh', 'Nate', 'jigs@gmail.com', 'HSN.123', 5, 13, '2026-05-11', 0, '2000-01-01'),
-(8, NULL, 'Justine', 'Tandoc', 'justine@gmail.com', '123', 5, 13, '2026-05-11', 0, '2000-01-01'),
-(12, NULL, 'Dirk', 'Adolf Del Mundo', 'dirk@gmail.com', '123', 5, 13, '2026-05-11', 0, '2000-01-01'),
-(15, NULL, 'Thonie', 'Revil', 'thonie.revil@hsnservice.com', '123', 3, 10, '2026-05-11', 0, '2000-01-01'),
-(19, NULL, 'Edrian', 'Evangelista', 'edrian.evangelista@gmail.com', '123', 4, 10, '2026-05-11', 0, '2000-01-01'),
-(20, NULL, 'Dharmveer', 'Sandhu', 'dharm@gmail.com', 'dharm123', 5, 7, '2026-05-11', 0, '2000-01-01'),
-(22, NULL, 'Earl', 'David Jordan', 'earl3jordan@gmail.com', '123', 5, 10, '2026-05-11', 0, '2000-01-01'),
-(23, NULL, 'Ranica', 'Jalotjot', 'ranica.jalotjot@hsnervice.com', '123', 5, 13, '2026-05-11', 0, '2000-01-01'),
-(25, NULL, 'Erlyn', 'Dionisio', 'erlyn.dionisio@hsnervice.com', '123', 5, 13, '2026-05-11', 0, '2000-01-01');
+INSERT INTO `employees` (`id`, `employee_id`, `profile_image`, `first_name`, `last_name`, `email`, `password`, `role_id`, `department_id`, `hired_date`, `tenure`, `birthdate`, `employement_status`) VALUES
+(2, '000002', 'avatar_user_2.png', 'User', 'Employee', 'user@gmail.com', 'user123', 5, 2, '2026-05-11', 0, '2000-01-01', 'active'),
+(3, '000001', 'avatar_user_3.png', 'User', 'Admin', 'admin@gmail.com', 'admin123', 3, 7, '2026-05-11', 0, '2000-01-01', 'active'),
+(4, '000003', NULL, 'User', 'Workforce', 'user1@gmail.com', 'user123', 4, 14, '2026-05-11', 0, '2000-01-01', 'active'),
+(7, '000004', 'avatar_user_7.png', 'Jignesh', 'Nate', 'jigs@gmail.com', 'jigs123', 5, 13, '2026-05-11', 0, '2000-05-25', 'active'),
+(8, '000005', 'avatar_user_8.png', 'Justine', 'Tandoc', 'justine@gmail.com', '123', 5, 13, '2026-05-11', 0, '2000-05-11', 'active'),
+(12, '000007', 'avatar_user_12.png', 'Dirk', 'Adolf Del Mundo', 'dirk@gmail.com', '123', 5, 13, '2026-05-11', 0, '2000-05-10', 'active'),
+(15, '000010', NULL, 'Thonie', 'Revil', 'thonie.revil@hsnservice.com', '123', 2, 10, '2026-05-11', 0, '2000-01-01', 'active'),
+(19, '000009', 'avatar_user_19.png', 'Edrian', 'Evangelista', 'edrian.evangelista@gmail.com', '123', 4, 10, '2026-05-11', 0, '2000-05-02', 'active'),
+(20, '000006', 'avatar_user_20.png', 'Dharmveer', 'Sandhu', 'dharm@gmail.com', 'dharm123', 5, 7, '2026-05-11', 0, '2000-05-03', 'active'),
+(22, '000008', 'avatar_user_22.png', 'Earl', 'David Jordan', 'earl3jordan@gmail.com', '123', 5, 10, '2026-05-11', 0, '2000-05-01', 'active'),
+(23, '000014', NULL, 'Ranica', 'Jalotjot', 'ranica.jalotjot@hsnervice.com', '123', 2, 13, '2026-05-11', 0, '2000-01-01', 'active'),
+(25, '000011', NULL, 'Erlyn', 'Dionisio', 'erlyn.dionisio@hsnervice.com', '123', 5, 13, '2026-05-11', 0, '2000-01-01', 'active'),
+(37, '000013', 'default_profile.png', 'Gerome', 'Dy', 'gerome.dy@hsnservice.com', 'HSN.123', 5, 15, '2026-05-14', 0, '1998-05-01', 'active');
 
 -- --------------------------------------------------------
 
@@ -251,7 +257,10 @@ INSERT INTO `employee_leave_balances` (`employee_id`, `buffer_leave`, `vacation_
 (15, 5, 10, 4, 7, 0, 1, 1, '2026-05-11', '2026-05-11 07:41:20', '2026-05-11 09:22:01'),
 (19, 0, 0, 4, 7, 90, 1, 1, '2026-05-11', '2026-05-11 07:41:20', '2026-05-11 09:05:02'),
 (20, 0, 0, 4, 7, 90, 1, 1, '2026-05-11', '2026-05-11 07:41:20', '2026-05-11 07:41:20'),
-(22, 0, 0, 4, 7, 90, 1, 1, '2026-05-11', '2026-05-11 07:41:20', '2026-05-11 07:41:20');
+(22, 0, 0, 4, 7, 90, 1, 1, '2026-05-11', '2026-05-11 07:41:20', '2026-05-11 07:41:20'),
+(23, 0, 0, 4, 7, 90, 1, 1, '2026-05-15', '2026-05-15 01:15:26', '2026-05-15 01:15:26'),
+(25, 0, 0, 4, 7, 90, 1, 1, '2026-05-15', '2026-05-15 01:15:26', '2026-05-15 01:15:26'),
+(37, 0, 0, 4, 7, 90, 1, 1, '2026-05-15', '2026-05-15 01:15:26', '2026-05-15 01:15:26');
 
 -- --------------------------------------------------------
 
@@ -271,6 +280,17 @@ CREATE TABLE `events` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NULL DEFAULT NULL ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `events`
+--
+
+INSERT INTO `events` (`id`, `title`, `description`, `event_type`, `start_datetime`, `end_datetime`, `color`, `created_by`, `created_at`, `updated_at`) VALUES
+(1, 'Xmas Party', 'Christmas Theme Wear', 'party', '2026-05-15 00:00:00', '2026-05-15 00:00:00', '#ec4899', 3, '2026-05-14 07:05:32', NULL),
+(2, 'iaidbwqibhasbciuwe', 'sacvucvwdiucnwd', 'other', '2026-05-15 00:00:00', '2026-05-15 00:00:00', '#6b7280', 3, '2026-05-14 07:09:48', NULL),
+(3, 'WALANG PASOK', 'BATO ESCAPE DAY', 'holiday', '2026-05-15 00:00:00', '2026-05-15 00:00:00', '#ef4444', 3, '2026-05-14 07:38:22', NULL),
+(4, 'Meeting', 'Meeting', 'meeting', '2026-05-12 00:00:00', '2026-05-12 00:00:00', '#3b82f6', 3, '2026-05-14 07:42:56', NULL),
+(5, 'Halooweennn', 'haloween theme wear', 'party', '2026-05-16 00:00:00', '2026-05-16 00:00:00', '#ec4899', 3, '2026-05-14 08:44:32', NULL);
 
 -- --------------------------------------------------------
 
@@ -299,7 +319,9 @@ INSERT INTO `leave_requests` (`id`, `employee_id`, `leave_type`, `start_date`, `
 (17, 15, 'vacation leave', '2026-05-18', '2026-05-18', '[\"2026-05-18\"]', 'vacation', 'approved', '2026-05-07 09:14:43', NULL),
 (18, 25, 'birthday leave', '2026-05-11', '2026-05-11', '[\"2026-05-11\"]', 'Birthday', 'approved', '2026-05-11 09:51:41', NULL),
 (19, 25, 'ob leave', '2026-05-11', '2026-05-11', '[\"2026-05-11\"]', 'Meeting', 'approved', '2026-05-12 02:57:58', 'Acer'),
-(20, 19, 'ob leave', '2026-05-12', '2026-05-12', '[\"2026-05-12\"]', 'Meeting', 'approved', '2026-05-12 03:09:35', 'Acer Ortigas');
+(20, 19, 'ob leave', '2026-05-12', '2026-05-12', '[\"2026-05-12\"]', 'Meeting', 'approved', '2026-05-12 03:09:35', 'Acer Ortigas'),
+(21, 22, 'vacation leave', '2026-05-15', '2026-05-15', '[\"2026-05-15\"]', 'bounce nko', 'approved', '2026-05-14 09:05:11', NULL),
+(22, 15, 'ob leave', '2026-05-14', '2026-05-14', '[\"2026-05-14\"]', 'meeting', 'approved', '2026-05-14 09:21:56', 'Acer');
 
 -- --------------------------------------------------------
 
@@ -329,7 +351,11 @@ INSERT INTO `logs` (`id`, `employee_id`, `log_type`, `log_time`, `longitude`, `l
 (828, 22, 'IN', '2026-05-12 07:21:00', 120.9955124, 14.5842482, 55, 1, 22.2953, 'cap_22_20260512_162137.jpg', '2026-05-12 08:21:37'),
 (829, 22, 'BREAK_IN', '2026-05-12 12:00:00', 120.9954947, 14.5842564, 55, 1, 22.68, NULL, '2026-05-12 08:21:49'),
 (830, 22, 'BREAK_OUT', '2026-05-12 13:07:00', 120.9954947, 14.5842564, 55, 1, 22.68, NULL, '2026-05-12 08:21:57'),
-(831, 22, 'OUT', '2026-05-12 18:22:00', 120.9954947, 14.5842564, 55, 1, 22.6814, 'cap_22_20260512_162205.jpg', '2026-05-12 08:22:05');
+(831, 22, 'OUT', '2026-05-12 18:22:00', 120.9954947, 14.5842564, 55, 1, 22.6814, 'cap_22_20260512_162205.jpg', '2026-05-12 08:22:05'),
+(832, 3, 'IN', '2026-05-14 17:28:58', 120.9777000, 14.4470000, 20000, 0, 15401.3, 'cap_3_20260514_172858.jpg', '2026-05-14 09:28:58'),
+(833, 3, 'BREAK_IN', '2026-05-14 17:29:11', 120.9777000, 14.4470000, 20000, 0, 15401.3, NULL, '2026-05-14 09:29:11'),
+(834, 3, 'BREAK_OUT', '2026-05-14 17:29:19', 120.9777000, 14.4470000, 20000, 0, 15401.3, NULL, '2026-05-14 09:29:19'),
+(835, 3, 'OUT', '2026-05-14 17:29:27', 120.9777000, 14.4470000, 20000, 0, 15401.3, 'cap_3_20260514_172927.jpg', '2026-05-14 09:29:27');
 
 -- --------------------------------------------------------
 
@@ -618,7 +644,8 @@ INSERT INTO `schedules` (`id`, `employee_id`, `schedule_date`, `scheduled_start`
 (451, 8, '2026-06-13', '2026-06-13 09:00:00', '2026-06-13 18:00:00', 1, 'approved'),
 (452, 8, '2026-06-14', '2026-06-14 09:00:00', '2026-06-14 18:00:00', 1, 'approved'),
 (453, 8, '2026-06-15', '2026-06-15 09:00:00', '2026-06-15 18:00:00', 0, 'approved'),
-(454, 1001, '2026-05-01', '2026-05-01 08:00:00', '2026-05-01 17:00:00', 0, 'approved');
+(454, 1001, '2026-05-01', '2026-05-01 08:00:00', '2026-05-01 17:00:00', 0, 'approved'),
+(456, 22, '2026-05-18', '2026-05-18 08:30:00', '2026-05-18 17:30:00', 0, 'approved');
 
 -- --------------------------------------------------------
 
@@ -667,6 +694,7 @@ ALTER TABLE `departments`
 ALTER TABLE `employees`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `email` (`email`),
+  ADD UNIQUE KEY `uq_employee_id` (`employee_id`),
   ADD KEY `department_id` (`department_id`),
   ADD KEY `fk_employee_role` (`role_id`);
 
@@ -748,37 +776,37 @@ ALTER TABLE `system_state`
 -- AUTO_INCREMENT for table `attendances`
 --
 ALTER TABLE `attendances`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=273;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=275;
 
 --
 -- AUTO_INCREMENT for table `departments`
 --
 ALTER TABLE `departments`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
 
 --
 -- AUTO_INCREMENT for table `employees`
 --
 ALTER TABLE `employees`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=36;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=39;
 
 --
 -- AUTO_INCREMENT for table `events`
 --
 ALTER TABLE `events`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT for table `leave_requests`
 --
 ALTER TABLE `leave_requests`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=23;
 
 --
 -- AUTO_INCREMENT for table `logs`
 --
 ALTER TABLE `logs`
-  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=832;
+  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=836;
 
 --
 -- AUTO_INCREMENT for table `log_edit_requests`
@@ -808,7 +836,7 @@ ALTER TABLE `roles`
 -- AUTO_INCREMENT for table `schedules`
 --
 ALTER TABLE `schedules`
-  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=455;
+  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=458;
 
 --
 -- Constraints for dumped tables
