@@ -89,6 +89,7 @@ body {
 .dashRow {
     display: flex;
     flex-direction: row;
+    flex-wrap: wrap;
     gap: 2rem;
     align-items: flex-start;
     margin-top: 5rem;
@@ -98,30 +99,36 @@ body {
     display: flex;
     flex-direction: column;
     gap: 0;
-    flex-shrink: 0;
+    flex: 1 1 auto;
+    min-width: 0;
     margin-top: 13rem;
 }
 
 .dashboardSummary {
     display: flex;
     flex-direction: row;
-    gap: 2rem;
+    flex-wrap: wrap;
+    gap: 1.5rem;
 }
 
 .summaryCard {
     background: var(--glass-bg-dark);
     padding: 20px;
     border-radius: 5px;
-    width: 240px;
-    height: 175px;
+    flex: 1 1 200px;
+    min-width: 180px;
+    height: auto;
+    min-height: 140px;
     text-align: left;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
 }
 .summaryBday,
 .summaryEvents {
     padding: 20px;
-    width: 376px;
-    height: 350px;
+    flex: 1 1 300px;
+    min-width: 260px;
+    height: auto;
+    min-height: 320px;
     text-align: left;
     position: relative;
 }
@@ -488,11 +495,11 @@ border: 1px solid rgba(25, 200, 100, 0.35);
 .attendanceOverviewCard {
     flex: none;
     width: 800px;
-    height: 349px;
+    height: 335px;
     padding: 20px;
     overflow: hidden;
     display: flex;
-    margin-top: 25rem;
+    margin-top: 24rem;
     flex-direction: column;
     transform: none !important;
 }
