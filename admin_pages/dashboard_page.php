@@ -12,7 +12,6 @@ require_once '../db.php';
 date_default_timezone_set('Asia/Manila');
 
 $today = date('Y-m-d');
-$year  = date('Y');
 
 // ── Total employees ───────────────────────────────────────
 $count = (int) $pdo->query("SELECT COUNT(*) FROM employees")->fetchColumn();
@@ -58,6 +57,20 @@ $upcomingEvents = $pdo->query("
         CASE WHEN DATE(start_datetime) <  CURDATE() THEN start_datetime END DESC
 ")->fetchAll(PDO::FETCH_ASSOC);
 $upcomingEventsCount = count(array_filter($upcomingEvents, fn($e) => strtotime(date('Y-m-d', strtotime($e['start_datetime']))) >= strtotime($today)));
+
+// ── Random quote ─────────────────────────────────────────
+$quoteText   = '';
+$quoteAuthor = '';
+try {
+    $ctx  = stream_context_create(['http' => ['timeout' => 3]]);
+    $html = @file_get_contents('https://quotes.toscrape.com/random', false, $ctx);
+    if ($html) {
+        preg_match('/<span class="text"[^>]*>(.*?)<\/span>/s', $html, $tm);
+        preg_match('/<small class="author"[^>]*>(.*?)<\/small>/s', $html, $am);
+        $quoteText   = isset($tm[1]) ? html_entity_decode(strip_tags($tm[1]), ENT_QUOTES) : '';
+        $quoteAuthor = isset($am[1]) ? strip_tags($am[1]) : '';
+    }
+} catch (Exception $e) {}
 
 // ── Weekly attendance overview (Mon–Sun of current week) ──
 $todayDow = (int)date('N'); // 1=Mon, 7=Sun
@@ -112,213 +125,254 @@ foreach ($weeklyRows as $row) {
 
     <div class="dashboardContent">
 
+        <div class="row g-3 align-items-start dash-main-row">
+
+        <!-- ── Left Column ──────────────────────────────────────── -->
+        <div class="col-12 col-lg-6 dash-left-col">
+
         <!-- Clock -->
         <p id="currentDate"></p>
         <h1 id="currentTime"></h1>
 
-        <!-- ── Two-column layout: left cards | right chart ──────── -->
-        <div class="dashRow">
-        <div class="dashLeft">
+        <!-- ── Dashboard Layout ─────────────────────────────────── -->
+        <div class="dashRow row g-2">
 
-        <!-- ── Row 1: Attendance Summary Cards ────────────────── -->
-        <div class="dashboardSummary">
+            <!-- Row 1: Stats Cards -->
+            <div class="col-12">
+                <div class="row g-2">
 
-            <!-- TOTAL EMPLOYEES -->
-        <div class="summaryCard card-info">
-            <div class="summaryTop">
-                <div class="icon-box icon-box-info">
-                    <i class="bi bi-people-fill"></i>
-                </div>
-                <p>Total Employees</p>
-            </div>
-
-            <div class="summaryInfo">
-                <h5><?= $count ?></h5>
-                <span>All registered employees</span>
-            </div>
-        </div>
-
-
-        <!-- PRESENT TODAY -->
-        <div class="summaryCard card-success">
-            <div class="summaryTop">
-                <div class="icon-box icon-box-success">
-                    <i class="bi bi-check-circle-fill"></i>
-                </div>
-                <p>Present Today</p>
-            </div>
-
-            <div class="summaryInfo">
-                <h5><?= $present ?></h5>
-                <span><?= $count > 0 ? round($present / $count * 100) : 0 ?>% of total employees</span>
-            </div>
-        </div>
-
-
-        <!-- ABSENT TODAY -->
-        <div class="summaryCard card-danger">
-            <div class="summaryTop">
-                <div class="icon-box icon-box-danger">
-                    <i class="bi bi-clock-fill"></i>
-                </div>
-                <p>Absent Today</p>
-            </div>
-
-            <div class="summaryInfo">
-                <h5><?= $absent ?></h5>
-                <span><?= $count > 0 ? round($absent / $count * 100) : 0 ?>% of total employees</span>
-            </div>
-        </div>
-
-
-            <?php if ($totalPending > 0): ?>
-            <div class="summaryCard ">
-                <div class="summaryIcon bg-red"><i class="bi bi-bell-fill"></i></div>
-                <div class="summaryInfo">
-                    <p>Pending Requests</p>
-                    <h5><?= $totalPending ?></h5>
-                    <span>
-                        <?php
-                        $parts = [];
-                        if ($pendingLeave)   $parts[] = "$pendingLeave leave";
-                        if ($pendingOT)      $parts[] = "$pendingOT overtime";
-                        if ($pendingLogEdit) $parts[] = "$pendingLogEdit log edit";
-                        echo implode(' &bull; ', $parts);
-                        ?>
-                    </span>
-                </div>
-            </div>
-            <?php endif; ?>
-
-        </div><!-- /.dashboardSummary -->
-
-        <!-- ── Row 2 + Info Panels Combined ───────────────────────── -->
-                <div class="dashboardSummary mt-3">
-
-                   <div class="summaryBday card card-purple">
-                        <div class="summaryTop">
-                            <div class="summaryIcon bg-blue">
-                                <i class="bi bi-cake"></i>
+                    <!-- TOTAL EMPLOYEES -->
+                    <div class="col-6 col-lg">
+                        <div class="summaryCard card-info h-100">
+                            <div class="summaryTop">
+                                <div class="icon-box icon-box-info">
+                                    <i class="bi bi-people-fill"></i>
+                                </div>
+                                <p>Total Employees</p>
                             </div>
-                            <p>Birthdays This Month</p>
+                            <div class="summaryInfo">
+                                <h5><?= $count ?></h5>
+                                <span>All registered employees</span>
+                            </div>
                         </div>
-
-                        <h5 class="summaryCount"><?= count($birthdaysThisMonth ?? []) ?></h5>
-
-                        <hr class="section-divider">
-
-                        <div class="birthdayList">
-                            <?php if (empty($birthdaysThisMonth)): ?>
-                                <small class="text-muted">No birthdays this month</small>
-                            <?php else: ?>
-                                <ul>
-                                    <?php foreach ($birthdaysThisMonth as $b): ?>
-                                        <?php
-                                            $avatarSrc = !empty($b['profile_image'])
-                                                ? '../assets/user_profiles/' . htmlspecialchars($b['profile_image'])
-                                                : '../assets/user_profiles/default_avatar.png';
-
-                                            $bdayThisYear = date('Y') . '-' . date('m-d', strtotime($b['birthdate']));
-                                            $diff = (int) (strtotime($bdayThisYear) - strtotime($today)) / 86400;
-                                            if ($diff === 0) {
-                                                $daysLabel = 'Today!';
-                                                $daysClass = 'bday-days today';
-                                            } elseif ($diff > 0) {
-                                                $daysLabel = 'In ' . $diff . ' ' . ($diff === 1 ? 'day' : 'days');
-                                                $daysClass = 'bday-days upcoming';
-                                            } else {
-                                                $daysLabel = abs($diff) . ' ' . (abs($diff) === 1 ? 'day' : 'days') . ' ago';
-                                                $daysClass = 'bday-days past';
-                                            }
-                                        ?>
-                                        <li>
-                                            <img src="<?= $avatarSrc ?>" class="bday-avatar" alt="">
-                                            <div class="bday-info">
-                                                <strong><?= htmlspecialchars($b['full_name']) ?></strong>
-                                                <span class="bday-date"><?= date('l', strtotime($b['birthdate'])) ?>,
-                                                <?= date('F d', strtotime($b['birthdate'])) . ' ' ?></span>
-                                            </div>
-                                            <span class="<?= $daysClass ?>"><?= $daysLabel ?></span>
-                                        </li>
-                                    <?php endforeach; ?>
-                                </ul>
-                            <?php endif; ?>
-                        </div>
-
-                        <a href="../employee_pages/employee_schedule.php?filter=birthday" class="bday-view-all">
-                            View All Birthdays <i class="bi bi-chevron-right"></i>
-                        </a>
                     </div>
 
-
-                    <div class="summaryEvents card card-success">
-                        <div class="summaryTop">
-                            <div class="summaryIcon bg-green">
-                                <i class="bi bi-calendar-check"></i>
+                    <!-- PRESENT TODAY -->
+                    <div class="col-6 col-lg">
+                        <div class="summaryCard card-success h-100">
+                            <div class="summaryTop">
+                                <div class="icon-box icon-box-success">
+                                    <i class="bi bi-check-circle-fill"></i>
+                                </div>
+                                <p>Present Today</p>
                             </div>
-                            <p>Upcoming Events</p>
+                            <div class="summaryInfo">
+                                <h5><?= $present ?></h5>
+                                <span><?= $count > 0 ? round($present / $count * 100) : 0 ?>% of total employees</span>
+                            </div>
                         </div>
-
-                        <h5 class="summaryCount"><?= $upcomingEventsCount ?></h5>
-
-                        <hr class="section-divider">
-
-                        <div class="EventsList">
-                            <?php if (empty($upcomingEvents)): ?>
-                                <small class="text-muted">No events</small>
-                            <?php else: ?>
-                                <ul>
-                                    <?php foreach ($upcomingEvents as $h): ?>
-                                        <?php
-                                            $diff = (int) ((strtotime(date('Y-m-d', strtotime($h['start_datetime']))) - strtotime($today)) / 86400);
-                                            if ($diff === 0) {
-                                                $evtLabel = 'Today!';
-                                                $evtClass = 'event-days today';
-                                            } elseif ($diff > 0) {
-                                                $evtLabel = 'In ' . $diff . ' ' . ($diff === 1 ? 'day' : 'days');
-                                                $evtClass = 'event-days upcoming';
-                                            } else {
-                                                $evtLabel = abs($diff) . ' ' . (abs($diff) === 1 ? 'day' : 'days') . ' ago';
-                                                $evtClass = 'event-days past';
-                                            }
-                                        ?>
-                                        <li>
-                                            <div class="event-cal">
-                                                <span class="event-month"><?= date('M', strtotime($h['start_datetime'])) ?></span>
-                                                <span class="event-day"><?= date('d', strtotime($h['start_datetime'])) ?></span>
-                                            </div>
-                                            <div class="event-info">
-                                                <strong><?= htmlspecialchars($h['title']) ?></strong>
-                                                <span class="event-type-label"><?= ucfirst($h['event_type']) ?></span>
-                                            </div>
-                                            <span class="<?= $evtClass ?>"><?= $evtLabel ?></span>
-                                        </li>
-                                    <?php endforeach; ?>
-                                </ul>
-                            <?php endif; ?>
-                        </div>
-
-                        <a href="../employee_pages/employee_schedule.php?filter=events" class="bday-view-all">
-                            View All Events <i class="bi bi-chevron-right"></i>
-                        </a>
                     </div>
-              </div><!-- /.dashboardSummary row 2 -->
-        </div><!-- /.dashLeft -->
 
-            <!-- ── Attendance Overview Chart ──────────────── -->
-            <div class="attendanceOverviewCard card card-neutral">
+                    <!-- ABSENT TODAY -->
+                    <div class="col-6 col-lg">
+                        <div class="summaryCard card-danger h-100">
+                            <div class="summaryTop">
+                                <div class="icon-box icon-box-danger">
+                                    <i class="bi bi-clock-fill"></i>
+                                </div>
+                                <p>Absent Today</p>
+                            </div>
+                            <div class="summaryInfo">
+                                <h5><?= $absent ?></h5>
+                                <span><?= $count > 0 ? round($absent / $count * 100) : 0 ?>% of total employees</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <?php if ($totalPending > 0): ?>
+                    <!-- PENDING REQUESTS -->
+                    <div class="col-6 col-lg">
+                        <div class="summaryCard h-100">
+                            <div class="summaryTop">
+                                <div class="summaryIcon bg-red"><i class="bi bi-bell-fill"></i></div>
+                                <p>Pending Requests</p>
+                            </div>
+                            <div class="summaryInfo">
+                                <h5><?= $totalPending ?></h5>
+                                <span>
+                                    <?php
+                                    $parts = [];
+                                    if ($pendingLeave)   $parts[] = "$pendingLeave leave";
+                                    if ($pendingOT)      $parts[] = "$pendingOT overtime";
+                                    if ($pendingLogEdit) $parts[] = "$pendingLogEdit log edit";
+                                    echo implode(' &bull; ', $parts);
+                                    ?>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <?php endif; ?>
+
+                </div><!-- /.row (stats) -->
+            </div><!-- /.col-12 (stats) -->
+
+            <!-- Row 2: Birthdays + Events side by side -->
+            <div class="col-md-6">
+                <div class="summaryBday card card-purple h-100">
+                    <div class="summaryTop">
+                        <div class="summaryIcon bg-blue">
+                            <i class="bi bi-cake"></i>
+                        </div>
+                        <p>Birthdays This Month</p>
+                    </div>
+                    <h5 class="summaryCount"><?= count($birthdaysThisMonth ?? []) ?></h5>
+                    <hr class="section-divider">
+                    <div class="birthdayList">
+                        <?php if (empty($birthdaysThisMonth)): ?>
+                            <small class="text-muted">No birthdays this month</small>
+                        <?php else: ?>
+                            <ul>
+                                <?php foreach ($birthdaysThisMonth as $b): ?>
+                                    <?php
+                                        $avatarSrc = !empty($b['profile_image'])
+                                            ? '../assets/user_profiles/' . htmlspecialchars($b['profile_image'])
+                                            : '../assets/user_profiles/default_avatar.png';
+                                        $bdayThisYear = date('Y') . '-' . date('m-d', strtotime($b['birthdate']));
+                                        $diff = (int) (strtotime($bdayThisYear) - strtotime($today)) / 86400;
+                                        if ($diff === 0) {
+                                            $daysLabel = 'Today!';
+                                            $daysClass = 'bday-days today';
+                                        } elseif ($diff > 0) {
+                                            $daysLabel = 'In ' . $diff . ' ' . ($diff === 1 ? 'day' : 'days');
+                                            $daysClass = 'bday-days upcoming';
+                                        } else {
+                                            $daysLabel = abs($diff) . ' ' . (abs($diff) === 1 ? 'day' : 'days') . ' ago';
+                                            $daysClass = 'bday-days past';
+                                        }
+                                    ?>
+                                    <li>
+                                        <img src="<?= $avatarSrc ?>" class="bday-avatar" alt="">
+                                        <div class="bday-info">
+                                            <strong><?= htmlspecialchars($b['full_name']) ?></strong>
+                                            <span class="bday-date"><?= date('l', strtotime($b['birthdate'])) ?>,
+                                            <?= date('F d', strtotime($b['birthdate'])) . ' ' ?></span>
+                                        </div>
+                                        <span class="<?= $daysClass ?>"><?= $daysLabel ?></span>
+                                    </li>
+                                <?php endforeach; ?>
+                            </ul>
+                        <?php endif; ?>
+                    </div>
+                    <a href="../employee_pages/employee_schedule.php?filter=birthday" class="bday-view-all">
+                        View All Birthdays <i class="bi bi-chevron-right"></i>
+                    </a>
+                </div>
+            </div><!-- /.col-md-6 (birthdays) -->
+
+            <div class="col-md-6">
+                <div class="summaryEvents card card-success h-100">
+                    <div class="summaryTop">
+                        <div class="summaryIcon bg-green">
+                            <i class="bi bi-calendar-check"></i>
+                        </div>
+                        <p>Upcoming Events</p>
+                    </div>
+                    <h5 class="summaryCount"><?= $upcomingEventsCount ?></h5>
+                    <hr class="section-divider">
+                    <div class="EventsList">
+                        <?php if (empty($upcomingEvents)): ?>
+                            <small class="text-muted">No events</small>
+                        <?php else: ?>
+                            <ul>
+                                <?php foreach ($upcomingEvents as $h): ?>
+                                    <?php
+                                        $diff = (int) ((strtotime(date('Y-m-d', strtotime($h['start_datetime']))) - strtotime($today)) / 86400);
+                                        if ($diff === 0) {
+                                            $evtLabel = 'Today!';
+                                            $evtClass = 'event-days today';
+                                        } elseif ($diff > 0) {
+                                            $evtLabel = 'In ' . $diff . ' ' . ($diff === 1 ? 'day' : 'days');
+                                            $evtClass = 'event-days upcoming';
+                                        } else {
+                                            $evtLabel = abs($diff) . ' ' . (abs($diff) === 1 ? 'day' : 'days') . ' ago';
+                                            $evtClass = 'event-days past';
+                                        }
+                                    ?>
+                                    <li>
+                                        <div class="event-cal">
+                                            <span class="event-month"><?= date('M', strtotime($h['start_datetime'])) ?></span>
+                                            <span class="event-day"><?= date('d', strtotime($h['start_datetime'])) ?></span>
+                                        </div>
+                                        <div class="event-info">
+                                            <strong><?= htmlspecialchars($h['title']) ?></strong>
+                                            <span class="event-type-label"><?= ucfirst($h['event_type']) ?></span>
+                                        </div>
+                                        <span class="<?= $evtClass ?>"><?= $evtLabel ?></span>
+                                    </li>
+                                <?php endforeach; ?>
+                            </ul>
+                        <?php endif; ?>
+                    </div>
+                    <a href="../employee_pages/employee_schedule.php?filter=events" class="event-view-all">
+                        View All Events <i class="bi bi-chevron-right"></i>
+                    </a>
+                </div>
+            </div><!-- /.col-md-6 (events) -->
+
+            <!-- Row 3: Attendance Overview full width -->
+            <div class="col-12">
+                <div class="attendanceOverviewCard card card-info">
+                    <div class="summaryTop">
+                        <div class="summaryIcon bg-blue">
+                            <i class="bi bi-bar-chart-line-fill"></i>
+                        </div>
+                        <p>Attendance Overview</p>
+                    </div>
+                    <div class="attendanceChartWrap">
+                        <canvas id="attendanceChart"></canvas>
+                    </div>
+                </div>
+            </div><!-- /.col-12 (chart) -->
+
+        </div><!-- /.dashRow.row -->
+
+        </div><!-- /.col-12.col-lg-6 dash-left-col -->
+
+        <!-- ── Right Column: Activity Logs ──────────────────────── -->
+        <div class="col-12 col-lg-6 dash-right-col">
+            <div class="activityLogsCard card card-orange">
                 <div class="summaryTop">
-                    <div class="summaryIcon bg-blue">
-                        <i class="bi bi-bar-chart-line-fill"></i>
+                    <div class="summaryIcon bg-orange">
+                        <i class="bi bi-journal-text"></i>
                     </div>
-                    <p>Attendance Overview</p>
+                    <p>Activity Logs</p>
                 </div>
-                <div class="attendanceChartWrap">
-                    <canvas id="attendanceChart"></canvas>
+                <hr class="section-divider">
+                <div class="activityLogsList">
+                    <!-- content coming soon -->
                 </div>
             </div>
 
-        </div><!-- /.dashRow -->
+            <!-- Quote of the Day -->
+            <div class="quoteCard card card-pink mt-2">
+                <div class="summaryTop">
+                    <div class="summaryIcon bg-pink">
+                        <i class="bi bi-chat-quote-fill"></i>
+                    </div>
+                    <p>Quote of the Day</p>
+                </div>
+                <hr class="section-divider">
+                <?php if ($quoteText): ?>
+                    <p class="quote-text"><?= htmlspecialchars($quoteText) ?></p>
+                    <p class="quote-author">— <?= htmlspecialchars($quoteAuthor) ?></p>
+                <?php else: ?>
+                    <p class="quote-text text-muted" style="font-size:11px;">Could not load quote.</p>
+                <?php endif; ?>
+            </div>
+
+        </div><!-- /.col-12.col-lg-6 dash-right-col -->
+
+        </div><!-- /.dash-main-row.row -->
 
     </div><!-- /.dashboardContent -->
 </div><!-- /#main-wrapper -->
@@ -416,6 +470,36 @@ foreach ($weeklyRows as $row) {
             }
         }
     });
+})();
+</script>
+
+<script>
+(function () {
+    const dateEl = document.getElementById('currentDate');
+    const timeEl = document.getElementById('currentTime');
+
+    const days   = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+    const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+    function tick() {
+        const now = new Date();
+        const day  = days[now.getDay()];
+        const mon  = months[now.getMonth()];
+        const date = now.getDate();
+        const yr   = now.getFullYear();
+
+        let h = now.getHours();
+        const m   = String(now.getMinutes()).padStart(2, '0');
+        const s   = String(now.getSeconds()).padStart(2, '0');
+        const ampm = h >= 12 ? 'PM' : 'AM';
+        h = h % 12 || 12;
+
+        dateEl.textContent = `${day}, ${mon} ${date}, ${yr}`;
+        timeEl.textContent = `${h}:${m}:${s} ${ampm}`;
+    }
+
+    tick();
+    setInterval(tick, 1000);
 })();
 </script>
 </body>

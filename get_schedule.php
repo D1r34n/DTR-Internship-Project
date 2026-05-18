@@ -294,6 +294,7 @@ if (($_SESSION['user_role'] ?? '') === 'admin') {
 
     $stmt = $pdo->prepare("
         SELECT lr.selected_dates, lr.start_date, lr.end_date, lr.status,
+               lr.leave_type, lr.reason,
                CONCAT(e.first_name, ' ', e.last_name) AS full_name
         FROM leave_requests lr
         JOIN employees e ON e.id = lr.employee_id
@@ -323,6 +324,11 @@ if (($_SESSION['user_role'] ?? '') === 'admin') {
             }
         }
 
+        $leaveProps = [
+            'employee_name' => $name,
+            'leave_type'    => $leave['leave_type'],
+            'reason'        => $leave['reason'],
+        ];
         foreach ($datesToShow as $d) {
             if ($leave['status'] === 'approved') {
                 $events[] = ['title' => $name . ' – On Leave',       'start' => $d, 'allDay' => true, 'classNames' => ['fc-ev-on-leave'],      'extendedProps' => ['shift_type' => 'leave_approved']];
@@ -335,7 +341,7 @@ if (($_SESSION['user_role'] ?? '') === 'admin') {
     }
 
     $stmt = $pdo->prepare("
-        SELECT lr.start_date AS ob_date, lr.status,
+        SELECT lr.start_date AS ob_date, lr.status, lr.reason,
                CONCAT(e.first_name, ' ', e.last_name) AS full_name
         FROM leave_requests lr
         JOIN employees e ON e.id = lr.employee_id
@@ -345,8 +351,9 @@ if (($_SESSION['user_role'] ?? '') === 'admin') {
     $stmt->execute([$start, $end]);
 
     foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $ob) {
-        $name = $ob['full_name'];
-        $d    = $ob['ob_date'];
+        $name   = $ob['full_name'];
+        $d      = $ob['ob_date'];
+        $obProps = ['employee_name' => $name, 'leave_type' => 'OB Leave', 'reason' => $ob['reason']];
         if ($ob['status'] === 'approved') {
             $events[] = ['title' => $name . ' – On OB',       'start' => $d, 'allDay' => true, 'classNames' => ['fc-ev-on-ob'],         'extendedProps' => ['shift_type' => 'ob_approved']];
         } elseif ($ob['status'] === 'pending') {
