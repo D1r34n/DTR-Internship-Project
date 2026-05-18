@@ -314,6 +314,7 @@ if (($_SESSION['user_role'] ?? '') === 'admin') {
     // Leave requests (non-OB) for all employees
     $stmt = $pdo->prepare("
         SELECT lr.selected_dates, lr.start_date, lr.end_date, lr.status,
+               lr.leave_type, lr.reason,
                CONCAT(e.first_name, ' ', e.last_name) AS full_name
         FROM leave_requests lr
         JOIN employees e ON e.id = lr.employee_id
@@ -343,20 +344,25 @@ if (($_SESSION['user_role'] ?? '') === 'admin') {
             }
         }
 
+        $leaveProps = [
+            'employee_name' => $name,
+            'leave_type'    => $leave['leave_type'],
+            'reason'        => $leave['reason'],
+        ];
         foreach ($datesToShow as $d) {
             if ($leave['status'] === 'approved') {
-                $events[] = ['title' => $name . ' – On Leave',       'start' => $d, 'backgroundColor' => '#fd7e14', 'borderColor' => '#e8610a', 'textColor' => '#fff', 'extendedProps' => ['shift_type' => 'leave_approved']];
+                $events[] = ['title' => $name . ' – On Leave',       'start' => $d, 'backgroundColor' => '#fd7e14', 'borderColor' => '#e8610a', 'textColor' => '#fff', 'extendedProps' => array_merge($leaveProps, ['shift_type' => 'leave_approved'])];
             } elseif ($leave['status'] === 'pending') {
-                $events[] = ['title' => $name . ' – Leave Pending',  'start' => $d, 'backgroundColor' => '#f0ad4e', 'borderColor' => '#d99a3a', 'textColor' => '#fff', 'extendedProps' => ['shift_type' => 'leave_pending']];
+                $events[] = ['title' => $name . ' – Leave Pending',  'start' => $d, 'backgroundColor' => '#f0ad4e', 'borderColor' => '#d99a3a', 'textColor' => '#fff', 'extendedProps' => array_merge($leaveProps, ['shift_type' => 'leave_pending'])];
             } elseif ($leave['status'] === 'rejected') {
-                $events[] = ['title' => $name . ' – Leave Rejected', 'start' => $d, 'backgroundColor' => '#dc3545', 'borderColor' => '#b02a37', 'textColor' => '#fff', 'extendedProps' => ['shift_type' => 'leave_rejected']];
+                $events[] = ['title' => $name . ' – Leave Rejected', 'start' => $d, 'backgroundColor' => '#dc3545', 'borderColor' => '#b02a37', 'textColor' => '#fff', 'extendedProps' => array_merge($leaveProps, ['shift_type' => 'leave_rejected'])];
             }
         }
     }
 
     // OB requests for all employees
     $stmt = $pdo->prepare("
-        SELECT lr.start_date AS ob_date, lr.status,
+        SELECT lr.start_date AS ob_date, lr.status, lr.reason,
                CONCAT(e.first_name, ' ', e.last_name) AS full_name
         FROM leave_requests lr
         JOIN employees e ON e.id = lr.employee_id
@@ -366,14 +372,15 @@ if (($_SESSION['user_role'] ?? '') === 'admin') {
     $stmt->execute([$start, $end]);
 
     foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $ob) {
-        $name = $ob['full_name'];
-        $d    = $ob['ob_date'];
+        $name   = $ob['full_name'];
+        $d      = $ob['ob_date'];
+        $obProps = ['employee_name' => $name, 'leave_type' => 'OB Leave', 'reason' => $ob['reason']];
         if ($ob['status'] === 'approved') {
-            $events[] = ['title' => $name . ' – On OB',       'start' => $d, 'backgroundColor' => '#6f42c1', 'borderColor' => '#59359a', 'textColor' => '#fff', 'extendedProps' => ['shift_type' => 'ob_approved']];
+            $events[] = ['title' => $name . ' – On OB',       'start' => $d, 'backgroundColor' => '#6f42c1', 'borderColor' => '#59359a', 'textColor' => '#fff', 'extendedProps' => array_merge($obProps, ['shift_type' => 'ob_approved'])];
         } elseif ($ob['status'] === 'pending') {
-            $events[] = ['title' => $name . ' – OB Pending',  'start' => $d, 'backgroundColor' => '#f0ad4e', 'borderColor' => '#d99a3a', 'textColor' => '#fff', 'extendedProps' => ['shift_type' => 'ob_pending']];
+            $events[] = ['title' => $name . ' – OB Pending',  'start' => $d, 'backgroundColor' => '#f0ad4e', 'borderColor' => '#d99a3a', 'textColor' => '#fff', 'extendedProps' => array_merge($obProps, ['shift_type' => 'ob_pending'])];
         } elseif ($ob['status'] === 'rejected') {
-            $events[] = ['title' => $name . ' – OB Rejected', 'start' => $d, 'backgroundColor' => '#dc3545', 'borderColor' => '#b02a37', 'textColor' => '#fff', 'extendedProps' => ['shift_type' => 'ob_rejected']];
+            $events[] = ['title' => $name . ' – OB Rejected', 'start' => $d, 'backgroundColor' => '#dc3545', 'borderColor' => '#b02a37', 'textColor' => '#fff', 'extendedProps' => array_merge($obProps, ['shift_type' => 'ob_rejected'])];
         }
     }
 }
