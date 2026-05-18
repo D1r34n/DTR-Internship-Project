@@ -1,26 +1,14 @@
 /* ================================================
-   EMPLOYEE LOG
+   ADMIN DASHBOARD
    ================================================
-   Page-specific styles for the employee dashboard.
+   Page-specific styles for the admin dashboard.
    Depends on: root.css, typography.css,
                components.css, navbars.css
    ================================================ */
 
 /* ============================================================
-   BACKGROUND
+   BASE
    ============================================================ */
-
-body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background: url('../assets/images/drt_bg.jpg') center / cover no-repeat;
-    z-index: -2;
-}
-
-/* ------------------------------------------------
-   BODY BASE
-   ------------------------------------------------ */
 
 html {
     height: 100%;
@@ -30,19 +18,23 @@ body {
     display: flex;
     min-height: 100vh;
     margin: 0;
-
     font-family: 'Poppins', sans-serif;
-
-    /* keep horizontal clean, allow vertical scroll */
     overflow-x: hidden;
-
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
 }
 
-/* =========================
+body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: url('../assets/images/drt_bg.jpg') center / cover no-repeat;
+    z-index: -2;
+}
+
+/* ============================================================
    LAYOUT
-========================= */
+   ============================================================ */
 
 #main-wrapper {
     display: flex;
@@ -75,62 +67,59 @@ body {
     left: calc(20px + var(--sidebar-collapsed-width));
 }
 
+/* ============================================================
+   CLOCK
+   ============================================================ */
+
 #currentDate {
-    font-size: 3rem;
-    margin-bottom: 5px;
+    font-size: 2rem;
+    margin-bottom: -10px;
     text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.5);
 }
 
 #currentTime {
-    font-size: 6rem;
+    font-size: 4rem;
     text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.5);
 }
 
+/* ============================================================
+   GRID ROWS
+   ============================================================ */
+
+.dash-main-row {
+    margin-top: -22px;
+}
+
 .dashRow {
-    display: flex;
-    flex-direction: row;
-    flex-wrap: wrap;
-    gap: 2rem;
-    align-items: flex-start;
-    margin-top: 5rem;
+    margin-top: -0.9rem;
 }
 
-.dashLeft {
-    display: flex;
-    flex-direction: column;
-    gap: 0;
-    flex: 1 1 auto;
-    min-width: 0;
-    margin-top: 13rem;
+.dash-right-col {
+    padding-top: 120px;
 }
 
-.dashboardSummary {
-    display: flex;
-    flex-direction: row;
-    flex-wrap: wrap;
-    gap: 1.5rem;
-}
+/* ============================================================
+   SUMMARY CARDS — shared
+   ============================================================ */
 
 .summaryCard {
     background: var(--glass-bg-dark);
-    padding: 20px;
+    padding: 8px 11px;
     border-radius: 5px;
-    flex: 1 1 200px;
-    min-width: 180px;
     height: auto;
-    min-height: 140px;
+    min-height: 75px;
     text-align: left;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
 }
+
 .summaryBday,
 .summaryEvents {
-    padding: 20px;
-    flex: 1 1 300px;
-    min-width: 260px;
+    padding: 10px 13px;
     height: auto;
-    min-height: 320px;
+    min-height: 220px;
     text-align: left;
     position: relative;
+    overflow: hidden;
 }
 
 .summaryBday > *,
@@ -142,42 +131,64 @@ body {
 .summaryTop {
     display: flex;
     align-items: center;
-    gap: 10px;
-    margin-bottom: 10px;
+    gap: 7px;
+    margin-bottom: 5px;
 }
 
 .summaryTop p {
     margin: 0;
     font-weight: 500;
     color: #fff;
+    font-size: 12px;
 }
 
-.summaryIcon {
-    width: 36px;
-    height: 36px;
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 16px;
+.summaryInfo {
+    margin-top: 8px;
+}
+
+.summaryInfo h5 {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #fff;
+    margin: 0 0 2px;
+    line-height: 1;
+}
+
+.summaryInfo span {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.55);
+}
+
+.summaryCard .icon-box {
+    width: 28px;
+    height: 28px;
+    font-size: 13px;
+    border-radius: 6px;
     flex-shrink: 0;
 }
 
-.summaryIcon.bg-green  
-{ 
-background: rgba(25, 200, 100, 0.2); 
-color: #19c864; 
-border: 1px solid rgba(25, 200, 100, 0.35);
- }
-.summaryIcon.bg-green  
-{ 
-background: rgba(25, 200, 100, 0.2); 
-color: #19c864; 
-border: 1px solid rgba(25, 200, 100, 0.35);
- }
-.summaryIcon.bg-blue   { background: rgba(13, 110, 253, 0.2); color: #0d6efd; border: 1px solid rgba(13, 110, 253, 0.35); }
-.summaryIcon.bg-orange { background: rgba(255, 153, 0, 0.2);  color: #ff9900; border: 1px solid rgba(255, 153, 0, 0.35);  }
-.summaryIcon.bg-red    { background: rgba(220, 53, 69, 0.2);  color: #dc3545; border: 1px solid rgba(220, 53, 69, 0.35);  }
+.summaryCard .icon-box-info,
+.summaryCard .icon-box-success,
+.summaryCard .icon-box-danger {
+    color: #ffffff;
+}
+
+.summaryIcon {
+    width: 26px;
+    height: 26px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    flex-shrink: 0;
+}
+
+.summaryIcon.bg-green  { background: rgba(25, 200, 100, 0.2);  color: #19c864; border: 1px solid rgba(25, 200, 100, 0.35);  }
+.summaryIcon.bg-blue   { background: rgba(13, 110, 253, 0.2);  color: #0d6efd; border: 1px solid rgba(13, 110, 253, 0.35);  }
+.summaryIcon.bg-orange { background: rgba(255, 153, 0, 0.2);   color: #ff9900; border: 1px solid rgba(255, 153, 0, 0.35);   }
+.summaryIcon.bg-red    { background: rgba(220, 53, 69, 0.2);   color: #dc3545; border: 1px solid rgba(220, 53, 69, 0.35);   }
+.summaryIcon.bg-pink   { background: rgba(244, 114, 182, 0.2); color: #f472b6; border: 1px solid rgba(244, 114, 182, 0.35); }
 
 .summaryBday .summaryIcon.bg-blue {
     background: rgba(139, 92, 246, 0.2);
@@ -189,6 +200,24 @@ border: 1px solid rgba(25, 200, 100, 0.35);
     background: var(--primary-glass);
     border: 1px solid var(--primary-border);
     color: #ffffff;
+}
+
+.summaryCount {
+    position: absolute;
+    top: 10px;
+    right: 13px;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #fff;
+    margin: 0;
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.18);
 }
 
 .summaryBday .summaryCount {
@@ -203,56 +232,83 @@ border: 1px solid rgba(25, 200, 100, 0.35);
     color: var(--primary-color);
 }
 
-
-.summaryCount {
-    position: absolute;
-    top: 20px;
-    right: 25px;
-
-    width: 35px;
-    height: 35px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    font-size: 1.2rem;
-    font-weight: 700;
-    color: #fff;
-    margin: 0;
-
-    background: rgba(255,255,255,0.1);
-    border: 1px solid rgba(255,255,255,0.18);
+.section-divider {
+    border: none;
+    border-top: 1px solid rgba(255,255,255,0.15);
+    margin: 4px 0;
 }
 
+/* ============================================================
+   BIRTHDAY CARD
+   ============================================================ */
 
 .birthdayList {
-    margin-top: -11px;
-    max-height: 215px;
+    margin-top: -10px;
+    max-height: 161px;
     overflow-y: auto;
-    margin-right: -20px;
-    padding-right: 20px;
+    overflow-x: hidden;
+    margin-right: -13px;
+    padding-right: 13px;
 }
 
-.birthdayList ul {
+.birthdayList ul,
+.EventsList ul {
     list-style: none;
     padding: 0;
     margin: 0;
 }
 
-.birthdayList li {
+.birthdayList li,
+.EventsList li {
     display: flex;
     align-items: center;
-    gap: 13px;
-    font-size: 14px;
-    padding: 9px 0;
+    gap: 8px;
+    font-size: 11px;
+    padding: 8.1px 0;
     border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+
+.birthdayList::-webkit-scrollbar,
+.EventsList::-webkit-scrollbar { width: 4px; }
+
+.birthdayList::-webkit-scrollbar-track,
+.EventsList::-webkit-scrollbar-track { background: transparent; }
+
+.birthdayList::-webkit-scrollbar-thumb,
+.EventsList::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 10px; }
+
+.birthdayList::-webkit-scrollbar-thumb:hover,
+.EventsList::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.4); }
+
+.bday-avatar {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+    border: 2px solid rgba(255,255,255,0.2);
+}
+
+.bday-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.bday-info strong {
+    font-size: 11px;
+    color: #fff;
+}
+
+.bday-date {
+    font-size: 10px;
+    color: rgba(255,255,255,0.55);
 }
 
 .bday-view-all {
     display: block;
-    margin-top: 10px;
-    font-size: 12px;
+    margin-top: 6px;
+    font-size: 11px;
     font-weight: 500;
     color: #8b5cf6;
     text-decoration: none;
@@ -266,77 +322,26 @@ border: 1px solid rgba(25, 200, 100, 0.35);
     color: #a78bfa;
 }
 
-.section-divider {
-    border: none;
-    border-top: 1px solid rgba(255,255,255,0.15);
-    margin: 8px 0;
-}
+/* ============================================================
+   EVENTS CARD
+   ============================================================ */
 
-.bday-avatar {
-    width: 52px;
-    height: 52px;
-    border-radius: 50%;
-    object-fit: cover;
-    flex-shrink: 0;
-    border: 2px solid rgba(255,255,255,0.2);
-}
-
-.bday-info {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
-
-.bday-info strong {
-    font-size: 15px;
-    color: #fff;
-}
-
-.bday-date {
-    font-size: 13px;
-    color: rgba(255,255,255,0.55);
-}
-
-.bday-cal {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    min-width: 36px;
-    border-radius: 6px;
-    overflow: hidden;
-    border: 1px solid rgba(255,255,255,0.15);
-    flex-shrink: 0;
-}
-
-.bday-month {
-    background-color: #0d6efd;
-    color: #fff;
-    font-size: 9px;
-    font-weight: 700;
-    text-transform: uppercase;
-    width: 100%;
-    text-align: center;
-    padding: 2px 0;
-    letter-spacing: 0.5px;
-}
-
-.bday-day {
-    background-color: #fff;
-    color: #222;
-    font-size: 14px;
-    font-weight: 700;
-    width: 100%;
-    text-align: center;
-    line-height: 1.3;
+.EventsList {
+    margin-top: -8px;
+    max-height: 161px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    margin-right: -13px;
+    padding-right: 13px;
 }
 
 .event-cal {
     display: flex;
     flex-direction: column;
     align-items: center;
-    width: 52px;
-    height: 52px;
-    border-radius: 6px;
+    width: 32px;
+    height: 32px;
+    border-radius: 5px;
     overflow: hidden;
     border: 1px solid var(--primary-border);
     flex-shrink: 0;
@@ -345,12 +350,12 @@ border: 1px solid rgba(25, 200, 100, 0.35);
 .event-month {
     background: var(--primary-glass);
     color: var(--primary-color);
-    font-size: 10px;
+    font-size: 8px;
     font-weight: 700;
     text-transform: uppercase;
     width: 100%;
     text-align: center;
-    padding: 2px 0;
+    padding: 1px 0;
     letter-spacing: 0.5px;
     border-bottom: 1px solid var(--primary-border);
 }
@@ -358,7 +363,7 @@ border: 1px solid rgba(25, 200, 100, 0.35);
 .event-day {
     background: var(--glass-bg-dark);
     color: #fff;
-    font-size: 16px;
+    font-size: 10px;
     font-weight: 700;
     width: 100%;
     flex: 1;
@@ -370,38 +375,53 @@ border: 1px solid rgba(25, 200, 100, 0.35);
 .event-info {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 2px;
 }
 
 .event-info strong {
-    font-size: 15px;
+    font-size: 11px;
     color: #fff;
 }
 
 .event-type-label {
-    font-size: 13px;
+    font-size: 10px;
     color: rgba(255,255,255,0.55);
 }
 
-.summaryEvents .bday-view-all {
+.event-view-all {
+    display: block;
+    margin-top: 6px;
+    font-size: 11px;
+    font-weight: 500;
     color: var(--primary-color);
+    text-decoration: none;
+    text-align: right;
+    opacity: 0.8;
+    transition: opacity 0.2s;
 }
 
-.summaryEvents .bday-view-all:hover {
+.event-view-all:hover {
+    opacity: 1;
     color: var(--primary-hover);
 }
 
-.event-days {
+/* ============================================================
+   DATE BADGES — shared between birthdays and events
+   ============================================================ */
+
+.event-days,
+.bday-days {
     margin-left: auto;
     flex-shrink: 0;
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 600;
-    padding: 3px 8px;
+    padding: 2px 6px;
     border-radius: 20px;
     white-space: nowrap;
 }
 
-.event-days.today {
+.event-days.today,
+.bday-days.today {
     background: rgba(255, 193, 7, 0.2);
     color: #ffc107;
     border: 1px solid rgba(255, 193, 7, 0.4);
@@ -413,93 +433,83 @@ border: 1px solid rgba(25, 200, 100, 0.35);
     border: 1px solid var(--primary-border);
 }
 
-.event-days.past {
-    background: rgba(255, 255, 255, 0.05);
-    color: rgba(255, 255, 255, 0.35);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.bday-days {
-    margin-left: auto;
-    flex-shrink: 0;
-    font-size: 11px;
-    font-weight: 600;
-    padding: 3px 8px;
-    border-radius: 20px;
-    white-space: nowrap;
-}
-
-.bday-days.today {
-    background: rgba(255, 193, 7, 0.2);
-    color: #ffc107;
-    border: 1px solid rgba(255, 193, 7, 0.4);
-}
-
 .bday-days.upcoming {
-   background: rgba(139, 92, 246, 0.25);
+    background: rgba(139, 92, 246, 0.25);
     border: 1px solid rgba(139, 92, 246, 0.4);
     color: #8b5cf6;
 }
 
+.event-days.past,
 .bday-days.past {
     background: rgba(255, 255, 255, 0.05);
     color: rgba(255, 255, 255, 0.35);
     border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.birthdayList::-webkit-scrollbar,
-.EventsList::-webkit-scrollbar {
-    width: 4px;
+/* ============================================================
+   CARD ORANGE — dashboard-only variant (no match in components.css)
+   ============================================================ */
+
+.card-orange {
+    background:
+        linear-gradient(
+            135deg,
+            transparent 0%,
+            transparent 55%,
+            rgba(255, 153, 0, 0.06) 78%,
+            rgba(255, 153, 0, 0.12) 100%
+        ),
+        linear-gradient(
+            to right,
+            rgba(255, 255, 255, 0.06) 0%,
+            rgba(255, 255, 255, 0.03) 40%,
+            rgba(255, 255, 255, 0.015) 70%,
+            transparent 100%
+        ),
+        var(--frosted-bg) !important;
+
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+
+    backdrop-filter: var(--frosted-blur) !important;
+    -webkit-backdrop-filter: var(--frosted-blur) !important;
+
+    box-shadow: var(--frosted-shadow) !important;
 }
 
-.birthdayList::-webkit-scrollbar-track,
-.EventsList::-webkit-scrollbar-track {
-    background: transparent;
+.card-orange:hover {
+    background:
+        linear-gradient(
+            135deg,
+            transparent 0%,
+            transparent 50%,
+            rgba(255, 153, 0, 0.10) 75%,
+            rgba(255, 153, 0, 0.18) 100%
+        ),
+        linear-gradient(
+            to right,
+            rgba(255, 255, 255, 0.08) 0%,
+            rgba(255, 255, 255, 0.04) 40%,
+            rgba(255, 255, 255, 0.02) 70%,
+            transparent 100%
+        ),
+        var(--frosted-bg) !important;
+
+    border-color: rgba(255, 153, 0, 0.18) !important;
 }
 
-.birthdayList::-webkit-scrollbar-thumb,
-.EventsList::-webkit-scrollbar-thumb {
-    background: rgba(255,255,255,0.2);
-    border-radius: 10px;
+/* ============================================================
+   ATTENDANCE CHART
+   ============================================================ */
+
+.attendanceOverviewCard .summaryIcon {
+    color: #ffffff;
 }
 
-.birthdayList::-webkit-scrollbar-thumb:hover,
-.EventsList::-webkit-scrollbar-thumb:hover {
-    background: rgba(255,255,255,0.4);
-}
-
-.EventsList {
-    margin-top: -11px;
-    max-height: 215px;
-    overflow-y: auto;
-    margin-right: -20px;
-    padding-right: 20px;
-}
-
-.EventsList ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-}
-
-.EventsList li {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-size: 13px;
-    padding: 9px 0;
-    border-bottom: 1px solid rgba(255,255,255,0.08);
-}
-
-/* ── Attendance Overview Graph ────────────────────────────── */
 .attendanceOverviewCard {
-    flex: none;
-    width: 800px;
-    height: 335px;
-    padding: 20px;
+    height: 260px;
+    padding: 11px;
     overflow: hidden;
     display: flex;
-    margin-top: 24rem;
     flex-direction: column;
     transform: none !important;
 }
@@ -509,4 +519,92 @@ border: 1px solid rgba(25, 200, 100, 0.35);
     min-height: 0;
     position: relative;
     margin-top: 8px;
+}
+
+/* ============================================================
+   ACTIVITY LOGS
+   ============================================================ */
+
+.activityLogsCard .summaryIcon {
+    color: #ffffff;
+}
+
+.activityLogsCard {
+    height: calc(100vh - 80px - 110px - 196px);
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+}
+
+.activityLogsList {
+    flex: 1;
+    overflow-y: auto;
+    margin-right: -16px;
+    padding-right: 16px;
+}
+
+/* ============================================================
+   QUOTE CARD
+   ============================================================ */
+
+.quoteCard .summaryIcon {
+    color: #ffffff;
+}
+
+.quoteCard {
+    padding: 12px 16px;
+}
+
+.quote-text {
+    font-size: 12px;
+    font-style: italic;
+    color: rgba(255, 255, 255, 0.85);
+    line-height: 1.6;
+    margin: 6px 0 4px;
+}
+
+.quote-author {
+    font-size: 11px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.5);
+    margin: 0;
+    text-align: right;
+}
+
+/* ============================================================
+   RESPONSIVE BREAKPOINTS
+   ============================================================ */
+
+/* xl — 110% zoom on 1920px monitors */
+@media (max-width: 1200px) {
+    #currentDate { font-size: 1.6rem; }
+    #currentTime { font-size: 3.2rem; }
+    .attendanceOverviewCard { height: 240px; }
+}
+
+/* lg — two columns start stacking */
+@media (max-width: 992px) {
+    #currentDate { font-size: 1.4rem; }
+    #currentTime { font-size: 2.8rem; }
+    .attendanceOverviewCard { height: 220px; }
+    .dashboardContent { overflow-y: auto; }
+    .dash-right-col { padding-top: 0; }
+    .activityLogsCard { height: 320px; }
+}
+
+/* md — tablet landscape */
+@media (max-width: 768px) {
+    .dashboardContent { padding-right: 12px; }
+    #currentDate { font-size: 1.2rem; }
+    #currentTime { font-size: 2.2rem; }
+    .attendanceOverviewCard { height: 200px; padding: 12px; }
+}
+
+/* xs — mobile */
+@media (max-width: 576px) {
+    #currentDate { font-size: 1rem; }
+    #currentTime { font-size: 1.6rem; }
+    .dashboardContent { padding-right: 8px; }
+    .attendanceOverviewCard { height: 180px; }
+    .activityLogsCard { height: 260px; }
 }
