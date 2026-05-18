@@ -741,40 +741,6 @@ body {
 .ganttToolTipUnderTime .ganttToolTipValue { color: var(--tooltip-undertime); }
 .ganttToolTipOverBreak .ganttToolTipValue { color: var(--tooltip-overbreak); }
 
-/* ============================================================
-   FLATPICKR DARK THEME
-   ============================================================ */
-.flatpickr-calendar {
-    background: var(--glass-bg) !important;
-    backdrop-filter: blur(32px) saturate(160%) brightness(0.3) !important;
-    -webkit-backdrop-filter: blur(32px) saturate(160%) brightness(0.3) !important;
-    border: 1px solid var(--glass-border) !important;
-    border-radius: 16px !important;
-    box-shadow: 0 12px 35px rgba(0,0,0,0.5) !important;
-    font-family: 'Poppins', sans-serif !important;
-    color: var(--text-light) !important;
-}
-.flatpickr-month { color: var(--text-lightest) !important; fill: var(--text-lightest) !important; }
-.flatpickr-current-month input.cur-year,
-.flatpickr-current-month .flatpickr-monthDropdown-months {
-    background: transparent !important;
-    color: var(--text-lightest) !important;
-    font-family: 'Poppins', sans-serif !important;
-}
-.flatpickr-prev-month, .flatpickr-next-month { fill: var(--text-light) !important; color: var(--text-light) !important; }
-.flatpickr-weekday { color: var(--gantt-scale-color) !important; font-family: 'Poppins', sans-serif !important; }
-.flatpickr-day { color: var(--text-light) !important; border-radius: 8px !important; font-family: 'Poppins', sans-serif !important; }
-.flatpickr-day:hover { background: var(--overlay-hover) !important; border-color: transparent !important; }
-.flatpickr-day.selected, .flatpickr-day.startRange, .flatpickr-day.endRange {
-    background: var(--primary-color) !important; border-color: var(--primary-color) !important; color: #fff !important;
-}
-.flatpickr-day.inRange { background: var(--primary-range) !important; border-color: transparent !important; box-shadow: none !important; }
-.flatpickr-day.today { border-color: var(--primary-glow) !important; }
-.flatpickr-day.flatpickr-disabled, .flatpickr-day.prevMonthDay, .flatpickr-day.nextMonthDay {
-    color: var(--overlay-muted) !important;
-}
-.flatpickr-input { background: transparent !important; border: none !important; color: var(--text-light) !important; }
-.flatpickr-input.empDateInput { background: transparent !important; border: 1px solid rgba(255,255,255,0.15) !important; color: #fff !important; }
 
 /* ============================================================
    MODAL DEPARTMENT DROPDOWN — open upward so it doesn't go

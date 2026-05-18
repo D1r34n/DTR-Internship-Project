@@ -1,0 +1,98 @@
+/* ================================================
+   LOGS WIDGET
+   ================================================
+   Styles for logs_widget.php — safe to include
+   on any page that embeds the logs widget.
+   Depends on: root.css, components.css
+   ================================================ */
+
+/* Widget itself is transparent — host controls the container */
+.logs-widget {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    overflow: visible;
+}
+
+/* Filter bar */
+.logs-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.75rem;
+}
+
+/* Empty state */
+.logs-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+
+    width: 100%;
+    height: 100%;
+
+    padding: 2rem 0;
+
+    gap: 0.5rem;
+
+    color: #aaa;
+    font-size: 5rem;
+}
+
+/* =========================
+   MAP POPUP
+========================= */
+.mapPopUpContainer {
+    display: none;
+    position: fixed;
+    z-index: 9999;
+
+    width: min(300px, 90vw);
+    max-width: 300px;
+
+    border-radius: 12px;
+    overflow: hidden;
+
+    background: var(--map-bg);
+    border: 1px solid var(--map-border);
+    box-shadow: 0 8px 30px var(--map-shadow);
+
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+}
+
+.mapPopUp {
+    height: clamp(160px, 18vh, 400px);
+    width: 100%;
+}
+
+.mapPopUpInfo {
+    padding: 10px 12px;
+    font-size: 0.75rem;
+    font-weight: 300;
+    line-height: 1.6;
+    color: #fff;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.4);
+}
+
+.openGoogleMapsBtn {
+    display: block;
+    text-align: center;
+    padding: 8px 10px;
+    border-radius: 8px;
+    font-size: 0.75rem;
+    text-decoration: none;
+    font-weight: 500;
+
+    background: var(--map-link);
+    color: var(--bg-light);
+    transition: color 0.3s ease, background 0.3s ease;
+}
+
+.openGoogleMapsBtn:hover {
+    background: var(--bg-light);
+    color: var(--map-link);
+}

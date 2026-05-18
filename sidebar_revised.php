@@ -68,7 +68,7 @@ $requestsOpen = in_array($currentPage, ['employee_requests', 'schedule_requests'
         <!-- ALL EMPLOYEE MENU -->
         <?php navLink('../admin_pages/dashboard_page.php', 'bi-columns-gap', 'Dashboard', $currentPage === 'dashboard'); ?>
         <?php navLink('../employee_pages/records_page.php', 'bi-bar-chart-steps',  'Records', $currentPage === 'records');    ?>
-        <?php navLink('../employee_pages/employee_schedule.php', 'bi-calendar-week',  'Schedule', $currentPage === 'schedule');    ?>
+        <?php navLink('../employee_pages/schedules_page.php', 'bi-calendar-week',  'Schedule', $currentPage === 'schedule');    ?>
         <?php navLink('../employee_pages/logs_page.php',        'bi-journal-text',  'Activity Logs',        $currentPage === 'logs'); ?>
 
 

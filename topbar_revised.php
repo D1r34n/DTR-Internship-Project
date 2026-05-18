@@ -73,9 +73,9 @@ foreach ($parts as $part) {
 }
 
 $breadcrumbLabels = [
+    'dashboard_page' => 'Dashboard',
+    'records_page'  => 'Records',
     'employee_schedule' => 'Schedule',
-    'employee_dashboard' => 'Dashboard',
-    'employee_records'  => 'Records',
 ];
 
 $breadcrumbPath = [['label' => 'HSN DTR System']];

@@ -7,13 +7,14 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 require_once 'db.php';
-require_once 'system_functions/system_library.php';
 require_once 'system_functions/system_service.php';
 
 header('Content-Type: application/json');
 date_default_timezone_set('Asia/Manila');
 
-$employeeId = (int) $_SESSION['user_id'];
+$isAdmin    = $_SESSION['user_role'] === 'admin';
+$requested  = isset($_GET['employee_id']) ? (int)$_GET['employee_id'] : 0;
+$employeeId = ($isAdmin && $requested > 0) ? $requested : (int)$_SESSION['user_id'];
 
 $rawMonth = $_GET['month'] ?? date('Y-m');
 [$yr, $mn] = array_pad(array_map('intval', explode('-', $rawMonth)), 2, 0);
@@ -67,35 +68,22 @@ foreach ($obStmt->fetchAll(PDO::FETCH_ASSOC) as $ob) {
     $obMap[$ob['ob_date']] = $ob['status'];
 }
 
-$rows = [];
-foreach ($records as $row) {
-    $sched    = $schedules[$row['work_date']] ?? null;
-    $ganttBar = computeGanttRow($row, $sched);
-    if ($ganttBar === null) continue;
-
-    $leaveStatus = $leaveMap[$row['work_date']] ?? null;
-    $obStatus    = $obMap[$row['work_date']]    ?? null;
-
-    if ($leaveStatus === 'approved') {
-        $ganttBar['type']       = 'absent_or_future';
-        $ganttBar['barClass']   = 'ganttBarLeave';
-        $ganttBar['labelClass'] = 'ganttAbsentLabel';
-        $ganttBar['labelText']  = 'On Leave';
-        $ganttBar['barLeft']    = 0;
-        $ganttBar['barWidth']   = 100;
-        $ganttBar['midLeft']    = 50;
-    } elseif ($obStatus === 'approved') {
-        $ganttBar['type']       = 'absent_or_future';
-        $ganttBar['barClass']   = 'ganttBarOB';
-        $ganttBar['labelClass'] = 'ganttAbsentLabel';
-        $ganttBar['labelText']  = 'On OB';
-        $ganttBar['barLeft']    = 0;
-        $ganttBar['barWidth']   = 100;
-        $ganttBar['midLeft']    = 50;
-    }
-
-    $rows[] = $ganttBar;
-}
+$recordsOut = array_map(fn($r) => [
+    'work_date'         => $r['work_date'],
+    'scheduled_start'   => $r['scheduled_start'],
+    'scheduled_end'     => $r['scheduled_end'],
+    'actual_time_in'    => $r['actual_time_in'],
+    'actual_time_out'   => $r['actual_time_out'],
+    'status'            => $r['status'],
+    'late_minutes'      => (int)$r['late_minutes'],
+    'undertime_minutes' => (int)$r['undertime_minutes'],
+    'overtime_minutes'  => (int)$r['overtime_minutes'],
+    'break_minutes'     => (int)$r['break_minutes'],
+    'overtime_status'   => $r['overtime_status'],
+    'missed_time_out'   => (int)$r['missed_time_out'],
+    'first_break_in'    => $r['first_break_in'],
+    'last_break_out'    => $r['last_break_out'],
+], $records);
 
 echo json_encode([
     'meta' => [
@@ -104,5 +92,8 @@ echo json_encode([
         'absentCount'  => $absentCount,
         'pendingCount' => $pendingCount,
     ],
-    'rows' => $rows,
+    'records'   => $recordsOut,
+    'schedules' => $schedules,
+    'leaveMap'  => $leaveMap,
+    'obMap'     => $obMap,
 ]);

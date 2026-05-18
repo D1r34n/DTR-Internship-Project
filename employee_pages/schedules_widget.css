@@ -1,0 +1,481 @@
+/* ================================================
+   SCHEDULES WIDGET
+   ================================================
+   Styles for schedules_widget.php — safe to include
+   on any page that embeds the schedules widget.
+   Depends on: root.css, components.css
+   ================================================ */
+
+/* ---- Page card wrapper (used by schedules_page.php) ---- */
+.schedules-card {
+    flex: 1;
+    min-height: 0;
+    margin: 0.5rem 1rem 1rem;
+    overflow: visible !important;
+}
+
+.schedules-card-body {
+    padding: 1.5rem;
+    height: 100%;
+    overflow: visible;
+}
+
+.schedules-widget {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    height: 100%;
+    overflow: visible;
+}
+
+/* ---- Header (admin scoped: month nav + chip + button) ---- */
+.sw-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 0.75rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    flex-shrink: 0;
+}
+
+/* ---- Calendar wrapper ---- */
+#sw-cal-wrapper {
+    position: relative;
+    flex: 1;
+    min-height: 0;
+}
+
+#sw-cal-loading {
+    display: none;
+    position: absolute;
+    inset: 0;
+    z-index: 10;
+    background: rgba(0, 0, 0, 0.35);
+    backdrop-filter: blur(3px);
+    border-radius: 8px;
+    align-items: center;
+    justify-content: center;
+}
+
+#sw-cal-loading.show { display: flex; }
+
+#sw-cal-loading .spinner-border {
+    width: 2.5rem;
+    height: 2.5rem;
+    color: var(--primary-color);
+}
+
+/* ---- Shift legend (employee view) ---- */
+.shiftLegend {
+    display: flex;
+    gap: 1.5rem;
+    align-items: center;
+    padding: 0.5rem 0 1rem;
+    flex-wrap: wrap;
+    flex-shrink: 0;
+}
+
+.shiftLegendItem {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.75rem;
+    color: var(--text-light);
+}
+
+.shiftLegendDot {
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+    flex-shrink: 0;
+}
+
+.shiftLegendDot.day            { background: var(--primary-color); }
+.shiftLegendDot.night          { background: var(--shift-night); }
+.shiftLegendDot.night-cont     { background: var(--shift-night-bg); border: 2px dashed var(--shift-night); }
+.shiftLegendDot.rest           { background: var(--shift-rest); }
+.shiftLegendDot.leave-approved { background: var(--shift-leave-approved); }
+.shiftLegendDot.leave-pending  { background: var(--shift-leave-pending); }
+.shiftLegendDot.leave-rejected { background: var(--shift-leave-rejected); }
+.shiftLegendDot.ob-approved    { background: var(--shift-ob-approved); }
+
+/* ---- Filter select + Add Event button (admin global view) ---- */
+.schedule-filter-select {
+    appearance: auto;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: var(--text-light);
+    font-size: 0.75rem;
+    font-weight: 500;
+    padding: 4px 10px;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+}
+
+.schedule-filter-select:focus {
+    outline: none;
+    border-color: rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.schedule-filter-select option { background: #1e1e2e; color: #fff; }
+
+.btn-add-event {
+    background: rgba(13, 110, 253, 0.15);
+    color: #6ea8fe;
+    border: 1px solid rgba(13, 110, 253, 0.3);
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 4px 12px;
+    border-radius: 20px;
+    transition: background 0.2s, color 0.2s;
+    white-space: nowrap;
+}
+
+.btn-add-event:hover { background: #0d6efd; color: #fff; border-color: #0d6efd; }
+
+/* ============================================================
+   FULLCALENDAR: #sw-calendar
+   ============================================================ */
+
+#sw-calendar {
+    --fc-border-color:       var(--glass-border);
+    --fc-today-bg-color:     rgba(151, 190, 65, 0.07);
+    --fc-page-bg-color:      transparent;
+    --fc-neutral-bg-color:   rgba(255,255,255,0.03);
+    --fc-neutral-text-color: var(--text-muted);
+    --fc-small-font-size:    0.72rem;
+    font-family: 'Poppins', sans-serif;
+    height: 100%;
+}
+
+#sw-calendar .fc-col-header-cell-cushion {
+    color:           var(--text-muted);
+    font-size:       0.68rem;
+    font-weight:     500;
+    text-transform:  uppercase;
+    letter-spacing:  0.05em;
+    text-decoration: none;
+    padding:         0.3rem 0;
+}
+
+#sw-calendar .fc-daygrid-day-number {
+    color:           var(--text-muted);
+    font-size:       0.75rem;
+    font-weight:     500;
+    text-decoration: none;
+    padding:         3px 5px;
+}
+
+#sw-calendar .fc-day-today .fc-daygrid-day-number { color: var(--primary-color); font-weight: 600; }
+
+/* Compact cells (employee/admin global view) */
+#sw-calendar .fc-header-toolbar { flex-wrap: nowrap !important; align-items: center !important; }
+#sw-calendar .fc-header-toolbar .fc-toolbar-chunk { display: flex; align-items: center; flex-shrink: 0; white-space: nowrap; }
+#sw-calendar .fc-daygrid-event      { font-size: 0.7rem; padding: 1px 4px; margin-bottom: 1px; }
+#sw-calendar .fc-col-header-cell    { padding: 3px 0; font-size: 0.72rem; }
+#sw-calendar .fc-daygrid-day-events { margin-bottom: 2px; }
+#sw-calendar .fc-daygrid-day        { position: relative; }
+
+/* Scoped admin view */
+#sw-calendar .fc-daygrid-day:not(.fc-day-other):hover { background: var(--glass-bg); cursor: pointer; }
+#sw-calendar .fc-daygrid-day-frame  { min-height: 80px; position: relative; }
+
+#sw-calendar .fc-event {
+    box-shadow:    none        !important;
+    font-family:   'Poppins', sans-serif;
+    margin-bottom: 1px;
+}
+
+/* ---- Unified event-type base colors (all views) ---- */
+#sw-calendar .fc-ev-day              { background-color: #97be41                  !important; border-color: #7fae2f !important; color: #fff    !important; }
+#sw-calendar .fc-ev-night            { background-color: #4da3ff                  !important; border-color: #2e8fe8 !important; color: #fff    !important; }
+#sw-calendar .fc-ev-night-cont       { background-color: rgba(77,163,255,0.12)    !important; border:       2px dashed #4da3ff  !important; color: #4da3ff !important; border-radius: 4px !important; }
+#sw-calendar .fc-ev-rest             { background-color: rgba(251,191,36,0.12)    !important; border-color: #f59e0b !important; color: #f59e0b !important; }
+#sw-calendar .fc-ev-on-leave         { background-color: #fd7e14                  !important; border-color: #e8610a !important; color: #fff    !important; }
+#sw-calendar .fc-ev-leave-pending    { background-color: #f0ad4e                  !important; border-color: #d99a3a !important; color: #fff    !important; }
+#sw-calendar .fc-ev-leave-rejected   { background-color: #dc3545                  !important; border-color: #b02a37 !important; color: #fff    !important; }
+#sw-calendar .fc-ev-on-ob            { background-color: #6f42c1                  !important; border-color: #59359a !important; color: #fff    !important; }
+#sw-calendar .fc-ev-ob-pending       { background-color: #f0ad4e                  !important; border-color: #d99a3a !important; color: #fff    !important; }
+#sw-calendar .fc-ev-pending-schedule { background-color: rgba(245,158,11,0.12)    !important; border-color: #f59e0b !important; color: #f59e0b !important; }
+
+/* ---- Scoped admin event inner ---- */
+.fc-admin-inner { display: flex; flex-direction: column; padding: 2px 4px; gap: 2px; }
+
+.fc-admin-label {
+    font-size:     0.78rem;
+    font-weight:   600;
+    line-height:   1.3;
+    white-space:   nowrap;
+    overflow:      hidden;
+    text-overflow: ellipsis;
+    color:         inherit;
+}
+
+.fc-admin-time {
+    display:       inline-block;
+    font-size:     0.7rem;
+    font-weight:   500;
+    padding:       1px 6px;
+    border-radius: 4px;
+    white-space:   nowrap;
+    overflow:      hidden;
+    text-overflow: ellipsis;
+    align-self:    flex-start;
+    background:    rgba(255,255,255,0.2);
+    color:         inherit;
+}
+
+/* Transparent-background events get a subtler time chip */
+#sw-calendar .fc-ev-night-cont       .fc-admin-time,
+#sw-calendar .fc-ev-rest             .fc-admin-time,
+#sw-calendar .fc-ev-pending-schedule .fc-admin-time { background: rgba(255,255,255,0.1); }
+
+/* ---- Add overlay (admin: empty day) ---- */
+.sw-day-add-overlay {
+    position:        absolute;
+    inset:           0;
+    display:         flex;
+    align-items:     center;
+    justify-content: center;
+    font-size:       1.4rem;
+    color:           var(--primary-color);
+    opacity:         0;
+    transition:      opacity 0.15s;
+    pointer-events:  none;
+    z-index:         1;
+}
+
+#sw-calendar .fc-daygrid-day:not(.fc-day-has-events):hover .sw-day-add-overlay { opacity: 1; }
+
+/* Same overlay for employee/admin global view */
+.es-day-add-overlay {
+    position:        absolute;
+    inset:           0;
+    display:         flex;
+    align-items:     center;
+    justify-content: center;
+    font-size:       1.4rem;
+    color:           var(--primary-color);
+    opacity:         0;
+    transition:      opacity 0.15s;
+    pointer-events:  none;
+    z-index:         1;
+}
+
+#sw-calendar .fc-daygrid-day:not(.fc-day-has-events):hover .es-day-add-overlay { opacity: 1; }
+
+/* ---- Event action buttons (scoped admin: edit/delete on hover) ---- */
+.sw-ev-actions {
+    position:   absolute;
+    bottom:     4px;
+    right:      4px;
+    display:    flex;
+    gap:        3px;
+    opacity:    0;
+    transition: opacity 0.15s;
+    z-index:    5;
+}
+
+#sw-calendar .fc-daygrid-day:hover .sw-ev-actions { opacity: 1; }
+
+.sched-cal-action-btn {
+    width:         22px;
+    height:        22px;
+    border:        none;
+    border-radius: 5px;
+    cursor:        pointer;
+    font-size:     0.6rem;
+    display:       inline-flex;
+    align-items:   center;
+    justify-content: center;
+    transition:    background 0.2s;
+}
+
+.sched-cal-action-btn.edit        { background: var(--info-glass);   color: var(--info-color); }
+.sched-cal-action-btn.edit:hover  { background: var(--info-color);   color: var(--text-lightest); }
+.sched-cal-action-btn.delete      { background: var(--danger-glass);  color: var(--danger-color); }
+.sched-cal-action-btn.delete:hover { background: var(--danger-color); color: var(--text-lightest); }
+
+/* ============================================================
+   MODALS (glass style — for both scoped and global admin)
+   ============================================================ */
+
+.glass-modal {
+    background:              var(--frosted-bg);
+    backdrop-filter:         var(--frosted-blur);
+    -webkit-backdrop-filter: var(--frosted-blur);
+    border:                  1px solid var(--frosted-border);
+    box-shadow:              var(--frosted-shadow);
+    color:                   var(--text-light);
+}
+
+.glass-modal .modal-header { border-bottom-color: var(--neutral-border); }
+.glass-modal .modal-footer { border-top-color:    var(--neutral-border); }
+.glass-modal .modal-title  { color: var(--text-lightest); font-weight: 600; }
+
+.glass-modal .form-label {
+    color:         var(--text-light);
+    font-size:     0.83rem;
+    font-weight:   500;
+    margin-bottom: 0.35rem;
+}
+
+.glass-modal small.text-muted,
+.glass-modal p.text-muted,
+.glass-modal .text-muted { color: var(--text-muted) !important; }
+
+.glass-modal .form-control {
+    background:   var(--neutral-glass);
+    border-color: var(--neutral-border);
+    color:        var(--text-light);
+    font-size:    0.87rem;
+}
+
+.glass-modal .form-control:focus {
+    background:   var(--neutral-glass-hover);
+    border-color: var(--primary-border);
+    color:        var(--text-light);
+    box-shadow:   0 0 0 3px var(--primary-soft);
+}
+
+.glass-modal .form-control[readonly] { color: var(--text-muted); background: var(--neutral-soft); }
+
+/* ---- Rest-day weekday grid ---- */
+.rest-day-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 8px;
+}
+
+.rest-day-toggle {
+    border:        1px solid var(--neutral-border);
+    color:         var(--text-muted);
+    background:    transparent;
+    border-radius: 8px;
+    font-family:   'Poppins', sans-serif;
+    font-size:     0.82rem;
+    font-weight:   500;
+    padding:       7px 4px;
+    text-align:    center;
+    transition:    all 0.15s;
+    width:         100%;
+}
+
+.rest-day-toggle:hover:not(.active) {
+    background:   var(--neutral-glass-hover);
+    border-color: var(--neutral-border);
+    color:        var(--text-light);
+}
+
+.btn.rest-day-toggle.active {
+    background:   var(--warning-soft)  !important;
+    border-color: var(--warning-color) !important;
+    color:        var(--warning-color) !important;
+    font-weight:  700;
+    box-shadow:   0 0 0 2px var(--warning-glow);
+}
+
+/* ---- Preset schedule dropdown ---- */
+.preset-sched-dropdown-wrap { position: relative; }
+
+.preset-sched-trigger {
+    width:         100%;
+    display:       flex;
+    align-items:   center;
+    justify-content: space-between;
+    gap:           0.5rem;
+    background:    var(--neutral-glass);
+    border:        1px solid var(--neutral-border);
+    color:         var(--text-muted);
+    border-radius: 8px;
+    padding:       0.5rem 0.85rem;
+    font-size:     0.85rem;
+    cursor:        pointer;
+    text-align:    left;
+    transition:    border-color 0.18s, background 0.18s, color 0.18s;
+}
+
+.preset-sched-trigger:hover {
+    background:   var(--neutral-glass-hover);
+    border-color: var(--primary-border);
+    color:        var(--text-light);
+}
+
+.preset-sched-menu {
+    position:      absolute;
+    top:           calc(100% + 4px);
+    left:          0;
+    right:         0;
+    background:    #1a1a22;
+    border:        1px solid var(--neutral-border);
+    border-radius: 8px;
+    box-shadow:    0 8px 24px rgba(0, 0, 0, 0.6);
+    z-index:       1060;
+    display:       none;
+    max-height:    220px;
+    overflow-y:    auto;
+}
+
+.preset-sched-menu.open { display: block; }
+
+.preset-sched-item {
+    padding:    0.55rem 1rem;
+    font-size:  0.85rem;
+    color:      var(--text-light);
+    cursor:     pointer;
+    transition: background 0.14s;
+}
+
+.preset-sched-item:hover  { background: var(--neutral-glass-hover); }
+.preset-sched-item.active { background: var(--primary-glass); color: var(--primary-color); font-weight: 600; }
+
+/* ---- Selected date tags ---- */
+.selected-date-tag {
+    background:    var(--primary-bg);
+    border:        1px solid var(--primary-border);
+    color:         var(--primary-color);
+    border-radius: 20px;
+    padding:       0.3rem 0.8rem;
+    font-size:     0.8rem;
+    display:       inline-flex;
+    align-items:   center;
+}
+
+.selected-date-remove {
+    cursor:      pointer;
+    margin-left: 4px;
+    opacity:     0.7;
+    transition:  opacity 0.15s ease;
+}
+
+.selected-date-remove:hover { opacity: 1; }
+
+/* Hide native time picker icon */
+#swAddModalTimeIn::-webkit-calendar-picker-indicator,
+#swAddModalTimeOut::-webkit-calendar-picker-indicator {
+    opacity:  0;
+    position: absolute;
+    right:    0;
+    width:    100%;
+    height:   100%;
+    cursor:   pointer;
+}
+
+/* ---- Scoped calendar empty state ---- */
+.sched-cal-empty {
+    display:         flex;
+    flex-direction:  column;
+    align-items:     center;
+    justify-content: center;
+    gap:             0.5rem;
+    padding:         3rem;
+    color:           var(--text-muted);
+    font-size:       0.9rem;
+    height:          100%;
+}
+
+.sched-cal-empty-icon { font-size: 2rem; opacity: 0.4; }

@@ -2,7 +2,7 @@
 session_start();
 
 if (isset($_SESSION['user_id'])) {
-    header("Location: ../index.php");
+    header("Location: ../admin_pages/dashboard_page.php");
     exit();
 }
 
@@ -79,11 +79,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             exit();
         }
 
-        if ($employee['role'] === 'admin') {
-            header("Location: ../admin_pages/dashboard_page.php");
-        } else {
-            header("Location: ../employee_pages/employee_dashboard.php");
-        }
+        header("Location: ../admin_pages/dashboard_page.php");
         exit();
 
     } else {

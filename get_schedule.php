@@ -59,14 +59,12 @@ foreach ($leaveRequests as $leave) {
     $dates = json_decode($leave['selected_dates'], true);
 
     if (is_array($dates) && !empty($dates)) {
-        // Use actual selected dates
         foreach ($dates as $dateStr) {
             if ($dateStr >= $start && $dateStr <= $end) {
                 $leaveMap[$dateStr] = $leave['status'];
             }
         }
     } else {
-        // Fallback for old records without selected_dates
         $current = new DateTime($leave['start_date']);
         $endDate = new DateTime($leave['end_date']);
         while ($current <= $endDate) {
@@ -88,12 +86,11 @@ foreach ($schedules as $row) {
     // ---- REST DAY ----
     if ($row['is_rest_day']) {
         $events[] = [
-            'title'           => 'Rest Day',
-            'start'           => $row['schedule_date'],
-            'backgroundColor' => 'var(--warning-glass)',
-            'borderColor'     => 'var(--warning-border)',
-            'textColor'       => 'var(--warning-color)',
-            'extendedProps'   => ['is_rest_day' => true]
+            'title'         => 'Rest Day',
+            'start'         => $row['schedule_date'],
+            'allDay'        => true,
+            'classNames'    => ['fc-ev-rest'],
+            'extendedProps' => ['shift_type' => 'rest', 'is_rest_day' => true],
         ];
         continue;
     }
@@ -108,46 +105,42 @@ foreach ($schedules as $row) {
     $endDate      = date('Y-m-d', strtotime($endDT));
     $isOvernight  = $endDate > $startDate;
 
-    // Night shift = starts 6pm–5:59am; Day shift = starts 6am–5:59pm
     $startHour    = (int)date('H', strtotime($startDT));
     $isNightShift = ($startHour >= 18 || $startHour < 6);
 
-    $startTimeStr = date('h:i A', strtotime($startDT));
-    $endTimeStr   = date('h:i A', strtotime($endDT));
+    $startTimeStr = date('g:i A', strtotime($startDT));
+    $endTimeStr   = date('g:i A', strtotime($endDT));
 
     // ---- CHECK LEAVE STATUS FOR THIS DATE ----
     $leaveStatus = $leaveMap[$date] ?? null;
 
     if ($leaveStatus === 'approved') {
         $events[] = [
-            'title'           => 'On Leave',
-            'start'           => $date,
-            'backgroundColor' => '#fd7e14',
-            'borderColor'     => '#e8610a',
-            'textColor'       => '#ffffff',
-            'extendedProps'   => ['shift_type' => 'leave_approved']
+            'title'         => 'On Leave',
+            'start'         => $date,
+            'allDay'        => true,
+            'classNames'    => ['fc-ev-on-leave'],
+            'extendedProps' => ['shift_type' => 'leave_approved'],
         ];
         continue;
 
     } elseif ($leaveStatus === 'pending') {
         $events[] = [
-            'title'           => 'Leave Pending',
-            'start'           => $date,
-            'backgroundColor' => '#f0ad4e',
-            'borderColor'     => '#d99a3a',
-            'textColor'       => '#ffffff',
-            'extendedProps'   => ['shift_type' => 'leave_pending']
+            'title'         => 'Leave Pending',
+            'start'         => $date,
+            'allDay'        => true,
+            'classNames'    => ['fc-ev-leave-pending'],
+            'extendedProps' => ['shift_type' => 'leave_pending'],
         ];
         continue;
 
     } elseif ($leaveStatus === 'rejected') {
         $events[] = [
-            'title'           => 'Leave Rejected',
-            'start'           => $date,
-            'backgroundColor' => '#dc3545',
-            'borderColor'     => '#b02a37',
-            'textColor'       => '#ffffff',
-            'extendedProps'   => ['shift_type' => 'leave_rejected']
+            'title'         => 'Leave Rejected',
+            'start'         => $date,
+            'allDay'        => true,
+            'classNames'    => ['fc-ev-leave-rejected'],
+            'extendedProps' => ['shift_type' => 'leave_rejected'],
         ];
         // Don't continue — fall through to also show the shift
     }
@@ -157,118 +150,109 @@ foreach ($schedules as $row) {
 
     if ($obStatus === 'approved') {
         $events[] = [
-            'title'           => 'On OB',
-            'start'           => $date,
-            'backgroundColor' => '#6f42c1',
-            'borderColor'     => '#59359a',
-            'textColor'       => '#ffffff',
-            'extendedProps'   => ['shift_type' => 'ob_approved']
+            'title'         => 'On OB',
+            'start'         => $date,
+            'allDay'        => true,
+            'classNames'    => ['fc-ev-on-ob'],
+            'extendedProps' => ['shift_type' => 'ob_approved'],
         ];
         continue;
 
     } elseif ($obStatus === 'pending') {
         $events[] = [
-            'title'           => 'OB Pending',
-            'start'           => $date,
-            'backgroundColor' => '#f0ad4e',
-            'borderColor'     => '#d99a3a',
-            'textColor'       => '#ffffff',
-            'extendedProps'   => ['shift_type' => 'ob_pending']
+            'title'         => 'OB Pending',
+            'start'         => $date,
+            'allDay'        => true,
+            'classNames'    => ['fc-ev-ob-pending'],
+            'extendedProps' => ['shift_type' => 'ob_pending'],
         ];
         continue;
 
     } elseif ($obStatus === 'rejected') {
         $events[] = [
-            'title'           => 'OB Rejected',
-            'start'           => $date,
-            'backgroundColor' => '#dc3545',
-            'borderColor'     => '#b02a37',
-            'textColor'       => '#ffffff',
-            'extendedProps'   => ['shift_type' => 'ob_rejected']
+            'title'         => 'OB Rejected',
+            'start'         => $date,
+            'allDay'        => true,
+            'classNames'    => ['fc-ev-leave-rejected'],
+            'extendedProps' => ['shift_type' => 'ob_rejected'],
         ];
         // Don't continue — fall through to also show the shift
     }
 
     // ---- REGULAR SHIFT ----
     if ($isNightShift) {
-        // ---- NIGHT SHIFT ----
         $events[] = [
-            'title'           => $startTimeStr . ' – ' . $endTimeStr . ($isOvernight ? ' ↪' : ''),
-            'start'           => $date,
-            'backgroundColor' => '#4da3ff',
-            'borderColor'     => '#2e8fe8',
-            'textColor'       => '#ffffff',
-            'extendedProps'   => [
+            'title'         => 'Night Shift',
+            'start'         => $date,
+            'allDay'        => true,
+            'classNames'    => ['fc-ev-night'],
+            'extendedProps' => [
                 'is_rest_day'  => false,
                 'is_overnight' => $isOvernight,
-                'shift_type'   => 'night_start'
-            ]
+                'shift_type'   => 'night',
+                'timeInStr'    => $startTimeStr,
+                'timeOutStr'   => $endTimeStr . ($isOvernight ? ' ↪' : ''),
+            ],
         ];
 
-        // ---- OVERNIGHT CONTINUATION (only when shift actually crosses midnight) ----
         if ($isOvernight && $endDate <= $end) {
             $events[] = [
-                'title'           => '↪ until ' . $endTimeStr,
-                'start'           => $endDate,
-                'backgroundColor' => 'rgba(77, 163, 255, 0.3)',
-                'borderColor'     => '#4da3ff',
-                'textColor'       => '#4da3ff',
-                'extendedProps'   => [
+                'title'         => '↪ until ' . $endTimeStr,
+                'start'         => $endDate,
+                'allDay'        => true,
+                'classNames'    => ['fc-ev-night-cont'],
+                'extendedProps' => [
                     'is_rest_day'  => false,
                     'is_overnight' => true,
-                    'shift_type'   => 'night_continuation'
-                ]
+                    'shift_type'   => 'night_continuation',
+                ],
             ];
         }
     } else {
-        // ---- DAY SHIFT ----
         $events[] = [
-            'title'           => $startTimeStr . ' – ' . $endTimeStr,
-            'start'           => $date,
-            'backgroundColor' => '#97be41',
-            'borderColor'     => '#7fae2f',
-            'textColor'       => '#ffffff',
-            'extendedProps'   => [
+            'title'         => 'Day Shift',
+            'start'         => $date,
+            'allDay'        => true,
+            'classNames'    => ['fc-ev-day'],
+            'extendedProps' => [
                 'is_rest_day'  => false,
                 'is_overnight' => false,
-                'shift_type'   => 'day'
-            ]
+                'shift_type'   => 'day',
+                'timeInStr'    => $startTimeStr,
+                'timeOutStr'   => $endTimeStr,
+            ],
         ];
     }
 }
 
 // ---- LEAVE EVENTS FOR DATES WITHOUT SCHEDULE ----
-// Handles leave on days that have no schedule entry (e.g. May 4, 5)
 foreach ($leaveMap as $leaveDate => $leaveStatus) {
     if (in_array($leaveDate, $scheduleDates)) continue;
     if ($leaveDate < $start || $leaveDate > $end) continue;
 
     if ($leaveStatus === 'approved') {
         $events[] = [
-            'title'           => 'On Leave',
-            'start'           => $leaveDate,
-            'backgroundColor' => '#fd7e14',
-            'borderColor'     => '#e8610a',
-            'textColor'       => '#ffffff',
-            'extendedProps'   => ['shift_type' => 'leave_approved']
+            'title'         => 'On Leave',
+            'start'         => $leaveDate,
+            'allDay'        => true,
+            'classNames'    => ['fc-ev-on-leave'],
+            'extendedProps' => ['shift_type' => 'leave_approved'],
         ];
     } elseif ($leaveStatus === 'pending') {
         $events[] = [
-            'title'           => 'Leave Pending',
-            'start'           => $leaveDate,
-            'backgroundColor' => '#f0ad4e',
-            'borderColor'     => '#d99a3a',
-            'textColor'       => '#ffffff',
-            'extendedProps'   => ['shift_type' => 'leave_pending']
+            'title'         => 'Leave Pending',
+            'start'         => $leaveDate,
+            'allDay'        => true,
+            'classNames'    => ['fc-ev-leave-pending'],
+            'extendedProps' => ['shift_type' => 'leave_pending'],
         ];
     } elseif ($leaveStatus === 'rejected') {
         $events[] = [
-            'title'           => 'Leave Rejected',
-            'start'           => $leaveDate,
-            'backgroundColor' => '#dc3545',
-            'borderColor'     => '#b02a37',
-            'textColor'       => '#ffffff',
-            'extendedProps'   => ['shift_type' => 'leave_rejected']
+            'title'         => 'Leave Rejected',
+            'start'         => $leaveDate,
+            'allDay'        => true,
+            'classNames'    => ['fc-ev-leave-rejected'],
+            'extendedProps' => ['shift_type' => 'leave_rejected'],
         ];
     }
 }
@@ -280,30 +264,27 @@ foreach ($obMap as $obDate => $obStatus) {
 
     if ($obStatus === 'approved') {
         $events[] = [
-            'title'           => 'On OB',
-            'start'           => $obDate,
-            'backgroundColor' => '#6f42c1',
-            'borderColor'     => '#59359a',
-            'textColor'       => '#ffffff',
-            'extendedProps'   => ['shift_type' => 'ob_approved']
+            'title'         => 'On OB',
+            'start'         => $obDate,
+            'allDay'        => true,
+            'classNames'    => ['fc-ev-on-ob'],
+            'extendedProps' => ['shift_type' => 'ob_approved'],
         ];
     } elseif ($obStatus === 'pending') {
         $events[] = [
-            'title'           => 'OB Pending',
-            'start'           => $obDate,
-            'backgroundColor' => '#f0ad4e',
-            'borderColor'     => '#d99a3a',
-            'textColor'       => '#ffffff',
-            'extendedProps'   => ['shift_type' => 'ob_pending']
+            'title'         => 'OB Pending',
+            'start'         => $obDate,
+            'allDay'        => true,
+            'classNames'    => ['fc-ev-ob-pending'],
+            'extendedProps' => ['shift_type' => 'ob_pending'],
         ];
     } elseif ($obStatus === 'rejected') {
         $events[] = [
-            'title'           => 'Rejected OB',
-            'start'           => $obDate,
-            'backgroundColor' => '#dc3545',
-            'borderColor'     => '#b02a37',
-            'textColor'       => '#ffffff',
-            'extendedProps'   => ['shift_type' => 'ob_rejected']
+            'title'         => 'OB Rejected',
+            'start'         => $obDate,
+            'allDay'        => true,
+            'classNames'    => ['fc-ev-leave-rejected'],
+            'extendedProps' => ['shift_type' => 'ob_rejected'],
         ];
     }
 }
@@ -311,7 +292,6 @@ foreach ($obMap as $obDate => $obStatus) {
 // ---- ADMIN: all employees' leave & OB events ----
 if (($_SESSION['user_role'] ?? '') === 'admin') {
 
-    // Leave requests (non-OB) for all employees
     $stmt = $pdo->prepare("
         SELECT lr.selected_dates, lr.start_date, lr.end_date, lr.status,
                CONCAT(e.first_name, ' ', e.last_name) AS full_name
@@ -345,16 +325,15 @@ if (($_SESSION['user_role'] ?? '') === 'admin') {
 
         foreach ($datesToShow as $d) {
             if ($leave['status'] === 'approved') {
-                $events[] = ['title' => $name . ' – On Leave',       'start' => $d, 'backgroundColor' => '#fd7e14', 'borderColor' => '#e8610a', 'textColor' => '#fff', 'extendedProps' => ['shift_type' => 'leave_approved']];
+                $events[] = ['title' => $name . ' – On Leave',       'start' => $d, 'allDay' => true, 'classNames' => ['fc-ev-on-leave'],      'extendedProps' => ['shift_type' => 'leave_approved']];
             } elseif ($leave['status'] === 'pending') {
-                $events[] = ['title' => $name . ' – Leave Pending',  'start' => $d, 'backgroundColor' => '#f0ad4e', 'borderColor' => '#d99a3a', 'textColor' => '#fff', 'extendedProps' => ['shift_type' => 'leave_pending']];
+                $events[] = ['title' => $name . ' – Leave Pending',  'start' => $d, 'allDay' => true, 'classNames' => ['fc-ev-leave-pending'], 'extendedProps' => ['shift_type' => 'leave_pending']];
             } elseif ($leave['status'] === 'rejected') {
-                $events[] = ['title' => $name . ' – Leave Rejected', 'start' => $d, 'backgroundColor' => '#dc3545', 'borderColor' => '#b02a37', 'textColor' => '#fff', 'extendedProps' => ['shift_type' => 'leave_rejected']];
+                $events[] = ['title' => $name . ' – Leave Rejected', 'start' => $d, 'allDay' => true, 'classNames' => ['fc-ev-leave-rejected'],'extendedProps' => ['shift_type' => 'leave_rejected']];
             }
         }
     }
 
-    // OB requests for all employees
     $stmt = $pdo->prepare("
         SELECT lr.start_date AS ob_date, lr.status,
                CONCAT(e.first_name, ' ', e.last_name) AS full_name
@@ -369,11 +348,11 @@ if (($_SESSION['user_role'] ?? '') === 'admin') {
         $name = $ob['full_name'];
         $d    = $ob['ob_date'];
         if ($ob['status'] === 'approved') {
-            $events[] = ['title' => $name . ' – On OB',       'start' => $d, 'backgroundColor' => '#6f42c1', 'borderColor' => '#59359a', 'textColor' => '#fff', 'extendedProps' => ['shift_type' => 'ob_approved']];
+            $events[] = ['title' => $name . ' – On OB',       'start' => $d, 'allDay' => true, 'classNames' => ['fc-ev-on-ob'],         'extendedProps' => ['shift_type' => 'ob_approved']];
         } elseif ($ob['status'] === 'pending') {
-            $events[] = ['title' => $name . ' – OB Pending',  'start' => $d, 'backgroundColor' => '#f0ad4e', 'borderColor' => '#d99a3a', 'textColor' => '#fff', 'extendedProps' => ['shift_type' => 'ob_pending']];
+            $events[] = ['title' => $name . ' – OB Pending',  'start' => $d, 'allDay' => true, 'classNames' => ['fc-ev-ob-pending'],    'extendedProps' => ['shift_type' => 'ob_pending']];
         } elseif ($ob['status'] === 'rejected') {
-            $events[] = ['title' => $name . ' – OB Rejected', 'start' => $d, 'backgroundColor' => '#dc3545', 'borderColor' => '#b02a37', 'textColor' => '#fff', 'extendedProps' => ['shift_type' => 'ob_rejected']];
+            $events[] = ['title' => $name . ' – OB Rejected', 'start' => $d, 'allDay' => true, 'classNames' => ['fc-ev-leave-rejected'],'extendedProps' => ['shift_type' => 'ob_rejected']];
         }
     }
 }
