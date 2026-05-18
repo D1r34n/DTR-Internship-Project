@@ -378,6 +378,37 @@ $isScoped = $schedEmployeeId !== null;
         </div>
     </div>
 </div>
+<?php else: ?>
+<!-- ═══════════════════════════════════════════════════
+     VIEW EVENT MODAL  (employee view — read-only)
+════════════════════════════════════════════════════ -->
+<div class="modal fade" id="swEmpViewEventModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="swEmpViewEvtTitle">Event Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-2">
+                    <small class="text-meta">Type</small>
+                    <div id="swEmpViewEvtTypeBadge" class="fw-semibold mt-1"></div>
+                </div>
+                <div class="mb-2">
+                    <small class="text-meta">Date</small>
+                    <div id="swEmpViewEvtDate" class="fw-semibold mt-1"></div>
+                </div>
+                <div>
+                    <small class="text-meta">Description</small>
+                    <div id="swEmpViewEvtDesc" class="mt-1"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
 <?php endif; ?>
 
 
@@ -861,7 +892,11 @@ swCalendar = new FullCalendar.Calendar(calEl, {
     customButtons: {
         refresh: {
             text:  '',
-            click: function () { swIsRefreshing = true; swCalendar.refetchEvents(); }
+            click: function () {
+                swIsRefreshing = true;
+                swCalendar.removeAllEvents();
+                swCalendar.refetchEvents();
+            }
         },
     },
 
@@ -876,8 +911,8 @@ swCalendar = new FullCalendar.Calendar(calEl, {
 
     eventSources: [
         { url: SW_SCHED_API, method: 'GET', failure: function () { console.error('Failed to fetch schedule.'); } },
-        SW_CAL_EVENTS,
-        <?php if ($isAdmin): ?>SW_BIRTHDAY_EVENTS,<?php endif; ?>
+        { events: function(info, successCallback) { successCallback(SW_CAL_EVENTS); } },
+        <?php if ($isAdmin): ?>{ events: function(info, successCallback) { successCallback(SW_BIRTHDAY_EVENTS); } },<?php endif; ?>
     ],
 
     eventContent: function (arg) {
@@ -1103,7 +1138,11 @@ swCalendar = new FullCalendar.Calendar(calEl, {
     customButtons: {
         refresh: {
             text:  '',
-            click: function () { swIsRefreshing = true; swCalendar.refetchEvents(); }
+            click: function () {
+                swIsRefreshing = true;
+                swCalendar.removeAllEvents();
+                swCalendar.refetchEvents();
+            }
         },
     },
 
@@ -1118,7 +1157,7 @@ swCalendar = new FullCalendar.Calendar(calEl, {
 
     eventSources: [
         { url: SW_SCHED_API, method: 'GET', failure: function () { console.error('Failed to fetch schedule.'); } },
-        SW_CAL_EVENTS,
+        { events: function(info, successCallback) { successCallback(SW_CAL_EVENTS); } },
     ],
 
     eventContent: function (arg) {
@@ -1148,11 +1187,37 @@ swCalendar = new FullCalendar.Calendar(calEl, {
                 const icon = iconMap[info.event.extendedProps.event_type] || 'bi-pin-fill';
                 tEl.innerHTML = `<i class="bi ${icon}"></i> ` + info.event.title;
             }
+            info.el.style.cursor = 'pointer';
         }
+    },
+
+    eventClick: function (info) {
+        const props = info.event.extendedProps;
+        if (props.shift_type !== 'cal_event') return;
+        info.jsEvent.preventDefault();
+
+        const iconMap  = { holiday:'bi-umbrella-fill', party:'bi-balloon-fill', meeting:'bi-people-fill', announcement:'bi-megaphone-fill', other:'bi-pin-fill' };
+        const colorMap = { holiday:'#ef4444', party:'#ec4899', meeting:'#3b82f6', announcement:'#f59e0b', other:'#6b7280' };
+        const et    = props.event_type || 'other';
+        const icon  = iconMap[et]  || 'bi-pin-fill';
+        const color = colorMap[et] || '#6b7280';
+        const dateStr = info.event.start ? info.event.start.toLocaleDateString('en-CA') : '—';
+
+        document.getElementById('swEmpViewEvtTitle').textContent    = info.event.title;
+        document.getElementById('swEmpViewEvtTypeBadge').innerHTML  = `<i class="bi ${icon} me-1"></i>${et.charAt(0).toUpperCase()+et.slice(1)}`;
+        document.getElementById('swEmpViewEvtTypeBadge').style.color = color;
+        document.getElementById('swEmpViewEvtDate').textContent     = dateStr;
+        document.getElementById('swEmpViewEvtDesc').textContent     = props.description || '—';
+
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('swEmpViewEventModal')).show();
     },
 });
 
 swCalendar.render();
+
+/* ---- Move modal to <body> to avoid stacking context issues ---- */
+const swEmpViewModal = document.getElementById('swEmpViewEventModal');
+if (swEmpViewModal) document.body.appendChild(swEmpViewModal);
 
 /* ---- Refresh button icon ---- */
 const swRefreshBtn = calEl.querySelector('.fc-refresh-button');
