@@ -2010,10 +2010,26 @@ button.btn-sm {
     justify-content: center;
 
     border-radius: 10px;
+
     background: var(--neutral-glass);
     border: 1px solid var(--neutral-border);
     color: var(--neutral-color);
+
     flex-shrink: 0;
+}
+
+.icon-box i {
+    font-size: 1.25rem;
+}
+
+.icon-box-sm {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+}
+
+.icon-box-sm i {
+    font-size: 1rem;
 }
 
 /* ------------------------------------------------
