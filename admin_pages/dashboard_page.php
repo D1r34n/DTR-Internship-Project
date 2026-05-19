@@ -233,6 +233,13 @@ if (!$isAdmin) {
     <link rel="stylesheet" href="../navbars_revised.css">
 
     <link rel="stylesheet" href="dashboard_page.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    <link rel="stylesheet" href="../employee_pages/logs_widget.css">
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
 <body>
 
@@ -526,7 +533,12 @@ if (!$isAdmin) {
                             </div>
                             <h5 class="text-primary mb-0">Activity Logs</h5>
                         </div>
-                        <!-- content coming soon -->
+                        <?php
+                            $startDate = $today;
+                            $endDate   = $today;
+                            $logsApiPath = '../get_logs.php';
+                            include '../employee_pages/logs_widget.php';
+                        ?>
                     </div>
                 </div>
 
@@ -557,8 +569,8 @@ if (!$isAdmin) {
                             </div>
                             <hr class="section-divider my-2">
                             <?php if ($quoteText): ?>
-                                <p class="quote-text"><?= htmlspecialchars($quoteText) ?></p>
-                                <p class="quote-author">— <?= htmlspecialchars($quoteAuthor) ?></p>
+                                <p class="text-tertiary"><?= htmlspecialchars($quoteText) ?></p>
+                                <p class="text-meta">— <?= htmlspecialchars($quoteAuthor) ?></p>
                             <?php else: ?>
                                 <p class="quote-text text-muted" style="font-size:11px;">Could not load quote.</p>
                             <?php endif; ?>
@@ -574,7 +586,7 @@ if (!$isAdmin) {
 
 </div><!-- /#main-wrapper -->
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
 <?php if ($isAdmin): ?>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
