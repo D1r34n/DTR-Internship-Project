@@ -202,6 +202,20 @@
 #sw-calendar .fc-ev-ob-pending       { background-color: #f0ad4e                  !important; border-color: #d99a3a !important; color: #fff    !important; }
 #sw-calendar .fc-ev-pending-schedule { background-color: rgba(245,158,11,0.12)    !important; border-color: #f59e0b !important; color: #f59e0b !important; }
 
+/* ---- Scoped admin: highlight label pill only for shift events ---- */
+#sw-calendar .fc-ev-day,
+#sw-calendar .fc-ev-night {
+    background-color: transparent !important;
+    border-color:     transparent !important;
+    color:            var(--text-muted) !important;
+}
+
+#sw-calendar .fc-ev-day   .fc-admin-label { background: #97be41; color: #fff; border-radius: 4px; padding: 1px 6px; }
+#sw-calendar .fc-ev-night .fc-admin-label { background: #4da3ff; color: #fff; border-radius: 4px; padding: 1px 6px; }
+
+#sw-calendar .fc-ev-day   .fc-admin-time,
+#sw-calendar .fc-ev-night .fc-admin-time { background: transparent; }
+
 /* ---- Scoped admin event inner ---- */
 .fc-admin-inner { display: flex; flex-direction: column; padding: 2px 4px; gap: 2px; }
 
@@ -277,8 +291,10 @@
     gap:        3px;
     opacity:    0;
     transition: opacity 0.15s;
-    z-index:    5;
+    z-index:    10;
 }
+
+#sw-calendar .fc-event { z-index: 1 !important; }
 
 #sw-calendar .fc-daygrid-day:hover .sw-ev-actions { opacity: 1; }
 
