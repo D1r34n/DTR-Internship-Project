@@ -839,7 +839,10 @@ function swDeleteSchedule(date) {
     if (!confirm('Delete schedule for ' + date + '?')) return;
     const base = SW_SAVE_API.replace(/\?.*$/, '');
     fetch(`${base}?employee_id=${SW_EMP_URL_ID}&ajax_delete=1&emp=${SW_EMP_ID}&date=${date}`)
-        .then(() => { if (swCalendar) swCalendar.refetchEvents(); });
+        .then(() => {
+            if (swCalendar) swCalendar.refetchEvents();
+            document.dispatchEvent(new CustomEvent('scheduleDeleted', { detail: { date } }));
+        });
 }
 
 function swPrev()  { if (swCalendar) swCalendar.prev(); }
@@ -894,7 +897,6 @@ swCalendar = new FullCalendar.Calendar(calEl, {
             text:  '',
             click: function () {
                 swIsRefreshing = true;
-                swCalendar.removeAllEvents();
                 swCalendar.refetchEvents();
             }
         },
@@ -1140,7 +1142,6 @@ swCalendar = new FullCalendar.Calendar(calEl, {
             text:  '',
             click: function () {
                 swIsRefreshing = true;
-                swCalendar.removeAllEvents();
                 swCalendar.refetchEvents();
             }
         },

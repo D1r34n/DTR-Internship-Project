@@ -58,19 +58,25 @@ $upcomingEvents = $pdo->query("
 ")->fetchAll(PDO::FETCH_ASSOC);
 $upcomingEventsCount = count(array_filter($upcomingEvents, fn($e) => strtotime(date('Y-m-d', strtotime($e['start_datetime']))) >= strtotime($today)));
 
-// ── Random quote ─────────────────────────────────────────
+// ── Random quote (cached in session for 1 hour) ───────────
 $quoteText   = '';
 $quoteAuthor = '';
-try {
-    $ctx  = stream_context_create(['http' => ['timeout' => 3]]);
-    $html = @file_get_contents('https://quotes.toscrape.com/random', false, $ctx);
-    if ($html) {
-        preg_match('/<span class="text"[^>]*>(.*?)<\/span>/s', $html, $tm);
-        preg_match('/<small class="author"[^>]*>(.*?)<\/small>/s', $html, $am);
-        $quoteText   = isset($tm[1]) ? html_entity_decode(strip_tags($tm[1]), ENT_QUOTES) : '';
-        $quoteAuthor = isset($am[1]) ? strip_tags($am[1]) : '';
-    }
-} catch (Exception $e) {}
+$quoteCacheAge = isset($_SESSION['quote_fetched_at']) ? (time() - $_SESSION['quote_fetched_at']) : PHP_INT_MAX;
+if ($quoteCacheAge > 3600) {
+    try {
+        $ctx  = stream_context_create(['http' => ['timeout' => 3]]);
+        $html = @file_get_contents('https://quotes.toscrape.com/random', false, $ctx);
+        if ($html) {
+            preg_match('/<span class="text"[^>]*>(.*?)<\/span>/s', $html, $tm);
+            preg_match('/<small class="author"[^>]*>(.*?)<\/small>/s', $html, $am);
+            $_SESSION['quote_text']       = isset($tm[1]) ? html_entity_decode(strip_tags($tm[1]), ENT_QUOTES) : '';
+            $_SESSION['quote_author']     = isset($am[1]) ? strip_tags($am[1]) : '';
+            $_SESSION['quote_fetched_at'] = time();
+        }
+    } catch (Exception $e) {}
+}
+$quoteText   = $_SESSION['quote_text']   ?? '';
+$quoteAuthor = $_SESSION['quote_author'] ?? '';
 
 // ── Weekly attendance overview (Mon–Sun of current week) ──
 $todayDow = (int)date('N'); // 1=Mon, 7=Sun
@@ -94,7 +100,120 @@ $weeklyAbsent  = array_fill(0, 7, null);
 foreach ($weeklyRows as $row) {
     $idx = (int)date('N', strtotime($row['work_date'])) - 1; // 0=Mon … 6=Sun
     $weeklyPresent[$idx] = (int)$row['present_count'];
-    $weeklyAbsent[$idx]  = $count - (int)$row['present_count']; // absent = total - present
+    $weeklyAbsent[$idx]  = $count - (int)$row['present_count'];
+}
+
+$isAdmin = isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'admin';
+
+// ── Employee: monthly attendance/absent counts ────────────
+$empMonthPresent = 0;
+$empMonthAbsent  = 0;
+
+// ── Employee: personal weekly attendance tracker ──────────
+$empWeekDays = [];
+if (!$isAdmin) {
+    $empId = (int)$_SESSION['user_id'];
+
+    $s = $pdo->prepare("
+        SELECT
+            SUM(CASE WHEN status IN ('present','late','undertime','overtime') THEN 1 ELSE 0 END) AS present_count,
+            SUM(CASE WHEN status = 'absent' THEN 1 ELSE 0 END) AS absent_count
+        FROM attendances
+        WHERE employee_id = ?
+          AND MONTH(work_date) = MONTH(CURDATE())
+          AND YEAR(work_date)  = YEAR(CURDATE())
+    ");
+    $s->execute([$empId]);
+    $monthRow        = $s->fetch(PDO::FETCH_ASSOC);
+    $empMonthPresent = (int)($monthRow['present_count'] ?? 0);
+    $empMonthAbsent  = (int)($monthRow['absent_count']  ?? 0);
+
+    // Schedules
+    $s = $pdo->prepare("
+        SELECT schedule_date, is_rest_day, scheduled_start
+        FROM schedules
+        WHERE employee_id = ? AND schedule_date BETWEEN ? AND ? AND status = 'approved'
+    ");
+    $s->execute([$empId, $weekMon, $weekSun]);
+    $empSchedMap = [];
+    foreach ($s->fetchAll(PDO::FETCH_ASSOC) as $r) {
+        $empSchedMap[$r['schedule_date']] = $r;
+    }
+
+    // Attendance
+    $s = $pdo->prepare("
+        SELECT work_date, status FROM attendances
+        WHERE employee_id = ? AND work_date BETWEEN ? AND ?
+    ");
+    $s->execute([$empId, $weekMon, $weekSun]);
+    $empAttMap = [];
+    foreach ($s->fetchAll(PDO::FETCH_ASSOC) as $r) {
+        $empAttMap[$r['work_date']] = $r['status'];
+    }
+
+    // Leave (approved, non-OB)
+    $s = $pdo->prepare("
+        SELECT selected_dates, start_date, end_date
+        FROM leave_requests
+        WHERE employee_id = ? AND leave_type != 'ob leave' AND status = 'approved'
+          AND (start_date BETWEEN ? AND ? OR end_date BETWEEN ? AND ?
+               OR (start_date <= ? AND end_date >= ?))
+    ");
+    $s->execute([$empId, $weekMon, $weekSun, $weekMon, $weekSun, $weekMon, $weekSun]);
+    $empLeaveSet = [];
+    foreach ($s->fetchAll(PDO::FETCH_ASSOC) as $r) {
+        $dates = json_decode($r['selected_dates'], true);
+        if (is_array($dates) && !empty($dates)) {
+            foreach ($dates as $d) {
+                if ($d >= $weekMon && $d <= $weekSun) $empLeaveSet[$d] = true;
+            }
+        } else {
+            $cur = new DateTime($r['start_date']);
+            $fin = new DateTime($r['end_date']);
+            while ($cur <= $fin) {
+                $d = $cur->format('Y-m-d');
+                if ($d >= $weekMon && $d <= $weekSun) $empLeaveSet[$d] = true;
+                $cur->modify('+1 day');
+            }
+        }
+    }
+
+    // OB (approved)
+    $s = $pdo->prepare("
+        SELECT start_date FROM leave_requests
+        WHERE employee_id = ? AND leave_type = 'ob leave' AND status = 'approved'
+          AND start_date BETWEEN ? AND ?
+    ");
+    $s->execute([$empId, $weekMon, $weekSun]);
+    foreach ($s->fetchAll(PDO::FETCH_ASSOC) as $r) {
+        $empLeaveSet[$r['start_date']] = true;
+    }
+
+    // Build 7-day status array
+    for ($i = 0; $i < 7; $i++) {
+        $date  = date('Y-m-d', strtotime($weekMon . " +$i days"));
+        $sched = $empSchedMap[$date] ?? null;
+
+        if (!$sched) {
+            $status = 'none';
+        } elseif ($sched['is_rest_day']) {
+            $status = 'rest';
+        } elseif (isset($empLeaveSet[$date])) {
+            $status = 'leave';
+        } elseif (in_array($empAttMap[$date] ?? '', ['present', 'late', 'undertime', 'overtime', 'incomplete'])) {
+            $status = 'present';
+        } elseif ($date < $today) {
+            // Fully past day with no attendance → absent
+            $status = 'absent';
+        } elseif ($date === $today && $sched['scheduled_start'] && time() >= strtotime($sched['scheduled_start'])) {
+            // Today: only absent once the shift has actually started
+            $status = 'absent';
+        } else {
+            $status = 'upcoming';
+        }
+
+        $empWeekDays[] = ['date' => $date, 'status' => $status];
+    }
 }
 
 ?>
@@ -142,6 +261,7 @@ foreach ($weeklyRows as $row) {
                 <div class="row g-2">
 
                     <!-- TOTAL EMPLOYEES -->
+                    <?php if ($isAdmin): ?>
                     <div class="col-6 col-lg">
                         <div class="summaryCard card-info h-100">
                             <div class="summaryTop">
@@ -156,35 +276,46 @@ foreach ($weeklyRows as $row) {
                             </div>
                         </div>
                     </div>
+                    <?php endif; ?>
 
-                    <!-- PRESENT TODAY -->
+                    <!-- PRESENT TODAY / MY ATTENDANCE -->
                     <div class="col-6 col-lg">
                         <div class="summaryCard card-success h-100">
                             <div class="summaryTop">
                                 <div class="icon-box icon-box-success">
                                     <i class="bi bi-check-circle-fill"></i>
                                 </div>
-                                <p>Present Today</p>
+                                <p><?= $isAdmin ? 'Present Today' : 'My Attendance' ?></p>
                             </div>
                             <div class="summaryInfo">
-                                <h5><?= $present ?></h5>
-                                <span><?= $count > 0 ? round($present / $count * 100) : 0 ?>% of total employees</span>
+                                <?php if ($isAdmin): ?>
+                                    <h5><?= $present ?></h5>
+                                    <span><?= $count > 0 ? round($present / $count * 100) : 0 ?>% of total employees</span>
+                                <?php else: ?>
+                                    <h5><?= $empMonthPresent ?></h5>
+                                    <span>Days present this <?= date('F') ?></span>
+                                <?php endif; ?>
                             </div>
                         </div>
                     </div>
 
-                    <!-- ABSENT TODAY -->
+                    <!-- ABSENT TODAY / MY ABSENTS -->
                     <div class="col-6 col-lg">
                         <div class="summaryCard card-danger h-100">
                             <div class="summaryTop">
                                 <div class="icon-box icon-box-danger">
                                     <i class="bi bi-clock-fill"></i>
                                 </div>
-                                <p>Absent Today</p>
+                                <p><?= $isAdmin ? 'Absent Today' : 'My Absents' ?></p>
                             </div>
                             <div class="summaryInfo">
-                                <h5><?= $absent ?></h5>
-                                <span><?= $count > 0 ? round($absent / $count * 100) : 0 ?>% of total employees</span>
+                                <?php if ($isAdmin): ?>
+                                    <h5><?= $absent ?></h5>
+                                    <span><?= $count > 0 ? round($absent / $count * 100) : 0 ?>% of total employees</span>
+                                <?php else: ?>
+                                    <h5><?= $empMonthAbsent ?></h5>
+                                    <span>Days absent this <?= date('F') ?></span>
+                                <?php endif; ?>
                             </div>
                         </div>
                     </div>
@@ -319,7 +450,8 @@ foreach ($weeklyRows as $row) {
                 </div>
             </div><!-- /.col-md-6 (events) -->
 
-            <!-- Row 3: Attendance Overview full width -->
+            <?php if ($isAdmin): ?>
+            <!-- Row 3: Attendance Overview (admin) -->
             <div class="col-12">
                 <div class="attendanceOverviewCard card card-info">
                     <div class="summaryTop">
@@ -332,7 +464,58 @@ foreach ($weeklyRows as $row) {
                         <canvas id="attendanceChart"></canvas>
                     </div>
                 </div>
-            </div><!-- /.col-12 (chart) -->
+            </div>
+            <?php else: ?>
+            <!-- Row 3: My Week (employee) -->
+            <div class="col-12">
+                <div class="weeklyAttendCard card card-info">
+                    <div class="summaryTop">
+                        <div class="summaryIcon bg-blue">
+                            <i class="bi bi-calendar-week-fill"></i>
+                        </div>
+                        <p>My Week</p>
+                        <span class="wa-week-range ms-auto">
+                            <?= date('M d', strtotime($weekMon)) ?> – <?= date('M d', strtotime($weekSun)) ?>
+                        </span>
+                    </div>
+                    <div class="wa-grid">
+                        <?php
+                        $dayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+                        foreach ($empWeekDays as $i => $day):
+                            $isToday = ($day['date'] === $today);
+                        ?>
+                        <div class="wa-day<?= $isToday ? ' wa-today' : '' ?>">
+                            <span class="wa-label"><?= $dayLabels[$i] ?></span>
+                            <?php
+                                $glassClass = match($day['status']) {
+                                    'present' => ' wa-icon-glass',
+                                    'absent'  => ' wa-icon-glass-danger',
+                                    'leave'   => ' wa-icon-glass-warning',
+                                    'rest'    => ' wa-icon-glass-neutral',
+                                    default   => '',
+                                };
+                            ?>
+                            <span class="wa-icon-wrap<?= $glassClass ?>">
+                                <?php if ($day['status'] === 'present'): ?>
+                                    <i class="bi bi-check-lg" style="color:var(--status-success-color)"></i>
+                                <?php elseif ($day['status'] === 'absent'): ?>
+                                    <i class="bi bi-x-lg" style="color:var(--danger-color)"></i>
+                                <?php elseif ($day['status'] === 'rest'): ?>
+                                    <i class="bi bi-moon" style="color:var(--text-muted)"></i>
+                                <?php elseif ($day['status'] === 'leave'): ?>
+                                    <i class="bi bi-dash-lg" style="color:var(--status-warning-color)"></i>
+                                <?php elseif ($day['status'] === 'upcoming'): ?>
+                                    <i class="bi bi-circle" style="color:rgba(255,255,255,0.15)"></i>
+                                <?php else: ?>
+                                    <i class="bi bi-circle" style="color:rgba(255,255,255,0.07)"></i>
+                                <?php endif; ?>
+                            </span>
+                        </div>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+            </div>
+            <?php endif; ?><!-- /.col-12 (row 3) -->
 
         </div><!-- /.dashRow.row -->
 
@@ -378,8 +561,8 @@ foreach ($weeklyRows as $row) {
 </div><!-- /#main-wrapper -->
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<?php if ($isAdmin): ?>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
 <script>
 (function () {
     const present = <?= json_encode(array_values($weeklyPresent)) ?>;
@@ -472,6 +655,7 @@ foreach ($weeklyRows as $row) {
     });
 })();
 </script>
+<?php endif; ?>
 
 <script>
 (function () {

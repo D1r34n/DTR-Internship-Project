@@ -1045,6 +1045,13 @@ document.addEventListener('DOMContentLoaded', () => {
         tabLoadedMonth[activeTab] = currentMonth;
     }
 
+    // ---- Schedule delete → invalidate Records tab ----
+    document.addEventListener('scheduleDeleted', () => {
+        tabLoadedMonth['#tab2'] = null;
+        const activeBtn = document.querySelector('#myTab .nav-link.active');
+        if (activeBtn && activeBtn.dataset.bsTarget === '#tab2') loadRecords();
+    });
+
     // ---- Schedule widget month changes → sync other tabs ----
     document.addEventListener('scheduleMonthChanged', e => {
         const ym = e.detail.month;
