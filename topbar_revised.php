@@ -52,7 +52,7 @@ $titles = [
     ],
 ];
 
-$title = $titles[$role][$currentPage] ?? 'Dashboard';
+$title = $titles[$role][$currentPage ?? 'dashboard'] ?? 'Dashboard';
 
 /* =========================================================
    AUTO BREADCRUMB FROM URL

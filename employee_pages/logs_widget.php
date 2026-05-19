@@ -5,57 +5,54 @@
 $logsApiPath     ??= '../get_logs.php';
 $logsEmployeeId  ??= null;
 ?>
+<div class="logs-widget-wrapper">
+    <div class="logs-widget">
 
-<div class="logs-widget">
+        <!-- Filter Section -->
+        <div class="logs-header">
+            <div class="dropdown">
+                <button class="btn btn-sm dropdown-toggle" id="datePickerBtn" type="button">
+                    <i class="bi bi-calendar3"></i>
+                    <span id="dateRangeLabel">Today</span>
+                </button>
+            </div>
 
-    <!-- Filter Section -->
-    <div class="logs-header">
+            <div class="dropdown">
+                <button class="btn btn-sm dropdown-toggle" type="button" id="logTypeToggle"
+                        data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="bi bi-funnel"></i>
+                    <span id="logTypeLabel">All Types</span>
+                </button>
+                <ul class="dropdown-menu" id="logTypeMenu">
+                    <li><a class="dropdown-item" href="#" data-value="ALL">All Types</a></li>
+                    <li><a class="dropdown-item" href="#" data-value="IN">Time In</a></li>
+                    <li><a class="dropdown-item" href="#" data-value="OUT">Time Out</a></li>
+                    <li><a class="dropdown-item" href="#" data-value="BREAK_IN">Break In</a></li>
+                    <li><a class="dropdown-item" href="#" data-value="BREAK_OUT">Break Out</a></li>
+                </ul>
+            </div>
 
-        <div class="dropdown">
-            <button class="btn btn-sm dropdown-toggle" id="datePickerBtn" type="button">
-                <i class="bi bi-calendar3"></i>
-                <span id="dateRangeLabel">Today</span>
-            </button>
+            <input type="hidden" id="logTypeFilter" value="ALL">
+            <input type="hidden" id="startDate" value="<?= $startDate ?? null ?>">
+            <input type="hidden" id="endDate" value="<?= $endDate ?? null ?>">
         </div>
 
-        <div class="dropdown">
-            <button class="btn btn-sm dropdown-toggle" type="button" id="logTypeToggle"
-                    data-bs-toggle="dropdown" aria-expanded="false">
-                <i class="bi bi-funnel"></i>
-                <span id="logTypeLabel">All Types</span>
-            </button>
-            <ul class="dropdown-menu" id="logTypeMenu">
-                <li><a class="dropdown-item" href="#" data-value="ALL">All Types</a></li>
-                <li><a class="dropdown-item" href="#" data-value="IN">Time In</a></li>
-                <li><a class="dropdown-item" href="#" data-value="OUT">Time Out</a></li>
-                <li><a class="dropdown-item" href="#" data-value="BREAK_IN">Break In</a></li>
-                <li><a class="dropdown-item" href="#" data-value="BREAK_OUT">Break Out</a></li>
-            </ul>
+        <div class="table-scroll-wrapper">
+            <table class="table table-hover mb-0">
+                <colgroup id="logs_colgroup"></colgroup>
+                <thead id="logs_thead">
+                    <tr id="logs_header_row"></tr>
+                </thead>
+                <tbody id="logs_table_body"></tbody>
+            </table>
+            <div class="logs-empty" id="logsEmptyState" style="display:none">
+                <i class="bi bi-calendar2-x-fill"></i>
+                <div class="text-meta">No logs found for this period.</div>
+            </div>
+
         </div>
 
-        <input type="hidden" id="logTypeFilter" value="ALL">
-        <input type="hidden" id="startDate" value="<?= $startDate ?? null ?>">
-        <input type="hidden" id="endDate" value="<?= $endDate ?? null ?>">
     </div>
-
-    <!-- Table Header -->
-    <div class="tableHeaderGlass">
-        <table class="table table-borderless mb-0">
-            <colgroup id="logs_header_colgroup"></colgroup>
-            <thead>
-                <tr id="logs_header_row"></tr>
-            </thead>
-        </table>
-    </div>
-
-    <!-- Scrollable Body -->
-    <div class="tableScroll">
-        <table class="table table-hover mb-0">
-            <colgroup id="logs_body_colgroup"></colgroup>
-            <tbody id="logs_table_body"></tbody>
-        </table>
-    </div>
-
 </div>
 
 <!-- Map Hover Popup -->
@@ -88,40 +85,39 @@ let sortDirection = DEFAULT_SORT_DIR;
 ========================= */
 const COLS = {
     employee: [
-        { width: '18%', label: 'Date',         sort: 'date'     },
-        { width: '12%', label: 'Time',         sort: 'time'     },
-        { width: '15%', label: 'Log Type',     sort: 'type'     },
-        { width: '18%', label: 'Location',     sort: 'location' },
-        { width: '20%', label: 'Requested By'                   },
-        { width: '17%', label: 'Edit Status'                    },
+        { col: 'col-2', label: 'Date',         sort: 'date'     },
+        { col: 'col-2', label: 'Time',         sort: 'time'     },
+        { col: 'col-2', label: 'Log Type',     sort: 'type'     },
+        { col: 'col-2', label: 'Location',     sort: 'location' },
+        { col: 'col-2', label: 'Requested By'                   },
+        { col: 'col-2', label: 'Edit Status'                    },
     ],
     admin: [
-        { width: '8%', label: 'Date',         sort: 'date'     },
-        { width: '8%', label: 'Time',         sort: 'time'     },
-        { width: '10%', label: 'Employee'                       },
-        { width: '10%', label: 'Role'                          },
-        { width: '10%', label: 'Log Type',     sort: 'type'     },
-        { width: '12%', label: 'Location',     sort: 'location' },
-        { width: '10%',  label: 'Requested By'                   },
-        { width: '7%',  label: 'Edit Status'                    },
+        { col: 'col-1', label: 'Date',         sort: 'date'     },
+        { col: 'col-1', label: 'Time',         sort: 'time'     },
+        { col: 'col-2', label: 'Employee'                       },
+        { col: 'col-1', label: 'Role'                           },
+        { col: 'col-2', label: 'Log Type',     sort: 'type'     },
+        { col: 'col-2', label: 'Location',     sort: 'location' },
+        { col: 'col-2', label: 'Requested By'                   },
+        { col: 'col-1', label: 'Edit Status'                    },
     ],
     admin_scoped: [
-        { width: '17%', label: 'Date',         sort: 'date'     },
-        { width: '12%', label: 'Time',         sort: 'time'     },
-        { width: '14%', label: 'Log Type',     sort: 'type'     },
-        { width: '16%', label: 'Location',     sort: 'location' },
-        { width: '18%', label: 'Requested By'                   },
-        { width: '15%', label: 'Edit Status'                    },
-        { width: '8%',  label: ''                               },
+        { col: 'col-2', label: 'Date',         sort: 'date'     },
+        { col: 'col-1', label: 'Time',         sort: 'time'     },
+        { col: 'col-2', label: 'Log Type',     sort: 'type'     },
+        { col: 'col-2', label: 'Location',     sort: 'location' },
+        { col: 'col-2', label: 'Requested By'                   },
+        { col: 'col-2', label: 'Edit Status'                    },
+        { col: 'col-1', label: ''                               },
     ],
 };
 
 function updateHeader(user_role, scoped_to_employee) {
     const key  = user_role !== 'admin' ? 'employee' : (scoped_to_employee ? 'admin_scoped' : 'admin');
     const cols = COLS[key];
-    const colHtml = cols.map(c => `<col style="width:${c.width}">`).join('');
-    document.getElementById('logs_header_colgroup').innerHTML = colHtml;
-    document.getElementById('logs_body_colgroup').innerHTML   = colHtml;
+    const colHtml = cols.map(c => `<col class="${c.col}">`).join('');
+    document.getElementById('logs_colgroup').innerHTML = colHtml;
     document.getElementById('logs_header_row').innerHTML = cols.map(c =>
         c.sort
             ? `<th class="sortable" data-sort="${c.sort}">${c.label} <i class="bi bi-arrow-down-up sortIcon" id="sort-${c.sort}"></i></th>`
@@ -153,18 +149,11 @@ function renderLogRows({ meta, rows }) {
     updateHeader(user_role, scoped_to_employee);
 
     if (!rows.length) {
-        const colspan = user_role !== 'admin' ? 6 : (scoped_to_employee ? 7 : 9);
-        tbody.innerHTML = `
-        <tr class="emptyRow">
-            <td colspan="${colspan}">
-                <div class="logs-empty">
-                    <i class="bi bi-calendar2-x-fill"></i>
-                    <div class="text-meta">No logs found for this period.</div>
-                </div>
-            </td>
-        </tr>`;
+        tbody.innerHTML = '';
+        document.getElementById('logsEmptyState').style.display = '';
         return;
     }
+    document.getElementById('logsEmptyState').style.display = 'none';
 
     // Dispose existing popovers before re-render
     document.querySelectorAll('.photo-trigger').forEach(el => {
@@ -378,7 +367,7 @@ function applyHeaderUI() {
     }
 }
 
-document.querySelector('.tableHeaderGlass').addEventListener('click', e => {
+document.getElementById('logs_thead').addEventListener('click', e => {
     const th = e.target.closest('.sortable');
     if (!th) return;
 

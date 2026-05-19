@@ -572,6 +572,86 @@ body::before {
 }
 
 /* ============================================================
+   WEEKLY ATTENDANCE TRACKER  (employee view)
+   ============================================================ */
+
+.weeklyAttendCard {
+    padding: 11px 14px;
+    overflow: hidden;
+}
+
+.wa-week-range {
+    font-size: 10px;
+    font-weight: 500;
+    color: rgba(255,255,255,0.45);
+}
+
+.wa-grid {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 6px;
+    margin-top: 12px;
+}
+
+.wa-day {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 7px;
+    flex: 1;
+}
+
+.wa-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: 0.01em;
+}
+
+.wa-today .wa-label {
+    color: #60a5fa;
+}
+
+.wa-icon-wrap {
+    font-size: 22px;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+}
+
+.wa-icon-wrap.wa-icon-glass,
+.wa-icon-wrap.wa-icon-glass-danger,
+.wa-icon-wrap.wa-icon-glass-warning,
+.wa-icon-wrap.wa-icon-glass-neutral {
+    border-radius: 50%;
+    padding: 8px;
+}
+
+.wa-icon-wrap.wa-icon-glass {
+    background: var(--status-success-bg);
+    border: 1px solid var(--status-success-border);
+}
+
+.wa-icon-wrap.wa-icon-glass-danger {
+    background: var(--status-danger-bg);
+    border: 1px solid var(--status-danger-border);
+}
+
+.wa-icon-wrap.wa-icon-glass-warning {
+    background: var(--status-warning-bg);
+    border: 1px solid var(--status-warning-border);
+}
+
+.wa-icon-wrap.wa-icon-glass-neutral {
+    background: var(--neutral-glass);
+    border: 1px solid var(--neutral-border);
+}
+
+/* ============================================================
    RESPONSIVE BREAKPOINTS
    ============================================================ */
 
