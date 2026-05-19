@@ -399,7 +399,7 @@ if (!$isAdmin) {
                                         <?= count($birthdaysThisMonth ?? []) ?>
                                     </h5>
                                 </div>
-                                <div class="flex-fill overflow-y-auto">
+                                <div class="birthday-list-scroll">
                                     <?php if (empty($birthdaysThisMonth)): ?>
                                         <small class="text-muted">No birthdays this month</small>
                                     <?php else: ?>
