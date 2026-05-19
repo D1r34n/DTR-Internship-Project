@@ -463,12 +463,12 @@ if (!$isAdmin) {
                                         <?= $upcomingEventsCount ?>
                                     </h5>
                                 </div>
-                                <div class="flex-fill overflow-y-auto">
+                                <div class="birthday-list-scroll">
                                     <?php if (empty($upcomingEvents)): ?>
                                         <small class="text-muted">No events</small>
                                     <?php else: ?>
                                         <ul class="list-unstyled mb-0 dash-list">
-                                            <?php foreach (array_slice($upcomingEvents, 0, 3) as $h): ?>
+                                            <?php foreach ($upcomingEvents as $h): ?>
                                                 <?php
                                                 $diff = (int) ((strtotime(date('Y-m-d', strtotime($h['start_datetime']))) - strtotime($today)) / 86400);
 
