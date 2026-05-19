@@ -385,7 +385,7 @@ function getActionButtons($type, $id, $status) {
         <!-- PAGE WRAPPER -->
         <div class="card card-neutral requests-card">
 
-            <div class="card-header p-0">
+            <div class="card-header p-0 d-flex align-items-center">
                 <ul class="nav nav-tabs card-header-tabs" id="reqTab" role="tablist">
                     <li class="nav-item" role="presentation">
                         <button class="nav-link active" role="tab" data-bs-toggle="tab" data-bs-target="#all">All</button>
@@ -403,6 +403,18 @@ function getActionButtons($type, $id, $status) {
                         <button class="nav-link" role="tab" data-bs-toggle="tab" data-bs-target="#log-edit">Log Edit</button>
                     </li>
                 </ul>
+                <div class="ms-auto pe-3">
+                    <div class="input-group input-group-sm" style="max-width:200px;">
+                        <span class="input-group-text">
+                            <i class="bi bi-search"></i>
+                        </span>
+                        <input type="text"
+                            id="search-input"
+                            class="form-control"
+                            placeholder="Search..."
+                            onkeyup="searchTable()">
+                    </div>
+                </div>
             </div>
 
             <div class="card-body d-flex flex-column requests-card-body">
@@ -422,21 +434,7 @@ function getActionButtons($type, $id, $status) {
                     </div>
                 <?php endif; ?>
 
-                <!-- Search row -->
-                <div class="req-search-row">
-                    <div class="input-group input-group-sm" style="max-width:200px;">
-                        <span class="input-group-text">
-                            <i class="bi bi-search"></i>
-                        </span>
-                        <input type="text"
-                            id="search-input"
-                            class="form-control"
-                            placeholder="Search..."
-                            onkeyup="searchTable()">
-                    </div>
-                </div>
-
-                <div class="tab-content">
+<div class="tab-content">
 
                 <!-- ALL TAB -->
                 <div id="all" class="tab-pane fade show active reqTabContent" role="tabpanel">

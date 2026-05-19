@@ -168,7 +168,8 @@ $stmt = $pdo->prepare("
 $stmt->execute([$today]);
 $absentCount = (int) $stmt->fetchColumn();
 
-$currentPage = 'manage_employees';
+$currentPage      = 'manage_employees';
+$initialDeptFilter = isset($_GET['dept']) ? (int)$_GET['dept'] : 0;
 ?>
 <!doctype html>
 <html lang="en">
@@ -624,28 +625,16 @@ $currentPage = 'manage_employees';
                                             <input type="hidden" name="role" id="roleInput">
                                         </div>
 
-                                        <!-- Department — Bootstrap dropdown with search inside -->
+                                        <!-- Department — datalist -->
                                         <div class="col-md-12">
                                             <label class="form-label">Department</label>
-                                            <div class="dropdown w-100">
-                                                <button class="btn w-100 text-start dropdown-toggle"
-                                                        type="button"
-                                                        data-bs-toggle="dropdown"
-                                                        data-bs-auto-close="outside"
-                                                        aria-expanded="false"
-                                                        id="deptDropdownBtn">
-                                                    <span id="deptSelectedText">Select Department</span>
-                                                </button>
-                                                <div class="dropdown-menu w-100 p-2"
-                                                     aria-labelledby="deptDropdownBtn">
-                                                    <input type="text"
-                                                           class="form-control form-control-sm mb-2"
-                                                           id="deptSearchInMenu"
-                                                           placeholder="Search...">
-                                                    <ul class="list-unstyled mb-0" id="deptList"
-                                                        style="max-height:180px; overflow-y:auto;"></ul>
-                                                </div>
-                                            </div>
+                                            <input type="text"
+                                                   class="form-control"
+                                                   id="deptTextInput"
+                                                   list="deptDatalist"
+                                                   placeholder="Type to search department..."
+                                                   autocomplete="off">
+                                            <datalist id="deptDatalist"></datalist>
                                             <input type="hidden" name="department_id" id="deptInput">
                                         </div>
 
@@ -944,28 +933,24 @@ $currentPage = 'manage_employees';
                     renderDeptList(deptItems.filter(d => d.label.toLowerCase().includes(q)), 'filter');
                 });
 
-            document.getElementById('deptSearchInMenu')
+            document.getElementById('deptTextInput')
                 ?.addEventListener('input', function () {
-                    const q = this.value.toLowerCase();
-                    renderDeptList(
-                        deptItems.filter(d => d.value !== '' && d.label.toLowerCase().includes(q)),
-                        'modal'
-                    );
+                    const val   = this.value.trim().toLowerCase();
+                    const match = deptItems.find(d => d.value !== '' && d.label.toLowerCase() === val);
+                    document.getElementById('deptInput').value = match ? match.value : '';
                 });
 
-            document.getElementById('empModal')
+document.getElementById('empModal')
                 ?.addEventListener('show.bs.modal', () => {
-                    document.getElementById('deptSelectedText').textContent = 'Select Department';
-                    document.getElementById('deptInput').value              = '';
-                    document.getElementById('deptSearchInMenu').value       = '';
-                    document.getElementById('roleLabel').textContent        = 'Select Role';
-                    document.getElementById('roleInput').value              = '';
-                    document.getElementById('modalEmpRefId').value          = '';
-                    document.getElementById('modalFirstName').value         = '';
-                    document.getElementById('modalLastName').value          = '';
-                    document.getElementById('modalEmail').value             = '';
-                    document.getElementById('modalBirthdate').value         = '';
-                    renderDeptList(deptItems.filter(d => d.value !== ''), 'modal');
+                    document.getElementById('deptTextInput').value  = '';
+                    document.getElementById('deptInput').value      = '';
+                    document.getElementById('roleLabel').textContent = 'Select Role';
+                    document.getElementById('roleInput').value      = '';
+                    document.getElementById('modalEmpRefId').value  = '';
+                    document.getElementById('modalFirstName').value = '';
+                    document.getElementById('modalLastName').value  = '';
+                    document.getElementById('modalEmail').value     = '';
+                    document.getElementById('modalBirthdate').value = '';
                     updateProfilePreview();
                 });
 
@@ -1013,6 +998,8 @@ $currentPage = 'manage_employees';
         /* -------------------------------------------------------
            DEPARTMENT DROPDOWNS
         ------------------------------------------------------- */
+        const initialDeptFilter = <?= $initialDeptFilter ?>;
+
         function loadDepartments() {
             fetch('/DTR-Internship-Project/admin_pages/department_api.php?action=list')
                 .then(r => r.json())
@@ -1022,14 +1009,35 @@ $currentPage = 'manage_employees';
                         ...depts.map(d => ({ value: String(d.id), label: d.department_name }))
                     ];
                     renderDeptList(deptItems, 'filter');
-                    renderDeptList(deptItems.filter(d => d.value !== ''), 'modal');
+                    populateDeptDatalist(depts);
+
+                    if (initialDeptFilter) {
+                        const match = deptItems.find(d => d.value === String(initialDeptFilter));
+                        if (match) {
+                            document.getElementById('dept-filter').value           = match.value;
+                            document.getElementById('deptFilterLabel').textContent = match.label;
+                            currentPage = 1;
+                            applyFilters();
+                        }
+                    }
                 })
                 .catch(() => {});
         }
 
+        function populateDeptDatalist(depts) {
+            const dl = document.getElementById('deptDatalist');
+            if (!dl) return;
+            dl.innerHTML = '';
+            depts.forEach(d => {
+                const opt   = document.createElement('option');
+                opt.value   = d.department_name;
+                dl.appendChild(opt);
+            });
+        }
+
         function renderDeptList(items, target) {
-            const listId = target === 'filter' ? 'deptFilterList' : 'deptList';
-            const list   = document.getElementById(listId);
+            if (target !== 'filter') return;
+            const list = document.getElementById('deptFilterList');
             if (!list) return;
 
             list.innerHTML = '';
@@ -1040,21 +1048,13 @@ $currentPage = 'manage_employees';
                 btn.className   = 'dropdown-item rounded';
                 btn.textContent = item.label;
                 btn.onclick = () => {
-                    if (target === 'filter') {
-                        document.getElementById('dept-filter').value         = item.value;
-                        document.getElementById('deptFilterLabel').textContent = item.label;
-                        bootstrap.Dropdown.getInstance(
-                            document.getElementById('deptFilterBtn')
-                        )?.hide();
-                        currentPage = 1;
-                        applyFilters();
-                    } else {
-                        document.getElementById('deptInput').value              = item.value;
-                        document.getElementById('deptSelectedText').textContent = item.label;
-                        bootstrap.Dropdown.getInstance(
-                            document.getElementById('deptDropdownBtn')
-                        )?.hide();
-                    }
+                    document.getElementById('dept-filter').value          = item.value;
+                    document.getElementById('deptFilterLabel').textContent = item.label;
+                    bootstrap.Dropdown.getInstance(
+                        document.getElementById('deptFilterBtn')
+                    )?.hide();
+                    currentPage = 1;
+                    applyFilters();
                 };
                 li.appendChild(btn);
                 list.appendChild(li);

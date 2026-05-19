@@ -64,26 +64,29 @@ $isScoped = $schedEmployeeId !== null;
     </div>
 
     <?php elseif ($isAdmin): ?>
-    <!-- ── Admin global header: filter + add event btn ── -->
-    <div class="shiftLegend">
-        <select id="sw-schedule-filter" class="schedule-filter-select">
-            <option value="all">All</option>
-            <option value="events">All Events</option>
-            <option value="leave">On Leave</option>
-            <option value="ob">On OB</option>
-            <option value="birthday">Birthday</option>
-            <option value="holiday">Holiday</option>
-            <option value="meeting">Meeting</option>
-            <option value="announcement">Announcement</option>
-            <option value="party">Party</option>
-            <option value="other">Other</option>
-        </select>
-        <button class="btn btn-sm btn-add-event ms-auto"
+    <!-- ── Admin global header: btn moved into FC toolbar by JS ── -->
+    <div class="shiftLegend" style="display:none">
+        <button id="sw-add-event-btn" class="btn btn-sm btn-add-event"
                 data-bs-toggle="modal"
-                data-bs-target="#swAddEventModal">
+                data-bs-target="#swAddEventModal"
+                style="display:none">
             <i class="bi bi-plus-lg"></i> Add Event
         </button>
     </div>
+
+    <!-- filter select; moved into FC toolbar by JS after render -->
+    <select id="sw-schedule-filter" class="schedule-filter-select" style="display:none">
+        <option value="all">All</option>
+        <option value="events">All Events</option>
+        <option value="leave">On Leave</option>
+        <option value="ob">On OB</option>
+        <option value="birthday">Birthday</option>
+        <option value="holiday">Holiday</option>
+        <option value="meeting">Meeting</option>
+        <option value="announcement">Announcement</option>
+        <option value="party">Party</option>
+        <option value="other">Other</option>
+    </select>
 
     <?php else: ?>
     <!-- ── Employee header: shift legend ── -->
@@ -1003,6 +1006,22 @@ swCalendar = new FullCalendar.Calendar(calEl, {
 });
 
 swCalendar.render();
+
+/* ---- Move filter select into FC toolbar beside Today ---- */
+const swFilterSelect = document.getElementById('sw-schedule-filter');
+const swLeftChunk    = calEl.querySelector('.fc-toolbar-chunk:first-child');
+if (swFilterSelect && swLeftChunk) {
+    swLeftChunk.appendChild(swFilterSelect);
+    swFilterSelect.style.display = '';
+}
+
+/* ---- Move Add Event button into FC toolbar beside month nav ---- */
+const swAddEventBtn  = document.getElementById('sw-add-event-btn');
+const swRightChunk   = calEl.querySelector('.fc-toolbar-chunk:last-child');
+if (swAddEventBtn && swRightChunk) {
+    swRightChunk.prepend(swAddEventBtn);
+    swAddEventBtn.style.display = '';
+}
 
 /* ---- Resize observer for sidebar ---- */
 const swSidebar = document.getElementById('sidebar');

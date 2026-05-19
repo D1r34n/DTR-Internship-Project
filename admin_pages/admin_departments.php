@@ -267,28 +267,14 @@ $departmentList = $stmt2->fetchAll(PDO::FETCH_ASSOC);
                                         <small class="text-muted">(Optional)</small>
                                     </label>
                                     <input type="hidden" name="parent_id" id="create-parent-id" value="">
-                                    <div class="dropdown w-100">
-                                        <button class="btn dropdown-toggle btn-select w-100"
-                                                type="button"
-                                                data-bs-toggle="dropdown"
-                                                aria-expanded="false">
-                                            <span id="create-parent-label">None</span>
-                                        </button>
-                                        <ul class="dropdown-menu w-100">
-                                            <li>
-                                                <button class="dropdown-item" type="button"
-                                                    onclick="selectCreateParent('', 'None')">None</button>
-                                            </li>
-                                            <?php foreach ($departmentList as $row): ?>
-                                                <li>
-                                                    <button class="dropdown-item" type="button"
-                                                        onclick="selectCreateParent('<?= $row['id'] ?>', '<?= htmlspecialchars($row['department_name'], ENT_QUOTES) ?>')">
-                                                        <?= htmlspecialchars($row['department_name']) ?>
-                                                    </button>
-                                                </li>
-                                            <?php endforeach; ?>
-                                        </ul>
-                                    </div>
+                                    <input type="text" class="form-control" id="create-parent-input"
+                                           list="create-parent-list" placeholder="None"
+                                           autocomplete="off">
+                                    <datalist id="create-parent-list">
+                                        <?php foreach ($departmentList as $row): ?>
+                                            <option value="<?= htmlspecialchars($row['department_name']) ?>"></option>
+                                        <?php endforeach; ?>
+                                    </datalist>
                                 </div>
 
                                 <button type="submit" class="btn btn-success w-100">
@@ -356,28 +342,14 @@ $departmentList = $stmt2->fetchAll(PDO::FETCH_ASSOC);
                                         <small class="text-muted">(Optional)</small>
                                     </label>
                                     <input type="hidden" name="parent_id" id="edit-parent-id" value="">
-                                    <div class="dropdown w-100">
-                                        <button class="btn dropdown-toggle btn-select w-100"
-                                                type="button"
-                                                data-bs-toggle="dropdown"
-                                                aria-expanded="false">
-                                            <span id="edit-parent-label">None</span>
-                                        </button>
-                                        <ul class="dropdown-menu w-100">
-                                            <li>
-                                                <button class="dropdown-item" type="button"
-                                                    onclick="selectEditParent('', 'None')">None</button>
-                                            </li>
-                                            <?php foreach ($departmentList as $row): ?>
-                                                <li>
-                                                    <button class="dropdown-item" type="button"
-                                                        onclick="selectEditParent('<?= $row['id'] ?>', '<?= htmlspecialchars($row['department_name'], ENT_QUOTES) ?>')">
-                                                        <?= htmlspecialchars($row['department_name']) ?>
-                                                    </button>
-                                                </li>
-                                            <?php endforeach; ?>
-                                        </ul>
-                                    </div>
+                                    <input type="text" class="form-control" id="edit-parent-input"
+                                           list="edit-parent-list" placeholder="None"
+                                           autocomplete="off">
+                                    <datalist id="edit-parent-list">
+                                        <?php foreach ($departmentList as $row): ?>
+                                            <option value="<?= htmlspecialchars($row['department_name']) ?>"></option>
+                                        <?php endforeach; ?>
+                                    </datalist>
                                 </div>
                                 <div class="d-flex gap-2 flex-row">                      
                                     <button type="submit" class="btn btn-success w-100">
@@ -500,15 +472,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
 });
 
-function selectCreateParent(value, label) {
-    document.getElementById('create-parent-id').value = value;
-    document.getElementById('create-parent-label').textContent = label;
-}
+const deptNameToId = <?= json_encode(array_column($departmentList, 'id', 'department_name')) ?>;
 
-function selectEditParent(value, label) {
-    document.getElementById('edit-parent-id').value = value;
-    document.getElementById('edit-parent-label').textContent = label;
-}
+document.getElementById('create-parent-input').addEventListener('input', function () {
+    document.getElementById('create-parent-id').value = deptNameToId[this.value.trim()] ?? '';
+});
+
+document.getElementById('edit-parent-input').addEventListener('input', function () {
+    document.getElementById('edit-parent-id').value = deptNameToId[this.value.trim()] ?? '';
+});
 
 form.addEventListener('submit', function(e) {
     e.preventDefault();
@@ -701,7 +673,8 @@ function openEditDept(dept) {
     document.getElementById('edit-preview-icon').style.color      = getContrastColor(dept.color || '#4e73df');
     document.getElementById('edit-preview-name').textContent  = dept.department_name;
 
-    selectEditParent(dept.parent_id || '', dept.parent_name || 'None');
+    document.getElementById('edit-parent-id').value    = dept.parent_id || '';
+    document.getElementById('edit-parent-input').value = dept.parent_name || '';
 
     new bootstrap.Modal(document.getElementById('edit-dept-modal')).show();
 }
