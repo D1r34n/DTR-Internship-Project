@@ -21,7 +21,7 @@ $stmt = $pdo->prepare("
     SELECT COUNT(*)
     FROM attendances a
     WHERE a.work_date = ?
-      AND a.status    = 'present'
+      AND a.actual_time_in IS NOT NULL
 ");
 $stmt->execute([$today]);
 $present = (int) $stmt->fetchColumn();
@@ -86,7 +86,7 @@ $weekSun  = date('Y-m-d', strtotime('+' . (7 - $todayDow) . ' days'));
 $weeklyStmt = $pdo->prepare("
     SELECT
         a.work_date,
-        SUM(CASE WHEN a.status = 'present' THEN 1 ELSE 0 END) AS present_count
+        SUM(CASE WHEN a.actual_time_in IS NOT NULL THEN 1 ELSE 0 END) AS present_count
     FROM attendances a
     WHERE a.work_date BETWEEN ? AND ?
     GROUP BY a.work_date

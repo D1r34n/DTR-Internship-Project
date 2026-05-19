@@ -147,7 +147,7 @@ $today = date('Y-m-d');
 $stmt = $pdo->prepare("
     SELECT COUNT(*) FROM attendances a
     JOIN employees e ON e.id = a.employee_id
-    WHERE a.work_date = ? AND a.status = 'present'
+    WHERE a.work_date = ? AND a.actual_time_in IS NOT NULL
 ");
 $stmt->execute([$today]);
 $presentCount = (int) $stmt->fetchColumn();
@@ -155,7 +155,7 @@ $presentCount = (int) $stmt->fetchColumn();
 $stmt = $pdo->prepare("
     SELECT COUNT(*) FROM attendances a
     JOIN employees e ON e.id = a.employee_id
-    WHERE a.work_date = ? AND a.status = 'present' AND a.late_minutes > 0
+    WHERE a.work_date = ? AND a.actual_time_in IS NOT NULL AND a.late_minutes > 0
 ");
 $stmt->execute([$today]);
 $lateCount = (int) $stmt->fetchColumn();
@@ -208,7 +208,7 @@ $currentPage = 'manage_employees';
                             </div>
                             <div class="d-flex flex-column ms-auto text-end">
                                 <div class="stats-number">
-                                    <?= count(array_filter($employees, fn($e) => $e['role'] === 'employee')) ?>
+                                    <?= count($employees) ?>
                                 </div>
                                 <div class="text-meta">
                                     Total Employees
