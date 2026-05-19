@@ -1863,6 +1863,13 @@ button.btn-sm {
 }
 
 /* =========================
+   CAPTION
+========================= */
+.caption {
+    color: var(--text-light);
+}
+
+/* =========================
    TABLE HEADER (SEPARATE GLASS)
 ========================= */
 .tableHeaderGlass {
