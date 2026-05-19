@@ -78,6 +78,7 @@ body {
     font-size: 1.125rem;    /* 18px */
     font-weight: 400;
     line-height: 1.4;
+    color: var(--text-light);
 }
 
 /* ------------------------------------------------
@@ -98,8 +99,15 @@ body {
     color: var(--text-light) !important;
 }
 
+.text-tertiary {
+    font-size: 0.75em;    /* 14px */
+    font-weight: 300;
+    line-height: 1.5;
+    color: var(--text-light) !important;
+}
+
 .text-meta {
-    font-size: 0.75rem;     /* 12px */
+    font-size: 0.7rem;     /* 11.2px */
     font-weight: 300;
     line-height: 1.4;
     color: var(--text-muted);
