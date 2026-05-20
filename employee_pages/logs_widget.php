@@ -85,39 +85,38 @@ let sortDirection = DEFAULT_SORT_DIR;
 ========================= */
 const COLS = {
     employee: [
-        { col: 'col-2', label: 'Date',         sort: 'date'     },
-        { col: 'col-2', label: 'Time',         sort: 'time'     },
-        { col: 'col-2', label: 'Log Type',     sort: 'type'     },
-        { col: 'col-2', label: 'Location',     sort: 'location' },
-        { col: 'col-2', label: 'Requested By'                   },
-        { col: 'col-2', label: 'Edit Status'                    },
+        { label: 'Date',         sort: 'date'     },
+        { label: 'Time',         sort: 'time'     },
+        { label: 'Log Type',     sort: 'type'     },
+        { label: 'Location',     sort: 'location' },
+        { label: 'Requested By'                   },
+        { label: 'Edit Status'                    },
     ],
     admin: [
-        { col: 'col-1', label: 'Date',         sort: 'date'     },
-        { col: 'col-1', label: 'Time',         sort: 'time'     },
-        { col: 'col-2', label: 'Employee'                       },
-        { col: 'col-1', label: 'Role'                           },
-        { col: 'col-2', label: 'Log Type',     sort: 'type'     },
-        { col: 'col-2', label: 'Location',     sort: 'location' },
-        { col: 'col-2', label: 'Requested By'                   },
-        { col: 'col-1', label: 'Edit Status'                    },
+        { label: 'Date',         sort: 'date'     },
+        { label: 'Time',         sort: 'time'     },
+        { label: 'Employee'                       },
+        { label: 'Role'                           },
+        { label: 'Log Type',     sort: 'type'     },
+        { label: 'Location',     sort: 'location' },
+        { label: 'Requested By'                   },
+        { label: 'Edit Status'                    },
     ],
     admin_scoped: [
-        { col: 'col-2', label: 'Date',         sort: 'date'     },
-        { col: 'col-1', label: 'Time',         sort: 'time'     },
-        { col: 'col-2', label: 'Log Type',     sort: 'type'     },
-        { col: 'col-2', label: 'Location',     sort: 'location' },
-        { col: 'col-2', label: 'Requested By'                   },
-        { col: 'col-2', label: 'Edit Status'                    },
-        { col: 'col-1', label: ''                               },
+        { label: 'Date',         sort: 'date'     },
+        { label: 'Time',         sort: 'time'     },
+        { label: 'Log Type',     sort: 'type'     },
+        { label: 'Location',     sort: 'location' },
+        { label: 'Requested By'                   },
+        { label: 'Edit Status'                    },
+        { label: ''                               },
     ],
 };
 
 function updateHeader(user_role, scoped_to_employee) {
     const key  = user_role !== 'admin' ? 'employee' : (scoped_to_employee ? 'admin_scoped' : 'admin');
     const cols = COLS[key];
-    const colHtml = cols.map(c => `<col class="${c.col}">`).join('');
-    document.getElementById('logs_colgroup').innerHTML = colHtml;
+    document.getElementById('logs_colgroup').innerHTML = '';
     document.getElementById('logs_header_row').innerHTML = cols.map(c =>
         c.sort
             ? `<th class="sortable" data-sort="${c.sort}">${c.label} <i class="bi bi-arrow-down-up sortIcon" id="sort-${c.sort}"></i></th>`
