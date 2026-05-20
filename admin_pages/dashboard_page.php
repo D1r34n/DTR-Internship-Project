@@ -511,61 +511,12 @@ for ($i = 0; $i < 7; $i++) {
                                 <i class="bi <?= $lt['icon'] ?>" style="color:<?= $lt['color'] ?>; font-size:0.85rem; flex-shrink:0;"></i>
                                 <span class="lb-label"><?= $lt['label'] ?></span>
                             </div>
-                            <h5 class="text-primary mb-0">My Week</h5>
-                            <span class="wa-week-range ms-auto">
-                                <?= date('M d', strtotime($weekMon)) ?> – <?= date('M d', strtotime($weekSun)) ?>
-                            </span>
-                        </div>
-                        <div class="wa-grid">
-                            <?php
-                            $dayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-                            foreach ($empWeekDays as $i => $day):
-                                $isToday = ($day['date'] === $today);
-                            ?>
-                            <div class="wa-day<?= $isToday ? ' wa-today' : '' ?><?= $day['status'] === 'late' ? ' wa-late' : '' ?>">
-                                <span class="wa-label"><?= $dayLabels[$i] ?></span>
-                                <?php
-                                    $glassClass = match($day['status']) {
-                                        'present' => ' wa-icon-glass',
-                                        'late'    => ' wa-icon-glass-warning',
-                                        'absent'  => ' wa-icon-glass-danger',
-                                        'leave'   => ' wa-icon-glass-warning',
-                                        'ob'      => ' wa-icon-glass-purple',
-                                        'rest'    => ' wa-icon-glass-neutral',
-                                        default   => '',
-                                    };
-                                ?>
-                                <?php
-                                    $tooltipTitle = match($day['status']) {
-                                        'present'  => 'Present',
-                                        'late'     => 'Late',
-                                        'absent'   => 'Absent',
-                                        'rest'     => 'Rest Day',
-                                        'leave'    => 'On Leave',
-                                        'ob'       => 'On OB',
-                                        'upcoming' => 'Upcoming',
-                                        default    => 'No Schedule',
-                                    };
-                                ?>
-                                <span class="wa-icon-wrap<?= $glassClass ?>" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="<?= $tooltipTitle ?>">
-                                    <?php if ($day['status'] === 'present'): ?>
-                                        <i class="bi bi-check-lg" style="color:var(--status-success-color)"></i>
-                                    <?php elseif ($day['status'] === 'late'): ?>
-                                        <i class="bi bi-check-lg" style="color:var(--status-warning-color)"></i>
-                                    <?php elseif ($day['status'] === 'absent'): ?>
-                                        <i class="bi bi-x-lg" style="color:var(--danger-color)"></i>
-                                    <?php elseif ($day['status'] === 'rest'): ?>
-                                        <i class="bi bi-moon" style="color:var(--text-muted)"></i>
-                                    <?php elseif ($day['status'] === 'ob'): ?>
-                                        <i class="bi bi-dash-lg" style="color:var(--superadmin)"></i>
-                                    <?php elseif ($day['status'] === 'leave'): ?>
-                                        <i class="bi bi-dash-lg" style="color:var(--status-warning-color)"></i>
-                                    <?php elseif ($day['status'] === 'upcoming'): ?>
-                                        <i class="bi bi-circle" style="color:rgba(255,255,255,0.15)"></i>
-                                    <?php else: ?>
-                                        <i class="bi bi-calendar-x" style="color:rgba(255,255,255,0.35)"></i>
-                                    <?php endif; ?>
-                                </span>
+                            <div class="lb-nums">
+                                <span class="lb-remaining" style="color:<?= $lt['color'] ?>"><?= $remaining ?></span>
+                                <span class="lb-total">/ <?= $lt['total'] ?></span>
+                            </div>
+                            <div class="progress lb-progress">
+                                <div class="progress-bar" style="width:<?= $pct ?>%; background-color:<?= $lt['color'] ?>;"></div>
                             </div>
                         </div>
                     </div>
@@ -734,13 +685,24 @@ for ($i = 0; $i < 7; $i++) {
                                     'late'    => ' wa-icon-glass-warning',
                                     'absent'  => ' wa-icon-glass-danger',
                                     'leave'   => ' wa-icon-glass-warning',
+                                    'ob'      => ' wa-icon-glass-purple',
                                     'rest'    => ' wa-icon-glass-neutral',
                                     default   => '',
+                                };
+                                $tooltipTitle = match($day['status']) {
+                                    'present'  => 'Present',
+                                    'late'     => 'Late',
+                                    'absent'   => 'Absent',
+                                    'rest'     => 'Rest Day',
+                                    'leave'    => 'On Leave',
+                                    'ob'       => 'On OB',
+                                    'upcoming' => 'Upcoming',
+                                    default    => 'No Schedule',
                                 };
                             ?>
                             <div class="wa-day<?= $isToday ? ' wa-today' : '' ?><?= $day['status'] === 'late' ? ' wa-late' : '' ?>">
                                 <span class="wa-label"><?= $dayLabels[$i] ?></span>
-                                <span class="wa-icon-wrap<?= $glassClass ?>">
+                                <span class="wa-icon-wrap<?= $glassClass ?>" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="<?= $tooltipTitle ?>">
                                     <?php if ($day['status'] === 'present'): ?>
                                         <i class="bi bi-check-lg" style="color:var(--status-success-color)"></i>
                                     <?php elseif ($day['status'] === 'late'): ?>
@@ -749,6 +711,8 @@ for ($i = 0; $i < 7; $i++) {
                                         <i class="bi bi-x-lg" style="color:var(--danger-color)"></i>
                                     <?php elseif ($day['status'] === 'rest'): ?>
                                         <i class="bi bi-moon" style="color:var(--text-muted)"></i>
+                                    <?php elseif ($day['status'] === 'ob'): ?>
+                                        <i class="bi bi-dash-lg" style="color:var(--superadmin)"></i>
                                     <?php elseif ($day['status'] === 'leave'): ?>
                                         <i class="bi bi-dash-lg" style="color:var(--status-warning-color)"></i>
                                     <?php elseif ($day['status'] === 'upcoming'): ?>
