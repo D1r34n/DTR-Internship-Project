@@ -257,36 +257,42 @@ foreach ($s->fetchAll(PDO::FETCH_ASSOC) as $r) {
     }
 }
 
-$s = $pdo->prepare("
-    SELECT start_date FROM leave_requests
-    WHERE employee_id = ? AND leave_type = 'ob leave' AND status = 'approved'
-      AND start_date BETWEEN ? AND ?
-");
-$s->execute([$empId, $weekMon, $weekSun]);
-foreach ($s->fetchAll(PDO::FETCH_ASSOC) as $r) {
-    $empLeaveSet[$r['start_date']] = true;
-}
+    // OB (approved)
+    $s = $pdo->prepare("
+        SELECT start_date FROM leave_requests
+        WHERE employee_id = ? AND leave_type = 'ob leave' AND status = 'approved'
+          AND start_date BETWEEN ? AND ?
+    ");
+    $s->execute([$empId, $weekMon, $weekSun]);
+    $empOBSet = [];
+    foreach ($s->fetchAll(PDO::FETCH_ASSOC) as $r) {
+        $empOBSet[$r['start_date']] = true;
+    }
 
 $empWeekDays = [];
 for ($i = 0; $i < 7; $i++) {
     $date  = date('Y-m-d', strtotime($weekMon . " +$i days"));
     $sched = $empSchedMap[$date] ?? null;
 
-    if (!$sched) {
-        $status = 'none';
-    } elseif ($sched['is_rest_day']) {
-        $status = 'rest';
-    } elseif (isset($empLeaveSet[$date])) {
-        $status = 'leave';
-    } elseif (in_array(strtolower($empAttMap[$date] ?? ''), ['present', 'undertime', 'overtime', 'incomplete'])) {
-        $status = ($empLateMap[$date] ?? 0) > 0 ? 'late' : 'present';
-    } elseif ($date < $today) {
-        $status = 'absent';
-    } elseif ($date === $today && $sched['scheduled_start'] && time() >= strtotime($sched['scheduled_start'])) {
-        $status = 'absent';
-    } else {
-        $status = 'upcoming';
-    }
+        if (!$sched) {
+            $status = 'none';
+        } elseif ($sched['is_rest_day']) {
+            $status = 'rest';
+        } elseif (isset($empOBSet[$date])) {
+            $status = 'ob';
+        } elseif (isset($empLeaveSet[$date])) {
+            $status = 'leave';
+        } elseif (in_array(strtolower($empAttMap[$date] ?? ''), ['present', 'undertime', 'overtime', 'incomplete'])) {
+            $status = ($empLateMap[$date] ?? 0) > 0 ? 'late' : 'present';
+        } elseif ($date < $today) {
+            // Fully past day with no attendance → absent
+            $status = 'absent';
+        } elseif ($date === $today && $sched['scheduled_start'] && time() >= strtotime($sched['scheduled_start'])) {
+            // Today: only absent once the shift has actually started
+            $status = 'absent';
+        } else {
+            $status = 'upcoming';
+        }
 
     $empWeekDays[] = ['date' => $date, 'status' => $status];
 }
@@ -505,12 +511,61 @@ for ($i = 0; $i < 7; $i++) {
                                 <i class="bi <?= $lt['icon'] ?>" style="color:<?= $lt['color'] ?>; font-size:0.85rem; flex-shrink:0;"></i>
                                 <span class="lb-label"><?= $lt['label'] ?></span>
                             </div>
-                            <div class="lb-nums">
-                                <span class="lb-remaining" style="color:<?= $lt['color'] ?>"><?= $remaining ?></span>
-                                <span class="lb-total">/ <?= $lt['total'] ?></span>
-                            </div>
-                            <div class="progress lb-progress">
-                                <div class="progress-bar" style="width:<?= $pct ?>%; background-color:<?= $lt['color'] ?>;"></div>
+                            <h5 class="text-primary mb-0">My Week</h5>
+                            <span class="wa-week-range ms-auto">
+                                <?= date('M d', strtotime($weekMon)) ?> – <?= date('M d', strtotime($weekSun)) ?>
+                            </span>
+                        </div>
+                        <div class="wa-grid">
+                            <?php
+                            $dayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+                            foreach ($empWeekDays as $i => $day):
+                                $isToday = ($day['date'] === $today);
+                            ?>
+                            <div class="wa-day<?= $isToday ? ' wa-today' : '' ?><?= $day['status'] === 'late' ? ' wa-late' : '' ?>">
+                                <span class="wa-label"><?= $dayLabels[$i] ?></span>
+                                <?php
+                                    $glassClass = match($day['status']) {
+                                        'present' => ' wa-icon-glass',
+                                        'late'    => ' wa-icon-glass-warning',
+                                        'absent'  => ' wa-icon-glass-danger',
+                                        'leave'   => ' wa-icon-glass-warning',
+                                        'ob'      => ' wa-icon-glass-purple',
+                                        'rest'    => ' wa-icon-glass-neutral',
+                                        default   => '',
+                                    };
+                                ?>
+                                <?php
+                                    $tooltipTitle = match($day['status']) {
+                                        'present'  => 'Present',
+                                        'late'     => 'Late',
+                                        'absent'   => 'Absent',
+                                        'rest'     => 'Rest Day',
+                                        'leave'    => 'On Leave',
+                                        'ob'       => 'On OB',
+                                        'upcoming' => 'Upcoming',
+                                        default    => 'No Schedule',
+                                    };
+                                ?>
+                                <span class="wa-icon-wrap<?= $glassClass ?>" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="<?= $tooltipTitle ?>">
+                                    <?php if ($day['status'] === 'present'): ?>
+                                        <i class="bi bi-check-lg" style="color:var(--status-success-color)"></i>
+                                    <?php elseif ($day['status'] === 'late'): ?>
+                                        <i class="bi bi-check-lg" style="color:var(--status-warning-color)"></i>
+                                    <?php elseif ($day['status'] === 'absent'): ?>
+                                        <i class="bi bi-x-lg" style="color:var(--danger-color)"></i>
+                                    <?php elseif ($day['status'] === 'rest'): ?>
+                                        <i class="bi bi-moon" style="color:var(--text-muted)"></i>
+                                    <?php elseif ($day['status'] === 'ob'): ?>
+                                        <i class="bi bi-dash-lg" style="color:var(--superadmin)"></i>
+                                    <?php elseif ($day['status'] === 'leave'): ?>
+                                        <i class="bi bi-dash-lg" style="color:var(--status-warning-color)"></i>
+                                    <?php elseif ($day['status'] === 'upcoming'): ?>
+                                        <i class="bi bi-circle" style="color:rgba(255,255,255,0.15)"></i>
+                                    <?php else: ?>
+                                        <i class="bi bi-calendar-x" style="color:rgba(255,255,255,0.35)"></i>
+                                    <?php endif; ?>
+                                </span>
                             </div>
                         </div>
                     </div>
@@ -895,6 +950,14 @@ for ($i = 0; $i < 7; $i++) {
     tick();
     setInterval(tick, 1000);
 })();
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => {
+        new bootstrap.Tooltip(el, { container: 'body', trigger: 'hover' });
+    });
+});
 </script>
 
 <script>

@@ -609,6 +609,9 @@
         const idx = leaveSelectedDates.indexOf(dateStr);
         if (idx !== -1) {
           leaveSelectedDates.splice(idx, 1);
+          info.dayEl.classList.remove('fc-day-selected');
+          const check = info.dayEl.querySelector('.leave-check');
+          if (check) check.remove();
         } else {
           if (leaveSelectedDates.length >= rules.maxDays) {
             showToast(`${capitalize(currentLeaveType)} is limited to ${rules.maxDays} day${rules.maxDays > 1 ? 's' : ''} only.`, 'warning');
@@ -616,10 +619,17 @@
           }
           leaveSelectedDates.push(dateStr);
           leaveSelectedDates.sort();
+          info.dayEl.classList.add('fc-day-selected');
+          const dayTop = info.dayEl.querySelector('.fc-daygrid-day-top');
+          if (dayTop && !dayTop.querySelector('.leave-check')) {
+            const check = document.createElement('span');
+            check.className = 'leave-check';
+            check.innerHTML = '<i class="bi bi-check-circle-fill"></i>';
+            dayTop.appendChild(check);
+          }
         }
 
         updateLeaveSelectedDisplay();
-        renderLeaveCalendar();
       }
     });
 
@@ -786,9 +796,32 @@
           return;
         }
 
-        obSelectedDate = (obSelectedDate === dateStr) ? null : dateStr;
+        if (obSelectedDate === dateStr) {
+          obSelectedDate = null;
+          info.dayEl.classList.remove('fc-day-selected-ob');
+          const check = info.dayEl.querySelector('.ob-check');
+          if (check) check.remove();
+        } else {
+          if (obSelectedDate) {
+            const prevCell = document.querySelector('#obCalendar .fc-day-selected-ob');
+            if (prevCell) {
+              prevCell.classList.remove('fc-day-selected-ob');
+              const prevCheck = prevCell.querySelector('.ob-check');
+              if (prevCheck) prevCheck.remove();
+            }
+          }
+          obSelectedDate = dateStr;
+          info.dayEl.classList.add('fc-day-selected-ob');
+          const dayTop = info.dayEl.querySelector('.fc-daygrid-day-top');
+          if (dayTop && !dayTop.querySelector('.ob-check')) {
+            const check = document.createElement('span');
+            check.className = 'ob-check';
+            check.innerHTML = '<i class="bi bi-check-circle-fill"></i>';
+            dayTop.appendChild(check);
+          }
+        }
+
         updateOBSelectedDisplay();
-        renderOBCalendar();
       }
     });
 
