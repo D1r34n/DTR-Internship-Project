@@ -23,12 +23,19 @@ $logsEmployeeId  ??= null;
                     <i class="bi bi-funnel"></i>
                     <span id="logTypeLabel">All Types</span>
                 </button>
-                <ul class="dropdown-menu" id="logTypeMenu">
+                <ul class="dropdown-menu" id="logTypeMenu" style="max-height:340px;overflow-y:auto!important;overflow-x:hidden!important;">
                     <li><a class="dropdown-item" href="#" data-value="ALL">All Types</a></li>
+                    <li><hr class="dropdown-divider"></li>
                     <li><a class="dropdown-item" href="#" data-value="IN">Time In</a></li>
                     <li><a class="dropdown-item" href="#" data-value="OUT">Time Out</a></li>
                     <li><a class="dropdown-item" href="#" data-value="BREAK_IN">Break In</a></li>
                     <li><a class="dropdown-item" href="#" data-value="BREAK_OUT">Break Out</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item" href="#" data-value="REQUEST_OT">Request OT</a></li>
+                    <li><a class="dropdown-item" href="#" data-value="REQUEST_LEAVE">Request Leave</a></li>
+                    <li><a class="dropdown-item" href="#" data-value="REQUEST_OB">Request OB</a></li>
+                    <li><a class="dropdown-item" href="#" data-value="REQUEST_LOG_EDIT">Request Log Edit</a></li>
+                    <li><a class="dropdown-item" href="#" data-value="REQUEST_CHANGE_SCHEDULE">Request Change Schedule</a></li>
                 </ul>
             </div>
 
@@ -137,8 +144,22 @@ function esc(v) {
         .replace(/'/g, '&#39;');
 }
 
-const LOG_TYPE_CLASS = { IN: 'btn-success', OUT: 'btn-danger', BREAK_IN: 'status-pending', BREAK_OUT: 'btn-info' };
-const LOG_TYPE_LABEL = { IN: 'Time In', OUT: 'Time Out', BREAK_IN: 'Break In', BREAK_OUT: 'Break Out' };
+const LOG_TYPE_CLASS = {
+    IN: 'btn-success', OUT: 'btn-danger', BREAK_IN: 'status-pending', BREAK_OUT: 'btn-info',
+    REQUEST_OT:              'request-overtime',
+    REQUEST_LEAVE:           'request-leave',
+    REQUEST_OB:              'request-official-business',
+    REQUEST_LOG_EDIT:        'request-log-edit',
+    REQUEST_CHANGE_SCHEDULE: 'status-info',
+};
+const LOG_TYPE_LABEL = {
+    IN: 'Time In', OUT: 'Time Out', BREAK_IN: 'Break In', BREAK_OUT: 'Break Out',
+    REQUEST_OT:              'Request OT',
+    REQUEST_LEAVE:           'Request Leave',
+    REQUEST_OB:              'Request OB',
+    REQUEST_LOG_EDIT:        'Request Log Edit',
+    REQUEST_CHANGE_SCHEDULE: 'Request Change Schedule',
+};
 
 /* =========================
    RENDER ROWS
@@ -197,20 +218,22 @@ function renderLogRows({ meta, rows }) {
             <td><span class="empRoleBadge empRole-${esc(row.employee_role)}">${esc(roleLabel)}</span></td>`;
         }
 
+        const BASE_LOG_TYPES = ['IN', 'OUT', 'BREAK_IN', 'BREAK_OUT'];
+
         let editBtnCol = '';
         if (scoped_to_employee) {
-            editBtnCol = `
-            <td>
-                <button class="leEditRowBtn" title="Edit log entry"
-                    data-log-id="${row.log_id}"
-                    data-log-type="${esc(row.log_type)}"
-                    data-log-datetime="${esc(row.log_datetime)}"
-                    data-log-date-label="${esc(row.date)}"
-                    data-log-time-label="${esc(row.time)}"
-                    onclick="openAdminLogEditModal(this)">
-                    <i class="bi bi-pencil-fill"></i>
-                </button>
-            </td>`;
+            const editBtn = BASE_LOG_TYPES.includes(row.log_type)
+                ? `<button class="leEditRowBtn" title="Edit log entry"
+                        data-log-id="${row.log_id}"
+                        data-log-type="${esc(row.log_type)}"
+                        data-log-datetime="${esc(row.log_datetime)}"
+                        data-log-date-label="${esc(row.date)}"
+                        data-log-time-label="${esc(row.time)}"
+                        onclick="openAdminLogEditModal(this)">
+                        <i class="bi bi-pencil-fill"></i>
+                    </button>`
+                : '';
+            editBtnCol = `<td>${editBtn}</td>`;
         }
 
         const hasPhoto = row.photo_path && (row.log_type === 'IN' || row.log_type === 'OUT');
@@ -226,13 +249,9 @@ function renderLogRows({ meta, rows }) {
                </span>`
             : `<span class="pill ${typeClass}">${typeLabel}</span>`;
 
-        return `<tr>
-            <td>${esc(row.date)}</td>
-            <td>${esc(row.time)}</td>
-            ${adminCols}
-            <td>${typePill}</td>
-            <td>
-                <span role="button" tabindex="0"
+        const locCell = row.is_within_office === null
+            ? `<span style="color:rgba(255,255,255,0.2);font-size:0.75rem;">—</span>`
+            : `<span role="button" tabindex="0"
                     class="pill ${locClass} loc-trigger"
                     data-lat="${esc(row.latitude)}"
                     data-lng="${esc(row.longitude)}"
@@ -241,8 +260,14 @@ function renderLogRows({ meta, rows }) {
                     data-dist="${esc(dist)}">
                     <i class="bi bi-geo-alt-fill"></i>
                     ${locLabel}
-                </span>
-            </td>
+               </span>`;
+
+        return `<tr>
+            <td>${esc(row.date)}</td>
+            <td>${esc(row.time)}</td>
+            ${adminCols}
+            <td>${typePill}</td>
+            <td>${locCell}</td>
 
             <td>${editRoleHtml}</td>
             <td>${editStatusHtml}</td>
