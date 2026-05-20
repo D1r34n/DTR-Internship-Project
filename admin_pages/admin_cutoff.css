@@ -1,0 +1,144 @@
+/* ================================================
+   ADMIN CUT-OFF PAGE
+    Page-specific styles for the admin cut-off page.
+   Depends on: root.css, typography.css,
+               components.css, navbars.css
+   ================================================ */
+
+/* ============================================================
+   BACKGROUND
+   ============================================================ */
+
+body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: url('../assets/images/drt_bg.jpg') center / cover no-repeat;
+    z-index: -2;
+}
+
+/* ------------------------------------------------
+   BODY BASE
+   ------------------------------------------------ */
+
+html {
+    height: 100%;
+}
+
+body {
+    display: flex;
+    min-height: 100vh;
+    margin: 0;
+
+    font-family: 'Poppins', sans-serif;
+
+    overflow-x: hidden;
+
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+
+/* ------------------------------------------------
+   LAYOUT
+   ------------------------------------------------ */
+
+#main-wrapper {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    min-width: 0;
+    height: 100vh;
+    overflow: hidden;
+}
+
+#main-wrapper > .container-fluid {
+    flex: 1;
+    min-height: 0;
+}
+
+.min-h-0 {
+    min-height: 0 !important;
+}
+
+.row-min-h {
+    min-height: 0;
+}
+
+/* ------------------------------------------------
+   EMPTY STATES
+   ------------------------------------------------ */
+
+.cutoff-empty {
+    color: var(--text-light);
+    font-size: 4rem;
+}
+
+.calendar-preview-empty {
+    color: var(--text-light);
+    font-size: 5rem;
+}
+
+/* ============================================================
+   CUTOFF LIST ITEMS
+   ============================================================ */
+
+#cutoff-list .list-group-item {
+    background: transparent;
+    border-color: var(--neutral-border);
+    color: var(--text-light);
+    padding: 0.5rem 0.75rem;
+}
+
+#cutoff-list .list-group-item:first-child {
+    border-top: none;
+}
+
+#cutoff-list .cutoff-item {
+    cursor: pointer;
+    transition: background 0.15s ease;
+    user-select: none;
+}
+
+#cutoff-list .cutoff-item:hover:not(.active) {
+    background: var(--neutral-glass-hover);
+}
+
+#cutoff-list .cutoff-item.active {
+    background: var(--primary-glass);
+    border-left: 3px solid var(--primary-color);
+    color: var(--text-lightest);
+}
+
+#cutoff-list .cutoff-item.active .cutoff-icon {
+    color: var(--primary-color);
+}
+
+.cutoff-icon {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    flex-shrink: 0;
+}
+
+.cutoff-label {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.btn-edit-item,
+.btn-delete-item {
+    width: 30px !important;
+}
+
+/* ============================================================
+   FULLCALENDAR PREVIEW — fills the entire card body
+   ============================================================ */
+
+#calendar-wrap {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    padding: 0.75rem 1rem;
+}
+

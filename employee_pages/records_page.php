@@ -12,6 +12,32 @@ date_default_timezone_set('Asia/Manila');
 
 $currentPage = 'records';
 
+// ── Load cut-off periods (auto-creates table on first run) ────
+$pdo->exec("CREATE TABLE IF NOT EXISTS `cutoffs` (
+    `id`         bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+    `start_date` date NOT NULL,
+    `end_date`   date NOT NULL,
+    `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+    `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci");
+
+$cutoffs = $pdo->query("SELECT id, start_date, end_date FROM cutoffs ORDER BY start_date DESC")
+               ->fetchAll(PDO::FETCH_ASSOC);
+
+// Determine active cut-off (from GET, or default to most recent)
+$activeCutoffId = null;
+if ($cutoffs) {
+    $requested = isset($_GET['cutoff']) ? (int)$_GET['cutoff'] : 0;
+    if ($requested) {
+        foreach ($cutoffs as $c) {
+            if ((int)$c['id'] === $requested) { $activeCutoffId = $requested; break; }
+        }
+    }
+    if (!$activeCutoffId) $activeCutoffId = (int)$cutoffs[0]['id'];
+}
+
+// Fall back to month-based mode when no cutoffs exist
 $rawMonth = $_GET['month'] ?? date('Y-m');
 [$yr, $mn] = array_pad(array_map('intval', explode('-', $rawMonth)), 2, 0);
 if ($yr < 2000 || $mn < 1 || $mn > 12) { $yr = (int)date('Y'); $mn = (int)date('n'); }

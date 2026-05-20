@@ -1,8 +1,17 @@
 <?php
-// Expects $recordsMonth (YYYY-MM) to be set by the including page.
-// Optionally set $recordsApiPath to override the default fetch URL.
+// Expects $recordsMonth (YYYY-MM) from the including page (month-based mode).
+// When $cutoffs and $activeCutoffId are provided, renders a cutoff selector instead.
 $recordsApiPath ??= '../get_records.php';
 $recordsMonth   ??= date('Y-m');
+$cutoffs        ??= [];
+$activeCutoffId ??= null;
+
+// Resolve active cutoff data for initial load
+$activeCutoff = null;
+foreach ($cutoffs as $c) {
+    if ((int)$c['id'] === (int)$activeCutoffId) { $activeCutoff = $c; break; }
+}
+$useCutoffMode = !empty($cutoffs);
 ?>
 
 
@@ -13,12 +22,31 @@ $recordsMonth   ??= date('Y-m');
     <!-- HEADER -->
     <div class="records-header">
         <div class="d-flex align-items-center gap-2">
+<?php if ($useCutoffMode): ?>
+            <i class="bi bi-scissors text-info" style="font-size:0.9rem;"></i>
+            <select class="form-select form-select-sm" id="cutoff-select"
+                    style="max-width:260px;background:var(--glass-bg);border-color:var(--neutral-border);color:var(--text-light);">
+                <?php foreach ($cutoffs as $c):
+                    $label = date('M j', strtotime($c['start_date']))
+                           . ' – '
+                           . date('M j, Y', strtotime($c['end_date']));
+                    $sel   = ((int)$c['id'] === (int)$activeCutoffId) ? ' selected' : '';
+                ?>
+                <option value="<?= $c['id'] ?>"
+                        data-start="<?= $c['start_date'] ?>"
+                        data-end="<?= $c['end_date'] ?>"<?= $sel ?>>
+                    <?= htmlspecialchars($label) ?>
+                </option>
+                <?php endforeach; ?>
+            </select>
+<?php else: ?>
             <div class="dropdown">
                 <button class="btn btn-sm dropdown-toggle" id="month-picker-btn" type="button">
                     <i class="bi bi-calendar3"></i>
                     <span id="dateRangeLabel">Loading…</span>
                 </button>
             </div>
+<?php endif; ?>
         </div>
     </div>
 
@@ -66,9 +94,12 @@ $recordsMonth   ??= date('Y-m');
     </div>
 </div>
 
-<input type="hidden" id="current-month" 
+<input type="hidden" id="current-month"
        value="<?= htmlspecialchars($recordsMonth) ?>"
-       data-employee-id="<?= isset($recordsEmployeeId) ? (int)$recordsEmployeeId : '' ?>">
+       data-employee-id="<?= isset($recordsEmployeeId) ? (int)$recordsEmployeeId : '' ?>"
+       data-cutoff-mode="<?= $useCutoffMode ? '1' : '0' ?>"
+       data-cutoff-start="<?= $activeCutoff ? htmlspecialchars($activeCutoff['start_date']) : '' ?>"
+       data-cutoff-end="<?= $activeCutoff ? htmlspecialchars($activeCutoff['end_date'])   : '' ?>">
 
 <script>
 const ganttContainer = document.getElementById('gantt-container');
@@ -217,19 +248,45 @@ function renderRecordRows(data) {
 /* =========================
    FETCH
 ========================= */
-function fetchRecords(month) {
-    monthHidden.value = month;
-    const empParam = monthHidden.dataset.employeeId
-        ? `&employee_id=${monthHidden.dataset.employeeId}`
-        : '';
-    fetch(`<?= $recordsApiPath ?>?month=${encodeURIComponent(month)}${empParam}`)
+const _apiBase   = '<?= $recordsApiPath ?>';
+const _empParam  = monthHidden.dataset.employeeId
+    ? `&employee_id=${monthHidden.dataset.employeeId}`
+    : '';
+const _cutoffMode = monthHidden.dataset.cutoffMode === '1';
+
+function fetchRecords(monthOrStart, end) {
+    let url;
+    if (_cutoffMode && end !== undefined) {
+        url = `${_apiBase}?start=${encodeURIComponent(monthOrStart)}&end=${encodeURIComponent(end)}${_empParam}`;
+    } else {
+        monthHidden.value = monthOrStart;
+        url = `${_apiBase}?month=${encodeURIComponent(monthOrStart)}${_empParam}`;
+    }
+    fetch(url)
         .then(res => res.json())
         .then(data => renderRecordRows(data));
 }
 
+function fetchActiveCutoff() {
+    const start = monthHidden.dataset.cutoffStart;
+    const end   = monthHidden.dataset.cutoffEnd;
+    if (start && end) fetchRecords(start, end);
+}
+
 /* =========================
-   FLATPICKR
+   CONTROLS
 ========================= */
+<?php if ($useCutoffMode): ?>
+const cutoffSelect = document.getElementById('cutoff-select');
+if (cutoffSelect) {
+    cutoffSelect.addEventListener('change', function () {
+        const opt = this.options[this.selectedIndex];
+        monthHidden.dataset.cutoffStart = opt.dataset.start;
+        monthHidden.dataset.cutoffEnd   = opt.dataset.end;
+        fetchRecords(opt.dataset.start, opt.dataset.end);
+    });
+}
+<?php else: ?>
 flatpickr('#month-picker-btn', {
     plugins: [
         new monthSelectPlugin({ shorthand: true, dateFormat: 'Y-m', altFormat: 'F Y' })
@@ -239,10 +296,23 @@ flatpickr('#month-picker-btn', {
         fetchRecords(dateStr);
     }
 });
+<?php endif; ?>
 
 /* =========================
    INIT
 ========================= */
-document.addEventListener('DOMContentLoaded', () => fetchRecords(monthHidden.value));
-document.addEventListener('attendance_tapped', () => fetchRecords(monthHidden.value));
+document.addEventListener('DOMContentLoaded', () => {
+    if (_cutoffMode) {
+        fetchActiveCutoff();
+    } else {
+        fetchRecords(monthHidden.value);
+    }
+});
+document.addEventListener('attendance_tapped', () => {
+    if (_cutoffMode) {
+        fetchActiveCutoff();
+    } else {
+        fetchRecords(monthHidden.value);
+    }
+});
 </script>

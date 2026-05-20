@@ -108,6 +108,9 @@ $requestsOpen = in_array($currentPage, ['employee_requests', 'schedule_requests'
 
             <!-- DEPARTMENTS LIST -->
             <?php navLink('../admin_pages/admin_departments.php',    'bi-building-gear', 'Departments',       $currentPage === 'departments'); ?>
+
+            <!-- CUT-OFF PERIODS -->
+            <?php navLink('../admin_pages/admin_cutoff.php', 'bi-scissors', 'Cut-offs', $currentPage === 'cutoffs'); ?>
         <?php endif; ?>
 
     </nav>

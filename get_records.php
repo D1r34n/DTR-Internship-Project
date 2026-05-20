@@ -16,12 +16,19 @@ $isAdmin    = $_SESSION['user_role'] === 'admin';
 $requested  = isset($_GET['employee_id']) ? (int)$_GET['employee_id'] : 0;
 $employeeId = ($isAdmin && $requested > 0) ? $requested : (int)$_SESSION['user_id'];
 
-$rawMonth = $_GET['month'] ?? date('Y-m');
-[$yr, $mn] = array_pad(array_map('intval', explode('-', $rawMonth)), 2, 0);
-if ($yr < 2000 || $mn < 1 || $mn > 12) { $yr = (int)date('Y'); $mn = (int)date('n'); }
-$startDate  = sprintf('%04d-%02d-01', $yr, $mn);
-$endDate    = date('Y-m-t', strtotime($startDate));
-$monthLabel = date('F Y', strtotime($startDate));
+if (!empty($_GET['start']) && !empty($_GET['end'])) {
+    $startDate  = date('Y-m-d', strtotime($_GET['start']));
+    $endDate    = date('Y-m-d', strtotime($_GET['end']));
+    if ($startDate > $endDate) $endDate = $startDate;
+    $monthLabel = date('M j', strtotime($startDate)) . ' – ' . date('M j, Y', strtotime($endDate));
+} else {
+    $rawMonth = $_GET['month'] ?? date('Y-m');
+    [$yr, $mn] = array_pad(array_map('intval', explode('-', $rawMonth)), 2, 0);
+    if ($yr < 2000 || $mn < 1 || $mn > 12) { $yr = (int)date('Y'); $mn = (int)date('n'); }
+    $startDate  = sprintf('%04d-%02d-01', $yr, $mn);
+    $endDate    = date('Y-m-t', strtotime($startDate));
+    $monthLabel = date('F Y', strtotime($startDate));
+}
 
 $records   = getAttendanceRecords($pdo, $employeeId, $startDate, $endDate);
 $schedules = getSchedulesByDateRange($pdo, $employeeId, $startDate, $endDate);
