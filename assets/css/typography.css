@@ -113,6 +113,14 @@ body {
     color: var(--text-muted);
 }
 
+.text-meta-secondary {
+    font-size: 0.65rem;
+    font-weight: 300;
+    line-height: 1.2;
+    color: var(--text-muted);
+    opacity: 0.8;
+}
+
 /* ------------------------------------------------
    STATS AND NUMBERS
    ------------------------------------------------ */

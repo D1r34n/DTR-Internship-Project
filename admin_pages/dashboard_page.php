@@ -11,7 +11,8 @@ if (!isset($_SESSION['user_id'])) {
 require_once '../db.php';
 date_default_timezone_set('Asia/Manila');
 
-$today = date('Y-m-d');
+$today        = date('Y-m-d');
+$daysInMonth  = (int)date('t');
 
 // ── Total employees ───────────────────────────────────────
 $count = (int) $pdo->query("SELECT COUNT(*) FROM employees")->fetchColumn();
@@ -25,7 +26,25 @@ $stmt = $pdo->prepare("
 ");
 $stmt->execute([$today]);
 $present = (int) $stmt->fetchColumn();
-$absent  = $count - $present;
+
+// ── Absent today (scheduled workday, no clock-in) ─────────
+// Only counts employees with an approved non-rest-day schedule today
+// who have not clocked in — excludes unscheduled and rest-day employees.
+$stmt = $pdo->prepare("
+    SELECT COUNT(DISTINCT s.employee_id)
+    FROM schedules s
+    WHERE s.schedule_date = ?
+      AND s.status = 'approved'
+      AND (s.is_rest_day = 0 OR s.is_rest_day IS NULL)
+      AND NOT EXISTS (
+          SELECT 1 FROM attendances a
+          WHERE a.employee_id = s.employee_id
+            AND a.work_date = ?
+            AND a.actual_time_in IS NOT NULL
+      )
+");
+$stmt->execute([$today, $today]);
+$absent = (int) $stmt->fetchColumn();
 
 // ── Pending requests ──────────────────────────────────────
 $pendingLeave   = (int) $pdo->query("SELECT COUNT(*) FROM leave_requests    WHERE status = 'pending'")->fetchColumn();
@@ -105,15 +124,18 @@ foreach ($weeklyRows as $row) {
 
 $isAdmin = isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'admin';
 
-// ── Employee: monthly attendance/absent counts ────────────
+// ── All users: employee ID ────────────────────────────────
+$empId = (int)$_SESSION['user_id'];
+
+// ── Employee-only KPI + leave balances ───────────────────
 $empMonthPresent = 0;
 $empMonthAbsent  = 0;
+$empTotalPending = 0;
+$leaveTotal      = 0;
+$leaveUsed       = 0;
+$leaveData       = [];
 
-// ── Employee: personal weekly attendance tracker ──────────
-$empWeekDays = [];
 if (!$isAdmin) {
-    $empId = (int)$_SESSION['user_id'];
-
     $s = $pdo->prepare("
         SELECT
             SUM(CASE WHEN status IN ('present','late','undertime','overtime') THEN 1 ELSE 0 END) AS present_count,
@@ -128,94 +150,145 @@ if (!$isAdmin) {
     $empMonthPresent = (int)($monthRow['present_count'] ?? 0);
     $empMonthAbsent  = (int)($monthRow['absent_count']  ?? 0);
 
-    // Schedules
-    $s = $pdo->prepare("
-        SELECT schedule_date, is_rest_day, scheduled_start
-        FROM schedules
-        WHERE employee_id = ? AND schedule_date BETWEEN ? AND ? AND status = 'approved'
-    ");
-    $s->execute([$empId, $weekMon, $weekSun]);
-    $empSchedMap = [];
-    foreach ($s->fetchAll(PDO::FETCH_ASSOC) as $r) {
-        $empSchedMap[$r['schedule_date']] = $r;
-    }
+    $s = $pdo->prepare("SELECT COUNT(*) FROM leave_requests    WHERE employee_id = ? AND status = 'pending'");
+    $s->execute([$empId]);
+    $empPendingLeave = (int)$s->fetchColumn();
 
-    // Attendance
-    $s = $pdo->prepare("
-        SELECT work_date, status, late_minutes FROM attendances
-        WHERE employee_id = ? AND work_date BETWEEN ? AND ?
-    ");
-    $s->execute([$empId, $weekMon, $weekSun]);
-    $empAttMap  = [];
-    $empLateMap = [];
-    foreach ($s->fetchAll(PDO::FETCH_ASSOC) as $r) {
-        $empAttMap[$r['work_date']]  = $r['status'];
-        $empLateMap[$r['work_date']] = (int)$r['late_minutes'];
-    }
+    $s = $pdo->prepare("SELECT COUNT(*) FROM overtime_requests WHERE employee_id = ? AND status = 'pending'");
+    $s->execute([$empId]);
+    $empPendingOT = (int)$s->fetchColumn();
 
-    // Leave (approved, non-OB)
+    $s = $pdo->prepare("SELECT COUNT(*) FROM log_edit_requests  WHERE employee_id = ? AND status = 'pending'");
+    $s->execute([$empId]);
+    $empPendingLogEdit = (int)$s->fetchColumn();
+
+    $empTotalPending = $empPendingLeave + $empPendingOT + $empPendingLogEdit;
+
+    $leaveTypeConfig = [
+        ['key' => 'buffer_leave',      'label' => 'Buffer',      'icon' => 'bi-shield-fill',      'color' => 'var(--primary-color)',  'card' => 'card-success', 'req_key' => null],
+        ['key' => 'vacation_leave',    'label' => 'Vacation',    'icon' => 'bi-umbrella-fill',    'color' => 'var(--info-color)',     'card' => 'card-info',    'req_key' => 'vacation leave'],
+        ['key' => 'sick_leave',        'label' => 'Sick',        'icon' => 'bi-heart-pulse-fill', 'color' => 'var(--danger-color)',   'card' => 'card-danger',  'req_key' => 'sick leave'],
+        ['key' => 'paternity_leave',   'label' => 'Paternity',   'icon' => 'bi-person-fill',      'color' => '#7dd9a8',               'card' => 'card-mint',    'req_key' => null],
+        ['key' => 'maternity_leave',   'label' => 'Maternity',   'icon' => 'bi-person-hearts',    'color' => '#fd7e14',               'card' => 'card-coral',   'req_key' => null],
+        ['key' => 'solo_parent_leave', 'label' => 'Solo Parent', 'icon' => 'bi-people-fill',      'color' => '#a07de0',               'card' => 'card-purple',  'req_key' => 'solo parent leave'],
+        ['key' => 'birthday_leave',    'label' => 'Birthday',    'icon' => 'bi-gift-fill',        'color' => 'var(--warning-color)',  'card' => 'card-warning', 'req_key' => 'birthday leave'],
+    ];
+
+    $s = $pdo->prepare("SELECT * FROM employee_leave_balances WHERE employee_id = ?");
+    $s->execute([$empId]);
+    $leaveBal = $s->fetch(PDO::FETCH_ASSOC) ?: [];
+
     $s = $pdo->prepare("
-        SELECT selected_dates, start_date, end_date
+        SELECT leave_type, selected_dates, start_date, end_date
         FROM leave_requests
-        WHERE employee_id = ? AND leave_type != 'ob leave' AND status = 'approved'
-          AND (start_date BETWEEN ? AND ? OR end_date BETWEEN ? AND ?
-               OR (start_date <= ? AND end_date >= ?))
+        WHERE employee_id = ? AND status = 'approved' AND leave_type != 'ob leave'
+          AND YEAR(start_date) = YEAR(CURDATE())
     ");
-    $s->execute([$empId, $weekMon, $weekSun, $weekMon, $weekSun, $weekMon, $weekSun]);
-    $empLeaveSet = [];
+    $s->execute([$empId]);
+    $usedPerType = [];
     foreach ($s->fetchAll(PDO::FETCH_ASSOC) as $r) {
+        $rKey  = str_replace(' ', '_', $r['leave_type']);
         $dates = json_decode($r['selected_dates'], true);
         if (is_array($dates) && !empty($dates)) {
-            foreach ($dates as $d) {
-                if ($d >= $weekMon && $d <= $weekSun) $empLeaveSet[$d] = true;
-            }
+            $usedPerType[$rKey] = ($usedPerType[$rKey] ?? 0) + count($dates);
         } else {
-            $cur = new DateTime($r['start_date']);
-            $fin = new DateTime($r['end_date']);
-            while ($cur <= $fin) {
-                $d = $cur->format('Y-m-d');
-                if ($d >= $weekMon && $d <= $weekSun) $empLeaveSet[$d] = true;
-                $cur->modify('+1 day');
-            }
+            $d1 = new DateTime($r['start_date']);
+            $d2 = new DateTime($r['end_date']);
+            $usedPerType[$rKey] = ($usedPerType[$rKey] ?? 0) + $d1->diff($d2)->days + 1;
         }
     }
 
-    // OB (approved)
-    $s = $pdo->prepare("
-        SELECT start_date FROM leave_requests
-        WHERE employee_id = ? AND leave_type = 'ob leave' AND status = 'approved'
-          AND start_date BETWEEN ? AND ?
-    ");
-    $s->execute([$empId, $weekMon, $weekSun]);
-    foreach ($s->fetchAll(PDO::FETCH_ASSOC) as $r) {
-        $empLeaveSet[$r['start_date']] = true;
+    foreach ($leaveTypeConfig as $lt) {
+        $total       = (int)($leaveBal[$lt['key']] ?? 0);
+        $used        = (int)($usedPerType[$lt['key']] ?? 0);
+        $leaveData[] = array_merge($lt, ['total' => $total, 'used' => $used]);
+        $leaveTotal += $total;
+        $leaveUsed  += $used;
     }
+}
 
-    // Build 7-day status array
-    for ($i = 0; $i < 7; $i++) {
-        $date  = date('Y-m-d', strtotime($weekMon . " +$i days"));
-        $sched = $empSchedMap[$date] ?? null;
+// ── My Week — ALL roles ───────────────────────────────────
+$s = $pdo->prepare("
+    SELECT schedule_date, is_rest_day, scheduled_start
+    FROM schedules
+    WHERE employee_id = ? AND schedule_date BETWEEN ? AND ? AND status = 'approved'
+");
+$s->execute([$empId, $weekMon, $weekSun]);
+$empSchedMap = [];
+foreach ($s->fetchAll(PDO::FETCH_ASSOC) as $r) {
+    $empSchedMap[$r['schedule_date']] = $r;
+}
 
-        if (!$sched) {
-            $status = 'none';
-        } elseif ($sched['is_rest_day']) {
-            $status = 'rest';
-        } elseif (isset($empLeaveSet[$date])) {
-            $status = 'leave';
-        } elseif (in_array(strtolower($empAttMap[$date] ?? ''), ['present', 'undertime', 'overtime', 'incomplete'])) {
-            $status = ($empLateMap[$date] ?? 0) > 0 ? 'late' : 'present';
-        } elseif ($date < $today) {
-            // Fully past day with no attendance → absent
-            $status = 'absent';
-        } elseif ($date === $today && $sched['scheduled_start'] && time() >= strtotime($sched['scheduled_start'])) {
-            // Today: only absent once the shift has actually started
-            $status = 'absent';
-        } else {
-            $status = 'upcoming';
+$s = $pdo->prepare("
+    SELECT work_date, status, late_minutes FROM attendances
+    WHERE employee_id = ? AND work_date BETWEEN ? AND ?
+");
+$s->execute([$empId, $weekMon, $weekSun]);
+$empAttMap  = [];
+$empLateMap = [];
+foreach ($s->fetchAll(PDO::FETCH_ASSOC) as $r) {
+    $empAttMap[$r['work_date']]  = $r['status'];
+    $empLateMap[$r['work_date']] = (int)$r['late_minutes'];
+}
+
+$s = $pdo->prepare("
+    SELECT selected_dates, start_date, end_date
+    FROM leave_requests
+    WHERE employee_id = ? AND leave_type != 'ob leave' AND status = 'approved'
+      AND (start_date BETWEEN ? AND ? OR end_date BETWEEN ? AND ?
+           OR (start_date <= ? AND end_date >= ?))
+");
+$s->execute([$empId, $weekMon, $weekSun, $weekMon, $weekSun, $weekMon, $weekSun]);
+$empLeaveSet = [];
+foreach ($s->fetchAll(PDO::FETCH_ASSOC) as $r) {
+    $dates = json_decode($r['selected_dates'], true);
+    if (is_array($dates) && !empty($dates)) {
+        foreach ($dates as $d) {
+            if ($d >= $weekMon && $d <= $weekSun) $empLeaveSet[$d] = true;
         }
-
-        $empWeekDays[] = ['date' => $date, 'status' => $status];
+    } else {
+        $cur = new DateTime($r['start_date']);
+        $fin = new DateTime($r['end_date']);
+        while ($cur <= $fin) {
+            $d = $cur->format('Y-m-d');
+            if ($d >= $weekMon && $d <= $weekSun) $empLeaveSet[$d] = true;
+            $cur->modify('+1 day');
+        }
     }
+}
+
+$s = $pdo->prepare("
+    SELECT start_date FROM leave_requests
+    WHERE employee_id = ? AND leave_type = 'ob leave' AND status = 'approved'
+      AND start_date BETWEEN ? AND ?
+");
+$s->execute([$empId, $weekMon, $weekSun]);
+foreach ($s->fetchAll(PDO::FETCH_ASSOC) as $r) {
+    $empLeaveSet[$r['start_date']] = true;
+}
+
+$empWeekDays = [];
+for ($i = 0; $i < 7; $i++) {
+    $date  = date('Y-m-d', strtotime($weekMon . " +$i days"));
+    $sched = $empSchedMap[$date] ?? null;
+
+    if (!$sched) {
+        $status = 'none';
+    } elseif ($sched['is_rest_day']) {
+        $status = 'rest';
+    } elseif (isset($empLeaveSet[$date])) {
+        $status = 'leave';
+    } elseif (in_array(strtolower($empAttMap[$date] ?? ''), ['present', 'undertime', 'overtime', 'incomplete'])) {
+        $status = ($empLateMap[$date] ?? 0) > 0 ? 'late' : 'present';
+    } elseif ($date < $today) {
+        $status = 'absent';
+    } elseif ($date === $today && $sched['scheduled_start'] && time() >= strtotime($sched['scheduled_start'])) {
+        $status = 'absent';
+    } else {
+        $status = 'upcoming';
+    }
+
+    $empWeekDays[] = ['date' => $date, 'status' => $status];
 }
 
 ?>
@@ -224,7 +297,7 @@ if (!$isAdmin) {
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Admin Dashboard</title>
+    <title>Dashboard</title>
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
@@ -283,155 +356,167 @@ if (!$isAdmin) {
                 </div>
 
                 <?php if ($isAdmin): ?>
-                <!-- Attendance Pie Charts (admin) -->
+                <!-- Summary Cards (admin) -->
                 <div class="row g-2 mb-2">
                     <div class="col-4">
                         <div class="card card-success p-3">
-                            <div class="card-body d-flex flex-column align-items-center gap-2 p-0">
-                                <div style="position:relative;width:90px;height:90px;">
-                                    <canvas id="piePresent"></canvas>
-                                    <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;line-height:1;pointer-events:none;">
-                                        <strong style="font-size:0.85rem;color:#28a745;"><?= $count > 0 ? round($present / $count * 100) : 0 ?>%</strong>
+                            <div class="card-body d-flex flex-column gap-2 p-0">
+                                <div class="d-flex align-items-center gap-3">
+                                    <div class="icon-box icon-box-success">
+                                        <i class="bi bi-check-circle-fill fs-3"></i>
+                                    </div>
+                                    <div class="d-flex flex-column ms-auto text-end">
+                                        <div class="hstack gap-1 justify-content-end align-items-baseline">
+                                            <div class="stats-number" style="color:var(--status-success-color)"><?= $present ?></div>
+                                            <span class="text-meta">/ <?= $count ?></span>
+                                        </div>
+                                        <div class="text-meta">Present Today</div>
+                                        <small class="text-meta-secondary"><?= $count > 0 ? round($present / $count * 100) : 0 ?>% of employees</small>
                                     </div>
                                 </div>
-                                <div class="hstack gap-1 justify-content-center">
-                                    <i class="bi bi-check-circle-fill" style="color:#28a745;font-size:0.8rem;"></i>
-                                    <span class="text-meta">Total Present</span>
+                                <div class="progress" style="height: 4px;">
+                                    <div class="progress-bar"
+                                        style="width: <?= $count > 0 ? ($present / $count * 100) : 0 ?>%; background-color:var(--status-success-color)">
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                     <div class="col-4">
                         <div class="card card-danger p-3">
-                            <div class="card-body d-flex flex-column align-items-center gap-2 p-0">
-                                <div style="position:relative;width:90px;height:90px;">
-                                    <canvas id="pieAbsent"></canvas>
-                                    <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;line-height:1;pointer-events:none;">
-                                        <strong style="font-size:0.85rem;color:#dc3545;"><?= $count > 0 ? round($absent / $count * 100) : 0 ?>%</strong>
+                            <div class="card-body d-flex flex-column gap-2 p-0">
+                                <div class="d-flex align-items-center gap-3">
+                                    <div class="icon-box icon-box-danger">
+                                        <i class="bi bi-clock-fill fs-3"></i>
+                                    </div>
+                                    <div class="d-flex flex-column ms-auto text-end">
+                                        <div class="hstack gap-1 justify-content-end align-items-baseline">
+                                            <div class="stats-number" style="color:var(--danger-color)"><?= $absent ?></div>
+                                            <span class="text-meta">/ <?= $count ?></span>
+                                        </div>
+                                        <div class="text-meta">Absent Today</div>
+                                        <small class="text-meta-secondary"><?= $count > 0 ? round($absent / $count * 100) : 0 ?>% of employees</small>
                                     </div>
                                 </div>
-                                <div class="hstack gap-1 justify-content-center">
-                                    <i class="bi bi-clock-fill" style="color:#dc3545;font-size:0.8rem;"></i>
-                                    <span class="text-meta">Total Absent</span>
+                                <div class="progress" style="height: 4px;">
+                                    <div class="progress-bar"
+                                        style="width: <?= $count > 0 ? ($absent / $count * 100) : 0 ?>%; background-color:var(--danger-color)">
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                     <div class="col-4">
                         <div class="card card-warning p-3">
-                            <div class="card-body d-flex flex-column align-items-center gap-2 p-0">
-                                <div style="position:relative;width:90px;height:90px;">
-                                    <canvas id="piePending"></canvas>
-                                    <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;line-height:1;pointer-events:none;">
-                                        <strong style="font-size:0.85rem;color:#ffc107;"><?= $count > 0 ? min(100, round($totalPending / $count * 100)) : 0 ?>%</strong>
+                            <div class="card-body d-flex flex-column gap-2 p-0">
+                                <div class="d-flex align-items-center gap-3">
+                                    <div class="icon-box icon-box-warning">
+                                        <i class="bi bi-bell-fill fs-3"></i>
                                     </div>
-                                </div>
-                                <div class="hstack gap-1 justify-content-center">
-                                    <i class="bi bi-bell-fill" style="color:#ffc107;font-size:0.8rem;"></i>
-                                    <span class="text-meta">Pending Requests</span>
+                                    <div class="d-flex flex-column ms-auto text-end">
+                                        <div class="stats-number" style="color:var(--warning-color)"><?= $totalPending ?></div>
+                                        <div class="text-meta">Pending <?= $totalPending == 1 ? 'Request' : 'Requests' ?></div>
+                                        <small class="text-meta-secondary">Awaiting Approval</small>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
                 <?php else: ?>
+
                 <!-- Summary Cards (employee) -->
                 <div class="row g-2 mb-2">
                     <div class="col-4">
                         <div class="card card-success p-3">
-                            <div class="card-body d-flex align-items-center gap-3 p-0">
-                                <div class="icon-box icon-box-success">
-                                    <i class="bi bi-check-circle-fill fs-3"></i>
+                            <div class="card-body d-flex flex-column gap-2 p-0">
+                                <div class="d-flex align-items-center gap-3">
+                                    <div class="icon-box icon-box-success">
+                                        <i class="bi bi-check-circle-fill fs-3"></i>
+                                    </div>
+                                    <div class="d-flex flex-column ms-auto text-end">
+                                        <div class="hstack gap-1 justify-content-end align-items-baseline">
+                                            <div class="stats-number" style="color:var(--status-success-color)"><?= $empMonthPresent ?></div>
+                                            <span class="text-meta">/ <?= $daysInMonth ?></span>
+                                        </div>
+                                        <div class="text-meta">Present <?= $empMonthPresent == 1 ? 'Day' : 'Days' ?></div>
+                                        <small class="text-meta-secondary">This <?= date('F') ?></small>
+                                    </div>
                                 </div>
-                                <div class="d-flex flex-column ms-auto text-end">
-                                    <div class="stats-number"><?= $empMonthPresent ?></div>
-                                    <div class="text-meta"><?= $empMonthPresent == 1 ? 'Day' : 'Days' ?> Present this <?= date('F') ?></div>
+                                <div class="progress" style="height:4px;">
+                                    <div class="progress-bar"
+                                        style="width:<?= $daysInMonth > 0 ? ($empMonthPresent / $daysInMonth * 100) : 0 ?>%; background-color:var(--status-success-color)">
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                     <div class="col-4">
                         <div class="card card-danger p-3">
-                            <div class="card-body d-flex align-items-center gap-3 p-0">
-                                <div class="icon-box icon-box-danger">
-                                    <i class="bi bi-clock-fill fs-3"></i>
+                            <div class="card-body d-flex flex-column gap-2 p-0">
+                                <div class="d-flex align-items-center gap-3">
+                                    <div class="icon-box icon-box-danger">
+                                        <i class="bi bi-clock-fill fs-3"></i>
+                                    </div>
+                                    <div class="d-flex flex-column ms-auto text-end">
+                                        <div class="hstack gap-1 justify-content-end align-items-baseline">
+                                            <div class="stats-number" style="color:var(--danger-color)"><?= $empMonthAbsent ?></div>
+                                            <span class="text-meta">/ <?= $daysInMonth ?></span>
+                                        </div>
+                                        <div class="text-meta">Absent <?= $empMonthAbsent == 1 ? 'Day' : 'Days' ?></div>
+                                        <small class="text-meta-secondary">This <?= date('F') ?></small>
+                                    </div>
                                 </div>
-                                <div class="d-flex flex-column ms-auto text-end">
-                                    <div class="stats-number"><?= $empMonthAbsent ?></div>
-                                    <div class="text-meta"><?= $empMonthAbsent == 1 ? 'Day' : 'Days' ?> Absent this <?= date('F') ?></div>
+                                <div class="progress" style="height:4px;">
+                                    <div class="progress-bar"
+                                        style="width:<?= $daysInMonth > 0 ? ($empMonthAbsent / $daysInMonth * 100) : 0 ?>%; background-color:var(--danger-color)">
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                     <div class="col-4">
                         <div class="card card-warning p-3">
-                            <div class="card-body d-flex align-items-center gap-3 p-0">
-                                <div class="icon-box icon-box-warning">
-                                    <i class="bi bi-bell-fill fs-3"></i>
-                                </div>
-                                <div class="d-flex flex-column ms-auto text-end">
-                                    <div class="stats-number"><?= $totalPending ?></div>
-                                    <div class="text-meta"><?= $totalPending == 1 ? 'Request' : 'Requests' ?> Pending</div>
+                            <div class="card-body d-flex flex-column gap-2 p-0">
+                                <div class="d-flex align-items-center gap-3">
+                                    <div class="icon-box icon-box-warning">
+                                        <i class="bi bi-bell-fill fs-3"></i>
+                                    </div>
+                                    <div class="d-flex flex-column ms-auto text-end">
+                                        <div class="stats-number" style="color:var(--warning-color)"><?= $empTotalPending ?></div>
+                                        <div class="text-meta">Pending <?= $empTotalPending == 1 ? 'Request' : 'Requests' ?></div>
+                                        <small class="text-meta-secondary">Awaiting Approval</small>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
-                <?php endif; ?>
 
-                <?php if (!$isAdmin): ?>
-                <!-- My Week -->
-                <div class="card card-info mb-2">
-                    <div class="card-body py-3">
-                        <div class="summaryTop mb-2">
-                            <div class="summaryIcon bg-blue">
-                                <i class="bi bi-calendar-week-fill"></i>
+                <!-- Leave Balance Strip -->
+                <div class="lb-strip mb-2">
+                    <?php foreach ($leaveData as $lt):
+                        $remaining = max(0, $lt['total'] - $lt['used']);
+                        $pct = $lt['total'] > 0 ? min(100, round($remaining / $lt['total'] * 100)) : 0;
+                    ?>
+                    <div class="card <?= $lt['card'] ?> lb-strip-card p-3">
+                        <div class="card-body d-flex flex-column gap-1 p-0">
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="bi <?= $lt['icon'] ?>" style="color:<?= $lt['color'] ?>; font-size:0.85rem; flex-shrink:0;"></i>
+                                <span class="lb-label"><?= $lt['label'] ?></span>
                             </div>
-                            <h5 class="text-primary mb-0">My Week</h5>
-                            <span class="wa-week-range ms-auto">
-                                <?= date('M d', strtotime($weekMon)) ?> – <?= date('M d', strtotime($weekSun)) ?>
-                            </span>
-                        </div>
-                        <div class="wa-grid">
-                            <?php
-                            $dayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-                            foreach ($empWeekDays as $i => $day):
-                                $isToday = ($day['date'] === $today);
-                            ?>
-                            <div class="wa-day<?= $isToday ? ' wa-today' : '' ?><?= $day['status'] === 'late' ? ' wa-late' : '' ?>">
-                                <span class="wa-label"><?= $dayLabels[$i] ?></span>
-                                <?php
-                                    $glassClass = match($day['status']) {
-                                        'present' => ' wa-icon-glass',
-                                        'late'    => ' wa-icon-glass-warning',
-                                        'absent'  => ' wa-icon-glass-danger',
-                                        'leave'   => ' wa-icon-glass-warning',
-                                        'rest'    => ' wa-icon-glass-neutral',
-                                        default   => '',
-                                    };
-                                ?>
-                                <span class="wa-icon-wrap<?= $glassClass ?>">
-                                    <?php if ($day['status'] === 'present'): ?>
-                                        <i class="bi bi-check-lg" style="color:var(--status-success-color)"></i>
-                                    <?php elseif ($day['status'] === 'late'): ?>
-                                        <i class="bi bi-check-lg" style="color:var(--status-warning-color)"></i>
-                                    <?php elseif ($day['status'] === 'absent'): ?>
-                                        <i class="bi bi-x-lg" style="color:var(--danger-color)"></i>
-                                    <?php elseif ($day['status'] === 'rest'): ?>
-                                        <i class="bi bi-moon" style="color:var(--text-muted)"></i>
-                                    <?php elseif ($day['status'] === 'leave'): ?>
-                                        <i class="bi bi-dash-lg" style="color:var(--status-warning-color)"></i>
-                                    <?php elseif ($day['status'] === 'upcoming'): ?>
-                                        <i class="bi bi-circle" style="color:rgba(255,255,255,0.15)"></i>
-                                    <?php else: ?>
-                                        <i class="bi bi-calendar-x" style="color:rgba(255,255,255,0.35)"></i>
-                                    <?php endif; ?>
-                                </span>
+                            <div class="lb-nums">
+                                <span class="lb-remaining" style="color:<?= $lt['color'] ?>"><?= $remaining ?></span>
+                                <span class="lb-total">/ <?= $lt['total'] ?></span>
                             </div>
-                            <?php endforeach; ?>
+                            <div class="progress lb-progress">
+                                <div class="progress-bar" style="width:<?= $pct ?>%; background-color:<?= $lt['color'] ?>;"></div>
+                            </div>
                         </div>
                     </div>
+                    <?php endforeach; ?>
                 </div>
+
                 <?php endif; ?>
 
                 <!-- Birthdays + Events — fills remaining space -->
@@ -441,7 +526,7 @@ if (!$isAdmin) {
                     <div class="col-6 d-flex flex-column">
                         <div class="card card-purple h-100">
                             <div class="card-body d-flex flex-column overflow-hidden">
-                                <div class="hstack gap-2 align-items-center mb-2">
+                                <div class="hstack gap-2 align-items-center">
                                     <div class="icon-box icon-box-sm icon-box-purple">
                                         <i class="bi bi-cake"></i>
                                     </div>
@@ -450,7 +535,8 @@ if (!$isAdmin) {
                                         <?= count($birthdaysThisMonth ?? []) ?>
                                     </h5>
                                 </div>
-                                <div class="birthday-list-scroll">
+
+                                <div class="list-scroll">
                                     <?php if (empty($birthdaysThisMonth)): ?>
                                         <small class="text-muted">No birthdays this month</small>
                                     <?php else: ?>
@@ -487,11 +573,13 @@ if (!$isAdmin) {
                                                         <span class="pill <?= $daysClass ?> ms-auto"><?= $daysLabel ?></span>
                                                     </div>
                                                 </li>
+                                                
                                             <?php endforeach; ?>
+                                            
                                         </ul>
                                     <?php endif; ?>
                                 </div>
-                                <hr class="my-2">
+
                                 <div class="d-flex">
                                     <a class="btn btn-sm btn-success ms-auto" href="../employee_pages/employee_schedule.php?filter=birthday">
                                         View All Birthdays <i class="bi bi-chevron-right"></i>
@@ -505,7 +593,7 @@ if (!$isAdmin) {
                     <div class="col-6 d-flex flex-column">
                         <div class="card card-success h-100">
                             <div class="card-body d-flex flex-column overflow-hidden">
-                                <div class="hstack gap-2 align-items-center mb-3">
+                                <div class="hstack gap-2 align-items-center">
                                     <div class="icon-box icon-box-sm icon-box-success">
                                         <i class="bi bi-calendar-check"></i>
                                     </div>
@@ -514,7 +602,8 @@ if (!$isAdmin) {
                                         <?= $upcomingEventsCount ?>
                                     </h5>
                                 </div>
-                                <div class="birthday-list-scroll">
+
+                                <div class="list-scroll">
                                     <?php if (empty($upcomingEvents)): ?>
                                         <small class="text-muted">No events</small>
                                     <?php else: ?>
@@ -551,7 +640,7 @@ if (!$isAdmin) {
                                         </ul>
                                     <?php endif; ?>
                                 </div>
-                                <hr class="my-2">
+
                                 <div class="d-flex">
                                     <a class="btn btn-sm btn-success ms-auto" href="../employee_pages/employee_schedule.php?filter=events">
                                         View All Events <i class="bi bi-chevron-right"></i>
@@ -568,9 +657,60 @@ if (!$isAdmin) {
             <!-- Right Column -->
             <div class="col-6 dash-col">
 
+                <!-- My Week (all roles) -->
+                <div class="card card-info mb-2">
+                    <div class="card-body py-3">
+                        <div class="summaryTop mb-2">
+                            <div class="summaryIcon bg-blue">
+                                <i class="bi bi-calendar-week-fill"></i>
+                            </div>
+                            <h5 class="text-primary mb-0">My Week</h5>
+                            <span class="wa-week-range ms-auto">
+                                <?= date('M d', strtotime($weekMon)) ?> – <?= date('M d', strtotime($weekSun)) ?>
+                            </span>
+                        </div>
+                        <div class="wa-grid">
+                            <?php
+                            $dayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+                            foreach ($empWeekDays as $i => $day):
+                                $isToday = ($day['date'] === $today);
+                                $glassClass = match($day['status']) {
+                                    'present' => ' wa-icon-glass',
+                                    'late'    => ' wa-icon-glass-warning',
+                                    'absent'  => ' wa-icon-glass-danger',
+                                    'leave'   => ' wa-icon-glass-warning',
+                                    'rest'    => ' wa-icon-glass-neutral',
+                                    default   => '',
+                                };
+                            ?>
+                            <div class="wa-day<?= $isToday ? ' wa-today' : '' ?><?= $day['status'] === 'late' ? ' wa-late' : '' ?>">
+                                <span class="wa-label"><?= $dayLabels[$i] ?></span>
+                                <span class="wa-icon-wrap<?= $glassClass ?>">
+                                    <?php if ($day['status'] === 'present'): ?>
+                                        <i class="bi bi-check-lg" style="color:var(--status-success-color)"></i>
+                                    <?php elseif ($day['status'] === 'late'): ?>
+                                        <i class="bi bi-check-lg" style="color:var(--status-warning-color)"></i>
+                                    <?php elseif ($day['status'] === 'absent'): ?>
+                                        <i class="bi bi-x-lg" style="color:var(--danger-color)"></i>
+                                    <?php elseif ($day['status'] === 'rest'): ?>
+                                        <i class="bi bi-moon" style="color:var(--text-muted)"></i>
+                                    <?php elseif ($day['status'] === 'leave'): ?>
+                                        <i class="bi bi-dash-lg" style="color:var(--status-warning-color)"></i>
+                                    <?php elseif ($day['status'] === 'upcoming'): ?>
+                                        <i class="bi bi-circle" style="color:rgba(255,255,255,0.15)"></i>
+                                    <?php else: ?>
+                                        <i class="bi bi-calendar-x" style="color:rgba(255,255,255,0.35)"></i>
+                                    <?php endif; ?>
+                                </span>
+                            </div>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Activity Logs Card -->
                 <div class="card card-info mb-2 d-flex flex-column" style="flex:1 1 0;min-height:0;overflow:hidden;">
-                    <div class="card-body d-flex flex-column overflow-hidden">
+                    <div class="card-body d-flex flex-column overflow-hidden" style="flex:1 1 0;min-height:0;">
                         <div class="hstack gap-2 align-items-center mb-2">
                             <div class="icon-box icon-box-sm icon-box-info">
                                 <i class="bi bi-journal-text"></i>
@@ -633,51 +773,6 @@ if (!$isAdmin) {
 
 <?php if ($isAdmin): ?>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script>
-(function () {
-    const pieOpts = {
-        maintainAspectRatio: false,
-        cutout: '65%',
-        plugins: { legend: { display: false }, tooltip: { enabled: false } }
-    };
-
-    new Chart(document.getElementById('piePresent'), {
-        type: 'pie',
-        data: {
-            datasets: [{
-                data: [<?= $present ?>, <?= max(0, $count - $present) ?>],
-                backgroundColor: ['#28a745', 'rgba(255,255,255,0.08)'],
-                borderColor: 'transparent'
-            }]
-        },
-        options: pieOpts
-    });
-
-    new Chart(document.getElementById('pieAbsent'), {
-        type: 'pie',
-        data: {
-            datasets: [{
-                data: [<?= $absent ?>, <?= max(0, $count - $absent) ?>],
-                backgroundColor: ['#dc3545', 'rgba(255,255,255,0.08)'],
-                borderColor: 'transparent'
-            }]
-        },
-        options: pieOpts
-    });
-
-    new Chart(document.getElementById('piePending'), {
-        type: 'pie',
-        data: {
-            datasets: [{
-                data: [<?= $totalPending ?>, <?= max(0, $count - $totalPending) ?>],
-                backgroundColor: ['#ffc107', 'rgba(255,255,255,0.08)'],
-                borderColor: 'transparent'
-            }]
-        },
-        options: pieOpts
-    });
-})();
-</script>
 <script>
 (function () {
     const present = <?= json_encode(array_values($weeklyPresent)) ?>;
@@ -800,6 +895,17 @@ if (!$isAdmin) {
     tick();
     setInterval(tick, 1000);
 })();
+</script>
+
+<script>
+document.querySelectorAll('.lb-strip').forEach(function (el) {
+    el.addEventListener('wheel', function (e) {
+        if (e.deltaY !== 0) {
+            e.preventDefault();
+            el.scrollLeft += e.deltaY;
+        }
+    }, { passive: false });
+});
 </script>
 </body>
 </html>
