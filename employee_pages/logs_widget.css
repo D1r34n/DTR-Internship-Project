@@ -54,7 +54,7 @@
 
 .table-scroll-wrapper {
     flex: 1;
-    min-height: 200px;
+    min-height: 0;
     overflow: auto;
     position: relative;
     -webkit-overflow-scrolling: touch;

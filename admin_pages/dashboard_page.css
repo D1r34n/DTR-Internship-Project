@@ -264,6 +264,7 @@ body {
    MY WEEK — wa-* grid
    ================================================ */
 
+
 .wa-week-range {
     font-size: 0.75rem;
     color: var(--text-muted);
@@ -354,28 +355,21 @@ body {
     display: flex;
     gap: 0.5rem;
     overflow-x: auto;
+
+    scroll-snap-type: x mandatory;
+    scroll-behavior: smooth;
+
+    -webkit-overflow-scrolling: touch;
+
     flex-shrink: 0;
     padding-bottom: 0.3rem;
-    scrollbar-width: thin;
-    scrollbar-color: var(--neutral-color) transparent;
-}
-
-.lb-strip::-webkit-scrollbar {
-    height: 4px;
-}
-
-.lb-strip::-webkit-scrollbar-track {
-    background: transparent;
-}
-
-.lb-strip::-webkit-scrollbar-thumb {
-    background: var(--neutral-color);
-    border-radius: 4px;
 }
 
 .lb-strip-card {
     flex: 0 0 calc((100% - 1rem) / 3);
     min-width: calc((100% - 1rem) / 3);
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
 }
 
 /* ================================================

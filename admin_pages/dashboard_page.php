@@ -362,166 +362,166 @@ for ($i = 0; $i < 7; $i++) {
                 </div>
 
                 <?php if ($isAdmin): ?>
-                <!-- Summary Cards (admin) -->
-                <div class="row g-2 mb-2">
-                    <div class="col-4">
-                        <div class="card card-success p-3">
-                            <div class="card-body d-flex flex-column gap-2 p-0">
-                                <div class="d-flex align-items-center gap-3">
-                                    <div class="icon-box icon-box-success">
-                                        <i class="bi bi-check-circle-fill fs-3"></i>
-                                    </div>
-                                    <div class="d-flex flex-column ms-auto text-end">
-                                        <div class="hstack gap-1 justify-content-end align-items-baseline">
-                                            <div class="stats-number" style="color:var(--status-success-color)"><?= $present ?></div>
-                                            <span class="text-meta">/ <?= $count ?></span>
+                    <!-- Summary Cards (admin) -->
+                    <div class="row g-2 mb-2">
+                        <div class="col-4">
+                            <div class="card card-success p-3">
+                                <div class="card-body d-flex flex-column gap-2 p-0">
+                                    <div class="d-flex align-items-center gap-3">
+                                        <div class="icon-box icon-box-success">
+                                            <i class="bi bi-check-circle-fill fs-3"></i>
                                         </div>
-                                        <div class="text-meta">Present Today</div>
-                                        <small class="text-meta-secondary"><?= $count > 0 ? round($present / $count * 100) : 0 ?>% of employees</small>
-                                    </div>
-                                </div>
-                                <div class="progress" style="height: 4px;">
-                                    <div class="progress-bar"
-                                        style="width: <?= $count > 0 ? ($present / $count * 100) : 0 ?>%; background-color:var(--status-success-color)">
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-4">
-                        <div class="card card-danger p-3">
-                            <div class="card-body d-flex flex-column gap-2 p-0">
-                                <div class="d-flex align-items-center gap-3">
-                                    <div class="icon-box icon-box-danger">
-                                        <i class="bi bi-clock-fill fs-3"></i>
-                                    </div>
-                                    <div class="d-flex flex-column ms-auto text-end">
-                                        <div class="hstack gap-1 justify-content-end align-items-baseline">
-                                            <div class="stats-number" style="color:var(--danger-color)"><?= $absent ?></div>
-                                            <span class="text-meta">/ <?= $count ?></span>
+                                        <div class="d-flex flex-column ms-auto text-end">
+                                            <div class="hstack gap-1 justify-content-end align-items-baseline">
+                                                <div class="stats-number" style="color:var(--status-success-color)"><?= $present ?></div>
+                                                <span class="text-meta">/ <?= $count ?></span>
+                                            </div>
+                                            <div class="text-meta">Present Today</div>
+                                            <small class="text-meta-secondary"><?= $count > 0 ? round($present / $count * 100) : 0 ?>% of employees</small>
                                         </div>
-                                        <div class="text-meta">Absent Today</div>
-                                        <small class="text-meta-secondary"><?= $count > 0 ? round($absent / $count * 100) : 0 ?>% of employees</small>
+                                    </div>
+                                    <div class="progress" style="height: 4px;">
+                                        <div class="progress-bar"
+                                            style="width: <?= $count > 0 ? ($present / $count * 100) : 0 ?>%; background-color:var(--status-success-color)">
+                                        </div>
                                     </div>
                                 </div>
-                                <div class="progress" style="height: 4px;">
-                                    <div class="progress-bar"
-                                        style="width: <?= $count > 0 ? ($absent / $count * 100) : 0 ?>%; background-color:var(--danger-color)">
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="card card-danger p-3">
+                                <div class="card-body d-flex flex-column gap-2 p-0">
+                                    <div class="d-flex align-items-center gap-3">
+                                        <div class="icon-box icon-box-danger">
+                                            <i class="bi bi-clock-fill fs-3"></i>
+                                        </div>
+                                        <div class="d-flex flex-column ms-auto text-end">
+                                            <div class="hstack gap-1 justify-content-end align-items-baseline">
+                                                <div class="stats-number" style="color:var(--danger-color)"><?= $absent ?></div>
+                                                <span class="text-meta">/ <?= $count ?></span>
+                                            </div>
+                                            <div class="text-meta">Absent Today</div>
+                                            <small class="text-meta-secondary"><?= $count > 0 ? round($absent / $count * 100) : 0 ?>% of employees</small>
+                                        </div>
+                                    </div>
+                                    <div class="progress" style="height: 4px;">
+                                        <div class="progress-bar"
+                                            style="width: <?= $count > 0 ? ($absent / $count * 100) : 0 ?>%; background-color:var(--danger-color)">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="card card-warning p-3">
+                                <div class="card-body d-flex flex-column gap-2 p-0">
+                                    <div class="d-flex align-items-center gap-3">
+                                        <div class="icon-box icon-box-warning">
+                                            <i class="bi bi-bell-fill fs-3"></i>
+                                        </div>
+                                        <div class="d-flex flex-column ms-auto text-end">
+                                            <div class="stats-number" style="color:var(--warning-color)"><?= $totalPending ?></div>
+                                            <div class="text-meta">Pending <?= $totalPending == 1 ? 'Request' : 'Requests' ?></div>
+                                            <small class="text-meta-secondary">Awaiting Approval</small>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    <div class="col-4">
-                        <div class="card card-warning p-3">
-                            <div class="card-body d-flex flex-column gap-2 p-0">
-                                <div class="d-flex align-items-center gap-3">
-                                    <div class="icon-box icon-box-warning">
-                                        <i class="bi bi-bell-fill fs-3"></i>
-                                    </div>
-                                    <div class="d-flex flex-column ms-auto text-end">
-                                        <div class="stats-number" style="color:var(--warning-color)"><?= $totalPending ?></div>
-                                        <div class="text-meta">Pending <?= $totalPending == 1 ? 'Request' : 'Requests' ?></div>
-                                        <small class="text-meta-secondary">Awaiting Approval</small>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <?php else: ?>
+                    <?php else: ?>
 
-                <!-- Summary Cards (employee) -->
-                <div class="row g-2 mb-2">
-                    <div class="col-4">
-                        <div class="card card-success p-3">
-                            <div class="card-body d-flex flex-column gap-2 p-0">
-                                <div class="d-flex align-items-center gap-3">
-                                    <div class="icon-box icon-box-success">
-                                        <i class="bi bi-check-circle-fill fs-3"></i>
-                                    </div>
-                                    <div class="d-flex flex-column ms-auto text-end">
-                                        <div class="hstack gap-1 justify-content-end align-items-baseline">
-                                            <div class="stats-number" style="color:var(--status-success-color)"><?= $empMonthPresent ?></div>
-                                            <span class="text-meta">/ <?= $daysInMonth ?></span>
+                    <!-- Summary Cards (employee) -->
+                    <div class="row g-2 mb-2">
+                        <div class="col-4">
+                            <div class="card card-success p-3">
+                                <div class="card-body d-flex flex-column gap-2 p-0">
+                                    <div class="d-flex align-items-center gap-3">
+                                        <div class="icon-box icon-box-success">
+                                            <i class="bi bi-check-circle-fill fs-3"></i>
                                         </div>
-                                        <div class="text-meta">Present <?= $empMonthPresent == 1 ? 'Day' : 'Days' ?></div>
-                                        <small class="text-meta-secondary">This <?= date('F') ?></small>
-                                    </div>
-                                </div>
-                                <div class="progress" style="height:4px;">
-                                    <div class="progress-bar"
-                                        style="width:<?= $daysInMonth > 0 ? ($empMonthPresent / $daysInMonth * 100) : 0 ?>%; background-color:var(--status-success-color)">
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-4">
-                        <div class="card card-danger p-3">
-                            <div class="card-body d-flex flex-column gap-2 p-0">
-                                <div class="d-flex align-items-center gap-3">
-                                    <div class="icon-box icon-box-danger">
-                                        <i class="bi bi-clock-fill fs-3"></i>
-                                    </div>
-                                    <div class="d-flex flex-column ms-auto text-end">
-                                        <div class="hstack gap-1 justify-content-end align-items-baseline">
-                                            <div class="stats-number" style="color:var(--danger-color)"><?= $empMonthAbsent ?></div>
-                                            <span class="text-meta">/ <?= $daysInMonth ?></span>
+                                        <div class="d-flex flex-column ms-auto text-end">
+                                            <div class="hstack gap-1 justify-content-end align-items-baseline">
+                                                <div class="stats-number" style="color:var(--status-success-color)"><?= $empMonthPresent ?></div>
+                                                <span class="text-meta">/ <?= $daysInMonth ?></span>
+                                            </div>
+                                            <div class="text-meta">Present <?= $empMonthPresent == 1 ? 'Day' : 'Days' ?></div>
+                                            <small class="text-meta-secondary">This <?= date('F') ?></small>
                                         </div>
-                                        <div class="text-meta">Absent <?= $empMonthAbsent == 1 ? 'Day' : 'Days' ?></div>
-                                        <small class="text-meta-secondary">This <?= date('F') ?></small>
+                                    </div>
+                                    <div class="progress" style="height:4px;">
+                                        <div class="progress-bar"
+                                            style="width:<?= $daysInMonth > 0 ? ($empMonthPresent / $daysInMonth * 100) : 0 ?>%; background-color:var(--status-success-color)">
+                                        </div>
                                     </div>
                                 </div>
-                                <div class="progress" style="height:4px;">
-                                    <div class="progress-bar"
-                                        style="width:<?= $daysInMonth > 0 ? ($empMonthAbsent / $daysInMonth * 100) : 0 ?>%; background-color:var(--danger-color)">
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="card card-danger p-3">
+                                <div class="card-body d-flex flex-column gap-2 p-0">
+                                    <div class="d-flex align-items-center gap-3">
+                                        <div class="icon-box icon-box-danger">
+                                            <i class="bi bi-clock-fill fs-3"></i>
+                                        </div>
+                                        <div class="d-flex flex-column ms-auto text-end">
+                                            <div class="hstack gap-1 justify-content-end align-items-baseline">
+                                                <div class="stats-number" style="color:var(--danger-color)"><?= $empMonthAbsent ?></div>
+                                                <span class="text-meta">/ <?= $daysInMonth ?></span>
+                                            </div>
+                                            <div class="text-meta">Absent <?= $empMonthAbsent == 1 ? 'Day' : 'Days' ?></div>
+                                            <small class="text-meta-secondary">This <?= date('F') ?></small>
+                                        </div>
+                                    </div>
+                                    <div class="progress" style="height:4px;">
+                                        <div class="progress-bar"
+                                            style="width:<?= $daysInMonth > 0 ? ($empMonthAbsent / $daysInMonth * 100) : 0 ?>%; background-color:var(--danger-color)">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="card card-warning p-3">
+                                <div class="card-body d-flex flex-column gap-2 p-0">
+                                    <div class="d-flex align-items-center gap-3">
+                                        <div class="icon-box icon-box-warning">
+                                            <i class="bi bi-bell-fill fs-3"></i>
+                                        </div>
+                                        <div class="d-flex flex-column ms-auto text-end">
+                                            <div class="stats-number" style="color:var(--warning-color)"><?= $empTotalPending ?></div>
+                                            <div class="text-meta">Pending <?= $empTotalPending == 1 ? 'Request' : 'Requests' ?></div>
+                                            <small class="text-meta-secondary">Awaiting Approval</small>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    <div class="col-4">
-                        <div class="card card-warning p-3">
-                            <div class="card-body d-flex flex-column gap-2 p-0">
-                                <div class="d-flex align-items-center gap-3">
-                                    <div class="icon-box icon-box-warning">
-                                        <i class="bi bi-bell-fill fs-3"></i>
-                                    </div>
-                                    <div class="d-flex flex-column ms-auto text-end">
-                                        <div class="stats-number" style="color:var(--warning-color)"><?= $empTotalPending ?></div>
-                                        <div class="text-meta">Pending <?= $empTotalPending == 1 ? 'Request' : 'Requests' ?></div>
-                                        <small class="text-meta-secondary">Awaiting Approval</small>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
 
-                <!-- Leave Balance Strip -->
-                <div class="lb-strip mb-2">
-                    <?php foreach ($leaveData as $lt):
-                        $remaining = max(0, $lt['total'] - $lt['used']);
-                        $pct = $lt['total'] > 0 ? min(100, round($remaining / $lt['total'] * 100)) : 0;
-                    ?>
-                    <div class="card <?= $lt['card'] ?> lb-strip-card p-3">
-                        <div class="card-body d-flex flex-column gap-1 p-0">
-                            <div class="d-flex align-items-center gap-2">
-                                <i class="bi <?= $lt['icon'] ?>" style="color:<?= $lt['color'] ?>; font-size:0.85rem; flex-shrink:0;"></i>
-                                <span class="lb-label"><?= $lt['label'] ?></span>
-                            </div>
-                            <div class="lb-nums">
-                                <span class="lb-remaining" style="color:<?= $lt['color'] ?>"><?= $remaining ?></span>
-                                <span class="lb-total">/ <?= $lt['total'] ?></span>
-                            </div>
-                            <div class="progress lb-progress">
-                                <div class="progress-bar" style="width:<?= $pct ?>%; background-color:<?= $lt['color'] ?>;"></div>
+                    <!-- Leave Balance Strip -->
+                    <div class="lb-strip mb-2">
+                        <?php foreach ($leaveData as $lt):
+                            $remaining = max(0, $lt['total'] - $lt['used']);
+                            $pct = $lt['total'] > 0 ? min(100, round($remaining / $lt['total'] * 100)) : 0;
+                        ?>
+                        <div class="card <?= $lt['card'] ?> lb-strip-card p-3">
+                            <div class="card-body d-flex flex-column gap-1 p-0">
+                                <div class="d-flex align-items-center gap-2">
+                                    <i class="bi <?= $lt['icon'] ?>" style="color:<?= $lt['color'] ?>; font-size:0.85rem; flex-shrink:0;"></i>
+                                    <span class="lb-label"><?= $lt['label'] ?></span>
+                                </div>
+                                <div class="lb-nums">
+                                    <span class="lb-remaining" style="color:<?= $lt['color'] ?>"><?= $remaining ?></span>
+                                    <span class="lb-total">/ <?= $lt['total'] ?></span>
+                                </div>
+                                <div class="progress lb-progress">
+                                    <div class="progress-bar" style="width:<?= $pct ?>%; background-color:<?= $lt['color'] ?>;"></div>
+                                </div>
                             </div>
                         </div>
+                        <?php endforeach; ?>
                     </div>
-                    <?php endforeach; ?>
-                </div>
 
                 <?php endif; ?>
 
@@ -664,7 +664,7 @@ for ($i = 0; $i < 7; $i++) {
             <div class="col-6 dash-col">
 
                 <!-- My Week (all roles) -->
-                <div class="card card-info mb-2">
+                <div class="card card-info mb-2 flex-shrink-0">
                     <div class="card-body py-3">
                         <div class="summaryTop mb-2">
                             <div class="summaryIcon bg-blue">
@@ -748,22 +748,22 @@ for ($i = 0; $i < 7; $i++) {
                 <!-- Fills remaining space -->
                 <div class="dash-grow">
                     <?php if ($isAdmin): ?>
-                    <div class="card card-info h-100">
-                        <div class="card-body d-flex flex-column">
+                    <div class="card card-info h-100 d-flex flex-column">
+                        <div class="card-body d-flex flex-column" style="min-height:0;">
                             <div class="summaryTop mb-2">
                                 <div class="summaryIcon bg-blue">
                                     <i class="bi bi-bar-chart-line-fill"></i>
                                 </div>
                                 <h5 class="text-primary mb-0">Attendance Overview</h5>
                             </div>
-                            <div class="attendanceChartWrap flex-fill">
+                            <div class="attendanceChartWrap" style="flex:1 1 0;min-height:0;">
                                 <canvas id="attendanceChart"></canvas>
                             </div>
                         </div>
                     </div>
                     <?php else: ?>
-                    <div class="card card-pink h-100">
-                        <div class="card-body d-flex flex-column">
+                    <div class="card card-pink h-100 d-flex flex-column">
+                        <div class="card-body d-flex flex-column" style="min-height:0;">
                             <div class="summaryTop mb-2">
                                 <div class="summaryIcon bg-pink">
                                     <i class="bi bi-chat-quote-fill"></i>
@@ -929,7 +929,10 @@ document.querySelectorAll('.lb-strip').forEach(function (el) {
     el.addEventListener('wheel', function (e) {
         if (e.deltaY !== 0) {
             e.preventDefault();
-            el.scrollLeft += e.deltaY;
+            const card = el.querySelector('.lb-strip-card');
+            const gap  = parseFloat(getComputedStyle(el).gap) || 8;
+            const step = card ? card.offsetWidth + gap : 160;
+            el.scrollBy({ left: e.deltaY > 0 ? step : -step, behavior: 'smooth' });
         }
     }, { passive: false });
 });

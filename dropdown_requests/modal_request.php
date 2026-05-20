@@ -239,7 +239,7 @@
     });
   }
 
-  function fmtDate(d) {
+  function modalFmtDate(d) {
     return new Date(d + 'T00:00:00').toLocaleDateString('en-US', {
       weekday: 'long',
       year: 'numeric',
@@ -248,7 +248,7 @@
     });
   }
 
-  function fmtShort(d) {
+  function modalFmtShort(d) {
     return new Date(d + 'T00:00:00').toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric'
@@ -343,8 +343,8 @@
           rowEl.innerHTML = `
             <div class="ot-gantt-row-inner">
               <div class="ot-date-label">
-                <div class="ot-date-label-day">${fmtDate(date).split(',')[0]}</div>
-                <div class="ot-date-label-short">${fmtShort(date)}</div>
+                <div class="ot-date-label-day">${modalFmtDate(date).split(',')[0]}</div>
+                <div class="ot-date-label-short">${modalFmtShort(date)}</div>
               </div>
               <div class="gantt-bar-container">
                 <div class="gantt-cursor">
@@ -388,7 +388,7 @@
               otMin
             };
 
-            document.getElementById('otSelectedDate').textContent     = fmtDate(date);
+            document.getElementById('otSelectedDate').textContent     = modalFmtDate(date);
             document.getElementById('otSelectedTime').textContent     = `${fmtTime(tsSchedOut)} — ${fmtTime(tsActualOut)}`;
             document.getElementById('otSelectedDuration').textContent = otLabel;
             document.getElementById('otReason').value                 = '';
@@ -647,8 +647,8 @@
 
     display.style.display = 'block';
     textEl.textContent = leaveSelectedDates.length === 1
-      ? fmtDate(leaveSelectedDates[0])
-      : `${fmtDate(leaveSelectedDates[0])} → ${fmtDate(leaveSelectedDates[1])}`;
+      ? modalFmtDate(leaveSelectedDates[0])
+      : `${modalFmtDate(leaveSelectedDates[0])} → ${modalFmtDate(leaveSelectedDates[1])}`;
   }
 
   function submitLeaveRequest() {
@@ -838,7 +838,7 @@
     }
 
     box.style.display  = 'block';
-    textEl.textContent = fmtDate(obSelectedDate);
+    textEl.textContent = modalFmtDate(obSelectedDate);
   }
 
   function submitOBRequest() {

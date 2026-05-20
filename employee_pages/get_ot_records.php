@@ -27,7 +27,10 @@ $stmt = $pdo->prepare("
     FROM attendances
     WHERE employee_id = ?
     AND overtime_minutes > 0
-    AND actual_time_in IS NOT NULL
+    AND actual_time_in  IS NOT NULL
+    AND actual_time_out IS NOT NULL
+    AND scheduled_start IS NOT NULL
+    AND scheduled_end   IS NOT NULL
     AND overtime_status IN ('none', 'pending')
     ORDER BY work_date DESC
 ");
