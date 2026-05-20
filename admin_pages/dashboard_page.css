@@ -309,12 +309,17 @@ body {
 
 .wa-icon-glass-warning {
     background: var(--warning-glass);
-    border-color: var(--warning-border);
+    border: 1px solid var(--warning-border) !important;
 }
 
 .wa-icon-glass-neutral {
     background: var(--neutral-glass);
     border-color: var(--neutral-border);
     opacity: 0.5;
+}
+
+.wa-icon-glass-purple {
+    background: var(--superadmin-bg);
+    border-color: var(--superadmin-border);
 }
 

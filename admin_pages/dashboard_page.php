@@ -187,8 +187,9 @@ if (!$isAdmin) {
           AND start_date BETWEEN ? AND ?
     ");
     $s->execute([$empId, $weekMon, $weekSun]);
+    $empOBSet = [];
     foreach ($s->fetchAll(PDO::FETCH_ASSOC) as $r) {
-        $empLeaveSet[$r['start_date']] = true;
+        $empOBSet[$r['start_date']] = true;
     }
 
     // Build 7-day status array
@@ -200,6 +201,8 @@ if (!$isAdmin) {
             $status = 'none';
         } elseif ($sched['is_rest_day']) {
             $status = 'rest';
+        } elseif (isset($empOBSet[$date])) {
+            $status = 'ob';
         } elseif (isset($empLeaveSet[$date])) {
             $status = 'leave';
         } elseif (in_array(strtolower($empAttMap[$date] ?? ''), ['present', 'undertime', 'overtime', 'incomplete'])) {
@@ -371,7 +374,7 @@ if (!$isAdmin) {
                                 </div>
                                 <div class="d-flex flex-column ms-auto text-end">
                                     <div class="stats-number"><?= $totalPending ?></div>
-                                    <div class="text-meta"><?= $totalPending == 1 ? 'Request' : 'Requests' ?> Pending</div>
+                                    <div class="text-meta"><?= $totalPending == 1 ? 'Your' : 'Your' ?> Pending Requests</div>
                                 </div>
                             </div>
                         </div>
@@ -406,11 +409,24 @@ if (!$isAdmin) {
                                         'late'    => ' wa-icon-glass-warning',
                                         'absent'  => ' wa-icon-glass-danger',
                                         'leave'   => ' wa-icon-glass-warning',
+                                        'ob'      => ' wa-icon-glass-purple',
                                         'rest'    => ' wa-icon-glass-neutral',
                                         default   => '',
                                     };
                                 ?>
-                                <span class="wa-icon-wrap<?= $glassClass ?>">
+                                <?php
+                                    $tooltipTitle = match($day['status']) {
+                                        'present'  => 'Present',
+                                        'late'     => 'Late',
+                                        'absent'   => 'Absent',
+                                        'rest'     => 'Rest Day',
+                                        'leave'    => 'On Leave',
+                                        'ob'       => 'On OB',
+                                        'upcoming' => 'Upcoming',
+                                        default    => 'No Schedule',
+                                    };
+                                ?>
+                                <span class="wa-icon-wrap<?= $glassClass ?>" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="<?= $tooltipTitle ?>">
                                     <?php if ($day['status'] === 'present'): ?>
                                         <i class="bi bi-check-lg" style="color:var(--status-success-color)"></i>
                                     <?php elseif ($day['status'] === 'late'): ?>
@@ -419,6 +435,8 @@ if (!$isAdmin) {
                                         <i class="bi bi-x-lg" style="color:var(--danger-color)"></i>
                                     <?php elseif ($day['status'] === 'rest'): ?>
                                         <i class="bi bi-moon" style="color:var(--text-muted)"></i>
+                                    <?php elseif ($day['status'] === 'ob'): ?>
+                                        <i class="bi bi-dash-lg" style="color:var(--superadmin)"></i>
                                     <?php elseif ($day['status'] === 'leave'): ?>
                                         <i class="bi bi-dash-lg" style="color:var(--status-warning-color)"></i>
                                     <?php elseif ($day['status'] === 'upcoming'): ?>
@@ -800,6 +818,14 @@ if (!$isAdmin) {
     tick();
     setInterval(tick, 1000);
 })();
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => {
+        new bootstrap.Tooltip(el, { container: 'body', trigger: 'hover' });
+    });
+});
 </script>
 </body>
 </html>
