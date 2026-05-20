@@ -324,9 +324,9 @@ function getActionButtons($type, $id, $status) {
 
                 <!-- Total Overtime -->
                 <div class="col-12 col-sm-6 col-md-4 col-xl-2">
-                    <div class="card card-purple p-3">
+                    <div class="card card-info p-3">
                         <div class="card-body d-flex align-items-center gap-3 p-0">
-                            <div class="icon-box icon-box-purple">
+                            <div class="icon-box icon-box-info">
                                 <i class="bi bi-clock-fill fs-3"></i>
                             </div>
                             <div class="d-flex flex-column ms-auto text-end">
@@ -343,9 +343,9 @@ function getActionButtons($type, $id, $status) {
 
                 <!-- Total Official Business -->
                 <div class="col-12 col-sm-6 col-md-4 col-xl-2">
-                    <div class="card card-info p-3">
+                    <div class="card card-purple p-3">
                         <div class="card-body d-flex align-items-center gap-3 p-0">
-                            <div class="icon-box icon-box-info">
+                            <div class="icon-box icon-box-purple">
                                 <i class="bi bi-briefcase-fill fs-3"></i>
                             </div>
                             <div class="d-flex flex-column ms-auto text-end">

@@ -479,7 +479,7 @@ hr {
 }
 
 .empRole-workforce,
-.request-official-business {
+.request-overtime {
     background: var(--workforce-bg) !important;
     border-color: var(--workforce-border) !important;
     color: var(--workforce) !important;
@@ -502,7 +502,7 @@ hr {
 }
 
 .empRole-superadmin,
-.request-overtime {
+.request-official-business{
     background: var(--superadmin-bg) !important;
     border-color: var(--superadmin-border) !important;
     color: var(--superadmin) !important;
