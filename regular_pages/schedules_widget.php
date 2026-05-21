@@ -482,6 +482,14 @@ swCalendar = new FullCalendar.Calendar(calEl, {
     dayMaxEvents: false,
     eventDisplay: 'block',
 
+    eventOrder: function (a, b) {
+        const aIsCont = a.extendedProps.type === 'night-cont';
+        const bIsCont = b.extendedProps.type === 'night-cont';
+        if (aIsCont && !bIsCont) return -1;
+        if (!aIsCont && bIsCont) return  1;
+        return 0;
+    },
+
     events: {
         url:         SW_CAL_API,
         method:      'GET',

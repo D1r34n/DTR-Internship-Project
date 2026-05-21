@@ -145,8 +145,19 @@ body {
     padding: 1rem;
 }
 
-#tab1.tab-pane.show.active {
+#tab1.tab-pane.show.active,
+#tab1.tab-pane.active {
     padding-top: 0;
+}
+
+#tab1 .sw-header {
+    margin-top: -0.9rem;
+    padding-top: 0;
+}
+
+/* Tab1 never gets padding-top — set via shorthand so there is nothing to override */
+.ev-tabs #tab1.tab-pane.show.active {
+    padding: 0 1rem 1rem 1rem;
 }
 
 #tab1 #sw-cal-wrapper {

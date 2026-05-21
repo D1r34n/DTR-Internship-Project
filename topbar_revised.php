@@ -967,4 +967,21 @@ function saveProfileImage() {
             showToast('Upload error. Please try again.', 'danger');
         });
 }
+
+function autoResizeTextarea(el) {
+    el.style.height = 'auto';
+    el.style.height = el.scrollHeight + 'px';
+}
+
+document.addEventListener('input', function(e) {
+    if (e.target.tagName === 'TEXTAREA') autoResizeTextarea(e.target);
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('textarea').forEach(autoResizeTextarea);
+});
+
+document.addEventListener('shown.bs.modal', function(e) {
+    e.target.querySelectorAll('textarea').forEach(autoResizeTextarea);
+});
 </script>
