@@ -298,7 +298,7 @@
     fetch('../employee_pages/get_ot_records.php')
       .then(res => res.json())
       .then(records => {
-        if (records.length === 0) {
+        if (!Array.isArray(records) || records.length === 0) {
           list.innerHTML = '<p class="ot-gantt-loading">No OT records available to file.</p>';
           return;
         }
@@ -346,7 +346,7 @@
                 <div class="ot-date-label-day">${modalFmtDate(date).split(',')[0]}</div>
                 <div class="ot-date-label-short">${modalFmtShort(date)}</div>
               </div>
-              <div class="gantt-bar-container">
+              <div class="gantt-bar-container" data-range-start="${rangeStart}" data-range="${range}">
                 <div class="gantt-cursor">
                   <div class="gantt-cursor-line"></div>
                   <div class="gantt-cursor-label"></div>
@@ -404,9 +404,36 @@
 
         initGanttCursors();
       })
-      .catch(() => {
+      .catch(err => {
+        console.error('OT records fetch error:', err);
         showToast('Failed to load OT records. Please try again.', 'danger');
       });
+  }
+
+  function initGanttCursors() {
+    document.querySelectorAll('#otGanttList .gantt-bar-container').forEach(container => {
+      const cursor      = container.querySelector('.gantt-cursor');
+      const cursorLabel = container.querySelector('.gantt-cursor-label');
+      if (!cursor || !cursorLabel) return;
+
+      const rangeStart = parseInt(container.dataset.rangeStart) || 0;
+      const range      = parseInt(container.dataset.range)      || 64800;
+
+      cursor.style.display = 'none';
+
+      container.addEventListener('mousemove', e => {
+        const rect = container.getBoundingClientRect();
+        const pct  = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+        const ts   = rangeStart + pct * range;
+        cursor.style.display = 'block';
+        cursor.style.left    = `${pct * 100}%`;
+        cursorLabel.textContent = fmtTime(ts);
+      });
+
+      container.addEventListener('mouseleave', () => {
+        cursor.style.display = 'none';
+      });
+    });
   }
 
   function submitOTRequest() {

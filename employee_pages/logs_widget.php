@@ -2,12 +2,14 @@
 // Expects $startDate and $endDate to be set by the including page.
 // Optionally set $logsApiPath to override the default fetch URL.
 // Optionally set $logsEmployeeId (int) to scope the widget to one employee (admin use).
-$logsApiPath     ??= '../get_logs.php';
-$logsEmployeeId  ??= null;
+$logsApiPath      ??= '../get_logs.php';
+$logsEmployeeId   ??= null;
+$logsInlineHeader ??= false;
 ?>
 <div class="logs-widget-wrapper">
     <div class="logs-widget">
 
+        <?php if (!$logsInlineHeader): ?>
         <!-- Filter Section -->
         <div class="logs-header">
             <div class="dropdown">
@@ -43,6 +45,7 @@ $logsEmployeeId  ??= null;
             <input type="hidden" id="startDate" value="<?= $startDate ?? null ?>">
             <input type="hidden" id="endDate" value="<?= $endDate ?? null ?>">
         </div>
+        <?php endif; ?>
 
         <div class="table-scroll-wrapper">
             <table class="table table-hover mb-0">
