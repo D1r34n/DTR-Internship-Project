@@ -80,44 +80,62 @@ body {
 }
 
 /* ============================================================
-   CUTOFF LIST ITEMS
+   CUTOFF TABLE (logs-style)
    ============================================================ */
 
-#cutoff-list .list-group-item {
-    background: transparent;
+.cutoff-table-scroll {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+    position: relative;
+}
+
+.cutoff-table-scroll table {
+    width: 100%;
+    table-layout: auto;
+}
+
+.cutoff-table-scroll thead th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: var(--glass-bg);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 6px 10px;
+    border-color: var(--neutral-border);
+}
+
+.cutoff-table-scroll td {
+    padding: 6px 10px;
+    font-size: 0.8rem;
     border-color: var(--neutral-border);
     color: var(--text-light);
-    padding: 0.5rem 0.75rem;
+    vertical-align: middle;
 }
 
-#cutoff-list .list-group-item:first-child {
-    border-top: none;
-}
-
-#cutoff-list .cutoff-item {
+.cutoff-item {
     cursor: pointer;
     transition: background 0.15s ease;
     user-select: none;
 }
 
-#cutoff-list .cutoff-item:hover:not(.active) {
+.cutoff-item:hover:not(.active) td {
     background: var(--neutral-glass-hover);
 }
 
-#cutoff-list .cutoff-item.active {
+.cutoff-item.active td {
     background: var(--primary-glass);
-    border-left: 3px solid var(--primary-color);
     color: var(--text-lightest);
 }
 
-#cutoff-list .cutoff-item.active .cutoff-icon {
-    color: var(--primary-color);
-}
-
-.cutoff-icon {
-    color: var(--text-muted);
-    font-size: 0.85rem;
-    flex-shrink: 0;
+.cutoff-item.active td:first-child {
+    border-left: 3px solid var(--primary-color);
 }
 
 .cutoff-label {
@@ -126,19 +144,130 @@ body {
     text-overflow: ellipsis;
 }
 
+.cutoff-actions {
+    width: 1%;
+    white-space: nowrap;
+    text-align: right;
+}
+
 .btn-edit-item,
 .btn-delete-item {
     width: 30px !important;
 }
 
 /* ============================================================
-   FULLCALENDAR PREVIEW — fills the entire card body
+   CALENDAR PREVIEW — MULTIMONTH
    ============================================================ */
 
 #calendar-wrap {
-    flex: 1;
-    min-height: 0;
-    overflow: hidden;
-    padding: 0.75rem 1rem;
+    position: absolute;
+    inset: 0;
+    overflow-y: auto;
 }
 
+#fc-preview {
+    /* FullCalendar internal CSS variables */
+    --fc-border-color: var(--glass-border);
+    --fc-daygrid-event-dot-width: 8px;
+    --fc-today-bg-color: var(--calendar-today-bg);
+    --fc-neutral-bg-color: transparent;
+    --fc-neutral-text-color: var(--text-light);
+    --fc-page-bg-color: transparent;
+    --fc-small-font-size: 0.75rem;
+    --fc-event-bg-color: var(--primary-color);
+    --fc-event-border-color: var(--primary-color);
+    --fc-event-text-color: #fff;
+    --fc-event-selected-overlay-color: rgba(0,0,0,0.25);
+    --fc-non-business-color: rgba(255,255,255,0.03);
+    --fc-bg-event-opacity: 0.8;
+    --fc-highlight-color: var(--primary-range);
+    --fc-list-event-hover-bg-color: var(--neutral-glass-hover);
+
+    font-family: 'Poppins', sans-serif;
+    width: 100%;
+    color: var(--text-light);
+    background: transparent;
+}
+
+.fc .fc-multimonth-compact {
+    border-radius: 8px;
+}
+
+/* Month title */
+#fc-preview .fc-multimonth-title {
+    color: var(--text-light) !important;
+    font-size: 0.85rem !important;
+    font-weight: 500 !important;
+    text-align: center !important;
+    background: transparent !important;
+}
+
+/* Month header background */
+#fc-preview .fc-multimonth-header,
+#fc-preview .fc-multimonth-header-table {
+    background: transparent !important;
+    border-color: var(--glass-border) !important;
+}
+
+#fc-preview .fc-col-header-cell-cushion {
+    color: var(--text-muted) !important;
+    font-size: 0.7rem !important;
+    font-weight: 500 !important;
+    text-decoration: none !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.07em !important;
+}
+
+/* Day cells */
+#fc-preview .fc-daygrid-day {
+    background: transparent !important;
+    border-color: var(--glass-border) !important;
+}
+
+#fc-preview .fc-daygrid-day-number {
+    color: var(--text-light) !important;
+    font-size: 0.75rem !important;
+    text-decoration: none !important;
+    padding: 2px 6px !important;
+}
+
+/* Today highlight */
+#fc-preview .fc-day-today {
+    background: var(--calendar-today-bg) !important;
+}
+
+#fc-preview .fc-day-today .fc-daygrid-day-number {
+    color: var(--primary-color) !important;
+    font-weight: 600 !important;
+}
+
+/* Month card borders */
+#fc-preview .fc-multimonth-month {
+    border-color: var(--glass-border) !important;
+}
+
+#fc-preview .fc-multimonth-daygrid,
+#fc-preview .fc-multimonth-daygrid-table {
+    border-color: var(--glass-border) !important;
+}
+
+/* Scrollgrid borders */
+#fc-preview .fc-scrollgrid,
+#fc-preview .fc-scrollgrid td,
+#fc-preview .fc-scrollgrid th {
+    border-color: var(--glass-border) !important;
+}
+
+/* Background event */
+#fc-preview .fc-bg-event {
+    opacity: 1 !important;
+}
+
+/* Other-month days (greyed out) */
+#fc-preview .fc-day-other .fc-daygrid-day-number {
+    color: var(--text-dark) !important;
+}
+
+.fc .fc-view-harness {
+    padding: 1rem;
+}

@@ -1702,6 +1702,24 @@ button.btn-sm {
     transition: width 0.38s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* ------------------------------------------------
+   CALENDAR WRAP — flex container for preview panels
+   ------------------------------------------------ */
+
+.fc-preview-wrap {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    padding: 0.75rem 1rem;
+    display: flex;
+    flex-direction: column;
+}
+
+.fc-preview-wrap > .fc {
+    flex: 1;
+    min-height: 0;
+}
+
 /* ================================================
    MAP POPOVER
    ================================================ */

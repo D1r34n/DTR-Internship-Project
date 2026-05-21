@@ -42,7 +42,7 @@ $currentPage = 'cutoffs';
         <div class="row flex-grow-1 g-2 row-min-h">
 
             <!-- LEFT: CUT-OFF LIST -->
-            <div class="col-3 d-flex flex-column min-h-0">
+            <div class="col-4 d-flex flex-column min-h-0">
                 <div class="card card-neutral flex-grow-1 d-flex flex-column min-h-0">
 
                     <div class="card-header">
@@ -54,7 +54,7 @@ $currentPage = 'cutoffs';
                         </div>
                     </div>
 
-                    <div class="card-body flex-grow-1 overflow-auto p-0 min-h-0">
+                    <div class="card-body flex-grow-1 d-flex flex-column p-0 min-h-0">
 
                         <!-- Loading -->
                         <div id="cutoff-loading" class="text-center py-4">
@@ -62,46 +62,54 @@ $currentPage = 'cutoffs';
                         </div>
 
                         <!-- Empty State -->
-                        <div id="cutoff-empty" class="text-center cutoff-empty p-3 d-none">
+                        <div id="cutoff-empty" class="cutoff-empty m-auto text-center p-3 d-none">
                             <i class="bi bi-calendar2-x-fill"></i>
-                            <div class="text-meta mt-2">No cut-off period found.</div>
+                            <div class="text-meta mt-2 small">No cut-off period found.</div>
                             <button class="btn btn-sm btn-success mt-2" id="btn-add-cutoff-empty">
                                 <i class="bi bi-plus-lg"></i> Create Cut-Off Period
                             </button>
                         </div>
 
-                        <!-- List -->
-                        <ul class="list-group list-group-flush" id="cutoff-list"></ul>
+                        <!-- Table -->
+                        <div class="cutoff-table-scroll d-none" id="cutoff-table-scroll">
+                            <table class="table table-hover mb-0">
+                                <thead>
+                                    <tr></tr>
+                                </thead>
+                                <tbody id="cutoff-list"></tbody>
+                            </table>
+                        </div>
 
                     </div>
                 </div>
             </div>
 
             <!-- RIGHT: PREVIEW PANEL -->
-            <div class="col-9 d-flex flex-column min-h-0">
+            <div class="col-8 d-flex flex-column min-h-0">
                 <div class="card card-neutral flex-grow-1 d-flex flex-column min-h-0">
 
                     <div class="card-header">
                         <div class="hstack gap-2">
                             <h5 class="text-primary mb-0">Cut-Off Preview</h5>
-                            <span class="text-muted small ms-2" id="preview-label"></span>
+                            <span class="text-tertiary small ms-auto" id="preview-label"></span>
                         </div>
                     </div>
 
                     <div class="card-body flex-grow-1 d-flex flex-column p-0 min-h-0">
 
                         <!-- Empty State -->
-                        <div class="text-center calendar-preview-empty my-auto" id="preview-empty">
+                        <div class="text-center calendar-preview-empty m-auto" id="preview-empty">
                             <i class="bi bi-calendar2-fill"></i>
                             <div class="text-meta mt-2">Select a cut-off period to preview.</div>
                         </div>
 
-                        <!-- FullCalendar preview -->
-                        <div id="calendar-wrap" class="d-none">
+                        <!-- Calendar (always mounted, hidden until a cutoff is selected) -->
+                        <div id="calendar-wrap" class="flex-grow-1 min-h-0 d-none">
                             <div id="fc-preview"></div>
                         </div>
 
                     </div>
+
                 </div>
             </div>
 
@@ -148,10 +156,31 @@ document.addEventListener('DOMContentLoaded', function () {
     let calendarInst   = null;
     let editingId      = null;
 
+    function localDateStr(d) {
+        return d.getFullYear() + '-' +
+               String(d.getMonth() + 1).padStart(2, '0') + '-' +
+               String(d.getDate()).padStart(2, '0');
+    }
+
     function nextDay(dateStr) {
         const d = new Date(dateStr + 'T00:00:00');
         d.setDate(d.getDate() + 1);
-        return d.toISOString().slice(0, 10);
+        return localDateStr(d);
+    }
+
+    function weekdayEvents(startStr, endStr) {
+        const events = [];
+        const end = new Date(endStr + 'T00:00:00');
+        const cur = new Date(startStr + 'T00:00:00');
+        while (cur <= end) {
+            const dow = cur.getDay();
+            if (dow !== 0 && dow !== 6) {
+                const d = localDateStr(cur);
+                events.push({ start: d, end: nextDay(d), display: 'background', color: 'rgba(151,190,65,0.30)' });
+            }
+            cur.setDate(cur.getDate() + 1);
+        }
+        return events;
     }
 
     // ── HELPERS ──────────────────────────────────────────
@@ -180,63 +209,80 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function renderList() {
-        const list  = document.getElementById('cutoff-list');
-        const empty = document.getElementById('cutoff-empty');
+        const list        = document.getElementById('cutoff-list');
+        const empty       = document.getElementById('cutoff-empty');
+        const tableScroll = document.getElementById('cutoff-table-scroll');
         list.innerHTML = '';
 
         if (!cutoffs.length) {
             empty.classList.remove('d-none');
+            tableScroll.classList.add('d-none');
             return;
         }
         empty.classList.add('d-none');
+        tableScroll.classList.remove('d-none');
 
         cutoffs.forEach(c => {
-            const li = document.createElement('li');
-            li.className = 'list-group-item cutoff-item d-flex align-items-center gap-2';
-            li.dataset.id = c.id;
-            if (c.id == activeCutoffId) li.classList.add('active');
-            li.innerHTML = `
-                <div class="icon-box icon-box-sm">
-                    <i class="bi bi-calendar-range"></i>
-                </div>
-
-                <span class="flex-grow-1 small cutoff-label">
-                    ${fmtRange(c.start_date, c.end_date)}
-                </span>
-
-                <button class="btn btn-info btn-sm btn-edit-item" data-id="${c.id}" title="Edit">
-                    <i class="bi bi-pencil-fill text-info"></i>
-                </button>
-
-                <button class="btn btn-danger btn-sm btn-delete-item" data-id="${c.id}" title="Delete">
-                    <i class="bi bi-trash-fill text-danger"></i>
-                </button>
+            const tr = document.createElement('tr');
+            tr.className = 'cutoff-item';
+            tr.dataset.id = c.id;
+            if (c.id == activeCutoffId) tr.classList.add('active');
+            tr.innerHTML = `
+                <td>
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="icon-box icon-box-sm flex-shrink-0">
+                            <i class="bi bi-calendar-range"></i>
+                        </div>
+                        <span class="cutoff-label">${fmtRange(c.start_date, c.end_date)}</span>
+                    </div>
+                </td>
+                <td class="cutoff-actions">
+                    <button class="btn btn-info btn-sm btn-edit-item" data-id="${c.id}" title="Edit">
+                        <i class="bi bi-pencil-fill text-info"></i>
+                    </button>
+                    <button class="btn btn-danger btn-sm btn-delete-item" data-id="${c.id}" title="Delete">
+                        <i class="bi bi-trash-fill text-danger"></i>
+                    </button>
+                </td>
             `;
 
-            li.addEventListener('click', e => {
+            tr.addEventListener('click', e => {
                 if (e.target.closest('.btn-edit-item') || e.target.closest('.btn-delete-item')) return;
                 selectCutoff(c.id);
             });
 
-            li.querySelector('.btn-edit-item').addEventListener('click', e => {
+            tr.querySelector('.btn-edit-item').addEventListener('click', e => {
                 e.stopPropagation();
                 openEditModal(c.id);
             });
 
-            li.querySelector('.btn-delete-item').addEventListener('click', e => {
+            tr.querySelector('.btn-delete-item').addEventListener('click', e => {
                 e.stopPropagation();
                 confirmDelete(c.id);
             });
 
-            list.appendChild(li);
+            list.appendChild(tr);
         });
     }
 
     // ── SELECT / PREVIEW ─────────────────────────────────
+    function deselectCutoff() {
+        activeCutoffId = null;
+        document.querySelectorAll('.cutoff-item').forEach(el => el.classList.remove('active'));
+        document.getElementById('preview-label').textContent = '';
+        if (calendarInst) { calendarInst.destroy(); calendarInst = null; }
+        document.getElementById('calendar-wrap').classList.add('d-none');
+        document.getElementById('preview-empty').classList.remove('d-none');
+    }
+
     function selectCutoff(id) {
+        if (id == activeCutoffId) { deselectCutoff(); return; }
+
         activeCutoffId = id;
+
         document.querySelectorAll('.cutoff-item').forEach(el =>
-            el.classList.toggle('active', el.dataset.id == id));
+            el.classList.toggle('active', el.dataset.id == id)
+        );
 
         const c = cutoffs.find(x => x.id == id);
         if (!c) return;
@@ -245,31 +291,27 @@ document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('calendar-wrap').classList.remove('d-none');
         document.getElementById('preview-label').textContent = fmtRange(c.start_date, c.end_date);
 
-        const event = {
-            start:   c.start_date,
-            end:     nextDay(c.end_date),
-            display: 'background',
-            color:   'rgba(151,190,65,0.30)',
-        };
+        if (calendarInst) { calendarInst.destroy(); calendarInst = null; }
 
-        if (!calendarInst) {
-            calendarInst = new FullCalendar.Calendar(document.getElementById('fc-preview'), {
-                initialView:         'multiMonth',
-                multiMonthMaxColumns: 2,
-                headerToolbar:       false,
-                footerToolbar:       false,
-                height:              '100%',
+        calendarInst = new FullCalendar.Calendar(
+            document.getElementById('fc-preview'),
+            {
+                initialView:          'multiMonth',
+                multiMonthMaxColumns: 1,
+                headerToolbar:        false,
+                footerToolbar:        false,
+                height:               'auto',
                 initialDate:          c.start_date,
-                selectable:          false,
-                editable:            false,
-                events:              [event],
-            });
-            calendarInst.render();
-        } else {
-            calendarInst.removeAllEvents();
-            calendarInst.addEvent(event);
-            calendarInst.gotoDate(c.start_date);
-        }
+                visibleRange: {
+                    start: c.start_date,
+                    end:   nextDay(c.end_date),
+                },
+                selectable:           false,
+                editable:             false,
+                events:               weekdayEvents(c.start_date, c.end_date),
+            }
+        );
+        calendarInst.render();
     }
 
     // ── DELETE ───────────────────────────────────────────
@@ -279,13 +321,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         await fetch(`${API}?id=${id}`, { method: 'DELETE' });
 
-        if (activeCutoffId == id) {
-            activeCutoffId = null;
-            document.getElementById('preview-empty').classList.remove('d-none');
-            document.getElementById('calendar-wrap').classList.add('d-none');
-            document.getElementById('preview-label').textContent = '';
-            if (calendarInst) { calendarInst.destroy(); calendarInst = null; }
-        }
+        if (activeCutoffId == id) deselectCutoff();
 
         await loadCutoffs();
     }
@@ -359,6 +395,10 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('btn-add-cutoff').addEventListener('click', openAddModal);
     document.getElementById('btn-add-cutoff-empty').addEventListener('click', openAddModal);
     document.getElementById('btn-save-cutoff').addEventListener('click', saveCutoff);
+
+    document.getElementById('cutoff-table-scroll').addEventListener('click', e => {
+        if (!e.target.closest('.cutoff-item')) deselectCutoff();
+    });
 
     loadCutoffs();
 });
