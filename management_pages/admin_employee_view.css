@@ -145,6 +145,15 @@ body {
     padding: 1rem;
 }
 
+#tab1.tab-pane.show.active {
+    padding-top: 0;
+}
+
+#tab1 #sw-cal-wrapper {
+    margin-right: -1rem;
+    padding-right: 1rem;
+}
+
 /* ------------------------------------------------
    EMPLOYEE HEADER STRIP
    ------------------------------------------------ */
