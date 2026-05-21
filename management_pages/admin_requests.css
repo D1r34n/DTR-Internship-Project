@@ -291,12 +291,6 @@ body {
 .reqTabContent .tableScroll {
     overflow-x: auto;
 }
-
-.reqTabContent .tableScroll::-webkit-scrollbar         { width: 5px; height: 5px; }
-.reqTabContent .tableScroll::-webkit-scrollbar-track   { background: transparent; }
-.reqTabContent .tableScroll::-webkit-scrollbar-thumb   { background: rgba(255,255,255,0.15); border-radius: 10px; }
-.reqTabContent .tableScroll::-webkit-scrollbar-thumb:hover { background: #97be41; }
-
 .reqTabContent .tableScroll tbody tr td {
     vertical-align: middle;
 }
