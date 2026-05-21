@@ -12,7 +12,7 @@ if (!$role) {
     exit();
 }
 
-if (!in_array($role, ['superadmin', 'employee'])) {
+if (!in_array($role, ['superadmin', 'manager', 'admin', 'workforce', 'employee'])) {
     session_destroy();
     header("Location: ../index.php");
     exit();
