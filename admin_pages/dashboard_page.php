@@ -142,13 +142,15 @@ if (!$isAdmin) {
 
     // Attendance
     $s = $pdo->prepare("
-        SELECT work_date, status FROM attendances
+        SELECT work_date, status, late_minutes FROM attendances
         WHERE employee_id = ? AND work_date BETWEEN ? AND ?
     ");
     $s->execute([$empId, $weekMon, $weekSun]);
-    $empAttMap = [];
+    $empAttMap  = [];
+    $empLateMap = [];
     foreach ($s->fetchAll(PDO::FETCH_ASSOC) as $r) {
-        $empAttMap[$r['work_date']] = $r['status'];
+        $empAttMap[$r['work_date']]  = $r['status'];
+        $empLateMap[$r['work_date']] = (int)$r['late_minutes'];
     }
 
     // Leave (approved, non-OB)
@@ -200,8 +202,8 @@ if (!$isAdmin) {
             $status = 'rest';
         } elseif (isset($empLeaveSet[$date])) {
             $status = 'leave';
-        } elseif (in_array($empAttMap[$date] ?? '', ['present', 'late', 'undertime', 'overtime', 'incomplete'])) {
-            $status = 'present';
+        } elseif (in_array(strtolower($empAttMap[$date] ?? ''), ['present', 'undertime', 'overtime', 'incomplete'])) {
+            $status = ($empLateMap[$date] ?? 0) > 0 ? 'late' : 'present';
         } elseif ($date < $today) {
             // Fully past day with no attendance → absent
             $status = 'absent';
@@ -280,7 +282,60 @@ if (!$isAdmin) {
                     </div>
                 </div>
 
-                <!-- Summary Cards -->
+                <?php if ($isAdmin): ?>
+                <!-- Attendance Pie Charts (admin) -->
+                <div class="row g-2 mb-2">
+                    <div class="col-4">
+                        <div class="card card-success p-3">
+                            <div class="card-body d-flex flex-column align-items-center gap-2 p-0">
+                                <div style="position:relative;width:90px;height:90px;">
+                                    <canvas id="piePresent"></canvas>
+                                    <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;line-height:1;pointer-events:none;">
+                                        <strong style="font-size:0.85rem;color:#28a745;"><?= $count > 0 ? round($present / $count * 100) : 0 ?>%</strong>
+                                    </div>
+                                </div>
+                                <div class="hstack gap-1 justify-content-center">
+                                    <i class="bi bi-check-circle-fill" style="color:#28a745;font-size:0.8rem;"></i>
+                                    <span class="text-meta">Total Present</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="card card-danger p-3">
+                            <div class="card-body d-flex flex-column align-items-center gap-2 p-0">
+                                <div style="position:relative;width:90px;height:90px;">
+                                    <canvas id="pieAbsent"></canvas>
+                                    <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;line-height:1;pointer-events:none;">
+                                        <strong style="font-size:0.85rem;color:#dc3545;"><?= $count > 0 ? round($absent / $count * 100) : 0 ?>%</strong>
+                                    </div>
+                                </div>
+                                <div class="hstack gap-1 justify-content-center">
+                                    <i class="bi bi-clock-fill" style="color:#dc3545;font-size:0.8rem;"></i>
+                                    <span class="text-meta">Total Absent</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="card card-warning p-3">
+                            <div class="card-body d-flex flex-column align-items-center gap-2 p-0">
+                                <div style="position:relative;width:90px;height:90px;">
+                                    <canvas id="piePending"></canvas>
+                                    <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;line-height:1;pointer-events:none;">
+                                        <strong style="font-size:0.85rem;color:#ffc107;"><?= $count > 0 ? min(100, round($totalPending / $count * 100)) : 0 ?>%</strong>
+                                    </div>
+                                </div>
+                                <div class="hstack gap-1 justify-content-center">
+                                    <i class="bi bi-bell-fill" style="color:#ffc107;font-size:0.8rem;"></i>
+                                    <span class="text-meta">Pending Requests</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <?php else: ?>
+                <!-- Summary Cards (employee) -->
                 <div class="row g-2 mb-2">
                     <div class="col-4">
                         <div class="card card-success p-3">
@@ -289,13 +344,8 @@ if (!$isAdmin) {
                                     <i class="bi bi-check-circle-fill fs-3"></i>
                                 </div>
                                 <div class="d-flex flex-column ms-auto text-end">
-                                    <?php if ($isAdmin): ?>
-                                        <div class="stats-number"><?= $present ?></div>
-                                        <div class="text-meta"><?= $count > 0 ? round($present / $count * 100) : 0 ?>% of total employees</div>
-                                    <?php else: ?>
-                                        <div class="stats-number"><?= $empMonthPresent ?></div>
-                                        <div class="text-meta"><?= $empMonthPresent == 1 ? 'Day' : 'Days' ?> Present this <?= date('F') ?></div>
-                                    <?php endif; ?>
+                                    <div class="stats-number"><?= $empMonthPresent ?></div>
+                                    <div class="text-meta"><?= $empMonthPresent == 1 ? 'Day' : 'Days' ?> Present this <?= date('F') ?></div>
                                 </div>
                             </div>
                         </div>
@@ -307,13 +357,8 @@ if (!$isAdmin) {
                                     <i class="bi bi-clock-fill fs-3"></i>
                                 </div>
                                 <div class="d-flex flex-column ms-auto text-end">
-                                    <?php if ($isAdmin): ?>
-                                        <div class="stats-number"><?= $absent ?></div>
-                                        <div class="text-meta"><?= $count > 0 ? round($absent / $count * 100) : 0 ?>% of total employees</div>
-                                    <?php else: ?>
-                                        <div class="stats-number"><?= $empMonthAbsent ?></div>
-                                        <div class="text-meta"><?= $empMonthAbsent == 1 ? 'Day' : 'Days' ?> Absent this <?= date('F') ?></div>
-                                    <?php endif; ?>
+                                    <div class="stats-number"><?= $empMonthAbsent ?></div>
+                                    <div class="text-meta"><?= $empMonthAbsent == 1 ? 'Day' : 'Days' ?> Absent this <?= date('F') ?></div>
                                 </div>
                             </div>
                         </div>
@@ -325,18 +370,14 @@ if (!$isAdmin) {
                                     <i class="bi bi-bell-fill fs-3"></i>
                                 </div>
                                 <div class="d-flex flex-column ms-auto text-end">
-                                    <?php if ($isAdmin): ?>
-                                        <div class="stats-number"><?= $totalPending ?></div>
-                                        <div class="text-meta"><?= $count > 0 ? round($totalPending / $count * 100) : 0 ?>% of total employees</div>
-                                    <?php else: ?>
-                                        <div class="stats-number"><?= $totalPending ?></div>
-                                        <div class="text-meta"><?= $totalPending == 1 ? 'Request' : 'Requests' ?> Pending</div>
-                                    <?php endif; ?>
+                                    <div class="stats-number"><?= $totalPending ?></div>
+                                    <div class="text-meta"><?= $totalPending == 1 ? 'Request' : 'Requests' ?> Pending</div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
+                <?php endif; ?>
 
                 <?php if (!$isAdmin): ?>
                 <!-- My Week -->
@@ -357,11 +398,12 @@ if (!$isAdmin) {
                             foreach ($empWeekDays as $i => $day):
                                 $isToday = ($day['date'] === $today);
                             ?>
-                            <div class="wa-day<?= $isToday ? ' wa-today' : '' ?>">
+                            <div class="wa-day<?= $isToday ? ' wa-today' : '' ?><?= $day['status'] === 'late' ? ' wa-late' : '' ?>">
                                 <span class="wa-label"><?= $dayLabels[$i] ?></span>
                                 <?php
                                     $glassClass = match($day['status']) {
                                         'present' => ' wa-icon-glass',
+                                        'late'    => ' wa-icon-glass-warning',
                                         'absent'  => ' wa-icon-glass-danger',
                                         'leave'   => ' wa-icon-glass-warning',
                                         'rest'    => ' wa-icon-glass-neutral',
@@ -371,6 +413,8 @@ if (!$isAdmin) {
                                 <span class="wa-icon-wrap<?= $glassClass ?>">
                                     <?php if ($day['status'] === 'present'): ?>
                                         <i class="bi bi-check-lg" style="color:var(--status-success-color)"></i>
+                                    <?php elseif ($day['status'] === 'late'): ?>
+                                        <i class="bi bi-check-lg" style="color:var(--status-warning-color)"></i>
                                     <?php elseif ($day['status'] === 'absent'): ?>
                                         <i class="bi bi-x-lg" style="color:var(--danger-color)"></i>
                                     <?php elseif ($day['status'] === 'rest'): ?>
@@ -380,7 +424,7 @@ if (!$isAdmin) {
                                     <?php elseif ($day['status'] === 'upcoming'): ?>
                                         <i class="bi bi-circle" style="color:rgba(255,255,255,0.15)"></i>
                                     <?php else: ?>
-                                        <i class="bi bi-circle" style="color:rgba(255,255,255,0.07)"></i>
+                                        <i class="bi bi-calendar-x" style="color:rgba(255,255,255,0.35)"></i>
                                     <?php endif; ?>
                                 </span>
                             </div>
@@ -589,6 +633,51 @@ if (!$isAdmin) {
 
 <?php if ($isAdmin): ?>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+(function () {
+    const pieOpts = {
+        maintainAspectRatio: false,
+        cutout: '65%',
+        plugins: { legend: { display: false }, tooltip: { enabled: false } }
+    };
+
+    new Chart(document.getElementById('piePresent'), {
+        type: 'pie',
+        data: {
+            datasets: [{
+                data: [<?= $present ?>, <?= max(0, $count - $present) ?>],
+                backgroundColor: ['#28a745', 'rgba(255,255,255,0.08)'],
+                borderColor: 'transparent'
+            }]
+        },
+        options: pieOpts
+    });
+
+    new Chart(document.getElementById('pieAbsent'), {
+        type: 'pie',
+        data: {
+            datasets: [{
+                data: [<?= $absent ?>, <?= max(0, $count - $absent) ?>],
+                backgroundColor: ['#dc3545', 'rgba(255,255,255,0.08)'],
+                borderColor: 'transparent'
+            }]
+        },
+        options: pieOpts
+    });
+
+    new Chart(document.getElementById('piePending'), {
+        type: 'pie',
+        data: {
+            datasets: [{
+                data: [<?= $totalPending ?>, <?= max(0, $count - $totalPending) ?>],
+                backgroundColor: ['#ffc107', 'rgba(255,255,255,0.08)'],
+                borderColor: 'transparent'
+            }]
+        },
+        options: pieOpts
+    });
+})();
+</script>
 <script>
 (function () {
     const present = <?= json_encode(array_values($weeklyPresent)) ?>;

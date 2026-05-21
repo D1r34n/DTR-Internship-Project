@@ -292,6 +292,11 @@ body {
     box-shadow: 0 0 0 1px var(--primary-border);
 }
 
+.wa-today.wa-late .wa-icon-wrap {
+    border-color: var(--warning-border);
+    box-shadow: 0 0 0 1px var(--warning-border);
+}
+
 .wa-icon-glass {
     background: var(--primary-glass);
     border-color: var(--primary-border);
