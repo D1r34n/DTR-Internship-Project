@@ -77,25 +77,14 @@ $upcomingEvents = $pdo->query("
 ")->fetchAll(PDO::FETCH_ASSOC);
 $upcomingEventsCount = count(array_filter($upcomingEvents, fn($e) => strtotime(date('Y-m-d', strtotime($e['start_datetime']))) >= strtotime($today)));
 
-// ── Random quote (cached in session for 1 hour) ───────────
+// ── Quote of the Day (from DB) ────────────────────────────
 $quoteText   = '';
 $quoteAuthor = '';
-$quoteCacheAge = isset($_SESSION['quote_fetched_at']) ? (time() - $_SESSION['quote_fetched_at']) : PHP_INT_MAX;
-if ($quoteCacheAge > 3600) {
-    try {
-        $ctx  = stream_context_create(['http' => ['timeout' => 3]]);
-        $html = @file_get_contents('https://quotes.toscrape.com/random', false, $ctx);
-        if ($html) {
-            preg_match('/<span class="text"[^>]*>(.*?)<\/span>/s', $html, $tm);
-            preg_match('/<small class="author"[^>]*>(.*?)<\/small>/s', $html, $am);
-            $_SESSION['quote_text']       = isset($tm[1]) ? html_entity_decode(strip_tags($tm[1]), ENT_QUOTES) : '';
-            $_SESSION['quote_author']     = isset($am[1]) ? strip_tags($am[1]) : '';
-            $_SESSION['quote_fetched_at'] = time();
-        }
-    } catch (Exception $e) {}
+$qRow = $pdo->query("SELECT quote_text, quote_author FROM quote_of_the_day WHERE id = 1")->fetch(PDO::FETCH_ASSOC);
+if ($qRow) {
+    $quoteText   = $qRow['quote_text'];
+    $quoteAuthor = $qRow['quote_author'];
 }
-$quoteText   = $_SESSION['quote_text']   ?? '';
-$quoteAuthor = $_SESSION['quote_author'] ?? '';
 
 // ── Weekly attendance overview (Mon–Sun of current week) ──
 $todayDow = (int)date('N'); // 1=Mon, 7=Sun
@@ -362,6 +351,57 @@ for ($i = 0; $i < 7; $i++) {
                 </div>
 
                 <?php if ($isAdmin): ?>
+                <!-- Quote of the Day (admin) -->
+                <div class="flex-shrink-0 mb-2">
+                    <div class="card card-pink d-flex flex-column">
+                        <div class="card-body d-flex flex-column py-2" style="min-height:0;">
+                            <div class="summaryTop mb-2">
+                                <div class="summaryIcon bg-pink">
+                                    <i class="bi bi-chat-quote-fill"></i>
+                                </div>
+                                <p>Quote of the Day</p>
+                                <button class="btn btn-sm btn-outline-light ms-auto" data-bs-toggle="modal" data-bs-target="#editQuoteModal">
+                                    <i class="bi bi-pencil-fill me-1"></i>Edit
+                                </button>
+                            </div>
+                            <hr class="section-divider my-2">
+                            <?php if ($quoteText): ?>
+                                <p class="text-tertiary"><?= htmlspecialchars($quoteText) ?></p>
+                                <?php if ($quoteAuthor): ?>
+                                    <p class="text-meta">— <?= htmlspecialchars($quoteAuthor) ?></p>
+                                <?php endif; ?>
+                            <?php else: ?>
+                                <p class="text-muted" style="font-size:11px;">No quote set yet.</p>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                </div>
+                <?php else: ?>
+                <!-- Quote of the Day (employee) -->
+                <div class="flex-shrink-0 mb-2">
+                    <div class="card card-pink d-flex flex-column">
+                        <div class="card-body d-flex flex-column py-2" style="min-height:0;">
+                            <div class="summaryTop mb-2">
+                                <div class="summaryIcon bg-pink">
+                                    <i class="bi bi-chat-quote-fill"></i>
+                                </div>
+                                <p>Quote of the Day</p>
+                            </div>
+                            <hr class="section-divider my-2">
+                            <?php if ($quoteText): ?>
+                                <p class="text-tertiary"><?= htmlspecialchars($quoteText) ?></p>
+                                <?php if ($quoteAuthor): ?>
+                                    <p class="text-meta">— <?= htmlspecialchars($quoteAuthor) ?></p>
+                                <?php endif; ?>
+                            <?php else: ?>
+                                <p class="text-muted" style="font-size:11px;">No quote set yet.</p>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                </div>
+                <?php endif; ?>
+
+                <?php if ($isAdmin): ?>
                     <!-- Summary Cards (admin) -->
                     <div class="row g-2 mb-2">
                         <div class="col-4">
@@ -525,8 +565,10 @@ for ($i = 0; $i < 7; $i++) {
 
                 <?php endif; ?>
 
-                <!-- Birthdays + Events — fills remaining space -->
-                <div class="row g-2 dash-grow">
+                <!-- Fills remaining space -->
+                <div class="dash-grow d-flex flex-column gap-2">
+                <?php if ($isAdmin): ?>
+                <div class="row g-2" style="flex:1 1 0;min-height:0;">
 
                     <!-- Birthday Summary -->
                     <div class="col-6 d-flex flex-column">
@@ -656,6 +698,73 @@ for ($i = 0; $i < 7; $i++) {
                         </div>
                     </div>
 
+                </div><!-- /.row -->
+                <?php else: ?>
+                <!-- My Week (employee) -->
+                <div class="card card-info flex-shrink-0">
+                    <div class="card-body py-3">
+                        <div class="summaryTop mb-4">
+                            <div class="summaryIcon bg-blue">
+                                <i class="bi bi-calendar-week-fill"></i>
+                            </div>
+                            <h5 class="text-primary mb-0">My Week</h5>
+                            <span class="wa-week-range ms-auto">
+                                <?= date('M d', strtotime($weekMon)) ?> – <?= date('M d', strtotime($weekSun)) ?>
+                            </span>
+                        </div>
+                        <div class="wa-grid">
+                            <?php
+                            $dayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+                            foreach ($empWeekDays as $i => $day):
+                                $isToday = ($day['date'] === $today);
+                                $glassClass = match($day['status']) {
+                                    'present' => ' wa-icon-glass',
+                                    'late'    => ' wa-icon-glass-warning',
+                                    'absent'  => ' wa-icon-glass-danger',
+                                    'leave'   => ' wa-icon-glass-warning',
+                                    'ob'      => ' wa-icon-glass-purple',
+                                    'rest'    => ' wa-icon-glass-neutral',
+                                    default   => '',
+                                };
+                                $tooltipTitle = match($day['status']) {
+                                    'present'  => 'Present',
+                                    'late'     => 'Late',
+                                    'absent'   => 'Absent',
+                                    'rest'     => 'Rest Day',
+                                    'leave'    => 'On Leave',
+                                    'ob'       => 'On OB',
+                                    'upcoming' => 'Upcoming',
+                                    default    => 'No Schedule',
+                                };
+                            ?>
+                            <div class="wa-day<?= $isToday ? ' wa-today' : '' ?><?= $day['status'] === 'late' ? ' wa-late' : '' ?>">
+                                <span class="wa-label"><?= $dayLabels[$i] ?></span>
+                                <span class="wa-icon-wrap<?= $glassClass ?>" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="<?= $tooltipTitle ?>">
+                                    <?php if ($day['status'] === 'present'): ?>
+                                        <i class="bi bi-check-lg" style="color:var(--status-success-color)"></i>
+                                    <?php elseif ($day['status'] === 'late'): ?>
+                                        <i class="bi bi-check-lg" style="color:var(--status-warning-color)"></i>
+                                    <?php elseif ($day['status'] === 'absent'): ?>
+                                        <i class="bi bi-x-lg" style="color:var(--danger-color)"></i>
+                                    <?php elseif ($day['status'] === 'rest'): ?>
+                                        <i class="bi bi-moon" style="color:var(--text-muted)"></i>
+                                    <?php elseif ($day['status'] === 'ob'): ?>
+                                        <i class="bi bi-dash-lg" style="color:var(--superadmin)"></i>
+                                    <?php elseif ($day['status'] === 'leave'): ?>
+                                        <i class="bi bi-dash-lg" style="color:var(--status-warning-color)"></i>
+                                    <?php elseif ($day['status'] === 'upcoming'): ?>
+                                        <i class="bi bi-circle" style="color:rgba(255,255,255,0.15)"></i>
+                                    <?php else: ?>
+                                        <i class="bi bi-calendar-x" style="color:rgba(255,255,255,0.35)"></i>
+                                    <?php endif; ?>
+                                </span>
+                            </div>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                </div>
+                <?php endif; ?>
+
                 </div><!-- /.dash-grow -->
 
             </div><!-- /.col left -->
@@ -663,7 +772,8 @@ for ($i = 0; $i < 7; $i++) {
             <!-- Right Column -->
             <div class="col-6 dash-col">
 
-                <!-- My Week (all roles) -->
+                <?php if ($isAdmin): ?>
+                <!-- My Week (admin) -->
                 <div class="card card-info mb-2 flex-shrink-0">
                     <div class="card-body py-3">
                         <div class="summaryTop mb-2">
@@ -726,61 +836,174 @@ for ($i = 0; $i < 7; $i++) {
                         </div>
                     </div>
                 </div>
+                <?php else: ?>
+                <!-- Birthdays + Events (employee) -->
+                <div class="row g-2 mb-2" style="flex:1 1 0;min-height:0;">
+                    <div class="col-6 d-flex flex-column">
+                        <div class="card card-purple h-100">
+                            <div class="card-body d-flex flex-column overflow-hidden">
+                                <div class="hstack gap-2 align-items-center">
+                                    <div class="icon-box icon-box-sm icon-box-purple">
+                                        <i class="bi bi-cake"></i>
+                                    </div>
+                                    <h5 class="text-primary mb-0">Birthdays This Month</h5>
+                                    <h5 class="birthdays-summary-count mb-0 ms-auto">
+                                        <?= count($birthdaysThisMonth ?? []) ?>
+                                    </h5>
+                                </div>
+                                <div class="list-scroll">
+                                    <?php if (empty($birthdaysThisMonth)): ?>
+                                        <small class="text-muted">No birthdays this month</small>
+                                    <?php else: ?>
+                                        <ul class="list-unstyled mb-0 dash-list">
+                                            <?php foreach ($birthdaysThisMonth as $b):
+                                                $avatarSrc    = !empty($b['profile_image'])
+                                                    ? '../assets/user_profiles/' . htmlspecialchars($b['profile_image'])
+                                                    : '../assets/user_profiles/default_avatar.png';
+                                                $bdayThisYear = date('Y') . '-' . date('m-d', strtotime($b['birthdate']));
+                                                $diff         = (int) (strtotime($bdayThisYear) - strtotime($today)) / 86400;
+                                                if ($diff === 0)      { $daysLabel = 'Today!'; $daysClass = 'bday-days status-approved'; }
+                                                elseif ($diff > 0)    { $daysLabel = 'In ' . $diff . ' ' . ($diff === 1 ? 'day' : 'days'); $daysClass = 'bday-days status-info'; }
+                                                else                  { $daysLabel = abs($diff) . ' ' . (abs($diff) === 1 ? 'day' : 'days') . ' ago'; $daysClass = 'bday-days'; }
+                                            ?>
+                                            <li>
+                                                <div class="hstack gap-2 align-items-center">
+                                                    <img src="<?= $avatarSrc ?>" class="bday-avatar" alt="">
+                                                    <div class="vstack">
+                                                        <strong class="text-tertiary"><?= htmlspecialchars($b['full_name']) ?></strong>
+                                                        <span class="text-meta"><?= date('l', strtotime($b['birthdate'])) ?>, <?= date('F d', strtotime($b['birthdate'])) ?></span>
+                                                    </div>
+                                                    <span class="pill <?= $daysClass ?> ms-auto"><?= $daysLabel ?></span>
+                                                </div>
+                                            </li>
+                                            <?php endforeach; ?>
+                                        </ul>
+                                    <?php endif; ?>
+                                </div>
+                                <div class="d-flex">
+                                    <a class="btn btn-sm btn-success ms-auto" href="../employee_pages/employee_schedule.php?filter=birthday">
+                                        View All Birthdays <i class="bi bi-chevron-right"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6 d-flex flex-column">
+                        <div class="card card-success h-100">
+                            <div class="card-body d-flex flex-column overflow-hidden">
+                                <div class="hstack gap-2 align-items-center">
+                                    <div class="icon-box icon-box-sm icon-box-success">
+                                        <i class="bi bi-calendar-check"></i>
+                                    </div>
+                                    <h5 class="text-primary mb-0">Upcoming Events</h5>
+                                    <h5 class="events-summary-count mb-0 ms-auto">
+                                        <?= $upcomingEventsCount ?>
+                                    </h5>
+                                </div>
+                                <div class="list-scroll">
+                                    <?php if (empty($upcomingEvents)): ?>
+                                        <small class="text-muted">No events</small>
+                                    <?php else: ?>
+                                        <ul class="list-unstyled mb-0 dash-list">
+                                            <?php foreach ($upcomingEvents as $h):
+                                                $diff = (int) ((strtotime(date('Y-m-d', strtotime($h['start_datetime']))) - strtotime($today)) / 86400);
+                                                if ($diff === 0)      { $evtLabel = 'Today!'; $evtClass = 'bday-days status-approved'; }
+                                                elseif ($diff > 0)    { $evtLabel = 'In ' . $diff . ' ' . ($diff === 1 ? 'day' : 'days'); $evtClass = 'bday-days status-info'; }
+                                                else                  { $evtLabel = abs($diff) . ' ' . (abs($diff) === 1 ? 'day' : 'days') . ' ago'; $evtClass = 'bday-days'; }
+                                            ?>
+                                            <li>
+                                                <div class="hstack gap-2 align-items-center">
+                                                    <div class="event-cal">
+                                                        <span class="event-month"><?= date('M', strtotime($h['start_datetime'])) ?></span>
+                                                        <span class="event-day"><?= date('d', strtotime($h['start_datetime'])) ?></span>
+                                                    </div>
+                                                    <div class="vstack">
+                                                        <strong class="text-tertiary"><?= htmlspecialchars($h['title']) ?></strong>
+                                                        <span class="text-meta"><?= ucfirst($h['event_type']) ?></span>
+                                                    </div>
+                                                    <span class="pill <?= $evtClass ?> ms-auto"><?= $evtLabel ?></span>
+                                                </div>
+                                            </li>
+                                            <?php endforeach; ?>
+                                        </ul>
+                                    <?php endif; ?>
+                                </div>
+                                <div class="d-flex">
+                                    <a class="btn btn-sm btn-success ms-auto" href="../employee_pages/employee_schedule.php?filter=events">
+                                        View All Events <i class="bi bi-chevron-right"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <?php endif; ?>
 
                 <!-- Activity Logs Card -->
-                <div class="card card-info mb-2 d-flex flex-column" style="flex:1 1 0;min-height:0;overflow:hidden;">
-                    <div class="card-body d-flex flex-column overflow-hidden" style="flex:1 1 0;min-height:0;">
-                        <div class="hstack gap-2 align-items-center mb-2">
+                <div class="card card-info mb-2 d-flex flex-column" style="flex:1.2 1 0;min-height:0;overflow:hidden;">
+                    <div class="card-body d-flex flex-column overflow-hidden" style="flex:1 1 0;min-height:0;padding-right:0;padding-bottom:0;">
+                        <div class="hstack gap-2 align-items-center mb-2 pe-3">
                             <div class="icon-box icon-box-sm icon-box-info">
                                 <i class="bi bi-journal-text"></i>
                             </div>
                             <h5 class="text-primary mb-0">Activity Logs</h5>
+                            <div class="ms-auto hstack gap-1">
+                                <button class="btn btn-sm dropdown-toggle" id="datePickerBtn" type="button">
+                                    <i class="bi bi-calendar3"></i>
+                                    <span id="dateRangeLabel">Today</span>
+                                </button>
+                                <div class="dropdown">
+                                    <button class="btn btn-sm dropdown-toggle" type="button" id="logTypeToggle"
+                                            data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class="bi bi-funnel"></i>
+                                        <span id="logTypeLabel">All Types</span>
+                                    </button>
+                                    <ul class="dropdown-menu" id="logTypeMenu" style="max-height:340px;overflow-y:auto!important;overflow-x:hidden!important;">
+                                        <li><a class="dropdown-item" href="#" data-value="ALL">All Types</a></li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li><a class="dropdown-item" href="#" data-value="IN">Time In</a></li>
+                                        <li><a class="dropdown-item" href="#" data-value="OUT">Time Out</a></li>
+                                        <li><a class="dropdown-item" href="#" data-value="BREAK_IN">Break In</a></li>
+                                        <li><a class="dropdown-item" href="#" data-value="BREAK_OUT">Break Out</a></li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li><a class="dropdown-item" href="#" data-value="REQUEST_OT">Request OT</a></li>
+                                        <li><a class="dropdown-item" href="#" data-value="REQUEST_LEAVE">Request Leave</a></li>
+                                        <li><a class="dropdown-item" href="#" data-value="REQUEST_OB">Request OB</a></li>
+                                        <li><a class="dropdown-item" href="#" data-value="REQUEST_LOG_EDIT">Request Log Edit</a></li>
+                                        <li><a class="dropdown-item" href="#" data-value="REQUEST_CHANGE_SCHEDULE">Request Change Schedule</a></li>
+                                    </ul>
+                                </div>
+                                <input type="hidden" id="logTypeFilter" value="ALL">
+                                <input type="hidden" id="startDate" value="<?= $today ?>">
+                                <input type="hidden" id="endDate" value="<?= $today ?>">
+                            </div>
                         </div>
                         <?php
                             $startDate = $today;
                             $endDate   = $today;
                             $logsApiPath = '../get_logs.php';
+                            $logsInlineHeader = true;
                             include '../employee_pages/logs_widget.php';
                         ?>
                     </div>
                 </div>
 
-                <!-- Fills remaining space -->
-                <div class="dash-grow">
-                    <?php if ($isAdmin): ?>
-                    <div class="card card-info h-100 d-flex flex-column">
-                        <div class="card-body d-flex flex-column" style="min-height:0;">
-                            <div class="summaryTop mb-2">
-                                <div class="summaryIcon bg-blue">
-                                    <i class="bi bi-bar-chart-line-fill"></i>
-                                </div>
-                                <h5 class="text-primary mb-0">Attendance Overview</h5>
+                <!-- Attendance Overview (admin) -->
+                <?php if ($isAdmin): ?>
+                <div class="card card-info d-flex flex-column" style="flex:0.8 1 0;min-height:0;">
+                    <div class="card-body d-flex flex-column py-2" style="min-height:0;">
+                        <div class="summaryTop mb-2">
+                            <div class="summaryIcon icon-box-sm bg-blue">
+                                <i class="bi bi-bar-chart-line-fill" style="font-size:0.8rem;"></i>
                             </div>
-                            <div class="attendanceChartWrap" style="flex:1 1 0;min-height:0;">
-                                <canvas id="attendanceChart"></canvas>
-                            </div>
+                            <h6 class="text-primary mb-0">Attendance Overview</h6>
+                        </div>
+                        <div class="attendanceChartWrap" style="flex:1 1 0;min-height:0;">
+                            <canvas id="attendanceChart"></canvas>
                         </div>
                     </div>
-                    <?php else: ?>
-                    <div class="card card-pink h-100 d-flex flex-column">
-                        <div class="card-body d-flex flex-column" style="min-height:0;">
-                            <div class="summaryTop mb-2">
-                                <div class="summaryIcon bg-pink">
-                                    <i class="bi bi-chat-quote-fill"></i>
-                                </div>
-                                <p>Quote of the Day</p>
-                            </div>
-                            <hr class="section-divider my-2">
-                            <?php if ($quoteText): ?>
-                                <p class="text-tertiary"><?= htmlspecialchars($quoteText) ?></p>
-                                <p class="text-meta">— <?= htmlspecialchars($quoteAuthor) ?></p>
-                            <?php else: ?>
-                                <p class="quote-text text-muted" style="font-size:11px;">Could not load quote.</p>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-                    <?php endif; ?>
                 </div>
+                <?php endif; ?>
 
             </div><!-- /.col right -->
 
@@ -791,6 +1014,81 @@ for ($i = 0; $i < 7; $i++) {
 
 
 <?php if ($isAdmin): ?>
+<!-- Edit Quote Modal -->
+<div class="modal fade" id="editQuoteModal" tabindex="-1" aria-labelledby="editQuoteModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editQuoteModalLabel"><i class="bi bi-chat-quote me-2"></i>Quote of the Day</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Quote</label>
+                    <textarea class="form-control" id="quoteTextInput" rows="4" placeholder="Enter a quote..."><?= htmlspecialchars($quoteText) ?></textarea>
+                </div>
+                <div class="mb-2">
+                    <label class="form-label fw-semibold">Author</label>
+                    <input type="text" class="form-control" id="quoteAuthorInput" value="<?= htmlspecialchars($quoteAuthor) ?>" placeholder="Author name (optional)">
+                </div>
+                <div id="quoteSaveMsg" class="d-none mt-2"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="saveQuoteBtn">
+                    <i class="bi bi-floppy me-1"></i>Save Quote
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('saveQuoteBtn').addEventListener('click', function () {
+    const quoteText   = document.getElementById('quoteTextInput').value.trim();
+    const quoteAuthor = document.getElementById('quoteAuthorInput').value.trim();
+    const msgEl       = document.getElementById('quoteSaveMsg');
+    const btn         = this;
+
+    if (!quoteText) {
+        msgEl.className = 'alert alert-danger mt-2';
+        msgEl.textContent = 'Quote text is required.';
+        return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Saving...';
+
+    const form = new FormData();
+    form.append('quote_text', quoteText);
+    form.append('quote_author', quoteAuthor);
+
+    fetch('../save_quote.php', { method: 'POST', body: form })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                msgEl.className = 'alert alert-success mt-2';
+                msgEl.textContent = 'Quote saved! Employees will see it on their dashboard.';
+                setTimeout(() => {
+                    bootstrap.Modal.getInstance(document.getElementById('editQuoteModal')).hide();
+                    msgEl.className = 'd-none';
+                }, 1500);
+            } else {
+                msgEl.className = 'alert alert-danger mt-2';
+                msgEl.textContent = data.message || 'Failed to save quote.';
+            }
+        })
+        .catch(() => {
+            msgEl.className = 'alert alert-danger mt-2';
+            msgEl.textContent = 'Network error. Please try again.';
+        })
+        .finally(() => {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-floppy me-1"></i>Save Quote';
+        });
+});
+</script>
+
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 (function () {
@@ -846,7 +1144,7 @@ for ($i = 0; $i < 7; $i++) {
                         usePointStyle: true,
                         pointStyle: 'circle',
                         padding: 20,
-                        font: { size: 12, family: 'Poppins' }
+                        font: { size: 11, family: 'Poppins' }
                     }
                 },
                 tooltip: {
@@ -866,7 +1164,7 @@ for ($i = 0; $i < 7; $i++) {
                     ticks: {
                         precision: 0,
                         color: 'rgba(255,255,255,0.5)',
-                        font: { size: 11, family: 'Poppins' }
+                        font: { size: 10, family: 'Poppins' }
                     },
                     grid:   { color: 'rgba(255,255,255,0.07)' },
                     border: { color: 'transparent' }
@@ -874,7 +1172,7 @@ for ($i = 0; $i < 7; $i++) {
                 x: {
                     ticks: {
                         color: 'rgba(255,255,255,0.5)',
-                        font: { size: 11, family: 'Poppins' }
+                        font: { size: 10, family: 'Poppins' }
                     },
                     grid:   { color: 'rgba(255,255,255,0.07)' },
                     border: { color: 'transparent' }
