@@ -738,7 +738,7 @@ for ($i = 0; $i < 7; $i++) {
                                 <?= date('M d', strtotime($weekMon)) ?> – <?= date('M d', strtotime($weekSun)) ?>
                             </span>
                         </div>
-                        <div class="wa-grid">
+                        <div class="wa-grid mb-1">
                             <?php
                             $dayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
                             foreach ($empWeekDays as $i => $day):

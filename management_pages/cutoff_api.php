@@ -8,7 +8,6 @@ if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'admin') {
     echo json_encode(['error' => 'Unauthorized']);
     exit();
 }
-
 date_default_timezone_set('Asia/Manila');
 
 $pdo->exec("CREATE TABLE IF NOT EXISTS `cutoffs` (
@@ -22,6 +21,31 @@ $pdo->exec("CREATE TABLE IF NOT EXISTS `cutoffs` (
 
 $action = $_GET['action'] ?? '';
 $method = $_SERVER['REQUEST_METHOD'];
+
+// Prevent Overlapping
+function hasCutoffOverlap(PDO $pdo, string $start, string $end, ?int $ignoreId = null): bool {
+    $sql = "
+        SELECT COUNT(*) 
+        FROM cutoffs
+        WHERE start_date <= :end
+          AND end_date >= :start
+    ";
+
+    if ($ignoreId) {
+        $sql .= " AND id != :id";
+    }
+
+    $stmt = $pdo->prepare($sql);
+    $stmt->bindValue(':start', $start);
+    $stmt->bindValue(':end', $end);
+
+    if ($ignoreId) {
+        $stmt->bindValue(':id', $ignoreId, PDO::PARAM_INT);
+    }
+
+    $stmt->execute();
+    return $stmt->fetchColumn() > 0;
+}
 
 // ── TEMPLATE DOWNLOAD ────────────────────────────────────────
 if ($action === 'download_template') {
@@ -117,6 +141,14 @@ if ($action === 'import' && $method === 'POST') {
             continue;
         }
 
+        if (hasCutoffOverlap($pdo, $start, $end)) {
+            $errors[] = [
+                'row' => $rowNum,
+                'message' => 'Overlaps with existing cut-off'
+            ];
+            continue;
+        }
+
         try {
             $stmt->execute([$start, $end]);
             $inserted++;
@@ -138,21 +170,30 @@ if ($method === 'GET') {
 } elseif ($method === 'POST') {
     $data  = json_decode(file_get_contents('php://input'), true) ?? [];
     $start = trim($data['start_date'] ?? '');
-    $end   = trim($data['end_date']   ?? '');
+    $end   = trim($data['end_date'] ?? '');
 
     if (!$start || !$end) {
         http_response_code(422);
         echo json_encode(['error' => 'start_date and end_date are required']);
         exit();
     }
+
     if ($start > $end) {
         http_response_code(422);
         echo json_encode(['error' => 'start_date must not be after end_date']);
         exit();
     }
 
+    // 🔥 OVERLAP CHECK
+    if (hasCutoffOverlap($pdo, $start, $end)) {
+        http_response_code(409);
+        echo json_encode(['error' => 'Cut-off overlaps with an existing period']);
+        exit();
+    }
+
     $stmt = $pdo->prepare("INSERT INTO cutoffs (start_date, end_date) VALUES (?, ?)");
     $stmt->execute([$start, $end]);
+
     echo json_encode([
         'id'         => (int)$pdo->lastInsertId(),
         'start_date' => $start,
@@ -163,21 +204,30 @@ if ($method === 'GET') {
     $id    = (int)($_GET['id'] ?? 0);
     $data  = json_decode(file_get_contents('php://input'), true) ?? [];
     $start = trim($data['start_date'] ?? '');
-    $end   = trim($data['end_date']   ?? '');
+    $end   = trim($data['end_date'] ?? '');
 
     if (!$id || !$start || !$end) {
         http_response_code(422);
         echo json_encode(['error' => 'id, start_date and end_date are required']);
         exit();
     }
+
     if ($start > $end) {
         http_response_code(422);
         echo json_encode(['error' => 'start_date must not be after end_date']);
         exit();
     }
 
+    // 🔥 OVERLAP CHECK (exclude self)
+    if (hasCutoffOverlap($pdo, $start, $end, $id)) {
+        http_response_code(409);
+        echo json_encode(['error' => 'Updated range overlaps with another cut-off period']);
+        exit();
+    }
+
     $stmt = $pdo->prepare("UPDATE cutoffs SET start_date = ?, end_date = ? WHERE id = ?");
     $stmt->execute([$start, $end, $id]);
+
     echo json_encode([
         'id'         => $id,
         'start_date' => $start,

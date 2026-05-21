@@ -944,7 +944,7 @@ button.btn-sm {
     transform: scale(1.04) !important;
 }
 
-.dropdown-item:active {
+.dropdown-item.active {
     transform: scale(0.98) !important;
     background: var(--primary-glass) !important;
     box-shadow: var(--glass-inset) !important;

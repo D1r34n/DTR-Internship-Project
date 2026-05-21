@@ -6,15 +6,11 @@ $recordsMonth   ??= date('Y-m');
 $cutoffs        ??= [];
 $activeCutoffId ??= null;
 
-// Resolve active cutoff data for initial load
-$activeCutoff = null;
-foreach ($cutoffs as $c) {
-    if ((int)$c['id'] === (int)$activeCutoffId) { $activeCutoff = $c; break; }
-}
 $useCutoffMode = !empty($cutoffs);
+$loadCutoff    = null;
 ?>
 
-
+<?php if (!defined('TOAST_INCLUDED')): define('TOAST_INCLUDED', true); include __DIR__ . '/../toast.php'; endif; ?>
 
 <!-- MAIN CARD -->
 <div class="records-widget">
@@ -22,31 +18,187 @@ $useCutoffMode = !empty($cutoffs);
     <!-- HEADER -->
     <div class="records-header">
         <div class="d-flex align-items-center gap-2">
-<?php if ($useCutoffMode): ?>
-            <i class="bi bi-scissors text-info" style="font-size:0.9rem;"></i>
-            <select class="form-select form-select-sm" id="cutoff-select"
-                    style="max-width:260px;background:var(--glass-bg);border-color:var(--neutral-border);color:var(--text-light);">
-                <?php foreach ($cutoffs as $c):
-                    $label = date('M j', strtotime($c['start_date']))
-                           . ' – '
-                           . date('M j, Y', strtotime($c['end_date']));
-                    $sel   = ((int)$c['id'] === (int)$activeCutoffId) ? ' selected' : '';
-                ?>
-                <option value="<?= $c['id'] ?>"
-                        data-start="<?= $c['start_date'] ?>"
-                        data-end="<?= $c['end_date'] ?>"<?= $sel ?>>
-                    <?= htmlspecialchars($label) ?>
-                </option>
-                <?php endforeach; ?>
-            </select>
-<?php else: ?>
+    <?php if ($useCutoffMode):
+
+        $today = date('Y-m-d');
+
+        // Current cutoff (today falls within its range)
+        $currentCutoff = null;
+        foreach ($cutoffs as $c) {
+            if ($today >= $c['start_date'] && $today <= $c['end_date']) {
+                $currentCutoff = $c;
+                break;
+            }
+        }
+
+        // Previous cutoff (most recent that ended before current started)
+        $previousCutoff = null;
+        foreach ($cutoffs as $c) {
+            if ($currentCutoff) {
+                if ($c['end_date'] < $currentCutoff['start_date']) {
+                    if (!$previousCutoff || $c['end_date'] > $previousCutoff['end_date']) {
+                        $previousCutoff = $c;
+                    }
+                }
+            } else {
+                if ($c['end_date'] < $today) {
+                    if (!$previousCutoff || $c['end_date'] > $previousCutoff['end_date']) {
+                        $previousCutoff = $c;
+                    }
+                }
+            }
+        }
+
+        // Active cutoff to initially load
+        $loadCutoff = $currentCutoff ?? $previousCutoff ?? ($cutoffs[0] ?? null);
+        if ($activeCutoffId) {
+            foreach ($cutoffs as $c) {
+                if ((int)$c['id'] === (int)$activeCutoffId) {
+                    $loadCutoff = $c;
+                    break;
+                }
+            }
+        }
+
+        function co_label($c) {
+            return date('M j, Y', strtotime($c['start_date'])) .
+                   ' – ' .
+                   date('M j, Y', strtotime($c['end_date']));
+        }
+
+        // Initial button label and secondary range label
+        if ($loadCutoff) {
+            if ($currentCutoff && (int)$loadCutoff['id'] === (int)$currentCutoff['id']) {
+                $activeBtnLabel   = 'Current Cut-Off';
+                $activeRangeLabel = 'Current Cut-Off: ' . co_label($loadCutoff);
+            } elseif ($previousCutoff && (int)$loadCutoff['id'] === (int)$previousCutoff['id']) {
+                $activeBtnLabel   = 'Previous Cut-Off';
+                $activeRangeLabel = 'Previous Cut-Off: ' . co_label($loadCutoff);
+            } else {
+                $activeBtnLabel   = 'Selected Cut-Off';
+                $activeRangeLabel = 'Selected Cut-Off: ' . co_label($loadCutoff);
+            }
+        } else {
+            $activeBtnLabel   = 'Select Period';
+            $activeRangeLabel = '';
+        }
+
+    ?>
+            <div class="dropdown">
+                <button class="btn btn-sm dropdown-toggle" type="button"
+                        id="cutoff-dropdown-btn" data-bs-toggle="dropdown"
+                        data-bs-auto-close="outside" aria-expanded="false">
+                    <i class="bi bi-calendar3 me-1"></i>
+                    <span id="cutoff-btn-label"><?= htmlspecialchars($activeBtnLabel) ?></span>
+                </button>
+
+                <ul class="dropdown-menu" style="min-width:280px;">
+
+                    <!-- ── Panel 1: main list ─────────────────────── -->
+                    <div id="rw-panel-1">
+
+                        <?php if ($currentCutoff): ?>
+                        <li>
+                            <a class="dropdown-item cutoff-item <?= ($loadCutoff && (int)$loadCutoff['id'] === (int)$currentCutoff['id']) ? 'active' : '' ?>"
+                               href="#"
+                               data-start="<?= $currentCutoff['start_date'] ?>"
+                               data-end="<?= $currentCutoff['end_date'] ?>"
+                               data-btn-label="Current Cut-Off"
+                               data-range-label="Current Cut-Off: <?= htmlspecialchars(co_label($currentCutoff)) ?>">
+                                
+                            <div class="vstack">
+                               Current Cut-Off
+                                <small class="text-tertiary"><?= co_label($currentCutoff) ?></small>
+                            </div>
+                            </a>
+                        </li>
+                        <?php endif; ?>
+
+                        <?php if ($previousCutoff): ?>
+                        <li>
+                            <a class="dropdown-item cutoff-item <?= ($loadCutoff && (int)$loadCutoff['id'] === (int)$previousCutoff['id']) ? 'active' : '' ?>"
+                               href="#"
+                               data-start="<?= $previousCutoff['start_date'] ?>"
+                               data-end="<?= $previousCutoff['end_date'] ?>"
+                               data-btn-label="Previous Cut-Off"
+                               data-range-label="Previous Cut-Off: <?= htmlspecialchars(co_label($previousCutoff)) ?>">
+                               <div class="vstack">
+                               Previous Cut-Off
+                                <small class="text-tertiary"><?= co_label($previousCutoff) ?></small>
+                            </div>
+                            </a>
+                        </li>
+                        <?php endif; ?>
+
+                        <li>
+                            <a class="dropdown-item d-flex justify-content-between align-items-center"
+                               href="#" id="rw-open-period-panel">
+                               <div class="hstack">
+                                    Select Cut-Off Period
+                                    <i class="bi bi-chevron-right small ms-3"></i>
+                                </div>
+                            </a>
+                        </li>
+                        
+                        
+                        <li><hr class="dropdown-divider"></li>
+
+                        <li>
+                            <a class="dropdown-item" href="#" id="rw-open-month-picker">
+                                <div class="hstack">
+                                    <i class="bi bi-calendar3"></i>Select Month
+                                </div>
+                            </a>
+                        </li>
+
+                    </div><!-- #rw-panel-1 -->
+
+                    <!-- ── Panel 2: pick month → cut-off list ─────── -->
+                    <div id="rw-panel-2" style="display:none;">
+
+                        <li>
+                            <a class="dropdown-item d-flex align-items-center gap-1 text-muted"
+                               href="#" id="rw-back-btn">
+                                <i class="bi bi-arrow-left"></i> Back
+                            </a>
+                        </li>
+                        <li><hr class="dropdown-divider mt-0"></li>
+
+                        <li class="px-3 pb-2">
+                            <label class="form-label small fw-semibold text-tertiary mb-1">Select a month</label>
+                            <input type="text" id="rw-period-fp"
+                                   class="form-control form-control-sm"
+                                   placeholder="Pick a month…" readonly>
+                        </li>
+
+                        <div id="rw-period-list">
+                            <p class="text-muted small text-center px-3 py-2 mb-0">
+                                Pick a month above to see its cut-off periods.
+                            </p>
+                        </div>
+
+                    </div><!-- #rw-panel-2 -->
+
+                </ul>
+            </div>
+
+            <!-- Secondary range label to the right of the dropdown -->
+            <span id="cutoff-range-label" class="text-tertiary">
+                <?= htmlspecialchars($activeRangeLabel) ?>
+            </span>
+
+            <!-- Hidden flatpickr anchor for "Select Month" (full month) -->
+            <input type="text" id="rw-month-fp-anchor"
+                   style="position:absolute;width:0;height:0;opacity:0;pointer-events:none;">
+
+    <?php else: ?>
             <div class="dropdown">
                 <button class="btn btn-sm dropdown-toggle" id="month-picker-btn" type="button">
                     <i class="bi bi-calendar3"></i>
                     <span id="dateRangeLabel">Loading…</span>
                 </button>
             </div>
-<?php endif; ?>
+    <?php endif; ?>
         </div>
     </div>
 
@@ -98,8 +250,8 @@ $useCutoffMode = !empty($cutoffs);
        value="<?= htmlspecialchars($recordsMonth) ?>"
        data-employee-id="<?= isset($recordsEmployeeId) ? (int)$recordsEmployeeId : '' ?>"
        data-cutoff-mode="<?= $useCutoffMode ? '1' : '0' ?>"
-       data-cutoff-start="<?= $activeCutoff ? htmlspecialchars($activeCutoff['start_date']) : '' ?>"
-       data-cutoff-end="<?= $activeCutoff ? htmlspecialchars($activeCutoff['end_date'])   : '' ?>">
+       data-cutoff-start="<?= ($useCutoffMode && $loadCutoff) ? htmlspecialchars($loadCutoff['start_date']) : '' ?>"
+       data-cutoff-end="<?= ($useCutoffMode && $loadCutoff)   ? htmlspecialchars($loadCutoff['end_date'])   : '' ?>">
 
 <script>
 const ganttContainer = document.getElementById('gantt-container');
@@ -119,7 +271,8 @@ function renderRecordRows(data) {
     if (statPresent) statPresent.textContent = meta.presentCount;
     if (statAbsent)  statAbsent.textContent  = meta.absentCount;
 
-    document.getElementById('dateRangeLabel').textContent = meta.monthLabel;
+    const dateRangeLabel = document.getElementById('dateRangeLabel');
+    if (dateRangeLabel) dateRangeLabel.textContent = meta.monthLabel;
 
     let html    = '';
     let hasRows = false;
@@ -248,8 +401,8 @@ function renderRecordRows(data) {
 /* =========================
    FETCH
 ========================= */
-const _apiBase   = '<?= $recordsApiPath ?>';
-const _empParam  = monthHidden.dataset.employeeId
+const _apiBase    = '<?= $recordsApiPath ?>';
+const _empParam   = monthHidden.dataset.employeeId
     ? `&employee_id=${monthHidden.dataset.employeeId}`
     : '';
 const _cutoffMode = monthHidden.dataset.cutoffMode === '1';
@@ -264,7 +417,8 @@ function fetchRecords(monthOrStart, end) {
     }
     fetch(url)
         .then(res => res.json())
-        .then(data => renderRecordRows(data));
+        .then(data => renderRecordRows(data))
+        .catch(() => showToast('Failed to load records. Please try again.', 'danger'));
 }
 
 function fetchActiveCutoff() {
@@ -277,15 +431,153 @@ function fetchActiveCutoff() {
    CONTROLS
 ========================= */
 <?php if ($useCutoffMode): ?>
-const cutoffSelect = document.getElementById('cutoff-select');
-if (cutoffSelect) {
-    cutoffSelect.addEventListener('change', function () {
-        const opt = this.options[this.selectedIndex];
-        monthHidden.dataset.cutoffStart = opt.dataset.start;
-        monthHidden.dataset.cutoffEnd   = opt.dataset.end;
-        fetchRecords(opt.dataset.start, opt.dataset.end);
-    });
+
+const _allCutoffs  = <?= json_encode(array_values($cutoffs)) ?>;
+const _dropdownBtn = document.getElementById('cutoff-dropdown-btn');
+const _dropdownObj = bootstrap.Dropdown.getOrCreateInstance(_dropdownBtn);
+const _panel1      = document.getElementById('rw-panel-1');
+const _panel2      = document.getElementById('rw-panel-2');
+const _periodList  = document.getElementById('rw-period-list');
+
+function _fmtRange(start, end) {
+    const s = new Date(start + 'T00:00:00');
+    const e = new Date(end   + 'T00:00:00');
+    return s.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) +
+           ' – ' +
+           e.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
+
+function _applySelection(start, end, btnLabel, rangeLabel) {
+    monthHidden.dataset.cutoffStart = start;
+    monthHidden.dataset.cutoffEnd   = end;
+    document.getElementById('cutoff-btn-label').textContent   = btnLabel;
+    document.getElementById('cutoff-range-label').textContent = rangeLabel;
+    document.querySelectorAll('.cutoff-item').forEach(el => el.classList.remove('active'));
+    fetchRecords(start, end);
+    showToast(rangeLabel, 'info');
+    _dropdownObj.hide();
+}
+
+function _resetPanel2() {
+    _periodList.innerHTML =
+        '<p class="text-muted small text-center px-3 py-2 mb-0">Pick a month above to see its cut-off periods.</p>';
+    if (typeof _periodFp !== 'undefined') _periodFp.clear();
+}
+
+function _goToPanel1() {
+    _resetPanel2();
+    _panel2.style.display = 'none';
+    _panel1.style.display = 'block';
+}
+
+// ── Panel 2: flatpickr month picker ───────────────────────
+let _fpOpen = false;
+
+const _periodFp = flatpickr('#rw-period-fp', {
+    plugins: [new monthSelectPlugin({ shorthand: true, dateFormat: 'Y-m', altFormat: 'F Y' })],
+    disableMobile: true,
+    onOpen()  { _fpOpen = true;  },
+    onClose() { _fpOpen = false; },
+    onChange(selectedDates) {
+        if (!selectedDates.length) return;
+        const d      = selectedDates[0];
+        const year   = d.getFullYear();
+        const month  = d.getMonth();
+        const mStart = new Date(year, month,     1);
+        const mEnd   = new Date(year, month + 1, 0);
+
+        const matches = _allCutoffs.filter(c => {
+            const cs = new Date(c.start_date + 'T00:00:00');
+            const ce = new Date(c.end_date   + 'T00:00:00');
+            return cs <= mEnd && ce >= mStart;
+        });
+
+        if (!matches.length) {
+            _periodList.innerHTML =
+                '<p class="text-tertiary small text-center px-3 py-2 mb-0">No cut-off periods found for this month.</p>';
+            return;
+        }
+
+        _periodList.innerHTML = matches.map(c => `
+            <a href="#" class="dropdown-item rw-period-item"
+               data-start="${c.start_date}"
+               data-end="${c.end_date}">
+                ${_fmtRange(c.start_date, c.end_date)}
+            </a>
+        `).join('');
+
+        _periodList.querySelectorAll('.rw-period-item').forEach(item => {
+            item.addEventListener('click', function (e) {
+                e.preventDefault();
+                const start    = this.dataset.start;
+                const end      = this.dataset.end;
+                const rangeStr = _fmtRange(start, end);
+                _applySelection(start, end, 'Selected Cut-Off', 'Selected Cut-Off: ' + rangeStr);
+            });
+        });
+    }
+});
+
+// Keep dropdown open while the flatpickr calendar is visible
+_dropdownBtn.addEventListener('hide.bs.dropdown', function (e) {
+    if (_fpOpen) e.preventDefault();
+});
+
+// Reset panel 2 when dropdown closes
+_dropdownBtn.closest('.dropdown').addEventListener('hidden.bs.dropdown', _goToPanel1);
+
+// ── Panel navigation ───────────────────────────────────────
+document.getElementById('rw-open-period-panel').addEventListener('click', function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+    _panel1.style.display = 'none';
+    _panel2.style.display = 'block';
+    setTimeout(() => _periodFp.open(), 30);
+});
+
+document.getElementById('rw-back-btn').addEventListener('click', function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+    _goToPanel1();
+});
+
+// ── Current / Previous dropdown items ─────────────────────
+document.querySelectorAll('.cutoff-item').forEach(function (item) {
+    item.addEventListener('click', function (e) {
+        e.preventDefault();
+        this.classList.add('active');
+        _applySelection(
+            this.dataset.start,
+            this.dataset.end,
+            this.dataset.btnLabel,
+            this.dataset.rangeLabel
+        );
+    });
+});
+
+// ── Select Month (full month) ──────────────────────────────
+const _monthFp = flatpickr('#rw-month-fp-anchor', {
+    plugins: [new monthSelectPlugin({ shorthand: true, dateFormat: 'Y-m', altFormat: 'F Y' })],
+    disableMobile: true,
+    onChange(selectedDates) {
+        if (!selectedDates.length) return;
+        const d     = selectedDates[0];
+        const year  = d.getFullYear();
+        const month = d.getMonth();
+        const start = `${year}-${String(month + 1).padStart(2, '0')}-01`;
+        const end   = new Date(year, month + 1, 0).toISOString().slice(0, 10);
+        const mLbl  = d.toLocaleString('en-US', { month: 'long', year: 'numeric' });
+        document.querySelectorAll('.cutoff-item').forEach(el => el.classList.remove('active'));
+        _applySelection(start, end, mLbl, 'Selected Month: ' + _fmtRange(start, end));
+    }
+});
+
+document.getElementById('rw-open-month-picker').addEventListener('click', function (e) {
+    e.preventDefault();
+    _dropdownObj.hide();
+    setTimeout(() => _monthFp.open(), 50);
+});
+
 <?php else: ?>
 flatpickr('#month-picker-btn', {
     plugins: [
