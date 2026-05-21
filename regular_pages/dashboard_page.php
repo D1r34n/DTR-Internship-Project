@@ -728,7 +728,7 @@ for ($i = 0; $i < 7; $i++) {
                 <?php else: ?>
                 <!-- My Week (employee) -->
                 <div class="card card-info flex-shrink-0">
-                    <div class="card-body py-3">
+                    <div class="card-body py-2">
                         <div class="summaryTop mb-4">
                             <div class="summaryIcon bg-blue">
                                 <i class="bi bi-calendar-week-fill"></i>
