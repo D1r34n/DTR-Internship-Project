@@ -9,7 +9,6 @@ if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'admin') {
     exit();
 }
 
-header('Content-Type: application/json');
 date_default_timezone_set('Asia/Manila');
 
 $pdo->exec("CREATE TABLE IF NOT EXISTS `cutoffs` (
@@ -21,7 +20,116 @@ $pdo->exec("CREATE TABLE IF NOT EXISTS `cutoffs` (
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci");
 
+$action = $_GET['action'] ?? '';
 $method = $_SERVER['REQUEST_METHOD'];
+
+// ── TEMPLATE DOWNLOAD ────────────────────────────────────────
+if ($action === 'download_template') {
+    require_once '../vendor/autoload.php';
+
+    $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+    $sheet       = $spreadsheet->getActiveSheet();
+
+    $sheet->setCellValue('A1', 'Start Date');
+    $sheet->setCellValue('B1', 'End Date');
+
+    $sheet->getStyle('A1:B1')->applyFromArray([
+        'font'      => ['bold' => true, 'color' => ['rgb' => 'FFFFFF'], 'size' => 11],
+        'fill'      => ['fillType' => 'solid', 'startColor' => ['rgb' => '97BE41']],
+        'alignment' => ['horizontal' => 'center', 'vertical' => 'center'],
+        'borders'   => ['allBorders' => ['borderStyle' => 'thin', 'color' => ['rgb' => '6A9E2B']]],
+    ]);
+    $sheet->getRowDimension(1)->setRowHeight(22);
+
+    foreach (['A' => 'Format: MMM D, YYYY (e.g. May 1, 2026).', 'B' => 'Format: MMM D, YYYY. Must be on or after Start Date.'] as $col => $note) {
+        $comment = $sheet->getComment($col . '1');
+        $comment->getText()->createTextRun($note);
+        $comment->setWidth('200pt')->setHeight('50pt');
+    }
+
+    $sheet->setCellValue('A2', 'May 1, 2026');
+    $sheet->setCellValue('B2', 'May 15, 2026');
+    $sheet->setCellValue('A3', 'May 16, 2026');
+    $sheet->setCellValue('B3', 'May 31, 2026');
+
+    foreach (['A', 'B'] as $col) {
+        $sheet->getColumnDimension($col)->setWidth(16);
+    }
+
+    header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    header('Content-Disposition: attachment; filename="cutoff_template.xlsx"');
+    header('Cache-Control: max-age=0');
+
+    $writer = \PhpOffice\PhpSpreadsheet\IOFactory::createWriter($spreadsheet, 'Xlsx');
+    $writer->save('php://output');
+    exit;
+}
+
+// ── BULK IMPORT ───────────────────────────────────────────────
+if ($action === 'import' && $method === 'POST') {
+    header('Content-Type: application/json');
+    require_once '../vendor/autoload.php';
+
+    if (empty($_FILES['cutoff_file']['tmp_name'])) {
+        http_response_code(422);
+        echo json_encode(['status' => 'error', 'message' => 'No file uploaded.']);
+        exit;
+    }
+
+    try {
+        $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($_FILES['cutoff_file']['tmp_name']);
+        $rows        = $spreadsheet->getActiveSheet()->toArray(null, false, false);
+    } catch (\Exception $e) {
+        http_response_code(422);
+        echo json_encode(['status' => 'error', 'message' => 'Could not read file.']);
+        exit;
+    }
+
+    function parseExcelDate(mixed $value): ?string {
+        if ($value === null || $value === '') return null;
+        if (is_numeric($value)) {
+            try {
+                return \PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject((float)$value)->format('Y-m-d');
+            } catch (\Exception) { return null; }
+        }
+        $v = trim((string)$value);
+        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $v)) return $v;
+        try { return (new \DateTime($v))->format('Y-m-d'); } catch (\Exception) { return null; }
+    }
+
+    $inserted = 0;
+    $errors   = [];
+    $stmt     = $pdo->prepare("INSERT INTO cutoffs (start_date, end_date) VALUES (?, ?)");
+
+    foreach (array_slice($rows, 1) as $i => $row) {
+        $rowNum = $i + 2;
+        $start  = parseExcelDate($row[0] ?? null);
+        $end    = parseExcelDate($row[1] ?? null);
+
+        if ($start === null && $end === null) continue;
+
+        if (!$start || !$end) {
+            $errors[] = ['row' => $rowNum, 'message' => 'Missing or invalid date'];
+            continue;
+        }
+        if ($start > $end) {
+            $errors[] = ['row' => $rowNum, 'message' => 'Start date is after end date'];
+            continue;
+        }
+
+        try {
+            $stmt->execute([$start, $end]);
+            $inserted++;
+        } catch (\Exception $e) {
+            $errors[] = ['row' => $rowNum, 'message' => 'Database error'];
+        }
+    }
+
+    echo json_encode(['status' => 'success', 'inserted' => $inserted, 'errors' => $errors]);
+    exit;
+}
+
+header('Content-Type: application/json');
 
 if ($method === 'GET') {
     $stmt = $pdo->query("SELECT id, start_date, end_date FROM cutoffs ORDER BY start_date DESC");

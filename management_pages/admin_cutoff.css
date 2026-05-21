@@ -271,3 +271,71 @@ body {
 .fc .fc-view-harness {
     padding: 1rem;
 }
+
+/* ============================================================
+   IMPORT DROPZONE
+   ============================================================ */
+
+/* Bulk Import Upload Area */
+.schedule-dropzone {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+
+    min-height: 220px;
+    padding: 2rem;
+
+    border: 2px dashed var(--primary-border);
+    border-radius: 20px;
+
+    background:
+        linear-gradient(
+            180deg,
+            var(--primary-glass),
+            var(--frosted-bg)
+        );
+
+    cursor: pointer;
+
+    transition:
+        border-color 0.2s ease,
+        transform 0.2s ease,
+        background 0.2s ease;
+}
+
+.schedule-dropzone:hover {
+    border-color: var(--primary-color);
+    transform: translateY(-2px);
+}
+
+.schedule-dropzone.dragover {
+    border-color: var(--primary-color);
+    background: var(--primary-glass);
+}
+
+.schedule-dropzone-icon {
+    font-size: 3rem;
+    color: var(--primary-color);
+    line-height: 1;
+    margin-bottom: 1rem;
+}
+
+.schedule-dropzone-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-lightest);
+    text-align: center;
+}
+
+.schedule-dropzone-subtitle {
+    font-size: 0.875rem;
+    color: var(--text-muted);
+    margin-top: 0.35rem;
+    text-align: center;
+}
+
+.schedule-dropzone-meta {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}

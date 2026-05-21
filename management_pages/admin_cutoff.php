@@ -29,6 +29,7 @@ $currentPage = 'cutoffs';
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 </head>
 <body>
 
@@ -48,9 +49,26 @@ $currentPage = 'cutoffs';
                     <div class="card-header">
                         <div class="hstack gap-2">
                             <h5 class="text-primary mb-0">Cut-Off List</h5>
-                            <button class="btn btn-sm btn-success ms-auto" id="btn-add-cutoff">
-                                <i class="bi bi-plus-lg"></i> Add Cut-Off Period
-                            </button>
+                            <div class="dropdown ms-auto">
+                                <button class="btn btn-sm btn-success dropdown-toggle" type="button"
+                                        data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="bi bi-plus-lg"></i> Manage
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    <li>
+                                        <button class="dropdown-item" type="button" id="btn-add-cutoff">
+                                            <i class="bi bi-calendar-plus me-1"></i> Add Cut-Off Period
+                                        </button>
+                                    </li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li>
+                                        <button class="dropdown-item" type="button"
+                                                data-bs-toggle="modal" data-bs-target="#importCutoffModal">
+                                            <i class="bi bi-file-earmark-arrow-down me-1"></i> Import Cut-Offs
+                                        </button>
+                                    </li>
+                                </ul>
+                            </div>
                         </div>
                     </div>
 
@@ -118,6 +136,68 @@ $currentPage = 'cutoffs';
 
 </div><!-- #main-wrapper -->
 
+<!-- BULK IMPORT MODAL -->
+<div class="modal fade" id="importCutoffModal" tabindex="-1" aria-labelledby="import-modal-title" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="import-modal-title">Import Cut-Off Periods</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="import-cutoff-form" enctype="multipart/form-data">
+                <div class="modal-body">
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Upload Excel File</label>
+                        <label for="cutoff-file-input" class="schedule-dropzone w-100">
+                            <div class="schedule-dropzone-icon"><i class="bi bi-cloud-arrow-up-fill"></i></div>
+                            <div class="schedule-dropzone-title">Drag & Drop your .xlsx file here</div>
+                            <div class="schedule-dropzone-subtitle">or click to browse files</div>
+                            <div class="schedule-dropzone-meta mt-3">Accepted format: <strong>.xlsx</strong></div>
+                            <input type="file" name="cutoff_file" id="cutoff-file-input" accept=".xlsx" hidden>
+                        </label>
+                        <small class="text-secondary d-block mt-2">Preview will appear below after selecting a file.</small>
+                    </div>
+
+                    <div id="cutoff-file-preview" class="mt-3" style="display:none;">
+                        <div class="rounded p-2" style="background:var(--frosted-bg);border:1px solid var(--frosted-border);">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <strong style="color:var(--text-lightest);">File Preview</strong>
+                                <span id="cutoff-file-name" class="small" style="color:var(--text-muted);"></span>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table table-sm table-bordered mb-0">
+                                    <thead>
+                                        <tr><th>Start Date</th><th>End Date</th></tr>
+                                    </thead>
+                                    <tbody id="cutoff-preview-body"></tbody>
+                                </table>
+                            </div>
+                            <small class="d-block mt-2" style="color:var(--text-muted);">Showing first 5 rows only</small>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center rounded p-3 mt-3"
+                         style="background:var(--frosted-bg);border:1px solid var(--frosted-border);">
+                        <small style="color:var(--text-muted);">Download the template to ensure correct format.</small>
+                        <a href="cutoff_api.php?action=download_template" class="btn btn-sm ms-3">
+                            <i class="bi bi-download"></i> Template
+                        </a>
+                    </div>
+
+                    <div id="import-result" class="mt-2 small d-none"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-sm btn-success" id="btn-import-cutoff">
+                        <i class="bi bi-file-earmark-arrow-down me-1"></i> Import Cut-Offs
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <!-- ADD / EDIT MODAL -->
 <div class="modal fade" id="cutoffModal" tabindex="-1" aria-labelledby="modal-title" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
@@ -135,6 +215,7 @@ $currentPage = 'cutoffs';
                     <label class="form-label small fw-semibold">End Date</label>
                     <input type="text" class="form-control" id="input-end" placeholder="Select end date" readonly>
                 </div>
+                <div id="days-label" class="text-tertiary small mt-3 d-none"></div>
                 <div id="modal-error" class="text-danger small mt-2 d-none"></div>
             </div>
             <div class="modal-footer">
@@ -327,14 +408,28 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // ── MODAL ─────────────────────────────────────────────
-    const bsModal     = new bootstrap.Modal(document.getElementById('cutoffModal'));
-    const modalFpStart = flatpickr('#input-start', { dateFormat: 'Y-m-d' });
-    const modalFpEnd   = flatpickr('#input-end',   { dateFormat: 'Y-m-d' });
+    function updateDaysLabel() {
+        const start = document.getElementById('input-start').value;
+        const end   = document.getElementById('input-end').value;
+        const lbl   = document.getElementById('days-label');
+        if (start && end && start <= end) {
+            const days = Math.round((new Date(end + 'T00:00:00') - new Date(start + 'T00:00:00')) / 86400000) + 1;
+            lbl.textContent = `${days} day${days !== 1 ? 's' : ''} selected`;
+            lbl.classList.remove('d-none');
+        } else {
+            lbl.classList.add('d-none');
+        }
+    }
+
+    const bsModal      = new bootstrap.Modal(document.getElementById('cutoffModal'));
+    const modalFpStart = flatpickr('#input-start', { dateFormat: 'Y-m-d', onChange: updateDaysLabel });
+    const modalFpEnd   = flatpickr('#input-end',   { dateFormat: 'Y-m-d', onChange: updateDaysLabel });
 
     function openAddModal() {
         editingId = null;
         document.getElementById('modal-title').textContent = 'Add Cut-Off Period';
         document.getElementById('modal-error').classList.add('d-none');
+        document.getElementById('days-label').classList.add('d-none');
         modalFpStart.clear();
         modalFpEnd.clear();
         bsModal.show();
@@ -347,7 +442,8 @@ document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('modal-title').textContent = 'Edit Cut-Off Period';
         document.getElementById('modal-error').classList.add('d-none');
         modalFpStart.setDate(c.start_date, false);
-        modalFpEnd.setDate(c.end_date,   false);
+        modalFpEnd.setDate(c.end_date, false);
+        updateDaysLabel();
         bsModal.show();
     }
 
@@ -399,6 +495,116 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('cutoff-table-scroll').addEventListener('click', e => {
         if (!e.target.closest('.cutoff-item')) deselectCutoff();
     });
+
+    // ── BULK IMPORT ───────────────────────────────────────
+    (function initCutoffImport() {
+        const form      = document.getElementById('import-cutoff-form');
+        const fileInput = document.getElementById('cutoff-file-input');
+        const dropzone  = fileInput?.closest('label.schedule-dropzone');
+        const resultEl  = document.getElementById('import-result');
+
+        if (!form || !fileInput) return;
+
+        if (dropzone) {
+            ['dragenter', 'dragover'].forEach(ev =>
+                dropzone.addEventListener(ev, e => { e.preventDefault(); dropzone.classList.add('dragover'); })
+            );
+            ['dragleave', 'drop'].forEach(ev =>
+                dropzone.addEventListener(ev, e => { e.preventDefault(); dropzone.classList.remove('dragover'); })
+            );
+            dropzone.addEventListener('drop', e => {
+                if (e.dataTransfer.files.length) {
+                    const dt = new DataTransfer();
+                    Array.from(e.dataTransfer.files).forEach(f => dt.items.add(f));
+                    fileInput.files = dt.files;
+                    fileInput.dispatchEvent(new Event('change'));
+                }
+            });
+        }
+
+        fileInput.addEventListener('change', function () {
+            const file = this.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                try {
+                    const workbook = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
+                    const rows     = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]],
+                                         { header: 1, raw: false, dateNF: 'yyyy-mm-dd' });
+                    const tbody    = document.getElementById('cutoff-preview-body');
+                    tbody.innerHTML = '';
+                    const dataRows = rows.slice(1, 6);
+                    if (!dataRows.length) {
+                        tbody.innerHTML = '<tr><td colspan="2" class="text-center text-muted">No data rows found.</td></tr>';
+                    } else {
+                        dataRows.forEach(row => {
+                            const tr = document.createElement('tr');
+                            [0, 1].forEach(i => {
+                                const td = document.createElement('td');
+                                td.textContent = row[i] ?? '—';
+                                tr.appendChild(td);
+                            });
+                            tbody.appendChild(tr);
+                        });
+                    }
+                    document.getElementById('cutoff-file-name').textContent = file.name;
+                    document.getElementById('cutoff-file-preview').style.display = 'block';
+                    resultEl.classList.add('d-none');
+                } catch {
+                    resultEl.textContent = 'Could not read file. Make sure it is a valid .xlsx file.';
+                    resultEl.className   = 'mt-2 small text-danger';
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        });
+
+        form.addEventListener('submit', async function (e) {
+            e.preventDefault();
+            if (!fileInput.files[0]) {
+                resultEl.textContent = 'Please select a file first.';
+                resultEl.className   = 'mt-2 small text-danger';
+                return;
+            }
+            const btn      = document.getElementById('btn-import-cutoff');
+            const origHTML = btn.innerHTML;
+            btn.disabled   = true;
+            btn.innerHTML  = '<span class="spinner-border spinner-border-sm" role="status"></span> Importing...';
+            resultEl.classList.add('d-none');
+
+            try {
+                const res  = await fetch('cutoff_api.php?action=import', { method: 'POST', body: new FormData(this) });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    let msg = `${data.inserted} cut-off period${data.inserted !== 1 ? 's' : ''} imported.`;
+                    if (data.errors?.length) {
+                        const shown  = data.errors.slice(0, 3).map(r => `Row ${r.row} (${r.message})`).join(', ');
+                        const extra  = data.errors.length > 3 ? ` +${data.errors.length - 3} more` : '';
+                        msg += ` ${data.errors.length} skipped — ${shown}${extra}.`;
+                    }
+                    resultEl.textContent = msg;
+                    resultEl.className   = `mt-2 small ${data.errors?.length ? 'text-warning' : 'text-success'}`;
+                    await loadCutoffs();
+                } else {
+                    resultEl.textContent = data.message || 'Import failed.';
+                    resultEl.className   = 'mt-2 small text-danger';
+                }
+            } catch {
+                resultEl.textContent = 'Something went wrong. Please try again.';
+                resultEl.className   = 'mt-2 small text-danger';
+            } finally {
+                btn.disabled  = false;
+                btn.innerHTML = origHTML;
+                resultEl.classList.remove('d-none');
+            }
+        });
+
+        document.getElementById('importCutoffModal')?.addEventListener('hidden.bs.modal', () => {
+            fileInput.value = '';
+            document.getElementById('cutoff-file-preview').style.display = 'none';
+            document.getElementById('cutoff-preview-body').innerHTML      = '';
+            resultEl.classList.add('d-none');
+        });
+    })();
 
     loadCutoffs();
 });

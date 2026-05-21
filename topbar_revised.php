@@ -61,7 +61,7 @@ $parts = array_values(array_filter(explode('/', $_SERVER['PHP_SELF'])));
 
 $excludeSegments = [
     'localhost', 'DTR-Internship-Project', 'DTR Internship Project',
-    'admin_pages', 'employee_pages',
+    'management_pages', 'regular_pages',
     'system_functions', 'dropdown_requests', 'assets', 'includes', 'db',
 ];
 
