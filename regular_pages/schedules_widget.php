@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /*
  * Schedules Widget
  *
@@ -12,7 +12,7 @@
  *
  *   $schedEmployeeId     — int|null  (null = global view, int = scoped to one employee)
  *   $schedEmpUrlId       — string employee_id for URLs (admin-scoped only)
- *   $schedCalApiPath     — URL for get_admin_employee_calendar.php (admin-scoped only)
+ *   $schedCalApiPath     — URL for get_schedule.php with employee_id (admin-scoped only)
  *   $schedSaveApiPath    — POST endpoint for schedule save (admin-scoped only)
  */
 if (session_status() === PHP_SESSION_NONE) session_start();
@@ -27,7 +27,7 @@ $schedInitialDate    ??= date('Y-m-01');
 
 $schedEmployeeId     ??= null;
 $schedEmpUrlId       ??= null;
-$schedCalApiPath     ??= '../admin_pages/get_admin_employee_calendar.php';
+$schedCalApiPath     ??= '../get_schedule.php';
 $schedSaveApiPath    ??= '';
 
 $isScoped = $schedEmployeeId !== null;

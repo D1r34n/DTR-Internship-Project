@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
@@ -9,6 +9,32 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 require_once '../db.php';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['quote_text'])) {
+    header('Content-Type: application/json');
+    if (($_SESSION['user_role'] ?? '') !== 'admin') {
+        echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+        exit();
+    }
+    $quoteText   = trim($_POST['quote_text']   ?? '');
+    $quoteAuthor = trim($_POST['quote_author'] ?? '');
+    if ($quoteText === '') {
+        echo json_encode(['success' => false, 'message' => 'Quote text is required.']);
+        exit();
+    }
+    try {
+        $stmt = $pdo->prepare("
+            INSERT INTO quote_of_the_day (id, quote_text, quote_author)
+            VALUES (1, ?, ?)
+            ON DUPLICATE KEY UPDATE quote_text = VALUES(quote_text), quote_author = VALUES(quote_author), updated_at = NOW()
+        ");
+        $stmt->execute([$quoteText, $quoteAuthor]);
+        echo json_encode(['success' => true]);
+    } catch (PDOException $e) {
+        echo json_encode(['success' => false, 'message' => 'Database error.']);
+    }
+    exit();
+}
 date_default_timezone_set('Asia/Manila');
 
 $today        = date('Y-m-d');
@@ -305,7 +331,7 @@ for ($i = 0; $i < 7; $i++) {
     <link rel="stylesheet" href="dashboard_page.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-    <link rel="stylesheet" href="../employee_pages/logs_widget.css">
+    <link rel="stylesheet" href="../regular_pages/logs_widget.css">
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
@@ -629,7 +655,7 @@ for ($i = 0; $i < 7; $i++) {
                                 </div>
 
                                 <div class="d-flex">
-                                    <a class="btn btn-sm btn-success ms-auto" href="../employee_pages/employee_schedule.php?filter=birthday">
+                                    <a class="btn btn-sm btn-success ms-auto" href="../regular_pages/employee_schedule.php?filter=birthday">
                                         View All Birthdays <i class="bi bi-chevron-right"></i>
                                     </a>
                                 </div>
@@ -690,7 +716,7 @@ for ($i = 0; $i < 7; $i++) {
                                 </div>
 
                                 <div class="d-flex">
-                                    <a class="btn btn-sm btn-success ms-auto" href="../employee_pages/employee_schedule.php?filter=events">
+                                    <a class="btn btn-sm btn-success ms-auto" href="../regular_pages/employee_schedule.php?filter=events">
                                         View All Events <i class="bi bi-chevron-right"></i>
                                     </a>
                                 </div>
@@ -881,7 +907,7 @@ for ($i = 0; $i < 7; $i++) {
                                     <?php endif; ?>
                                 </div>
                                 <div class="d-flex">
-                                    <a class="btn btn-sm btn-success ms-auto" href="../employee_pages/employee_schedule.php?filter=birthday">
+                                    <a class="btn btn-sm btn-success ms-auto" href="../regular_pages/employee_schedule.php?filter=birthday">
                                         View All Birthdays <i class="bi bi-chevron-right"></i>
                                     </a>
                                 </div>
@@ -929,7 +955,7 @@ for ($i = 0; $i < 7; $i++) {
                                     <?php endif; ?>
                                 </div>
                                 <div class="d-flex">
-                                    <a class="btn btn-sm btn-success ms-auto" href="../employee_pages/employee_schedule.php?filter=events">
+                                    <a class="btn btn-sm btn-success ms-auto" href="../regular_pages/employee_schedule.php?filter=events">
                                         View All Events <i class="bi bi-chevron-right"></i>
                                     </a>
                                 </div>
@@ -983,7 +1009,7 @@ for ($i = 0; $i < 7; $i++) {
                             $endDate   = $today;
                             $logsApiPath = '../get_logs.php';
                             $logsInlineHeader = true;
-                            include '../employee_pages/logs_widget.php';
+                            include '../regular_pages/logs_widget.php';
                         ?>
                     </div>
                 </div>
@@ -1035,7 +1061,7 @@ for ($i = 0; $i < 7; $i++) {
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" id="saveQuoteBtn">
+                <button type="button" class="btn btn-success" id="saveQuoteBtn">
                     <i class="bi bi-floppy me-1"></i>Save Quote
                 </button>
             </div>
@@ -1063,7 +1089,7 @@ document.getElementById('saveQuoteBtn').addEventListener('click', function () {
     form.append('quote_text', quoteText);
     form.append('quote_author', quoteAuthor);
 
-    fetch('../save_quote.php', { method: 'POST', body: form })
+    fetch('dashboard_page.php', { method: 'POST', body: form })
         .then(r => r.json())
         .then(data => {
             if (data.success) {

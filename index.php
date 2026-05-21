@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 session_start();
 
 if (!isset($_SESSION['user_id'])) {
@@ -7,5 +7,5 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 // always go to dashboard (NO ROLE LOGIC HERE)
-header("Location: admin_pages/dashboard_page.php");
+header("Location: regular_pages/dashboard_page.php");
 exit();

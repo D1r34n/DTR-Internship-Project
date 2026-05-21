@@ -140,7 +140,7 @@ $currentPage = 'cutoffs';
             <div class="modal-footer">
                 <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>
                 <button type="button" class="btn btn-sm btn-success" id="btn-save-cutoff">
-                    <i class="bi bi-floppy-fill me-1"></i> Save
+                    <i class="bi bi-floppy-fill me-1"></i> Save Cut-off Period
                 </button>
             </div>
         </div>

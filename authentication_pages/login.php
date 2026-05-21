@@ -1,8 +1,8 @@
-<?php
+﻿<?php
 session_start();
 
 if (isset($_SESSION['user_id'])) {
-    header("Location: ../admin_pages/dashboard_page.php");
+    header("Location: ../regular_pages/dashboard_page.php");
     exit();
 }
 
@@ -79,7 +79,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             exit();
         }
 
-        header("Location: ../admin_pages/dashboard_page.php");
+        header("Location: ../regular_pages/dashboard_page.php");
         exit();
 
     } else {

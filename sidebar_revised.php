@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
@@ -23,7 +23,8 @@ if (!empty($_SESSION['must_change_password'])) {
     exit();
 }
 
-$requestsOpen = in_array($currentPage, ['employee_requests', 'schedule_requests']);
+$requestsOpen  = in_array($currentPage, ['employee_requests', 'schedule_requests']);
+$schedulesOpen = in_array($currentPage, ['schedule', 'cutoffs']);
 ?>
 
 <div id="sidebar" class="d-flex flex-column flex-shrink-0">
@@ -66,17 +67,53 @@ $requestsOpen = in_array($currentPage, ['employee_requests', 'schedule_requests'
         ?>
 
         <!-- ALL EMPLOYEE MENU -->
-        <?php navLink('../admin_pages/dashboard_page.php', 'bi-columns-gap', 'Dashboard', $currentPage === 'dashboard'); ?>
-        <?php navLink('../employee_pages/records_page.php', 'bi-bar-chart-steps',  'Records', $currentPage === 'records');    ?>
-        <?php navLink('../employee_pages/schedules_page.php', 'bi-calendar-week',  'Schedule', $currentPage === 'schedule');    ?>
-        <?php navLink('../employee_pages/logs_page.php',        'bi-journal-text',  'Activity Logs',        $currentPage === 'logs'); ?>
+        <?php navLink('../regular_pages/dashboard_page.php', 'bi-columns-gap', 'Dashboard', $currentPage === 'dashboard'); ?>
+        <?php navLink('../regular_pages/records_page.php', 'bi-bar-chart-steps',  'Records', $currentPage === 'records');    ?>
+        
+        <?php if ($role === 'admin'): ?>
+            
+             <!-- SCHEDULE DROPDOWN -->
+            <div class="sidebar-dropdown">
+                <button
+                    class="sidebar-link sidebar-dropdown-toggle <?= $schedulesOpen ? 'active' : '' ?>"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#schedules-submenu"
+                    aria-expanded="<?= $schedulesOpen ? 'true' : 'false' ?>"
+                    data-tooltip-title="Schedules"
+                >
+                    <i class="bi bi-calendar-week"></i>
+                    <span>Schedules</span>
+                    <i class="bi bi-chevron-down transition-chevron"></i>
+                </button>
+
+                <div id="schedules-submenu" class="collapse <?= $schedulesOpen ? 'show' : '' ?>">
+                    
+                    <!-- CALENDAR -->
+                    <a href="../regular_pages/schedules_page.php"
+                       class="sidebar-sub-link <?= ($currentPage === 'schedule') ? 'active' : '' ?>">
+                        <i class="bi bi-calendar"></i>
+                        <span>Calendar</span>
+                    </a>
+
+                     <!-- CUT-OFF PERIODS -->
+                    <a href="../management_pages/admin_cutoff.php"
+                       class="sidebar-sub-link <?= ($currentPage === 'cutoffs') ? 'active' : '' ?>">
+                        <i class="bi bi-scissors"></i>
+                        <span>Cut-Offs</span>
+                    </a>
+                </div>
+            </div>
+            <?php else: ?>
+            <?php navLink('../regular_pages/schedules_page.php', 'bi-calendar-week',  'Schedules', $currentPage === 'schedule'); ?>
+        <?php endif; ?>  
+        <?php navLink('../regular_pages/logs_page.php',        'bi-journal-text',  'Activity Logs',        $currentPage === 'logs'); ?>
 
 
         <!-- ADMIN MENU -->
         <?php if ($role === 'admin'): ?>
 
             <!-- MANAGE EMPLOYEES -->
-            <?php navLink('../admin_pages/admin_manage_employees.php',    'bi-people-fill', 'Manage Employees',   $currentPage === 'manage_employees');   ?>
+            <?php navLink('../management_pages/admin_manage_employees.php',    'bi-people', 'Manage Employees',   $currentPage === 'manage_employees');   ?>
 
             <!-- REQUESTS DROPDOWN -->
             <div class="sidebar-dropdown">
@@ -93,12 +130,12 @@ $requestsOpen = in_array($currentPage, ['employee_requests', 'schedule_requests'
                 </button>
 
                 <div id="requests-submenu" class="collapse <?= $requestsOpen ? 'show' : '' ?>">
-                    <a href="../admin_pages/admin_requests.php"
+                    <a href="../management_pages/admin_requests.php"
                        class="sidebar-sub-link <?= ($currentPage === 'employee_requests') ? 'active' : '' ?>">
                         <i class="bi bi-file-earmark-text"></i>
                         <span>Employee Requests</span>
                     </a>
-                    <a href="../admin_pages/admin_schedule_requests.php"
+                    <a href="../management_pages/admin_schedule_requests.php"
                        class="sidebar-sub-link <?= ($currentPage === 'schedule_requests') ? 'active' : '' ?>">
                         <i class="bi bi-calendar-check"></i>
                         <span>Schedule Requests</span>
@@ -107,10 +144,8 @@ $requestsOpen = in_array($currentPage, ['employee_requests', 'schedule_requests'
             </div>
 
             <!-- DEPARTMENTS LIST -->
-            <?php navLink('../admin_pages/admin_departments.php',    'bi-building-gear', 'Departments',       $currentPage === 'departments'); ?>
+            <?php navLink('../management_pages/admin_departments.php',    'bi-building-gear', 'Departments',       $currentPage === 'departments'); ?>
 
-            <!-- CUT-OFF PERIODS -->
-            <?php navLink('../admin_pages/admin_cutoff.php', 'bi-scissors', 'Cut-offs', $currentPage === 'cutoffs'); ?>
         <?php endif; ?>
 
     </nav>

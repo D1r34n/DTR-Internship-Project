@@ -14,6 +14,30 @@ require_once '../system_functions/system_service.php';
 require_once '../system_functions/system_library.php';
 date_default_timezone_set('Asia/Manila');
 
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['leave_type'])) {
+    header('Content-Type: application/json');
+    $employeeId = intval($_POST['employee_id'] ?? 0);
+    $leaveType  = $_POST['leave_type'] ?? '';
+    $value      = intval($_POST['value'] ?? 0);
+    $allowed = [
+        'vacation_leave', 'sick_leave', 'birthday_leave',
+        'paternity_leave', 'maternity_leave', 'solo_parent_leave', 'buffer_leave',
+    ];
+    if (!$employeeId || !in_array($leaveType, $allowed, true)) {
+        echo json_encode(['ok' => false, 'error' => 'Invalid request']);
+        exit();
+    }
+    if ($value < 0) $value = 0;
+    $stmt = $pdo->prepare("
+        INSERT INTO employee_leave_balances (employee_id, `$leaveType`)
+        VALUES (?, ?)
+        ON DUPLICATE KEY UPDATE `$leaveType` = VALUES(`$leaveType`)
+    ");
+    $stmt->execute([$employeeId, $value]);
+    echo json_encode(['ok' => true, 'value' => $value]);
+    exit();
+}
+
 if (!isset($_GET['employee_id'])) {
     header("Location: admin_manage_employees.php");
     exit();
@@ -469,9 +493,9 @@ $leaveTypes = [
     <!-- Page component CSS (calendar + gantt styles) -->
     <link rel="stylesheet" href="admin_employee_view.css">
     <link rel="stylesheet" href="../dropdown_requests/log_edit_modal.css">
-    <link rel="stylesheet" href="../employee_pages/logs_widget.css">
-    <link rel="stylesheet" href="../employee_pages/records_widget.css">
-    <link rel="stylesheet" href="../employee_pages/schedules_widget.css">
+    <link rel="stylesheet" href="../regular_pages/logs_widget.css">
+    <link rel="stylesheet" href="../regular_pages/records_widget.css">
+    <link rel="stylesheet" href="../regular_pages/schedules_widget.css">
 
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/monthSelect/index.js"></script>
@@ -605,11 +629,11 @@ $leaveTypes = [
                     <?php
                     $schedEmployeeId   = $employeeId;
                     $schedEmpUrlId     = $urlEmpId;
-                    $schedCalApiPath   = 'get_admin_employee_calendar.php';
+                    $schedCalApiPath   = '../get_schedule.php';
                     $schedSaveApiPath  = 'admin_employee_view.php?employee_id=' . htmlspecialchars($urlEmpId);
                     $schedCurrentMonth = $rawMonth;
                     $schedInitialDate  = $monthStart;
-                    include '../employee_pages/schedules_widget.php';
+                    include '../regular_pages/schedules_widget.php';
                     ?>
 
                 </div>
@@ -621,7 +645,7 @@ $leaveTypes = [
                     $startDate      = $monthStart;
                     $endDate        = $monthEnd;
                     $recordsApiPath = '../get_records.php';
-                    include '../employee_pages/records_widget.php'; ?>
+                    include '../regular_pages/records_widget.php'; ?>
 
                 </div>
 
@@ -632,7 +656,7 @@ $leaveTypes = [
                     $startDate      = $monthStart;
                     $endDate        = $monthEnd;
                     $logsApiPath    = '../get_logs.php';
-                    include '../employee_pages/logs_widget.php';
+                    include '../regular_pages/logs_widget.php';
                     ?>
 
                 </div>
@@ -901,15 +925,13 @@ $leaveTypes = [
     </div>
 </div>
 
-<?php include '../toast.php'; ?>
-
 <script src="../system_functions/gantt.js"></script>
 
 
 <script>
 // ---- Department dropdown (Edit Employee modal) ----
 (function () {
-    fetch('/DTR-Internship-Project/admin_pages/department_api.php?action=list')
+    fetch('/DTR-Internship-Project/management_pages/department_api.php?action=list')
         .then(r => r.json())
         .then(depts => {
             const items = [
@@ -1205,7 +1227,7 @@ function saveLeaveBalance(card, val) {
     fd.append('leave_type',  key);
     fd.append('value',       val);
 
-    fetch('update_leave_balance.php', { method: 'POST', body: fd })
+    fetch('admin_employee_view.php', { method: 'POST', body: fd })
         .then(r => r.json())
         .then(data => {
             daysEl.textContent   = data.ok ? data.value : prev;

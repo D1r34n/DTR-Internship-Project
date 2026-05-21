@@ -1,4 +1,4 @@
-
+﻿
 
 <!-- OT REQUEST MODAL -->
 <div class="modal fade" id="otModal" tabindex="-1" aria-labelledby="otModalLabel" aria-hidden="true">
@@ -295,7 +295,7 @@
     const list = document.getElementById('otGanttList');
     list.innerHTML = '<p class="ot-gantt-loading">Loading...</p>';
 
-    fetch('../employee_pages/get_ot_records.php')
+    fetch('get_ot_records.php')
       .then(res => res.json())
       .then(records => {
         if (!Array.isArray(records) || records.length === 0) {
@@ -536,7 +536,7 @@
     document.getElementById('leaveSelectedDates').style.display    = 'none';
     document.getElementById('leaveSelectedDatesText').textContent  = '';
 
-    fetch(`/DTR-Internship-Project/employee_pages/get_schedule_dates.php?leave_type=${encodeURIComponent(value)}`)
+    fetch(`get_schedule_dates.php?leave_type=${encodeURIComponent(value)}`)
       .then(res => res.json())
       .then(data => {
         leaveScheduledDates = data.scheduledDates ?? [];
@@ -754,7 +754,7 @@
     obScheduledDates = [];
     obExistingDates  = [];
 
-    fetch('/DTR-Internship-Project/employee_pages/get_ob_dates.php')
+    fetch('get_ob_dates.php')
       .then(res => res.json())
       .then(data => {
         obScheduledDates = data.scheduledDates ?? [];
@@ -951,7 +951,7 @@
     const tbody = document.getElementById('leLogsBody');
     tbody.innerHTML = '<tr><td colspan="4" class="le-logs-loading">Loading...</td></tr>';
 
-    fetch('/DTR-Internship-Project/employee_pages/get_employee_logs_json.php')
+    fetch('get_logedit_logs.php')
       .then(r => r.json())
       .then(logs => {
         if (!logs.length) {

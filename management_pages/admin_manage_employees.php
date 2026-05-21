@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
@@ -1001,7 +1001,7 @@ document.getElementById('empModal')
         const initialDeptFilter = <?= $initialDeptFilter ?>;
 
         function loadDepartments() {
-            fetch('/DTR-Internship-Project/admin_pages/department_api.php?action=list')
+            fetch('/DTR-Internship-Project/management_pages/department_api.php?action=list')
                 .then(r => r.json())
                 .then(depts => {
                     deptItems = [
