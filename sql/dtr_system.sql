@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: May 21, 2026 at 04:04 AM
+-- Generation Time: May 21, 2026 at 10:00 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -148,9 +148,31 @@ INSERT INTO `attendances` (`id`, `employee_id`, `schedule_id`, `work_date`, `sch
 (269, 22, NULL, '2026-05-11', '2026-05-11 08:30:00', '2026-05-11 17:30:00', NULL, NULL, 0, 0, 0, 0, 0, 'absent', 'none', 0, '2026-05-12 08:21:37', '2026-05-12 08:21:37'),
 (270, 22, NULL, '2026-05-12', '2026-05-12 08:30:00', '2026-05-12 17:30:00', '2026-05-12 07:21:00', '2026-05-12 18:22:00', 661, 0, 0, 52, 0, 'present', 'approved', 0, '2026-05-12 08:21:37', '2026-05-12 08:24:57'),
 (273, 22, 456, '2026-05-18', '2026-05-18 08:30:00', '2026-05-18 17:30:00', NULL, NULL, 0, 0, 0, 0, 0, 'absent', 'none', 0, '2026-05-14 03:59:09', '2026-05-19 01:34:20'),
-(283, 22, 461, '2026-05-19', '2026-05-19 10:30:00', '2026-05-19 19:30:00', '2026-05-19 10:21:59', '2026-05-19 20:00:00', 578, 0, 0, 30, 0, 'present', 'pending', 0, '2026-05-19 02:21:38', '2026-05-20 07:20:09'),
+(283, 22, 461, '2026-05-19', '2026-05-19 10:30:00', '2026-05-19 19:30:00', '2026-05-19 10:21:59', '2026-05-19 20:00:00', 578, 0, 0, 30, 0, 'present', 'approved', 0, '2026-05-19 02:21:38', '2026-05-21 06:53:18'),
 (291, 22, NULL, '2026-05-21', '2026-05-21 06:00:00', '2026-05-21 15:00:00', '2026-05-21 09:35:01', '2026-05-21 20:00:00', 624, 215, 0, 300, 0, 'present', 'none', 0, '2026-05-21 01:35:01', '2026-05-20 06:10:53'),
 (293, 22, 462, '2026-05-20', '2026-05-20 11:00:00', '2026-05-20 20:00:00', NULL, NULL, 0, 0, 0, 0, 0, 'incomplete', 'none', 0, '2026-05-20 02:52:06', '2026-05-20 02:52:06');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `cutoffs`
+--
+
+CREATE TABLE `cutoffs` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `start_date` date NOT NULL,
+  `end_date` date NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `cutoffs`
+--
+
+INSERT INTO `cutoffs` (`id`, `start_date`, `end_date`, `created_at`, `updated_at`) VALUES
+(3, '2026-02-02', '2026-02-17', '2026-05-21 03:41:36', '2026-05-21 03:41:36'),
+(5, '2026-01-21', '2026-02-01', '2026-05-21 06:07:13', '2026-05-21 06:07:13');
 
 -- --------------------------------------------------------
 
@@ -224,7 +246,8 @@ INSERT INTO `employees` (`id`, `employee_id`, `profile_image`, `first_name`, `la
 (22, '000008', 'avatar_user_22.png', 'Earl', 'David Jordan', 'earl3jordan@gmail.com', '123', 5, 10, '2026-05-11', 0, '2000-05-01', 'active'),
 (23, '000014', NULL, 'Ranica', 'Jalotjot', 'ranica.jalotjot@hsnervice.com', '123', 2, 13, '2026-05-11', 0, '2000-01-01', 'active'),
 (25, '000011', NULL, 'Erlyn', 'Dionisio', 'erlyn.dionisio@hsnervice.com', '123', 5, 13, '2026-05-11', 0, '2000-01-01', 'active'),
-(37, '000013', 'default_profile.png', 'Gerome', 'Dy', 'gerome.dy@hsnservice.com', 'HSN.123', 5, 15, '2026-05-14', 0, '1998-05-01', 'active');
+(37, '000013', 'default_profile.png', 'Gerome', 'Dy', 'gerome.dy@hsnservice.com', 'HSN.123', 5, 15, '2026-05-14', 0, '1998-05-01', 'active'),
+(39, '000000', 'avatar_user_39.png', 'Super', 'Admin', 'superadmin@gmail.com', 'superadmin123', 1, NULL, '2026-05-21', 0, '2026-05-21', 'active');
 
 -- --------------------------------------------------------
 
@@ -263,7 +286,8 @@ INSERT INTO `employee_leave_balances` (`employee_id`, `buffer_leave`, `vacation_
 (22, 0, 0, 4, 7, 90, 1, 1, '2026-05-11', '2026-05-11 07:41:20', '2026-05-11 07:41:20'),
 (23, 0, 0, 4, 7, 90, 1, 1, '2026-05-15', '2026-05-15 01:15:26', '2026-05-15 01:15:26'),
 (25, 0, 0, 4, 7, 90, 1, 1, '2026-05-15', '2026-05-15 01:15:26', '2026-05-15 01:15:26'),
-(37, 0, 0, 4, 7, 90, 1, 1, '2026-05-15', '2026-05-15 01:15:26', '2026-05-15 01:15:26');
+(37, 0, 0, 4, 7, 90, 1, 1, '2026-05-15', '2026-05-15 01:15:26', '2026-05-15 01:15:26'),
+(39, 0, 0, 4, 7, 90, 1, 1, '0000-00-00', '2026-05-21 07:32:23', '2026-05-21 07:32:23');
 
 -- --------------------------------------------------------
 
@@ -429,7 +453,7 @@ CREATE TABLE `overtime_requests` (
 
 INSERT INTO `overtime_requests` (`id`, `employee_id`, `date`, `time_in`, `time_out`, `reason`, `status`, `created_at`) VALUES
 (17, 22, '2026-05-12', '17:30:00', '18:22:00', 'PLSSS BATO I NEED THIS', 'approved', '2026-05-12 08:24:42'),
-(18, 22, '2026-05-19', '19:30:00', '20:00:00', 'OT pls', 'pending', '2026-05-20 07:20:09');
+(18, 22, '2026-05-19', '19:30:00', '20:00:00', 'OT pls', 'approved', '2026-05-20 07:20:09');
 
 -- --------------------------------------------------------
 
@@ -473,7 +497,7 @@ CREATE TABLE `quote_of_the_day` (
 --
 
 INSERT INTO `quote_of_the_day` (`id`, `quote_text`, `quote_author`, `updated_at`) VALUES
-(1, 'When life gives you lemons, make lemonade', 'Earl', '2026-05-20 09:03:54');
+(1, 'When life gives you lemons, make lemonsquare', 'Earl', '2026-05-21 03:24:22');
 
 -- --------------------------------------------------------
 
@@ -725,6 +749,12 @@ ALTER TABLE `attendances`
   ADD KEY `idx_schedule_time` (`scheduled_start`,`scheduled_end`);
 
 --
+-- Indexes for table `cutoffs`
+--
+ALTER TABLE `cutoffs`
+  ADD PRIMARY KEY (`id`);
+
+--
 -- Indexes for table `departments`
 --
 ALTER TABLE `departments`
@@ -828,6 +858,12 @@ ALTER TABLE `attendances`
   MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=305;
 
 --
+-- AUTO_INCREMENT for table `cutoffs`
+--
+ALTER TABLE `cutoffs`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+
+--
 -- AUTO_INCREMENT for table `departments`
 --
 ALTER TABLE `departments`
@@ -837,7 +873,7 @@ ALTER TABLE `departments`
 -- AUTO_INCREMENT for table `employees`
 --
 ALTER TABLE `employees`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=39;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=40;
 
 --
 -- AUTO_INCREMENT for table `events`
