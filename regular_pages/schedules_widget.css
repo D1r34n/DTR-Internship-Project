@@ -45,7 +45,11 @@
     position: relative;
     flex: 1;
     min-height: 0;
+    overflow-y: auto;
 }
+
+#sw-cal-wrapper::-webkit-scrollbar       { width: 6px; }
+#sw-cal-wrapper::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 10px; }
 
 #sw-cal-loading {
     display: none;
