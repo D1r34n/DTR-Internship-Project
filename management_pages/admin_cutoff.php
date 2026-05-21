@@ -136,6 +136,8 @@ $currentPage = 'cutoffs';
 
 </div><!-- #main-wrapper -->
 
+<?php include __DIR__ . '/../toast.php'; ?>
+
 <!-- BULK IMPORT MODAL -->
 <div class="modal fade" id="importCutoffModal" tabindex="-1" aria-labelledby="import-modal-title" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
@@ -194,6 +196,27 @@ $currentPage = 'cutoffs';
                     </button>
                 </div>
             </form>
+        </div>
+    </div>
+</div>
+
+<!-- DELETE CONFIRMATION MODAL -->
+<div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-labelledby="delete-modal-title" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="delete-modal-title">Delete Cut-Off Period</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-primary mb-0">Are you sure you want to delete the cut-off period for <span class="fw-semibold" id="delete-modal-range"></span>?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-sm btn-danger" id="btn-confirm-delete">
+                    <i class="bi bi-trash-fill me-1"></i> Delete
+                </button>
+            </div>
         </div>
     </div>
 </div>
@@ -396,15 +419,12 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // ── DELETE ───────────────────────────────────────────
-    async function confirmDelete(id) {
+    function confirmDelete(id) {
         const c = cutoffs.find(x => x.id == id);
-        if (!c || !confirm(`Delete cut-off period "${fmtRange(c.start_date, c.end_date)}"?`)) return;
-
-        await fetch(`${API}?id=${id}`, { method: 'DELETE' });
-
-        if (activeCutoffId == id) deselectCutoff();
-
-        await loadCutoffs();
+        if (!c) return;
+        pendingDeleteId = id;
+        document.getElementById('delete-modal-range').textContent = fmtRange(c.start_date, c.end_date);
+        bsDeleteModal.show();
     }
 
     // ── MODAL ─────────────────────────────────────────────
@@ -422,6 +442,20 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     const bsModal      = new bootstrap.Modal(document.getElementById('cutoffModal'));
+    const bsDeleteModal = new bootstrap.Modal(document.getElementById('deleteConfirmModal'));
+    let   pendingDeleteId = null;
+
+    document.getElementById('btn-confirm-delete').addEventListener('click', async () => {
+        bsDeleteModal.hide();
+        if (pendingDeleteId === null) return;
+        const id = pendingDeleteId;
+        pendingDeleteId = null;
+
+        await fetch(`${API}?id=${id}`, { method: 'DELETE' });
+        if (activeCutoffId == id) deselectCutoff();
+        await loadCutoffs();
+        showToast('Cut-off period deleted.', 'success');
+    });
     const modalFpStart = flatpickr('#input-start', { dateFormat: 'Y-m-d', onChange: updateDaysLabel });
     const modalFpEnd   = flatpickr('#input-end',   { dateFormat: 'Y-m-d', onChange: updateDaysLabel });
 
@@ -450,20 +484,17 @@ document.addEventListener('DOMContentLoaded', function () {
     async function saveCutoff() {
         const start = document.getElementById('input-start').value;
         const end   = document.getElementById('input-end').value;
-        const errEl = document.getElementById('modal-error');
 
         if (!start || !end) {
-            errEl.textContent = 'Please select both start and end dates.';
-            errEl.classList.remove('d-none');
+            showToast('Please select both start and end dates.', 'danger');
             return;
         }
         if (start > end) {
-            errEl.textContent = 'Start date must not be after end date.';
-            errEl.classList.remove('d-none');
+            showToast('Start date must not be after end date.', 'danger');
             return;
         }
 
-        errEl.classList.add('d-none');
+        // ← remove the errEl.classList.add('d-none') line that was here
 
         const method = editingId ? 'PUT' : 'POST';
         const url    = editingId ? `${API}?id=${editingId}` : API;
@@ -476,8 +507,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         if (!res.ok) {
             const data = await res.json().catch(() => ({}));
-            errEl.textContent = data.error || 'An error occurred.';
-            errEl.classList.remove('d-none');
+            showToast(data.error || 'An error occurred.', 'danger');
             return;
         }
 
@@ -485,6 +515,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const savedId = editingId;
         await loadCutoffs();
         if (savedId) selectCutoff(savedId);
+        showToast(savedId ? 'Cut-off period updated.' : 'Cut-off period added.', 'success');
     }
 
     // ── BIND ──────────────────────────────────────────────
@@ -584,13 +615,16 @@ document.addEventListener('DOMContentLoaded', function () {
                     resultEl.textContent = msg;
                     resultEl.className   = `mt-2 small ${data.errors?.length ? 'text-warning' : 'text-success'}`;
                     await loadCutoffs();
+                    showToast(msg, data.errors?.length ? 'warning' : 'success');
                 } else {
                     resultEl.textContent = data.message || 'Import failed.';
                     resultEl.className   = 'mt-2 small text-danger';
+                    showToast(data.message || 'Import failed.', 'danger');
                 }
             } catch {
                 resultEl.textContent = 'Something went wrong. Please try again.';
                 resultEl.className   = 'mt-2 small text-danger';
+                showToast('Something went wrong. Please try again.', 'danger');
             } finally {
                 btn.disabled  = false;
                 btn.innerHTML = origHTML;

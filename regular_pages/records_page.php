@@ -59,8 +59,7 @@ $recordsMonth = sprintf('%04d-%02d', $yr, $mn);
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/monthSelect/index.js"></script>
-    <script src="../system_functions/gantt.js"></script>
-    
+
     <link rel="stylesheet" href="../assets/css/root.css">
     <link rel="stylesheet" href="../assets/css/typography.css">
     <link rel="stylesheet" href="../assets/css/components.css">
@@ -133,6 +132,6 @@ $recordsMonth = sprintf('%04d-%02d', $yr, $mn);
         </div>
 
     </div><!-- #main-wrapper -->
-
+    <script src="../system_functions/gantt.js"></script>
 </body>
 </html>

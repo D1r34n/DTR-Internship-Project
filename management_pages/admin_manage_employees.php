@@ -3,7 +3,7 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-if (!isset($_SESSION['user_id']) || !in_array($_SESSION['user_role'], ['admin', 'workforce'])) {
+if (!isset($_SESSION['user_id']) || !in_array($_SESSION['user_role'], ['superadmin', 'workforce'])) {
     header("Location: ../index.php");
     exit();
 }

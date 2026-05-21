@@ -14,7 +14,7 @@ $employeeId    = $_SESSION['user_id']   ?? null;
 $currentUserId = (int)($_SESSION['user_id'] ?? 0);
 
 // Admin viewing a specific employee's profile — scope to that employee, hide employee columns
-$scopedToEmployee = $userRole === 'admin' && !empty($_GET['employee_id']);
+$scopedToEmployee = $userRole === 'superadmin' && !empty($_GET['employee_id']);
 if ($scopedToEmployee) $employeeId = intval($_GET['employee_id']);
 date_default_timezone_set('Asia/Manila');
 
@@ -81,7 +81,7 @@ if ($showLogs) {
 
     $params = [];
 
-    if ($userRole !== 'admin' || $scopedToEmployee) {
+    if ($userRole !== 'superadmin' || $scopedToEmployee) {
         $sql .= " AND l.employee_id = ?";
         $params[] = $employeeId;
     }
@@ -117,7 +117,7 @@ if ($showLogs) {
     ";
     $editParams = [];
 
-    if ($userRole !== 'admin' || $scopedToEmployee) {
+    if ($userRole !== 'superadmin' || $scopedToEmployee) {
         $editSql .= " AND ler.employee_id = ?";
         $editParams[] = $employeeId;
     }
@@ -211,7 +211,7 @@ if ($showOT) {
         WHERE 1=1
     ";
     $params = [];
-    if ($userRole !== 'admin' || $scopedToEmployee) {
+    if ($userRole !== 'superadmin' || $scopedToEmployee) {
         $sql .= " AND ot.employee_id = ?";
         $params[] = $employeeId;
     }
@@ -242,7 +242,7 @@ if ($showOT) {
             'employee_name'    => $row['employee_name'],
             'employee_role'    => $row['employee_role'],
             'department_name'  => $row['department_name'],
-            'edit_role'        => reqEditRole($userRole === 'admin', $scopedToEmployee, $currentUserId, (int)$row['employee_id']),
+            'edit_role'        => reqEditRole($userRole === 'superadmin', $scopedToEmployee, $currentUserId, (int)$row['employee_id']),
             'edit_status'      => $row['status'],
             'initiator_name'   => $row['employee_name'],
             'photo_path'       => null,
@@ -272,7 +272,7 @@ if ($showLeave) {
         WHERE lr.leave_type != 'ob leave'
     ";
     $params = [];
-    if ($userRole !== 'admin' || $scopedToEmployee) {
+    if ($userRole !== 'superadmin' || $scopedToEmployee) {
         $sql .= " AND lr.employee_id = ?";
         $params[] = $employeeId;
     }
@@ -303,7 +303,7 @@ if ($showLeave) {
             'employee_name'    => $row['employee_name'],
             'employee_role'    => $row['employee_role'],
             'department_name'  => $row['department_name'],
-            'edit_role'        => reqEditRole($userRole === 'admin', $scopedToEmployee, $currentUserId, (int)$row['employee_id']),
+            'edit_role'        => reqEditRole($userRole === 'superadmin', $scopedToEmployee, $currentUserId, (int)$row['employee_id']),
             'edit_status'      => $row['status'],
             'initiator_name'   => $row['employee_name'],
             'photo_path'       => null,
@@ -333,7 +333,7 @@ if ($showOB) {
         WHERE lr.leave_type = 'ob leave'
     ";
     $params = [];
-    if ($userRole !== 'admin' || $scopedToEmployee) {
+    if ($userRole !== 'superadmin' || $scopedToEmployee) {
         $sql .= " AND lr.employee_id = ?";
         $params[] = $employeeId;
     }
@@ -364,7 +364,7 @@ if ($showOB) {
             'employee_name'    => $row['employee_name'],
             'employee_role'    => $row['employee_role'],
             'department_name'  => $row['department_name'],
-            'edit_role'        => reqEditRole($userRole === 'admin', $scopedToEmployee, $currentUserId, (int)$row['employee_id']),
+            'edit_role'        => reqEditRole($userRole === 'superadmin', $scopedToEmployee, $currentUserId, (int)$row['employee_id']),
             'edit_status'      => $row['status'],
             'initiator_name'   => $row['employee_name'],
             'photo_path'       => null,
@@ -399,7 +399,7 @@ if ($showLogEdit) {
         WHERE 1=1
     ";
     $params = [];
-    if ($userRole !== 'admin' || $scopedToEmployee) {
+    if ($userRole !== 'superadmin' || $scopedToEmployee) {
         $sql .= " AND ler.employee_id = ?";
         $params[] = $employeeId;
     }
@@ -470,7 +470,7 @@ if ($showChangeSched) {
           AND s.status IN ('pending', 'rejected')
     ";
     $params = [];
-    if ($userRole !== 'admin' || $scopedToEmployee) {
+    if ($userRole !== 'superadmin' || $scopedToEmployee) {
         $sql .= " AND s.employee_id = ?";
         $params[] = $employeeId;
     }
@@ -501,7 +501,7 @@ if ($showChangeSched) {
             'employee_name'    => $row['employee_name'],
             'employee_role'    => $row['employee_role'],
             'department_name'  => $row['department_name'],
-            'edit_role'        => reqEditRole($userRole === 'admin', $scopedToEmployee, $currentUserId, (int)$row['employee_id']),
+            'edit_role'        => reqEditRole($userRole === 'superadmin', $scopedToEmployee, $currentUserId, (int)$row['employee_id']),
             'edit_status'      => $row['status'],
             'initiator_name'   => $row['employee_name'],
             'photo_path'       => null,

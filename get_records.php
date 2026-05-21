@@ -12,7 +12,7 @@ require_once 'system_functions/system_service.php';
 header('Content-Type: application/json');
 date_default_timezone_set('Asia/Manila');
 
-$isAdmin    = $_SESSION['user_role'] === 'admin';
+$isAdmin    = $_SESSION['user_role'] === 'superadmin';
 $requested  = isset($_GET['employee_id']) ? (int)$_GET['employee_id'] : 0;
 $employeeId = ($isAdmin && $requested > 0) ? $requested : (int)$_SESSION['user_id'];
 

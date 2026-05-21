@@ -12,7 +12,7 @@ if (!$role) {
     exit();
 }
 
-if (!in_array($role, ['admin', 'employee'])) {
+if (!in_array($role, ['superadmin', 'employee'])) {
     session_destroy();
     header("Location: ../index.php");
     exit();
@@ -70,7 +70,7 @@ $schedulesOpen = in_array($currentPage, ['schedule', 'cutoffs']);
         <?php navLink('../regular_pages/dashboard_page.php', 'bi-columns-gap', 'Dashboard', $currentPage === 'dashboard'); ?>
         <?php navLink('../regular_pages/records_page.php', 'bi-bar-chart-steps',  'Records', $currentPage === 'records');    ?>
         
-        <?php if ($role === 'admin'): ?>
+        <?php if ($role === 'superadmin'): ?>
             
              <!-- SCHEDULE DROPDOWN -->
             <div class="sidebar-dropdown">
@@ -110,7 +110,7 @@ $schedulesOpen = in_array($currentPage, ['schedule', 'cutoffs']);
 
 
         <!-- ADMIN MENU -->
-        <?php if ($role === 'admin'): ?>
+        <?php if ($role === 'superadmin'): ?>
 
             <!-- MANAGE EMPLOYEES -->
             <?php navLink('../management_pages/admin_manage_employees.php',    'bi-people', 'Manage Employees',   $currentPage === 'manage_employees');   ?>

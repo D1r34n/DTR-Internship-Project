@@ -12,7 +12,7 @@ require_once '../db.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['quote_text'])) {
     header('Content-Type: application/json');
-    if (($_SESSION['user_role'] ?? '') !== 'admin') {
+    if (($_SESSION['user_role'] ?? '') !== 'superadmin') {
         echo json_encode(['success' => false, 'message' => 'Unauthorized']);
         exit();
     }
@@ -137,7 +137,7 @@ foreach ($weeklyRows as $row) {
     $weeklyAbsent[$idx]  = $count - (int)$row['present_count'];
 }
 
-$isAdmin = isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'admin';
+$isAdmin = isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'superadmin';
 
 // ── All users: employee ID ────────────────────────────────
 $empId = (int)$_SESSION['user_id'];

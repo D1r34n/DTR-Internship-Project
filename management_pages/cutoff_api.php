@@ -3,7 +3,7 @@ if (session_status() === PHP_SESSION_NONE) session_start();
 
 require_once '../db.php';
 
-if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'admin') {
+if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'superadmin') {
     http_response_code(403);
     echo json_encode(['error' => 'Unauthorized']);
     exit();

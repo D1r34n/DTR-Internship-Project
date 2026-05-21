@@ -3,7 +3,7 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'admin') {
+if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'superadmin') {
     header("Location: ../index.php");
     exit();
 }
@@ -53,6 +53,28 @@ if (!$empLookup) {
 $employeeId     = (int) $empLookup['id'];
 $urlEmpId   = $empLookup['employee_id'];
 $scheduleStatus = 'approved';
+
+// ---- CUTOFFS ----
+$pdo->exec("CREATE TABLE IF NOT EXISTS `cutoffs` (
+    `id`         bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+    `start_date` date NOT NULL,
+    `end_date`   date NOT NULL,
+    `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+    `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci");
+
+$cutoffs = $pdo->query("SELECT id, start_date, end_date FROM cutoffs ORDER BY start_date DESC")
+               ->fetchAll(PDO::FETCH_ASSOC);
+
+$activeCutoffId = null;
+if ($cutoffs) {
+    $requested = isset($_GET['cutoff']) ? (int)$_GET['cutoff'] : 0;
+    foreach ($cutoffs as $c) {
+        if ((int)$c['id'] === $requested) { $activeCutoffId = $requested; break; }
+    }
+    if (!$activeCutoffId) $activeCutoffId = (int)$cutoffs[0]['id'];
+}
 
 // ---- HANDLE EMPLOYEE EDIT ----
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'edit_employee') {
@@ -558,7 +580,7 @@ $leaveTypes = [
                     </div>
                 </div>
 
-                <?php if ($_SESSION['user_role'] === 'admin'): ?>
+                <?php if ($_SESSION['user_role'] === 'superadmin'): ?>
                 <!-- Actions -->
                 <div class="ev-actions">
                     <a href="#" data-bs-toggle="modal" data-bs-target="#edit-employee-modal" class="btn btn-info">
@@ -639,14 +661,14 @@ $leaveTypes = [
                 </div>
 
                 <div class="tab-pane fade" id="tab2" role="tabpanel">
-
                     <?php 
                     $recordsEmployeeId = $employeeId;
-                    $startDate      = $monthStart;
-                    $endDate        = $monthEnd;
-                    $recordsApiPath = '../get_records.php';
+                    $startDate         = $monthStart;
+                    $endDate           = $monthEnd;
+                    $recordsApiPath    = '../get_records.php';
+                    $cutoffs           = $cutoffs;
+                    $activeCutoffId    = $activeCutoffId;
                     include '../regular_pages/records_widget.php'; ?>
-
                 </div>
 
                 <div class="tab-pane fade" id="tab3" role="tabpanel">

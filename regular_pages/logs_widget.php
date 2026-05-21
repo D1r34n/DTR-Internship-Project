@@ -102,7 +102,7 @@ const COLS = {
         { label: 'Requested By'                   },
         { label: 'Edit Status'                    },
     ],
-    admin: [
+    superadmin: [
         { label: 'Date',         sort: 'date'     },
         { label: 'Time',         sort: 'time'     },
         { label: 'Employee'                       },
@@ -124,7 +124,7 @@ const COLS = {
 };
 
 function updateHeader(user_role, scoped_to_employee) {
-    const key  = user_role !== 'admin' ? 'employee' : (scoped_to_employee ? 'admin_scoped' : 'admin');
+    const key  = user_role !== 'superadmin' ? 'employee' : (scoped_to_employee ? 'admin_scoped' : 'superadmin');
     const cols = COLS[key];
     document.getElementById('logs_colgroup').innerHTML = '';
     document.getElementById('logs_header_row').innerHTML = cols.map(c =>
@@ -194,8 +194,8 @@ function renderLogRows({ meta, rows }) {
         const typeLabel = LOG_TYPE_LABEL[row.log_type] ?? row.log_type;
 
         let editRoleHtml = `<span style="color:rgba(255,255,255,0.15);font-size:0.75rem;">—</span>`;
-        if (row.edit_role === 'admin') {
-            editRoleHtml = `<span class="pill empRole-admin"><i class="bi bi-shield-fill"></i> ${esc(row.initiator_name ?? 'Admin')}</span>`;
+        if (row.edit_role === 'superadmin') {
+            editRoleHtml = `<span class="pill empRole-superadmin"><i class="bi bi-shield-fill"></i> ${esc(row.initiator_name ?? 'Super Admin')}</span>`;
         } else if (row.edit_role === 'self') {
             editRoleHtml = `<span class="pill"><i class="bi bi-person-fill"></i> You</span>`;
         } else if (row.edit_role === 'employee') {
@@ -212,7 +212,7 @@ function renderLogRows({ meta, rows }) {
         }
 
         let adminCols = '';
-        if (user_role === 'admin' && !scoped_to_employee) {
+        if (user_role === 'superadmin' && !scoped_to_employee) {
             const roleLabel = row.employee_role
                 ? row.employee_role.charAt(0).toUpperCase() + row.employee_role.slice(1)
                 : '';

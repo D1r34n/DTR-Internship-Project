@@ -17,7 +17,7 @@ $myRole = $_SESSION['user_role'] ?? '';
 // ================================================
 // ADMIN PATH — directly applies edit to any employee's log
 // ================================================
-if ($myRole === 'admin') {
+if ($myRole === 'superadmin') {
 
     $employeeId  = intval($_POST['employee_id'] ?? $myId);
     $logId       = intval($_POST['log_id']       ?? 0);
@@ -111,7 +111,7 @@ if ($myRole === 'admin') {
 // ================================================
 // EMPLOYEE PATH — editing own log
 // ================================================
-if (in_array($myRole, ['employee', 'admin'])) {
+if (in_array($myRole, ['employee', 'superadmin'])) {
 
     $employeeId  = $myId;
     $logId       = intval($_POST['log_id']       ?? 0);

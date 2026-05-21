@@ -6,7 +6,7 @@ if (!isset($_SESSION['user_id'])) {
     exit();
 }
 
-$isAdmin = isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'admin';
+$isAdmin = isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'superadmin';
 
 require_once '../db.php';
 date_default_timezone_set('Asia/Manila');

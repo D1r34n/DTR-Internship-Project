@@ -11,7 +11,7 @@ date_default_timezone_set('Asia/Manila');
 
 // Admin viewing a specific employee's calendar — richer scoped format
 $userRole         = $_SESSION['user_role'] ?? 'employee';
-$scopedToEmployee = $userRole === 'admin' && !empty($_GET['employee_id']);
+$scopedToEmployee = $userRole === 'superadmin' && !empty($_GET['employee_id']);
 
 if ($scopedToEmployee) {
     header('Content-Type: application/json');
@@ -474,7 +474,7 @@ foreach ($obMap as $obDate => $obStatus) {
 }
 
 // ---- ADMIN: all employees' leave & OB events ----
-if (($_SESSION['user_role'] ?? '') === 'admin') {
+if (($_SESSION['user_role'] ?? '') === 'superadmin') {
 
     $stmt = $pdo->prepare("
         SELECT lr.selected_dates, lr.start_date, lr.end_date, lr.status,

@@ -26,7 +26,7 @@ $employee = $stmt->fetch(PDO::FETCH_ASSOC);
 $role       = $_SESSION['user_role'];
 
 // Validate role
-if (!in_array($role, ['admin', 'employee'])) {
+if (!in_array($role, ['superadmin', 'manager', 'admin', 'workforce', 'employee'])) {
     session_destroy();
     header("Location: ../index.php");
     exit();
@@ -40,10 +40,10 @@ $titles = [
         'schedule'  => 'Employee Schedule',
         'logs'      => 'Activity Logs',
     ],
-    'admin' => [
-        'dashboard'         => 'Admin Dashboard',
-        'records'           => 'Admin Records',
-        'schedule'          => 'Admin Schedule',
+    'superadmin' => [
+        'dashboard'         => 'Super Admin Dashboard',
+        'records'           => 'Super Admin Records',
+        'schedule'          => 'Super Admin Schedule',
         'logs'              => 'Activity Logs',
         'manage_employees'  => 'Manage Employees',
         'employee_requests' => 'Employee Requests',

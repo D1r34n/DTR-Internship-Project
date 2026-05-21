@@ -1,6 +1,6 @@
 <?php
 if (session_status() === PHP_SESSION_NONE) session_start();
-$isAdmin = isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'admin';
+$isAdmin = isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'superadmin';
 
 require_once '../db.php';
 date_default_timezone_set('Asia/Manila');

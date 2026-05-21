@@ -40,11 +40,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         unset($_SESSION['must_change_password'], $_SESSION['change_password_shown']);
 
         $role = $_SESSION['user_role'] ?? 'employee';
-        if ($role === 'admin') {
-            header("Location: ../regular_pages/dashboard_page.php");
-        } else {
-            header("Location: ../regular_pages/employee_dashboard.php");
-        }
+        header("Location: ../regular_pages/dashboard_page.php");
         exit();
     }
 }

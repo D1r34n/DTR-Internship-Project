@@ -16,7 +16,7 @@
  *   $schedSaveApiPath    — POST endpoint for schedule save (admin-scoped only)
  */
 if (session_status() === PHP_SESSION_NONE) session_start();
-$isAdmin = isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'admin';
+$isAdmin = isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'superadmin';
 
 $schedApiPath        ??= '../get_schedule.php';
 $schedCalEvents      ??= [];
