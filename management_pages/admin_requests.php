@@ -46,77 +46,15 @@ if (isset($_GET['action'], $_GET['type'], $_GET['id'])) {
             $leStmt->execute([$id]);
             $le = $leStmt->fetch(PDO::FETCH_ASSOC);
 
-            if ($le['request_type'] === 'time_in') {
-                $pdo->prepare("
-                    UPDATE attendances SET
-                        actual_time_in     = ?,
-                        late_minutes       = GREATEST(0, TIMESTAMPDIFF(MINUTE, scheduled_start, ?)),
-                        total_work_minutes = GREATEST(0, TIMESTAMPDIFF(MINUTE, ?, COALESCE(actual_time_out, scheduled_end)) - COALESCE(break_minutes, 0)),
-                        status             = 'present'
-                    WHERE id = ?
-                ")->execute([
-                    $le['requested_time_in'],
-                    $le['requested_time_in'],
-                    $le['requested_time_in'],
-                    $le['attendance_id'],
-                ]);
+            // 1. Update the log row first
+            if ($le['log_id']) {
+                $newTime = $le['requested_time_in'] ?? $le['requested_time_out'];
+                $pdo->prepare("UPDATE logs SET log_time = ? WHERE id = ?")
+                    ->execute([$newTime, $le['log_id']]);
+            }
 
-                if ($le['log_id']) {
-                    $pdo->prepare("UPDATE logs SET log_time = ? WHERE id = ?")
-                        ->execute([$le['requested_time_in'], $le['log_id']]);
-                }
-
-            } elseif ($le['request_type'] === 'time_out') {
-                $pdo->prepare("
-                    UPDATE attendances SET
-                        actual_time_out    = ?,
-                        missed_time_out    = 0,
-                        status             = 'present',
-                        total_work_minutes = GREATEST(0, TIMESTAMPDIFF(MINUTE, actual_time_in, ?) - COALESCE(break_minutes, 0)),
-                        undertime_minutes  = GREATEST(0, TIMESTAMPDIFF(MINUTE, ?, scheduled_end)),
-                        overtime_minutes   = GREATEST(0, TIMESTAMPDIFF(MINUTE, scheduled_end, ?))
-                    WHERE id = ?
-                ")->execute([
-                    $le['requested_time_out'],
-                    $le['requested_time_out'],
-                    $le['requested_time_out'],
-                    $le['requested_time_out'],
-                    $le['attendance_id'],
-                ]);
-
-                if ($le['log_id']) {
-                    $pdo->prepare("UPDATE logs SET log_time = ? WHERE id = ?")
-                        ->execute([$le['requested_time_out'], $le['log_id']]);
-                }
-
-            } else { // both
-                $pdo->prepare("
-                    UPDATE attendances SET
-                        actual_time_in     = ?,
-                        actual_time_out    = ?,
-                        missed_time_out    = 0,
-                        status             = 'present',
-                        late_minutes       = GREATEST(0, TIMESTAMPDIFF(MINUTE, scheduled_start, ?)),
-                        total_work_minutes = GREATEST(0, TIMESTAMPDIFF(MINUTE, ?, ?) - COALESCE(break_minutes, 0)),
-                        undertime_minutes  = GREATEST(0, TIMESTAMPDIFF(MINUTE, ?, scheduled_end)),
-                        overtime_minutes   = GREATEST(0, TIMESTAMPDIFF(MINUTE, scheduled_end, ?))
-                    WHERE id = ?
-                ")->execute([
-                    $le['requested_time_in'],
-                    $le['requested_time_out'],
-                    $le['requested_time_in'],
-                    $le['requested_time_in'],
-                    $le['requested_time_out'],
-                    $le['requested_time_out'],
-                    $le['requested_time_out'],
-                    $le['attendance_id'],
-                ]);
-
-                if ($le['log_id']) {
-                    $pdo->prepare("UPDATE logs SET log_time = ? WHERE id = ?")
-                        ->execute([$le['requested_time_in'], $le['log_id']]);
-                }
-
+            // For 'both' request type, also update the OUT log
+            if ($le['request_type'] === 'both' && $le['requested_time_out']) {
                 $outLog = $pdo->prepare("
                     SELECT id FROM logs
                     WHERE employee_id = ? AND log_type = 'OUT' AND DATE(log_time) = ?
@@ -128,6 +66,26 @@ if (isset($_GET['action'], $_GET['type'], $_GET['id'])) {
                     $pdo->prepare("UPDATE logs SET log_time = ? WHERE id = ?")
                         ->execute([$le['requested_time_out'], $outLogId]);
                 }
+            }
+
+            // 2. Reset attendance status so finalizer can overwrite it
+            $pdo->prepare("
+                UPDATE attendances SET status = 'incomplete'
+                WHERE id = ?
+            ")->execute([$le['attendance_id']]);
+
+            // 3. Re-finalize after commit
+            $schedStmt = $pdo->prepare("
+                SELECT schedule_date, scheduled_start, scheduled_end
+                FROM schedules
+                WHERE employee_id = ? AND schedule_date = ?
+            ");
+            $schedStmt->execute([$le['employee_id'], $le['work_date']]);
+            $schedule = $schedStmt->fetch(PDO::FETCH_ASSOC);
+
+            if ($schedule) {
+                require_once __DIR__ . '/../system_functions/system_service.php';
+                finalizeEmployeeAttendance($pdo, (int)$le['employee_id'], $schedule, date('Y-m-d H:i:s'));
             }
         }
 

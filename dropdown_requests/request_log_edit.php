@@ -63,6 +63,10 @@ if ($myRole === 'superadmin') {
     try {
         $pdo->beginTransaction();
 
+        // 1. Update log row first
+        $pdo->prepare("UPDATE logs SET log_time = ? WHERE id = ?")->execute([$newDT, $logId]);
+
+        // 2. Insert audit record
         $pdo->prepare("
             INSERT INTO log_edit_requests
                 (employee_id, attendance_id, log_id, work_date,
@@ -73,32 +77,29 @@ if ($myRole === 'superadmin') {
             $requestType, $reqTimeIn, $reqTimeOut, $reason, $myId,
         ]);
 
-        if ($att && $requestType === 'time_in') {
+        // 3. Reset status so finalizer can overwrite it
+        if ($att) {
             $pdo->prepare("
-                UPDATE attendances SET
-                    actual_time_in     = ?,
-                    late_minutes       = GREATEST(0, TIMESTAMPDIFF(MINUTE, scheduled_start, ?)),
-                    total_work_minutes = GREATEST(0, TIMESTAMPDIFF(MINUTE, ?, COALESCE(actual_time_out, scheduled_end)) - COALESCE(break_minutes, 0)),
-                    status             = 'present'
-                WHERE id = ?
-            ")->execute([$newDT, $newDT, $newDT, $att['id']]);
-        } elseif ($att && $requestType === 'time_out') {
-            $pdo->prepare("
-                UPDATE attendances SET
-                    actual_time_out    = ?,
-                    missed_time_out    = 0,
-                    status             = 'present',
-                    total_work_minutes = GREATEST(0, TIMESTAMPDIFF(MINUTE, actual_time_in, ?) - COALESCE(break_minutes, 0)),
-                    undertime_minutes  = GREATEST(0, TIMESTAMPDIFF(MINUTE, ?, scheduled_end)),
-                    overtime_minutes   = GREATEST(0, TIMESTAMPDIFF(MINUTE, scheduled_end, ?))
-                WHERE id = ?
-            ")->execute([$newDT, $newDT, $newDT, $newDT, $att['id']]);
+                UPDATE attendances SET status = 'incomplete'
+                WHERE employee_id = ? AND work_date = ?
+            ")->execute([$employeeId, $workDate]);
         }
-        // break_in / break_out: only update the log timestamp, no attendance recalculation
-
-        $pdo->prepare("UPDATE logs SET log_time = ? WHERE id = ?")->execute([$newDT, $logId]);
 
         $pdo->commit();
+
+        // 4. Re-finalize AFTER commit so it reads the updated log
+        $schedStmt = $pdo->prepare("
+            SELECT schedule_date, scheduled_start, scheduled_end
+            FROM schedules
+            WHERE employee_id = ? AND schedule_date = ?
+        ");
+        $schedStmt->execute([$employeeId, $workDate]);
+        $schedule = $schedStmt->fetch(PDO::FETCH_ASSOC);
+
+        if ($schedule) {
+            finalizeEmployeeAttendance($pdo, $employeeId, $schedule, date('Y-m-d H:i:s'));
+        }
+
         echo json_encode(['success' => true, 'message' => 'Log updated successfully.']);
 
     } catch (Exception $e) {
