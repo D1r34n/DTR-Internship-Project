@@ -227,7 +227,7 @@
 #obCalendar .fc-scroller::-webkit-scrollbar-thumb:hover { background: #97be41; }
 
 /* ---------- Input / textarea ---------- */
-#obModal .form-control {
+#obModal .form-control:not(textarea) {
     background: rgba(0, 0, 0, 0.3) !important;
     border: 1px solid rgba(255, 255, 255, 0.15) !important;
     color: #fff !important;
@@ -236,9 +236,9 @@
     border-radius: 8px;
 }
 
-#obModal .form-control::placeholder { color: rgba(255, 255, 255, 0.3); }
+#obModal .form-control:not(textarea)::placeholder { color: rgba(255, 255, 255, 0.3); }
 
-#obModal .form-control:focus {
+#obModal .form-control:not(textarea):focus {
     border-color: #97be41 !important;
     box-shadow: none !important;
     background: rgba(0, 0, 0, 0.3) !important;

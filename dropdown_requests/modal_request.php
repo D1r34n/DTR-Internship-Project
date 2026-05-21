@@ -295,7 +295,7 @@
     const list = document.getElementById('otGanttList');
     list.innerHTML = '<p class="ot-gantt-loading">Loading...</p>';
 
-    fetch('get_ot_records.php')
+    fetch('/DTR-Internship-Project/dropdown_requests/get_ot_records.php')
       .then(res => res.json())
       .then(records => {
         if (!Array.isArray(records) || records.length === 0) {
@@ -536,7 +536,7 @@
     document.getElementById('leaveSelectedDates').style.display    = 'none';
     document.getElementById('leaveSelectedDatesText').textContent  = '';
 
-    fetch(`get_schedule_dates.php?leave_type=${encodeURIComponent(value)}`)
+    fetch(`/DTR-Internship-Project/dropdown_requests/get_schedule_dates.php?leave_type=${encodeURIComponent(value)}`)
       .then(res => res.json())
       .then(data => {
         leaveScheduledDates = data.scheduledDates ?? [];
@@ -754,7 +754,7 @@
     obScheduledDates = [];
     obExistingDates  = [];
 
-    fetch('get_ob_dates.php')
+    fetch('/DTR-Internship-Project/dropdown_requests/get_ob_dates.php')
       .then(res => res.json())
       .then(data => {
         obScheduledDates = data.scheduledDates ?? [];
@@ -951,7 +951,7 @@
     const tbody = document.getElementById('leLogsBody');
     tbody.innerHTML = '<tr><td colspan="4" class="le-logs-loading">Loading...</td></tr>';
 
-    fetch('get_logedit_logs.php')
+    fetch('/DTR-Internship-Project/dropdown_requests/get_logedit_logs.php')
       .then(r => r.json())
       .then(logs => {
         if (!logs.length) {

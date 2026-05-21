@@ -339,8 +339,8 @@ body {
 }
 
 .wa-icon-glass-purple {
-    background: var(--superadmin-bg);
-    border-color: var(--superadmin-border);
+    background: rgba(111, 66, 193, 0.12);
+    border-color: rgba(111, 66, 193, 0.40);
 }
 
 .carousel-item {
