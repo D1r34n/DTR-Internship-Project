@@ -655,7 +655,7 @@ for ($i = 0; $i < 7; $i++) {
                                 </div>
 
                                 <div class="d-flex">
-                                    <a class="btn btn-sm btn-success ms-auto" href="../regular_pages/employee_schedule.php?filter=birthday">
+                                    <a class="btn btn-sm btn-purple ms-auto" href="../regular_pages/employee_schedule.php?filter=birthday">
                                         View All Birthdays <i class="bi bi-chevron-right"></i>
                                     </a>
                                 </div>
