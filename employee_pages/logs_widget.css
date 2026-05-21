@@ -38,17 +38,15 @@
     flex: 0 0 auto;
 }
 
-/* Table — no forced min-width; scrollable wrapper handles overflow */
+/* Table — auto layout so cells size to content; wrapper handles scroll */
 .logs-widget table {
-    width: 100%;
-    min-width: 520px;   /* tight minimum so it fits in narrow widgets */
-    table-layout: fixed;
+    width: max-content;
+    min-width: 100%;
+    table-layout: auto;
 }
 
 .logs-widget th,
 .logs-widget td {
-    overflow: hidden;
-    text-overflow: ellipsis;
     white-space: nowrap;
     padding: 6px 8px;
     font-size: 0.8rem;

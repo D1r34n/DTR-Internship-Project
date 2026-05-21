@@ -569,9 +569,9 @@ if (!$isAdmin) {
             <div class="col-6 dash-col">
 
                 <!-- Activity Logs Card -->
-                <div class="card card-info mb-2">
-                    <div class="card-body">
-                        <div class="hstack gap-2 align-items-center">
+                <div class="card card-info mb-2 d-flex flex-column" style="flex:1 1 0;min-height:0;overflow:hidden;">
+                    <div class="card-body d-flex flex-column overflow-hidden">
+                        <div class="hstack gap-2 align-items-center mb-2">
                             <div class="icon-box icon-box-sm icon-box-info">
                                 <i class="bi bi-journal-text"></i>
                             </div>
