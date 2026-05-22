@@ -65,16 +65,16 @@ if ($action === 'download_template') {
     ]);
     $sheet->getRowDimension(1)->setRowHeight(22);
 
-    foreach (['A' => 'Format: MMM D, YYYY (e.g. May 1, 2026).', 'B' => 'Format: MMM D, YYYY. Must be on or after Start Date.'] as $col => $note) {
+    foreach (['A' => 'Format: DD-Mon-YYYY (e.g. 01-May-2026).', 'B' => 'Format: DD-Mon-YYYY. Must be on or after Start Date.'] as $col => $note) {
         $comment = $sheet->getComment($col . '1');
         $comment->getText()->createTextRun($note);
         $comment->setWidth('200pt')->setHeight('50pt');
     }
 
-    $sheet->setCellValue('A2', 'May 1, 2026');
-    $sheet->setCellValue('B2', 'May 15, 2026');
-    $sheet->setCellValue('A3', 'May 16, 2026');
-    $sheet->setCellValue('B3', 'May 31, 2026');
+    $sheet->setCellValue('A2', '01-May-2026');
+    $sheet->setCellValue('B2', '15-May-2026');
+    $sheet->setCellValue('A3', '16-May-2026');
+    $sheet->setCellValue('B3', '31-May-2026');
 
     foreach (['A', 'B'] as $col) {
         $sheet->getColumnDimension($col)->setWidth(16);

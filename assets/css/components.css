@@ -285,6 +285,9 @@ hr {
 
 .modal-body textarea {
     padding: 0.6rem 0.8rem !important;
+    height: auto !important;
+    overflow: auto !important;
+    resize: none;
 }
 
 .modal-body .form-control {
@@ -1003,6 +1006,12 @@ button.btn-sm {
 
 .card:hover {
     transform: translateY(-2px);
+}
+
+.card-locked {
+    opacity: 0.45;
+    pointer-events: none;
+    user-select: none;
 }
 
 .card-neutral {

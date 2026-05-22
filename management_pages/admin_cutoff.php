@@ -272,16 +272,13 @@ document.addEventListener('DOMContentLoaded', function () {
         return localDateStr(d);
     }
 
-    function weekdayEvents(startStr, endStr) {
+    function rangeEvents(startStr, endStr) {
         const events = [];
         const end = new Date(endStr + 'T00:00:00');
         const cur = new Date(startStr + 'T00:00:00');
         while (cur <= end) {
-            const dow = cur.getDay();
-            if (dow !== 0 && dow !== 6) {
-                const d = localDateStr(cur);
-                events.push({ start: d, end: nextDay(d), display: 'background', color: 'rgba(151,190,65,0.30)' });
-            }
+            const d = localDateStr(cur);
+            events.push({ start: d, end: nextDay(d), display: 'background', color: 'rgba(151,190,65,0.30)' });
             cur.setDate(cur.getDate() + 1);
         }
         return events;
@@ -412,7 +409,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 },
                 selectable:           false,
                 editable:             false,
-                events:               weekdayEvents(c.start_date, c.end_date),
+                events:               rangeEvents(c.start_date, c.end_date),
             }
         );
         calendarInst.render();

@@ -157,8 +157,10 @@
 
       <div class="modal-body" style="display:flex;flex-direction:column;gap:1rem;">
 
+        <small class="text-tertiary" style="line-height:1.5;">Enter the corrected time for any log below — you can submit one edit or both at once.</small>
+
         <!-- Time In Card -->
-        <div class="card card-success">
+        <div id="log-edit-card-in" class="card card-success">
           <div class="card-body">
             <div class="card-header p-0">
               <div class="hstack d-flex mb-3">
@@ -166,55 +168,63 @@
                   <i class="bi bi-box-arrow-in-right"></i>
                 </div>
                 <span class="text-primary ms-3 fw-bold">Time In</span>
-                <span class="text-primary ms-auto">
+                <span class="text-primary ms-auto d-flex align-items-center gap-1">
                   Current:
-                  <span class="text-secondary fw-bold" id="log-edit-current-in">No Time In</span>
+                  <span class="text-secondary fw-bold" id="log-edit-current-in"></span>
+                  <span id="log-edit-status-in" class="badge rounded-pill" style="display:none !important"></span>
                 </span>
-                
               </div>
             </div>
 
             <div class="vstack d-flex gap-3">
-              <input type="time" id="log-edit-new-time-in" class="form-control">
-              <textarea id="log-edit-reason-time-in" class="form-control" rows="4" placeholder="Reason (optional)"></textarea>
-              
-              <button type="button" class="btn btn-success w-100" id="log-edit-submit-time-in" onclick="submitLeTodayLog('IN')" disabled>
-                <i class="bi bi-send"></i> Submit time in edit
-              </button>
+              <div class="input-group">
+                <input type="time" id="log-edit-new-time-in" class="form-control">
+                <button type="button" class="input-group-text" style="cursor:pointer;" tabindex="-1" onclick="clearLeInput('in')">
+                  <i class="bi bi-x-lg" style="font-size:0.7rem;"></i>
+                </button>
+              </div>
+              <div><textarea id="log-edit-reason-time-in" class="form-control" rows="4" placeholder="Reason (optional)"></textarea></div>
             </div>
 
           </div>
         </div>
 
         <!-- Time Out Card -->
-        <div class="card card-danger">
+        <div id="log-edit-card-out" class="card card-danger">
           <div class="card-body">
             <div class="card-header p-0">
               <div class="hstack d-flex mb-3">
                 <div class="icon-box icon-box-sm icon-box-danger">
                   <i class="bi bi-box-arrow-right"></i>
                 </div>
-                <span class="text-danger ms-3 fw-bold">Time Out</span>
-                <span class="text-danger ms-auto">
+                <span class="text-primary ms-3 fw-bold">Time Out</span>
+                <span class="text-primary ms-auto d-flex align-items-center gap-1">
                   Current:
-                  <span class="text-secondary fw-bold" id="log-edit-current-out">No Time Out</span>
+                  <span class="text-secondary fw-bold" id="log-edit-current-out"></span>
+                  <span id="log-edit-status-out" class="badge rounded-pill" style="display:none"></span>
                 </span>
               </div>
             </div>
 
             <div class="vstack d-flex gap-3">
-              <input type="time" id="log-edit-new-time-out" class="form-control">
-              <textarea id="log-edit-reason-time-out" class="form-control" rows="4" placeholder="Reason (optional)"></textarea>
-
-              <button type="button" class="btn btn-success w-100" id="log-edit-submit-time-out" onclick="submitLeTodayLog('OUT')" disabled>
-                <i class="bi bi-send"></i> Submit time out edit
-              </button>
+              <div class="input-group">
+                <input type="time" id="log-edit-new-time-out" class="form-control">
+                <button type="button" class="input-group-text" style="cursor:pointer;" tabindex="-1" onclick="clearLeInput('out')">
+                  <i class="bi bi-x-lg" style="font-size:0.7rem;"></i>
+                </button>
+              </div>
+              <div><textarea id="log-edit-reason-time-out" class="form-control" rows="4" placeholder="Reason (optional)"></textarea></div>
             </div>
 
           </div>
         </div>
       </div>
 
+      <div class="modal-footer">        
+        <button type="button" class="btn btn-neutral w-100" id="log-edit-submit-btn" disabled onclick="submitLeEdit()">
+          <i class="bi bi-send"></i> Submit Edit
+        </button>
+      </div>
     </div>
   </div>
 </div>
@@ -266,6 +276,9 @@
     otModal    = new bootstrap.Modal(document.getElementById('otModal'));
     leaveModal = new bootstrap.Modal(document.getElementById('leaveModal'));
     obModal    = new bootstrap.Modal(document.getElementById('obModal'));
+
+    document.getElementById('log-edit-new-time-in').addEventListener('input', updateLeSubmitBtn);
+    document.getElementById('log-edit-new-time-out').addEventListener('input', updateLeSubmitBtn);
   });
 
   // ===== OT MODAL =====
@@ -931,30 +944,72 @@
     modal.show();
   }
 
+  const timeInSelect = document.getElementById('log-edit-new-time-in');
+  const timeOutSelect = document.getElementById('log-edit-new-time-out');
+
+  // Time IN picker
+  timeInSelect.addEventListener('click', () => {
+      try {
+          timeInSelect.showPicker?.();
+      } catch (error) {
+          console.log("Picker not supported or failed:", error);
+      }
+  });
+
+  // Time OUT picker
+  timeOutSelect.addEventListener('click', () => {
+      try {
+          timeOutSelect.showPicker?.();
+      } catch (error) {
+          console.log("Picker not supported or failed:", error);
+      }
+  });
+
   document.getElementById('logEditModal').addEventListener('hidden.bs.modal', function () {
     le2LogIdIn  = null;
     le2LogIdOut = null;
     document.getElementById('log-edit-reason-time-in').value  = '';
     document.getElementById('log-edit-reason-time-out').value = '';
+    const btn = document.getElementById('log-edit-submit-btn');
+    btn.disabled  = true;
+    btn.className = 'btn btn-neutral w-100';
+    btn.innerHTML = '<i class="bi bi-send"></i> Submit Edit';
   });
 
+  function setLeCardLocked(type, locked) {
+    document.getElementById(`log-edit-card-${type}`).classList.toggle('card-locked', locked);
+    document.getElementById(`log-edit-new-time-${type}`).disabled = locked;
+  }
+
+  function setLeStatus(type, status) {
+    const el = document.getElementById(`log-edit-status-${type}`);
+    el.className = 'badge rounded-pill';
+    if (!status) { el.style.setProperty('display', 'none', 'important'); return; }
+    el.style.removeProperty('display');
+    const cfg = {
+      pending:  ['status-pending',  '<i class="bi bi-hourglass-split"></i> Pending'],
+      approved: ['status-approved', '<i class="bi bi-check-circle-fill"></i> Edited'],
+      norecord: ['status-rejected', `<i class="bi bi-x-circle-fill"></i> No Time ${type === 'in' ? 'In' : 'Out'}`],
+    }[status];
+    el.classList.add(cfg[0]);
+    el.innerHTML = cfg[1];
+  }
+
   function loadLeTodayLogs() {
-    document.getElementById('log-edit-current-in').textContent  = '—';
-    document.getElementById('log-edit-current-out').textContent = '—';
     document.getElementById('log-edit-new-time-in').value  = '';
     document.getElementById('log-edit-new-time-out').value = '';
     document.getElementById('log-edit-reason-time-in').value  = '';
     document.getElementById('log-edit-reason-time-out').value = '';
 
-    const btnIn  = document.getElementById('log-edit-submit-time-in');
-    const btnOut = document.getElementById('log-edit-submit-time-out');
     const inpIn  = document.getElementById('log-edit-new-time-in');
     const inpOut = document.getElementById('log-edit-new-time-out');
 
-    btnIn.disabled  = true;
-    btnOut.disabled = true;
-    inpIn.disabled  = false;
-    inpOut.disabled = false;
+    setLeCardLocked('in', false);
+    setLeCardLocked('out', false);
+    setLeStatus('in', null);
+    setLeStatus('out', null);
+    document.getElementById('log-edit-current-in').textContent  = '';
+    document.getElementById('log-edit-current-out').textContent = '';
 
     fetch('/DTR-Internship-Project/dropdown_requests/get_logedit_logs.php')
       .then(r => r.json())
@@ -968,66 +1023,121 @@
           const timeOnly   = `${pad(dt.getHours())}:${pad(dt.getMinutes())}`;
           const fmt        = dt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
           const hasPending = log.has_pending == 1;
-
+          const hasApproved = log.has_approved == 1;
           if (log.log_type === 'IN') {
             le2LogIdIn = log.log_id;
+
             document.getElementById('log-edit-current-in').textContent = fmt;
-            inpIn.value    = timeOnly;
-            inpIn.disabled = hasPending;
-            document.getElementById('log-edit-reason-time-in').disabled = hasPending;
-            btnIn.disabled  = hasPending;
-            btnIn.innerHTML = hasPending
-              ? '<i class="bi bi-hourglass-split"></i> Edit pending approval'
-              : '<i class="bi bi-send"></i> Submit time in edit';
+
+            setLeCardLocked('in', hasPending || hasApproved);
+            setLeStatus('in', hasPending ? 'pending' : hasApproved ? 'approved' : null);
           } else if (log.log_type === 'OUT') {
             le2LogIdOut = log.log_id;
+
             document.getElementById('log-edit-current-out').textContent = fmt;
-            inpOut.value    = timeOnly;
-            inpOut.disabled = hasPending;
-            document.getElementById('log-edit-reason-time-out').disabled = hasPending;
-            btnOut.disabled  = hasPending;
-            btnOut.innerHTML = hasPending
-              ? '<i class="bi bi-hourglass-split"></i> Edit pending approval'
-              : '<i class="bi bi-send"></i> Submit time out edit';
+
+            setLeCardLocked('out', hasPending || hasApproved);
+            setLeStatus('out', hasPending ? 'pending' : hasApproved ? 'approved' : null);
           }
         });
+
+        if (!le2LogIdIn) {
+          setLeCardLocked('in', true);
+          setLeStatus('in', 'norecord');
+        }
+        if (!le2LogIdOut) {
+          setLeCardLocked('out', true);
+          setLeStatus('out', 'norecord');
+        }
+
+        updateLeSubmitBtn();
       })
       .catch(() => showToast("Failed to load today's logs.", 'danger'));
   }
 
-  function submitLeTodayLog(type) {
-    const logId   = type === 'IN' ? le2LogIdIn  : le2LogIdOut;
-    const timeVal = document.getElementById(type === 'IN' ? 'log-edit-new-time-in'  : 'log-edit-new-time-out').value;
-    const reason  = document.getElementById(type === 'IN' ? 'log-edit-reason-time-in' : 'log-edit-reason-time-out').value.trim();
+  function clearLeInput(type) {
+    document.getElementById(type === 'in' ? 'log-edit-new-time-in' : 'log-edit-new-time-out').value = '';
+    updateLeSubmitBtn();
+  }
 
-    if (!logId) return;
-    if (!timeVal) { showToast('Please enter a new time.', 'danger'); return; }
+  function updateLeSubmitBtn() {
+    const btn    = document.getElementById('log-edit-submit-btn');
+    const inpIn  = document.getElementById('log-edit-new-time-in');
+    const inpOut = document.getElementById('log-edit-new-time-out');
 
-    // type="time" returns HH:MM — combine with today's date for the full datetime
+    const hasIn  = !inpIn.disabled  && inpIn.value  && le2LogIdIn;
+    const hasOut = !inpOut.disabled && inpOut.value && le2LogIdOut;
+
+    if (hasIn && hasOut) {
+      btn.disabled  = false;
+      btn.className = 'btn btn-success w-100';
+      btn.innerHTML = '<i class="bi bi-send"></i> Submit Both Edit';
+    } else if (hasIn) {
+      btn.disabled  = false;
+      btn.className = 'btn btn-success w-100';
+      btn.innerHTML = '<i class="bi bi-send"></i> Submit Time In Edit';
+    } else if (hasOut) {
+      btn.disabled  = false;
+      btn.className = 'btn btn-success w-100';
+      btn.innerHTML = '<i class="bi bi-send"></i> Submit Time Out Edit';
+    } else {
+      btn.disabled  = true;
+      btn.className = 'btn btn-neutral w-100';
+      btn.innerHTML = '<i class="bi bi-send"></i> Submit Edit';
+    }
+  }
+
+  async function submitLeEdit() {
+    const inpIn  = document.getElementById('log-edit-new-time-in');
+    const inpOut = document.getElementById('log-edit-new-time-out');
+
+    const hasIn  = !inpIn.disabled  && inpIn.value  && le2LogIdIn;
+    const hasOut = !inpOut.disabled && inpOut.value && le2LogIdOut;
+
     const today = new Date();
     const pad   = n => String(n).padStart(2, '0');
-    const newDatetime = `${today.getFullYear()}-${pad(today.getMonth()+1)}-${pad(today.getDate())} ${timeVal}:00`;
+    const datePrefix = `${today.getFullYear()}-${pad(today.getMonth()+1)}-${pad(today.getDate())}`;
 
-    const formData = new FormData();
-    formData.append('log_id',       logId);
-    formData.append('new_datetime', newDatetime);
-    formData.append('reason',       reason);
+    const postEdit = (logId, timeVal, reason) => {
+      const fd = new FormData();
+      fd.append('log_id',       logId);
+      fd.append('new_datetime', `${datePrefix} ${timeVal}:00`);
+      fd.append('reason',       reason);
+      return fetch('/DTR-Internship-Project/dropdown_requests/request_log_edit.php', { method: 'POST', body: fd })
+        .then(r => r.json());
+    };
 
-    fetch('/DTR-Internship-Project/dropdown_requests/request_log_edit.php', {
-      method: 'POST',
-      body: formData
-    })
-      .then(r => r.json())
-      .then(data => {
-        if (data.success) {
-          showToast(data.message, 'success');
-          const modal = bootstrap.Modal.getInstance(document.getElementById('logEditModal'));
-          if (modal) setTimeout(() => modal.hide(), 1500);
+    try {
+      if (hasIn && hasOut) {
+        const [rIn, rOut] = await Promise.all([
+          postEdit(le2LogIdIn,  inpIn.value,  document.getElementById('log-edit-reason-time-in').value.trim()),
+          postEdit(le2LogIdOut, inpOut.value, document.getElementById('log-edit-reason-time-out').value.trim()),
+        ]);
+        if (rIn.success && rOut.success) {
+          showToast('Both log edits submitted for approval.', 'success');
+        } else if (rIn.success) {
+          showToast('Time In submitted. Time Out: ' + rOut.message, 'warning');
+        } else if (rOut.success) {
+          showToast('Time Out submitted. Time In: ' + rIn.message, 'warning');
         } else {
-          showToast(data.message, 'danger');
+          showToast(rIn.message || rOut.message, 'danger');
+          return;
         }
-      })
-      .catch(() => showToast('Something went wrong. Please try again.', 'danger'));
+      } else if (hasIn) {
+        const r = await postEdit(le2LogIdIn, inpIn.value, document.getElementById('log-edit-reason-time-in').value.trim());
+        if (!r.success) { showToast(r.message, 'danger'); return; }
+        showToast(r.message, 'success');
+      } else if (hasOut) {
+        const r = await postEdit(le2LogIdOut, inpOut.value, document.getElementById('log-edit-reason-time-out').value.trim());
+        if (!r.success) { showToast(r.message, 'danger'); return; }
+        showToast(r.message, 'success');
+      }
+
+      const modal = bootstrap.Modal.getInstance(document.getElementById('logEditModal'));
+      if (modal) setTimeout(() => modal.hide(), 1500);
+    } catch {
+      showToast('Something went wrong. Please try again.', 'danger');
+    }
   }
 
 </script>
