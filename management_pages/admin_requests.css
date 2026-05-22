@@ -282,7 +282,8 @@ body {
 /* ============================================================
    REQUEST TABLE  (matches logs_page table-scroll-wrapper pattern)
    ============================================================ */
-.reqTabContent .table-scroll-wrapper {
+.reqTabContent .table-scroll-wrapper,
+.tableScroll {
     flex: 1;
     min-height: 0;
     overflow: auto;
@@ -295,7 +296,24 @@ body {
     padding-right: 1rem;
 }
 
-.reqTabContent thead th {
+/* Let content drive column widths — mirrors logs_widget table rules */
+.reqTabContent .table-scroll-wrapper table,
+.tableScroll table {
+    width: max-content;
+    min-width: 100%;
+    table-layout: auto;
+}
+
+.reqTabContent th,
+.reqTabContent td,
+.tableScroll th,
+.tableScroll td {
+    white-space: nowrap;
+    vertical-align: middle;
+}
+
+.reqTabContent thead th,
+.tableScroll thead th {
     position: sticky;
     top: 0;
     z-index: 2;
@@ -304,11 +322,8 @@ body {
     -webkit-backdrop-filter: blur(12px);
 }
 
-.reqTabContent tbody tr td {
-    vertical-align: middle;
-}
-
-.reqTabContent tbody tr:hover td {
+.reqTabContent tbody tr:hover td,
+.tableScroll tbody tr:hover td {
     background-color: rgba(151, 190, 65, 0.08);
     color: #fff;
 }
@@ -320,6 +335,7 @@ body {
     white-space: normal;
     word-wrap: break-word;
     word-break: break-word;
+    max-width: 220px;
 }
 
 .reqTabContent td.actionsCol {

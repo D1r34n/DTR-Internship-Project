@@ -141,7 +141,7 @@ if ($showLogs) {
     $editMap    = [];
     $editSql = "
         SELECT ler.log_id, ler.status,
-               ler.initiated_by_id, r_init.role_key AS initiator_role, e_init.first_name AS initiator_name
+               ler.initiated_by_id, r_init.role_key AS initiator_role, CONCAT(e_init.first_name, ' ', e_init.last_name) AS initiator_name
         FROM log_edit_requests ler
         JOIN logs l ON l.id = ler.log_id
         LEFT JOIN employees e ON ler.employee_id = e.id

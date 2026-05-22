@@ -205,12 +205,14 @@ $leBaseSql = "
            CONCAT(e.first_name, ' ', e.last_name) AS employee_name,
            COALESCE(a.work_date, le.work_date) AS work_date,
            l.log_time AS original_log_time,
-           CONCAT(r.first_name, ' ', r.last_name) AS requested_by_name
+           CONCAT(r.first_name, ' ', r.last_name) AS requested_by_name,
+           rr.role_key AS requested_by_role
     FROM log_edit_requests le
     JOIN employees e ON le.employee_id = e.id
     LEFT JOIN attendances a ON le.attendance_id = a.id
     LEFT JOIN logs l ON le.log_id = l.id
-    LEFT JOIN employees r ON le.initiated_by_id = r.id";
+    LEFT JOIN employees r ON le.initiated_by_id = r.id
+    LEFT JOIN roles rr ON r.role_id = rr.id";
 if ($deptScoped) {
     $s = $pdo->prepare($leBaseSql . " WHERE e.department_id = ? ORDER BY le.created_at DESC");
     $s->execute([$myDeptId]);
@@ -220,6 +222,13 @@ if ($deptScoped) {
 }
 
 // ---- HELPER FUNCTIONS ----
+function getRolePill(?string $name, ?string $role): string {
+    if (!$name) return '<span style="color:rgba(255,255,255,0.3)">—</span>';
+    $icon  = $role === 'superadmin' ? 'bi-shield-fill' : 'bi-person-fill';
+    $class = $role ? 'empRoleBadge empRole-' . htmlspecialchars($role) : '';
+    return '<span class="pill ' . $class . '"><i class="bi ' . $icon . '"></i> ' . htmlspecialchars($name) . '</span>';
+}
+
 function getStatusBadge($status) {
     $badges = [
         'pending'  => '<span class="badge status-pending">Pending</span>',
@@ -444,10 +453,6 @@ function getActionButtons($type, $id, $status) {
                 <div id="all" class="tab-pane fade show active reqTabContent" role="tabpanel">
                     <div class="table-scroll-wrapper">
                         <table class="table table-hover mb-0">
-                            <colgroup>
-                                <col style="width:22%"><col style="width:14%"><col style="width:24%">
-                                <col style="width:20%"><col style="width:10%"><col style="width:10%">
-                            </colgroup>
                             <thead><tr>
                                 <th>Employee</th><th>Type</th><th>Details</th>
                                 <th>Reason</th><th>Status</th><th>Actions</th>
@@ -514,10 +519,6 @@ function getActionButtons($type, $id, $status) {
                 <div id="leave" class="tab-pane fade reqTabContent" role="tabpanel">
                     <div class="table-scroll-wrapper">
                         <table class="table table-hover mb-0">
-                            <colgroup>
-                                <col style="width:20%"><col style="width:13%"><col style="width:12%">
-                                <col style="width:12%"><col style="width:20%"><col style="width:10%"><col style="width:13%">
-                            </colgroup>
                             <thead><tr>
                                 <th>Employee</th><th>Leave Type</th><th>Start</th>
                                 <th>End</th><th>Reason</th><th>Status</th><th>Actions</th>
@@ -547,10 +548,6 @@ function getActionButtons($type, $id, $status) {
                 <div id="overtime" class="tab-pane fade reqTabContent" role="tabpanel">
                     <div class="table-scroll-wrapper">
                         <table class="table table-hover mb-0">
-                            <colgroup>
-                                <col style="width:20%"><col style="width:13%"><col style="width:11%">
-                                <col style="width:11%"><col style="width:20%"><col style="width:10%"><col style="width:15%">
-                            </colgroup>
                             <thead><tr>
                                 <th>Employee</th><th>Date</th><th>Time In</th>
                                 <th>Time Out</th><th>Reason</th><th>Status</th><th>Actions</th>
@@ -580,10 +577,6 @@ function getActionButtons($type, $id, $status) {
                 <div id="log-edit" class="tab-pane fade reqTabContent" role="tabpanel">
                     <div class="table-scroll-wrapper">
                         <table class="table table-hover mb-0">
-                            <colgroup>
-                                <col style="width:13%"><col style="width:8%"><col style="width:8%"><col style="width:9%">
-                                <col style="width:13%"><col style="width:14%"><col style="width:12%"><col style="width:9%"><col style="width:14%">
-                            </colgroup>
                             <thead><tr>
                                 <th>Employee</th><th>Date</th><th>Type</th><th>Current Log</th>
                                 <th>Correction</th><th>Reason</th><th>Requested By</th><th>Status</th><th>Actions</th>
@@ -611,7 +604,7 @@ function getActionButtons($type, $id, $status) {
                                                 <?php endif; ?>
                                             </td>
                                             <td class="reasonCol"><?= htmlspecialchars($row['reason']) ?></td>
-                                            <td><?= $row['requested_by_name'] ? htmlspecialchars($row['requested_by_name']) : '—' ?></td>
+                                            <td><?= getRolePill($row['requested_by_name'] ?? null, $row['requested_by_role'] ?? null) ?></td>
                                             <td><?= getStatusBadge($row['status']) ?></td>
                                             <td class="actionsCol"><?= getActionButtons('log_edit', $row['id'], $row['status']) ?></td>
                                         </tr>
@@ -628,10 +621,6 @@ function getActionButtons($type, $id, $status) {
                 <div id="ob" class="tab-pane fade reqTabContent" role="tabpanel">
                     <div class="table-scroll-wrapper">
                         <table class="table table-hover mb-0">
-                            <colgroup>
-                                <col style="width:20%"><col style="width:12%"><col style="width:18%">
-                                <col style="width:22%"><col style="width:10%"><col style="width:18%">
-                            </colgroup>
                             <thead><tr>
                                 <th>Employee</th><th>Date</th><th>Client Name</th>
                                 <th>Reason</th><th>Status</th><th>Actions</th>
@@ -729,6 +718,20 @@ function getActionButtons($type, $id, $status) {
         <?php if ($success || $error): ?>
         showToast(<?= json_encode($success ?: $error) ?>, '<?= $success ? 'success' : 'danger' ?>');
         <?php endif; ?>
+
+        // ---- HORIZONTAL MOUSE WHEEL SCROLL ----
+        document.querySelectorAll('.table-scroll-wrapper').forEach(wrapper => {
+            let nearHScrollbar = false;
+            wrapper.addEventListener('mousemove', e => {
+                nearHScrollbar = e.clientY > wrapper.getBoundingClientRect().bottom - 16;
+            });
+            wrapper.addEventListener('mouseleave', () => { nearHScrollbar = false; });
+            wrapper.addEventListener('wheel', e => {
+                if (!nearHScrollbar) return;
+                e.preventDefault();
+                wrapper.scrollLeft += e.deltaY + e.deltaX;
+            }, { passive: false });
+        });
     </script>
 </body>
 </html>

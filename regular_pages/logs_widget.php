@@ -197,12 +197,11 @@ function renderLogRows({ meta, rows }) {
         const typeLabel = LOG_TYPE_LABEL[row.log_type] ?? row.log_type;
 
         let editRoleHtml = `<span style="color:rgba(255,255,255,0.15);font-size:0.75rem;">—</span>`;
-        if (row.edit_role === 'superadmin') {
-            editRoleHtml = `<span class="pill empRole-superadmin"><i class="bi bi-shield-fill"></i> ${esc(row.initiator_name ?? 'Super Admin')}</span>`;
-        } else if (row.edit_role === 'self') {
+        if (row.edit_role === 'self') {
             editRoleHtml = `<span class="pill"><i class="bi bi-person-fill"></i> You</span>`;
-        } else if (row.edit_role === 'employee') {
-            editRoleHtml = `<span class="pill"><i class="bi bi-person-fill"></i> ${esc(row.initiator_name ?? 'Employee')}</span>`;
+        } else if (row.edit_role) {
+            const icon = row.edit_role === 'superadmin' ? 'bi-shield-fill' : 'bi-person-fill';
+            editRoleHtml = `<span class="pill empRoleBadge empRole-${esc(row.edit_role)}"><i class="bi ${icon}"></i> ${esc(row.initiator_name ?? row.edit_role)}</span>`;
         }
 
         let editStatusHtml = `<span style="color:rgba(255,255,255,0.2);font-size:0.75rem;">—</span>`;
@@ -508,6 +507,32 @@ document.addEventListener('click', e => {
         });
     }
 });
+
+/* =========================
+   MOUSE WHEEL SCROLL
+   If cursor is over the horizontal scrollbar strip (bottom ~16 px),
+   redirect wheel deltaY to horizontal scroll.
+   Everywhere else, leave vertical scroll to the browser.
+========================= */
+(function () {
+    const wrapper = tbody.closest('.table-scroll-wrapper');
+    if (!wrapper) return;
+
+    let nearHScrollbar = false;
+
+    wrapper.addEventListener('mousemove', e => {
+        const rect = wrapper.getBoundingClientRect();
+        nearHScrollbar = e.clientY > rect.bottom - 16;
+    });
+
+    wrapper.addEventListener('mouseleave', () => { nearHScrollbar = false; });
+
+    wrapper.addEventListener('wheel', e => {
+        if (!nearHScrollbar) return;
+        e.preventDefault();
+        wrapper.scrollLeft += e.deltaY + e.deltaX;
+    }, { passive: false });
+})();
 
 /* =========================
    INIT

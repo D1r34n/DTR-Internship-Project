@@ -88,11 +88,13 @@ if ($deptScoped) {
 if ($deptScoped) {
     $srStmt = $pdo->prepare("
         SELECT s.*, CONCAT(e.first_name, ' ', e.last_name) AS employee_name, d.department_code,
-               CONCAT(r.first_name, ' ', r.last_name) AS requested_by_name
+               CONCAT(r.first_name, ' ', r.last_name) AS requested_by_name,
+               rr.role_key AS requested_by_role
         FROM schedules s
         JOIN employees e ON s.employee_id = e.id
         LEFT JOIN departments d ON e.department_id = d.id
         LEFT JOIN employees r ON s.requested_by = r.id
+        LEFT JOIN roles rr ON r.role_id = rr.id
         WHERE s.is_rest_day = 0 AND e.department_id = ?
         ORDER BY FIELD(s.status, 'pending', 'approved', 'rejected'), s.schedule_date DESC
         LIMIT 300
@@ -102,15 +104,24 @@ if ($deptScoped) {
 } else {
     $scheduleRequests = $pdo->query("
         SELECT s.*, CONCAT(e.first_name, ' ', e.last_name) AS employee_name, d.department_code,
-               CONCAT(r.first_name, ' ', r.last_name) AS requested_by_name
+               CONCAT(r.first_name, ' ', r.last_name) AS requested_by_name,
+               rr.role_key AS requested_by_role
         FROM schedules s
         JOIN employees e ON s.employee_id = e.id
         LEFT JOIN departments d ON e.department_id = d.id
         LEFT JOIN employees r ON s.requested_by = r.id
+        LEFT JOIN roles rr ON r.role_id = rr.id
         WHERE s.is_rest_day = 0
         ORDER BY FIELD(s.status, 'pending', 'approved', 'rejected'), s.schedule_date DESC
         LIMIT 300
     ")->fetchAll(PDO::FETCH_ASSOC);
+}
+
+function getRolePill(?string $name, ?string $role): string {
+    if (!$name) return '<span style="color:rgba(255,255,255,0.3)">—</span>';
+    $icon  = $role === 'superadmin' ? 'bi-shield-fill' : 'bi-person-fill';
+    $class = $role ? 'empRoleBadge empRole-' . htmlspecialchars($role) : '';
+    return '<span class="pill ' . $class . '"><i class="bi ' . $icon . '"></i> ' . htmlspecialchars($name) . '</span>';
 }
 
 function getStatusBadge(string $status): string {
@@ -242,11 +253,6 @@ function getStatusBadge(string $status): string {
                 <!-- Table -->
                 <div class="tableHeaderGlass">
                     <table class="table table-borderless mb-0">
-                        <colgroup>
-                            <col style="width:18%"><col style="width:10%"><col style="width:12%">
-                            <col style="width:10%"><col style="width:10%"><col style="width:8%">
-                            <col style="width:14%"><col style="width:9%"><col style="width:9%">
-                        </colgroup>
                         <thead><tr>
                             <th>Employee</th><th>Department</th><th>Date</th>
                             <th>Time In</th><th>Time Out</th><th>Shift</th>
@@ -256,11 +262,6 @@ function getStatusBadge(string $status): string {
                 </div>
                 <div class="tableScroll">
                     <table class="table table-hover mb-0">
-                        <colgroup>
-                            <col style="width:18%"><col style="width:10%"><col style="width:12%">
-                            <col style="width:10%"><col style="width:10%"><col style="width:8%">
-                            <col style="width:14%"><col style="width:9%"><col style="width:9%">
-                        </colgroup>
                         <tbody>
                             <?php if (count($scheduleRequests) > 0): ?>
                                 <?php foreach ($scheduleRequests as $row): ?>
@@ -281,7 +282,7 @@ function getStatusBadge(string $status): string {
                                                 <span class="badge status-info">Day</span>
                                             <?php endif; ?>
                                         </td>
-                                        <td><?= $row['requested_by_name'] ? htmlspecialchars($row['requested_by_name']) : '—' ?></td>
+                                        <td><?= getRolePill($row['requested_by_name'] ?? null, $row['requested_by_role'] ?? null) ?></td>
                                         <td><?= getStatusBadge($row['status']) ?></td>
                                         <td class="actionsCol">
                                             <?php if ($row['status'] === 'pending'): ?>
@@ -343,6 +344,20 @@ function getStatusBadge(string $status): string {
             }
         }
         setTimeout(() => closeToast(), 3000);
+
+        // ---- HORIZONTAL MOUSE WHEEL SCROLL ----
+        document.querySelectorAll('.table-scroll-wrapper, .tableScroll').forEach(wrapper => {
+            let nearHScrollbar = false;
+            wrapper.addEventListener('mousemove', e => {
+                nearHScrollbar = e.clientY > wrapper.getBoundingClientRect().bottom - 16;
+            });
+            wrapper.addEventListener('mouseleave', () => { nearHScrollbar = false; });
+            wrapper.addEventListener('wheel', e => {
+                if (!nearHScrollbar) return;
+                e.preventDefault();
+                wrapper.scrollLeft += e.deltaY + e.deltaX;
+            }, { passive: false });
+        });
     </script>
 </body>
 </html>
