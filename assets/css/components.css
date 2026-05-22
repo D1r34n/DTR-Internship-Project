@@ -196,7 +196,8 @@ hr {
     transition:
         transform 0.2s ease,
         box-shadow 0.25s ease,
-        background 0.25s ease;
+        background 0.25s ease,
+        border-color 0.2s ease;
 }
 
 /* SMALL VARIANT */
@@ -267,6 +268,16 @@ hr {
     transform: scale(1.02);
 }
 
+.input-group:focus-within {
+    background: var(--neutral-glass-hover) !important;
+    border-color: var(--primary-border) !important;
+    box-shadow:
+        var(--glass-shadow),
+        0 0 0 1px var(--primary-border),
+        0 0 18px var(--primary-glow) !important;
+    transform: translateY(-1px);
+}
+
 /* remove bootstrap focus glow */
 .form-control:focus {
     box-shadow: none !important;
@@ -285,6 +296,10 @@ hr {
     min-height: 0; /* critical for flex scrolling */
 }
 
+.modal-body textarea {
+    padding: 0.6rem 0.8rem !important;
+}
+
 .modal-body .form-control {
     height: var(--control-height);
     background: var(--neutral-glass) linear-gradient(
@@ -295,13 +310,14 @@ hr {
         transparent 100%
     ) !important;
     border: 1px solid var(--neutral-border) !important;
-    border-radius: 12px !important;
+    border-radius: 8px !important;
     color: var(--text-light) !important;
     font-size: 0.875rem !important;
     font-weight: 400 !important;
     backdrop-filter: var(--frosted-blur) !important;
     -webkit-backdrop-filter: var(--frosted-blur) !important;
     box-shadow: var(--glass-inset) !important;
+    color-scheme: dark;
     transition:
         transform 0.2s ease,
         color 0.2s ease,
@@ -311,19 +327,6 @@ hr {
 
 .modal-body .form-control::placeholder {
     color: var(--text-muted) !important;
-}
-
-/* When a form-control is inside an input-group inside the modal,
-   revert to the input-group's transparent inner-field style. */
-.modal-body .input-group .form-control {
-    height: 100% !important;
-    background: transparent !important;
-    border: none !important;
-    border-radius: 0 !important;
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
-    box-shadow: none !important;
-    transform: none !important;
 }
 
 .modal-body .form-control:hover {
@@ -343,6 +346,18 @@ hr {
         0 0 18px var(--primary-glow) !important;
     transform: translateY(-1px) !important;
     outline: none !important;
+}
+
+/* Inside an input-group the wrapper is the glass box — strip the field back. */
+.modal-body .input-group .form-control {
+    height: 100% !important;
+    background: transparent !important;
+    border: none !important;
+    border-radius: 0 !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    box-shadow: none !important;
+    transform: none !important;
 }
 
 /* ================================================
