@@ -4,13 +4,17 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'superadmin') {
+if (!isset($_SESSION['user_id']) || !in_array($_SESSION['user_role'], ['superadmin', 'manager'])) {
     header("Location: ../index.php");
     exit();
 }
 
 require_once '../db.php';
 date_default_timezone_set('Asia/Manila');
+
+$myRole     = $_SESSION['user_role'];
+$myDeptId   = $_SESSION['department_id'] ?? null;
+$deptScoped = ($myRole === 'manager' && $myDeptId);
 
 $success = "";
 $error   = "";
@@ -21,6 +25,29 @@ if (isset($_GET['action'], $_GET['type'], $_GET['id'])) {
     $type   = $_GET['type'];
     $id     = $_GET['id'];
     $status = ($action === 'approve') ? 'approved' : 'rejected';
+
+    // Manager: verify the request belongs to an employee in their department
+    if ($deptScoped) {
+        $empCol = match($type) {
+            'leave', 'overtime' => 'employee_id',
+            'log_edit'          => 'employee_id',
+            default             => null,
+        };
+        $tblName = match($type) {
+            'leave'    => 'leave_requests',
+            'overtime' => 'overtime_requests',
+            'log_edit' => 'log_edit_requests',
+            default    => null,
+        };
+        if ($tblName) {
+            $chkStmt = $pdo->prepare("SELECT t.id FROM {$tblName} t JOIN employees e ON t.employee_id = e.id WHERE t.id = ? AND e.department_id = ?");
+            $chkStmt->execute([$id, $myDeptId]);
+            if (!$chkStmt->fetch()) {
+                $error = "Unauthorized action.";
+                goto skip_action_ar;
+            }
+        }
+    }
 
     if ($type === 'leave') {
         $pdo->prepare("UPDATE leave_requests SET status = ? WHERE id = ?")
@@ -93,20 +120,41 @@ if (isset($_GET['action'], $_GET['type'], $_GET['id'])) {
 
     $success = "Request has been " . ucfirst($status) . "!";
 }
+skip_action_ar:
 
 // ---- GET SUMMARY COUNTS ----
-$pendingLeave     = $pdo->query("SELECT COUNT(*) FROM leave_requests    WHERE status = 'pending'")->fetchColumn();
-$approvedLeave    = $pdo->query("SELECT COUNT(*) FROM leave_requests    WHERE status = 'approved'")->fetchColumn();
-$rejectedLeave    = $pdo->query("SELECT COUNT(*) FROM leave_requests    WHERE status = 'rejected'")->fetchColumn();
-$pendingOvertime  = $pdo->query("SELECT COUNT(*) FROM overtime_requests WHERE status = 'pending'")->fetchColumn();
-$approvedOvertime = $pdo->query("SELECT COUNT(*) FROM overtime_requests WHERE status = 'approved'")->fetchColumn();
-$rejectedOvertime = $pdo->query("SELECT COUNT(*) FROM overtime_requests WHERE status = 'rejected'")->fetchColumn();
-$pendingOB        = $pdo->query("SELECT COUNT(*) FROM leave_requests WHERE leave_type = 'ob leave' AND status = 'pending'")->fetchColumn();
-$approvedOB       = $pdo->query("SELECT COUNT(*) FROM leave_requests WHERE leave_type = 'ob leave' AND status = 'approved'")->fetchColumn();
-$rejectedOB       = $pdo->query("SELECT COUNT(*) FROM leave_requests WHERE leave_type = 'ob leave' AND status = 'rejected'")->fetchColumn();
-$pendingLogEdit   = $pdo->query("SELECT COUNT(*) FROM log_edit_requests   WHERE status = 'pending'")->fetchColumn();
-$approvedLogEdit  = $pdo->query("SELECT COUNT(*) FROM log_edit_requests   WHERE status = 'approved'")->fetchColumn();
-$rejectedLogEdit  = $pdo->query("SELECT COUNT(*) FROM log_edit_requests   WHERE status = 'rejected'")->fetchColumn();
+if ($deptScoped) {
+    $lrC  = $pdo->prepare("SELECT COUNT(*) FROM leave_requests lr JOIN employees e ON lr.employee_id = e.id WHERE lr.status = ? AND e.department_id = ?");
+    $otC  = $pdo->prepare("SELECT COUNT(*) FROM overtime_requests o JOIN employees e ON o.employee_id = e.id WHERE o.status = ? AND e.department_id = ?");
+    $obC  = $pdo->prepare("SELECT COUNT(*) FROM leave_requests lr JOIN employees e ON lr.employee_id = e.id WHERE lr.leave_type = 'ob leave' AND lr.status = ? AND e.department_id = ?");
+    $leC  = $pdo->prepare("SELECT COUNT(*) FROM log_edit_requests l JOIN employees e ON l.employee_id = e.id WHERE l.status = ? AND e.department_id = ?");
+
+    $lrC->execute(['pending',  $myDeptId]); $pendingLeave     = (int)$lrC->fetchColumn();
+    $lrC->execute(['approved', $myDeptId]); $approvedLeave    = (int)$lrC->fetchColumn();
+    $lrC->execute(['rejected', $myDeptId]); $rejectedLeave    = (int)$lrC->fetchColumn();
+    $otC->execute(['pending',  $myDeptId]); $pendingOvertime  = (int)$otC->fetchColumn();
+    $otC->execute(['approved', $myDeptId]); $approvedOvertime = (int)$otC->fetchColumn();
+    $otC->execute(['rejected', $myDeptId]); $rejectedOvertime = (int)$otC->fetchColumn();
+    $obC->execute(['pending',  $myDeptId]); $pendingOB        = (int)$obC->fetchColumn();
+    $obC->execute(['approved', $myDeptId]); $approvedOB       = (int)$obC->fetchColumn();
+    $obC->execute(['rejected', $myDeptId]); $rejectedOB       = (int)$obC->fetchColumn();
+    $leC->execute(['pending',  $myDeptId]); $pendingLogEdit   = (int)$leC->fetchColumn();
+    $leC->execute(['approved', $myDeptId]); $approvedLogEdit  = (int)$leC->fetchColumn();
+    $leC->execute(['rejected', $myDeptId]); $rejectedLogEdit  = (int)$leC->fetchColumn();
+} else {
+    $pendingLeave     = $pdo->query("SELECT COUNT(*) FROM leave_requests    WHERE status = 'pending'")->fetchColumn();
+    $approvedLeave    = $pdo->query("SELECT COUNT(*) FROM leave_requests    WHERE status = 'approved'")->fetchColumn();
+    $rejectedLeave    = $pdo->query("SELECT COUNT(*) FROM leave_requests    WHERE status = 'rejected'")->fetchColumn();
+    $pendingOvertime  = $pdo->query("SELECT COUNT(*) FROM overtime_requests WHERE status = 'pending'")->fetchColumn();
+    $approvedOvertime = $pdo->query("SELECT COUNT(*) FROM overtime_requests WHERE status = 'approved'")->fetchColumn();
+    $rejectedOvertime = $pdo->query("SELECT COUNT(*) FROM overtime_requests WHERE status = 'rejected'")->fetchColumn();
+    $pendingOB        = $pdo->query("SELECT COUNT(*) FROM leave_requests WHERE leave_type = 'ob leave' AND status = 'pending'")->fetchColumn();
+    $approvedOB       = $pdo->query("SELECT COUNT(*) FROM leave_requests WHERE leave_type = 'ob leave' AND status = 'approved'")->fetchColumn();
+    $rejectedOB       = $pdo->query("SELECT COUNT(*) FROM leave_requests WHERE leave_type = 'ob leave' AND status = 'rejected'")->fetchColumn();
+    $pendingLogEdit   = $pdo->query("SELECT COUNT(*) FROM log_edit_requests   WHERE status = 'pending'")->fetchColumn();
+    $approvedLogEdit  = $pdo->query("SELECT COUNT(*) FROM log_edit_requests   WHERE status = 'approved'")->fetchColumn();
+    $rejectedLogEdit  = $pdo->query("SELECT COUNT(*) FROM log_edit_requests   WHERE status = 'rejected'")->fetchColumn();
+}
 
 $totalPending  = $pendingLeave  + $pendingOvertime  + $pendingOB  + $pendingLogEdit;
 $totalApproved = $approvedLeave + $approvedOvertime + $approvedOB + $approvedLogEdit;
@@ -116,55 +164,52 @@ $totalOB       = $pendingOB + $approvedOB + $rejectedOB;
 $totalLogEdit  = $pendingLogEdit + $approvedLogEdit + $rejectedLogEdit;
 
 // ---- GET LEAVE REQUESTS (non-OB) ----
-$leaveRequests = $pdo->query("
-    SELECT lr.*, CONCAT(e.first_name, ' ', e.last_name) AS employee_name
-    FROM leave_requests lr
-    JOIN employees e ON lr.employee_id = e.id
-    WHERE lr.leave_type != 'ob leave'
-    ORDER BY lr.created_at DESC
-")->fetchAll(PDO::FETCH_ASSOC);
+if ($deptScoped) {
+    $s = $pdo->prepare("SELECT lr.*, CONCAT(e.first_name, ' ', e.last_name) AS employee_name FROM leave_requests lr JOIN employees e ON lr.employee_id = e.id WHERE lr.leave_type != 'ob leave' AND e.department_id = ? ORDER BY lr.created_at DESC");
+    $s->execute([$myDeptId]);
+    $leaveRequests = $s->fetchAll(PDO::FETCH_ASSOC);
+} else {
+    $leaveRequests = $pdo->query("SELECT lr.*, CONCAT(e.first_name, ' ', e.last_name) AS employee_name FROM leave_requests lr JOIN employees e ON lr.employee_id = e.id WHERE lr.leave_type != 'ob leave' ORDER BY lr.created_at DESC")->fetchAll(PDO::FETCH_ASSOC);
+}
 
 // ---- GET OVERTIME REQUESTS ----
-$overtimeRequests = $pdo->query("
-    SELECT or2.*, CONCAT(e.first_name, ' ', e.last_name) AS employee_name
-    FROM overtime_requests or2
-    JOIN employees e ON or2.employee_id = e.id
-    ORDER BY or2.created_at DESC
-")->fetchAll(PDO::FETCH_ASSOC);
+if ($deptScoped) {
+    $s = $pdo->prepare("SELECT or2.*, CONCAT(e.first_name, ' ', e.last_name) AS employee_name FROM overtime_requests or2 JOIN employees e ON or2.employee_id = e.id WHERE e.department_id = ? ORDER BY or2.created_at DESC");
+    $s->execute([$myDeptId]);
+    $overtimeRequests = $s->fetchAll(PDO::FETCH_ASSOC);
+} else {
+    $overtimeRequests = $pdo->query("SELECT or2.*, CONCAT(e.first_name, ' ', e.last_name) AS employee_name FROM overtime_requests or2 JOIN employees e ON or2.employee_id = e.id ORDER BY or2.created_at DESC")->fetchAll(PDO::FETCH_ASSOC);
+}
 
 // ---- GET OB REQUESTS ----
-$obRequests = $pdo->query("
-    SELECT lr.*, CONCAT(e.first_name, ' ', e.last_name) AS employee_name
-    FROM leave_requests lr
-    JOIN employees e ON lr.employee_id = e.id
-    WHERE lr.leave_type = 'ob leave'
-    ORDER BY lr.created_at DESC
-")->fetchAll(PDO::FETCH_ASSOC);
+if ($deptScoped) {
+    $s = $pdo->prepare("SELECT lr.*, CONCAT(e.first_name, ' ', e.last_name) AS employee_name FROM leave_requests lr JOIN employees e ON lr.employee_id = e.id WHERE lr.leave_type = 'ob leave' AND e.department_id = ? ORDER BY lr.created_at DESC");
+    $s->execute([$myDeptId]);
+    $obRequests = $s->fetchAll(PDO::FETCH_ASSOC);
+} else {
+    $obRequests = $pdo->query("SELECT lr.*, CONCAT(e.first_name, ' ', e.last_name) AS employee_name FROM leave_requests lr JOIN employees e ON lr.employee_id = e.id WHERE lr.leave_type = 'ob leave' ORDER BY lr.created_at DESC")->fetchAll(PDO::FETCH_ASSOC);
+}
 
 // ---- GET LOG EDIT REQUESTS ----
-$logEditRequests = $pdo->query("
-    SELECT
-        le.id,
-        le.employee_id,
-        le.attendance_id,
-        le.log_id,
-        le.request_type,
-        le.requested_time_in,
-        le.requested_time_out,
-        le.reason,
-        le.status,
-        le.created_at,
-        CONCAT(e.first_name, ' ', e.last_name) AS employee_name,
-        COALESCE(a.work_date, le.work_date) AS work_date,
-        l.log_time AS original_log_time,
-        CONCAT(r.first_name, ' ', r.last_name) AS requested_by_name
+$leBaseSql = "
+    SELECT le.id, le.employee_id, le.attendance_id, le.log_id, le.request_type,
+           le.requested_time_in, le.requested_time_out, le.reason, le.status, le.created_at,
+           CONCAT(e.first_name, ' ', e.last_name) AS employee_name,
+           COALESCE(a.work_date, le.work_date) AS work_date,
+           l.log_time AS original_log_time,
+           CONCAT(r.first_name, ' ', r.last_name) AS requested_by_name
     FROM log_edit_requests le
     JOIN employees e ON le.employee_id = e.id
     LEFT JOIN attendances a ON le.attendance_id = a.id
     LEFT JOIN logs l ON le.log_id = l.id
-    LEFT JOIN employees r ON le.initiated_by_id = r.id
-    ORDER BY le.created_at DESC
-")->fetchAll(PDO::FETCH_ASSOC);
+    LEFT JOIN employees r ON le.initiated_by_id = r.id";
+if ($deptScoped) {
+    $s = $pdo->prepare($leBaseSql . " WHERE e.department_id = ? ORDER BY le.created_at DESC");
+    $s->execute([$myDeptId]);
+    $logEditRequests = $s->fetchAll(PDO::FETCH_ASSOC);
+} else {
+    $logEditRequests = $pdo->query($leBaseSql . " ORDER BY le.created_at DESC")->fetchAll(PDO::FETCH_ASSOC);
+}
 
 // ---- HELPER FUNCTIONS ----
 function getStatusBadge($status) {
@@ -178,13 +223,21 @@ function getStatusBadge($status) {
 
 function getActionButtons($type, $id, $status) {
     if ($status === 'pending') {
+        $approveUrl = 'admin_requests.php?action=approve&type=' . $type . '&id=' . $id;
+        $rejectUrl  = 'admin_requests.php?action=reject&type='  . $type . '&id=' . $id;
         return '
-            <a href="admin_requests.php?action=approve&type=' . $type . '&id=' . $id . '" class="btn btn-sm btn-success" onclick="return confirm(\'Approve this request?\')">
+            <button type="button" class="btn btn-sm btn-success confirm-action-btn"
+                data-url="' . $approveUrl . '"
+                data-label="Approve"
+                data-bs-toggle="modal" data-bs-target="#confirmActionModal">
                 <i class="bi bi-check-lg"></i> Approve
-            </a>
-            <a href="admin_requests.php?action=reject&type=' . $type . '&id=' . $id . '" class="btn btn-sm btn-danger" onclick="return confirm(\'Reject this request?\')">
+            </button>
+            <button type="button" class="btn btn-sm btn-danger confirm-action-btn"
+                data-url="' . $rejectUrl . '"
+                data-label="Reject"
+                data-bs-toggle="modal" data-bs-target="#confirmActionModal">
                 <i class="bi bi-x-lg"></i> Reject
-            </a>
+            </button>
         ';
     }
     return '<span class="no-action-text">No actions</span>';
@@ -377,27 +430,12 @@ function getActionButtons($type, $id, $status) {
 
             <div class="card-body d-flex flex-column requests-card-body">
 
-                <!-- TOAST -->
-                <?php if ($success || $error): ?>
-                    <div class="custom-toast <?= $success ? 'toast-success' : 'toast-error' ?>" id="customToast">
-                        <div class="toast-content">
-                            <i class="bi <?= $success ? 'bi-check-circle-fill' : 'bi-x-circle-fill' ?> toast-icon"></i>
-                            <span>
-                                <?= htmlspecialchars($success ?: $error) ?>
-                            </span>
-                        </div>
-                        <button class="toast-close" onclick="closeToast()">
-                            <i class="bi bi-x-lg"></i>
-                        </button>
-                    </div>
-                <?php endif; ?>
-
 <div class="tab-content">
 
                 <!-- ALL TAB -->
                 <div id="all" class="tab-pane fade show active reqTabContent" role="tabpanel">
-                    <div class="tableHeaderGlass">
-                        <table class="table table-borderless mb-0">
+                    <div class="table-scroll-wrapper">
+                        <table class="table table-hover mb-0">
                             <colgroup>
                                 <col style="width:22%"><col style="width:14%"><col style="width:24%">
                                 <col style="width:20%"><col style="width:10%"><col style="width:10%">
@@ -406,14 +444,6 @@ function getActionButtons($type, $id, $status) {
                                 <th>Employee</th><th>Type</th><th>Details</th>
                                 <th>Reason</th><th>Status</th><th>Actions</th>
                             </tr></thead>
-                        </table>
-                    </div>
-                    <div class="tableScroll">
-                        <table class="table table-hover mb-0">
-                            <colgroup>
-                                <col style="width:22%"><col style="width:14%"><col style="width:24%">
-                                <col style="width:20%"><col style="width:10%"><col style="width:10%">
-                            </colgroup>
                             <tbody>
                                 <?php foreach ($leaveRequests as $row): ?>
                                     <tr>
@@ -474,8 +504,8 @@ function getActionButtons($type, $id, $status) {
 
                 <!-- LEAVE TAB -->
                 <div id="leave" class="tab-pane fade reqTabContent" role="tabpanel">
-                    <div class="tableHeaderGlass">
-                        <table class="table table-borderless mb-0">
+                    <div class="table-scroll-wrapper">
+                        <table class="table table-hover mb-0">
                             <colgroup>
                                 <col style="width:20%"><col style="width:13%"><col style="width:12%">
                                 <col style="width:12%"><col style="width:20%"><col style="width:10%"><col style="width:13%">
@@ -484,14 +514,6 @@ function getActionButtons($type, $id, $status) {
                                 <th>Employee</th><th>Leave Type</th><th>Start</th>
                                 <th>End</th><th>Reason</th><th>Status</th><th>Actions</th>
                             </tr></thead>
-                        </table>
-                    </div>
-                    <div class="tableScroll">
-                        <table class="table table-hover mb-0">
-                            <colgroup>
-                                <col style="width:20%"><col style="width:13%"><col style="width:12%">
-                                <col style="width:12%"><col style="width:20%"><col style="width:10%"><col style="width:13%">
-                            </colgroup>
                             <tbody>
                                 <?php if (count($leaveRequests) > 0): ?>
                                     <?php foreach ($leaveRequests as $row): ?>
@@ -515,8 +537,8 @@ function getActionButtons($type, $id, $status) {
 
                 <!-- OVERTIME TAB -->
                 <div id="overtime" class="tab-pane fade reqTabContent" role="tabpanel">
-                    <div class="tableHeaderGlass">
-                        <table class="table table-borderless mb-0">
+                    <div class="table-scroll-wrapper">
+                        <table class="table table-hover mb-0">
                             <colgroup>
                                 <col style="width:20%"><col style="width:13%"><col style="width:11%">
                                 <col style="width:11%"><col style="width:20%"><col style="width:10%"><col style="width:15%">
@@ -525,14 +547,6 @@ function getActionButtons($type, $id, $status) {
                                 <th>Employee</th><th>Date</th><th>Time In</th>
                                 <th>Time Out</th><th>Reason</th><th>Status</th><th>Actions</th>
                             </tr></thead>
-                        </table>
-                    </div>
-                    <div class="tableScroll">
-                        <table class="table table-hover mb-0">
-                            <colgroup>
-                                <col style="width:20%"><col style="width:13%"><col style="width:11%">
-                                <col style="width:11%"><col style="width:20%"><col style="width:10%"><col style="width:15%">
-                            </colgroup>
                             <tbody>
                                 <?php if (count($overtimeRequests) > 0): ?>
                                     <?php foreach ($overtimeRequests as $row): ?>
@@ -556,8 +570,8 @@ function getActionButtons($type, $id, $status) {
 
                 <!-- LOG EDIT TAB -->
                 <div id="log-edit" class="tab-pane fade reqTabContent" role="tabpanel">
-                    <div class="tableHeaderGlass">
-                        <table class="table table-borderless mb-0">
+                    <div class="table-scroll-wrapper">
+                        <table class="table table-hover mb-0">
                             <colgroup>
                                 <col style="width:13%"><col style="width:8%"><col style="width:8%"><col style="width:9%">
                                 <col style="width:13%"><col style="width:14%"><col style="width:12%"><col style="width:9%"><col style="width:14%">
@@ -566,14 +580,6 @@ function getActionButtons($type, $id, $status) {
                                 <th>Employee</th><th>Date</th><th>Type</th><th>Current Log</th>
                                 <th>Correction</th><th>Reason</th><th>Requested By</th><th>Status</th><th>Actions</th>
                             </tr></thead>
-                        </table>
-                    </div>
-                    <div class="tableScroll">
-                        <table class="table table-hover mb-0">
-                            <colgroup>
-                                <col style="width:13%"><col style="width:8%"><col style="width:8%"><col style="width:9%">
-                                <col style="width:13%"><col style="width:14%"><col style="width:12%"><col style="width:9%"><col style="width:14%">
-                            </colgroup>
                             <tbody>
                                 <?php if (count($logEditRequests) > 0): ?>
                                     <?php foreach ($logEditRequests as $row): ?>
@@ -612,8 +618,8 @@ function getActionButtons($type, $id, $status) {
 
                 <!-- OFFICIAL BUSINESS TAB -->
                 <div id="ob" class="tab-pane fade reqTabContent" role="tabpanel">
-                    <div class="tableHeaderGlass">
-                        <table class="table table-borderless mb-0">
+                    <div class="table-scroll-wrapper">
+                        <table class="table table-hover mb-0">
                             <colgroup>
                                 <col style="width:20%"><col style="width:12%"><col style="width:18%">
                                 <col style="width:22%"><col style="width:10%"><col style="width:18%">
@@ -622,14 +628,6 @@ function getActionButtons($type, $id, $status) {
                                 <th>Employee</th><th>Date</th><th>Client Name</th>
                                 <th>Reason</th><th>Status</th><th>Actions</th>
                             </tr></thead>
-                        </table>
-                    </div>
-                    <div class="tableScroll">
-                        <table class="table table-hover mb-0">
-                            <colgroup>
-                                <col style="width:20%"><col style="width:12%"><col style="width:18%">
-                                <col style="width:22%"><col style="width:10%"><col style="width:18%">
-                            </colgroup>
                             <tbody>
                                 <?php if (count($obRequests) > 0): ?>
                                     <?php foreach ($obRequests as $row): ?>
@@ -668,6 +666,25 @@ function getActionButtons($type, $id, $status) {
 
     </div><!-- #main-wrapper -->
 
+<!-- Confirm Action Modal -->
+<div class="modal fade" id="confirmActionModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="confirmActionTitle">Confirm Action</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="confirmActionBody">
+                Are you sure you want to proceed?
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <a id="confirmActionBtn" href="#" class="btn btn-success">Confirm</a>
+            </div>
+        </div>
+    </div>
+</div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
 
@@ -684,21 +701,26 @@ function getActionButtons($type, $id, $status) {
             document.getElementById('modalOverlay').style.display = 'none';
         }
 
-        // ---- TOAST ----
-        function closeToast() {
-            const toast = document.getElementById('customToast');
+        // ---- CONFIRM ACTION MODAL ----
+        document.addEventListener('click', e => {
+            const btn = e.target.closest('.confirm-action-btn');
+            if (!btn) return;
+            const label      = btn.dataset.label;
+            const url        = btn.dataset.url;
+            const isApprove  = label === 'Approve';
 
-            if (toast) {
-                toast.classList.add('toast-hide');
+            document.getElementById('confirmActionTitle').textContent = label + ' Request';
+            document.getElementById('confirmActionBody').textContent  = 'Are you sure you want to ' + label.toLowerCase() + ' this request?';
 
-                setTimeout(() => {
-                    toast.remove();
-                }, 400);
-            }
-        }
-        setTimeout(() => {
-            closeToast();
-        }, 3000);
-            </script>
+            const confirmBtn = document.getElementById('confirmActionBtn');
+            confirmBtn.href      = url;
+            confirmBtn.className = 'btn ' + (isApprove ? 'btn-success' : 'btn-danger');
+            confirmBtn.textContent = label;
+        });
+
+        <?php if ($success || $error): ?>
+        showToast(<?= json_encode($success ?: $error) ?>, '<?= $success ? 'success' : 'danger' ?>');
+        <?php endif; ?>
+    </script>
 </body>
 </html>

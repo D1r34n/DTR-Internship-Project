@@ -3,13 +3,17 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'superadmin') {
+if (!isset($_SESSION['user_id']) || !in_array($_SESSION['user_role'], ['superadmin', 'manager'])) {
     header("Location: ../index.php");
     exit();
 }
 
 require_once '../db.php';
 date_default_timezone_set('Asia/Manila');
+
+$myRole     = $_SESSION['user_role'];
+$myDeptId   = $_SESSION['department_id'] ?? null;
+$deptScoped = ($myRole === 'manager' && $myDeptId);
 
 $success = "";
 $error   = "";
@@ -18,6 +22,16 @@ $error   = "";
 if (isset($_GET['action'], $_GET['id'])) {
     $action = $_GET['action'];
     $id     = (int)$_GET['id'];
+
+    // Manager: verify the schedule belongs to an employee in their department
+    if ($deptScoped) {
+        $chkStmt = $pdo->prepare("SELECT s.id FROM schedules s JOIN employees e ON s.employee_id = e.id WHERE s.id = ? AND e.department_id = ?");
+        $chkStmt->execute([$id, $myDeptId]);
+        if (!$chkStmt->fetch()) {
+            $error = "Unauthorized action.";
+            goto skip_action_sr;
+        }
+    }
 
     if ($action === 'approve') {
         $schedRow = $pdo->prepare("SELECT * FROM schedules WHERE id = ? AND status = 'pending'");
@@ -56,24 +70,48 @@ if (isset($_GET['action'], $_GET['id'])) {
         $success = "Schedule request rejected.";
     }
 }
+skip_action_sr:
 
 // ---- COUNTS ----
-$pendingCount  = $pdo->query("SELECT COUNT(*) FROM schedules WHERE status = 'pending'  AND is_rest_day = 0")->fetchColumn();
-$approvedCount = $pdo->query("SELECT COUNT(*) FROM schedules WHERE status = 'approved' AND is_rest_day = 0")->fetchColumn();
-$rejectedCount = $pdo->query("SELECT COUNT(*) FROM schedules WHERE status = 'rejected' AND is_rest_day = 0")->fetchColumn();
+if ($deptScoped) {
+    $cStmt = $pdo->prepare("SELECT COUNT(*) FROM schedules s JOIN employees e ON s.employee_id = e.id WHERE s.status = ? AND s.is_rest_day = 0 AND e.department_id = ?");
+    $cStmt->execute(['pending',  $myDeptId]); $pendingCount  = (int)$cStmt->fetchColumn();
+    $cStmt->execute(['approved', $myDeptId]); $approvedCount = (int)$cStmt->fetchColumn();
+    $cStmt->execute(['rejected', $myDeptId]); $rejectedCount = (int)$cStmt->fetchColumn();
+} else {
+    $pendingCount  = $pdo->query("SELECT COUNT(*) FROM schedules WHERE status = 'pending'  AND is_rest_day = 0")->fetchColumn();
+    $approvedCount = $pdo->query("SELECT COUNT(*) FROM schedules WHERE status = 'approved' AND is_rest_day = 0")->fetchColumn();
+    $rejectedCount = $pdo->query("SELECT COUNT(*) FROM schedules WHERE status = 'rejected' AND is_rest_day = 0")->fetchColumn();
+}
 
 // ---- GET SCHEDULE REQUESTS ----
-$scheduleRequests = $pdo->query("
-    SELECT s.*, CONCAT(e.first_name, ' ', e.last_name) AS employee_name, d.department_code,
-           CONCAT(r.first_name, ' ', r.last_name) AS requested_by_name
-    FROM schedules s
-    JOIN employees e ON s.employee_id = e.id
-    LEFT JOIN departments d ON e.department_id = d.id
-    LEFT JOIN employees r ON s.requested_by = r.id
-    WHERE s.is_rest_day = 0
-    ORDER BY FIELD(s.status, 'pending', 'approved', 'rejected'), s.schedule_date DESC
-    LIMIT 300
-")->fetchAll(PDO::FETCH_ASSOC);
+if ($deptScoped) {
+    $srStmt = $pdo->prepare("
+        SELECT s.*, CONCAT(e.first_name, ' ', e.last_name) AS employee_name, d.department_code,
+               CONCAT(r.first_name, ' ', r.last_name) AS requested_by_name
+        FROM schedules s
+        JOIN employees e ON s.employee_id = e.id
+        LEFT JOIN departments d ON e.department_id = d.id
+        LEFT JOIN employees r ON s.requested_by = r.id
+        WHERE s.is_rest_day = 0 AND e.department_id = ?
+        ORDER BY FIELD(s.status, 'pending', 'approved', 'rejected'), s.schedule_date DESC
+        LIMIT 300
+    ");
+    $srStmt->execute([$myDeptId]);
+    $scheduleRequests = $srStmt->fetchAll(PDO::FETCH_ASSOC);
+} else {
+    $scheduleRequests = $pdo->query("
+        SELECT s.*, CONCAT(e.first_name, ' ', e.last_name) AS employee_name, d.department_code,
+               CONCAT(r.first_name, ' ', r.last_name) AS requested_by_name
+        FROM schedules s
+        JOIN employees e ON s.employee_id = e.id
+        LEFT JOIN departments d ON e.department_id = d.id
+        LEFT JOIN employees r ON s.requested_by = r.id
+        WHERE s.is_rest_day = 0
+        ORDER BY FIELD(s.status, 'pending', 'approved', 'rejected'), s.schedule_date DESC
+        LIMIT 300
+    ")->fetchAll(PDO::FETCH_ASSOC);
+}
 
 function getStatusBadge(string $status): string {
     $badges = [

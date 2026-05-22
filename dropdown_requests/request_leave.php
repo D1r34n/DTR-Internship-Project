@@ -12,6 +12,8 @@ require_once '../db.php';
 date_default_timezone_set('Asia/Manila');
 
 $employeeId    = $_SESSION['user_id'];
+$autoApprove   = in_array($_SESSION['user_role'], ['superadmin', 'admin', 'manager']);
+$initialStatus = $autoApprove ? 'approved' : 'pending';
 $leaveType     = trim($_POST['leave_type']     ?? '');
 $startDate     = trim($_POST['start_date']     ?? '');
 $endDate       = trim($_POST['end_date']       ?? '');
@@ -134,10 +136,11 @@ if ($check->fetchColumn() > 0) {
 try {
     $pdo->prepare("
         INSERT INTO leave_requests (employee_id, leave_type, start_date, end_date, selected_dates, reason, status)
-        VALUES (?, ?, ?, ?, ?, ?, 'pending')
-    ")->execute([$employeeId, $leaveType, $startDate, $endDate, $selectedDates, $reason]);
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    ")->execute([$employeeId, $leaveType, $startDate, $endDate, $selectedDates, $reason, $initialStatus]);
 
-    echo json_encode(['success' => true, 'message' => 'Leave request submitted successfully!']);
+    $msg = $autoApprove ? 'Leave request approved.' : 'Leave request submitted successfully!';
+    echo json_encode(['success' => true, 'message' => $msg]);
 
 } catch (Exception $e) {
     echo json_encode(['success' => false, 'message' => 'Something went wrong. Please try again.']);

@@ -47,7 +47,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     }
 
     $stmt = $pdo->prepare("
-        SELECT e.id, CONCAT(e.first_name, ' ', e.last_name) AS name, e.profile_image, e.email, e.password, r.role_key AS role
+        SELECT e.id, CONCAT(e.first_name, ' ', e.last_name) AS name, e.profile_image, e.email, e.password, r.role_key AS role, e.department_id
         FROM employees e
         LEFT JOIN roles r ON r.id = e.role_id
         WHERE e.email = ?
@@ -65,11 +65,12 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
         session_regenerate_id(true);
 
-        $_SESSION['user_id']    = $employee['id'];
+        $_SESSION['user_id']       = $employee['id'];
         $_SESSION['profile_image'] = $employee['profile_image'];
-        $_SESSION['user_email'] = $employee['email'];
-        $_SESSION['user_name']  = $employee['name'];
-        $_SESSION['user_role']  = $employee['role'];
+        $_SESSION['user_email']    = $employee['email'];
+        $_SESSION['user_name']     = $employee['name'];
+        $_SESSION['user_role']     = $employee['role'];
+        $_SESSION['department_id'] = $employee['department_id'];
 
         unset($_SESSION['error_email'], $_SESSION['error_password'], $_SESSION['old_email']);
 

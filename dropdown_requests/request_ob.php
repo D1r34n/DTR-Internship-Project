@@ -11,7 +11,9 @@ if (!isset($_SESSION['user_id'])) {
 require_once '../db.php';
 date_default_timezone_set('Asia/Manila');
 
-$employeeId = $_SESSION['user_id'];
+$employeeId    = $_SESSION['user_id'];
+$autoApprove   = in_array($_SESSION['user_role'], ['superadmin', 'admin', 'manager']);
+$initialStatus = $autoApprove ? 'approved' : 'pending';
 $obDate     = trim($_POST['ob_date']     ?? '');
 $clientName = trim($_POST['client_name'] ?? '');
 $reason     = trim($_POST['reason']      ?? '');
@@ -53,10 +55,11 @@ if ($dupCheck->fetchColumn() > 0) {
 try {
     $pdo->prepare("
         INSERT INTO leave_requests (employee_id, leave_type, start_date, end_date, selected_dates, reason, client_name, status)
-        VALUES (?, 'ob leave', ?, ?, ?, ?, ?, 'pending')
-    ")->execute([$employeeId, $obDate, $obDate, json_encode([$obDate]), $reason, $clientName]);
+        VALUES (?, 'ob leave', ?, ?, ?, ?, ?, ?)
+    ")->execute([$employeeId, $obDate, $obDate, json_encode([$obDate]), $reason, $clientName, $initialStatus]);
 
-    echo json_encode(['success' => true, 'message' => 'OB request submitted successfully!']);
+    $msg = $autoApprove ? 'OB request approved.' : 'OB request submitted successfully!';
+    echo json_encode(['success' => true, 'message' => $msg]);
 } catch (Exception $e) {
     echo json_encode(['success' => false, 'message' => 'Something went wrong. Please try again.']);
 }

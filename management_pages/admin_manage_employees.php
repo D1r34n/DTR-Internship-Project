@@ -3,7 +3,7 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-if (!isset($_SESSION['user_id']) || !in_array($_SESSION['user_role'], ['superadmin', 'workforce'])) {
+if (!isset($_SESSION['user_id']) || !in_array($_SESSION['user_role'], ['superadmin', 'admin', 'manager', 'workforce'])) {
     header("Location: ../index.php");
     exit();
 }
@@ -107,9 +107,9 @@ $_SESSION['form_token'] = bin2hex(random_bytes(16));
 // ---- GET ALL ROLES ----
 $roles = $pdo->query("SELECT role_key, role_name FROM roles ORDER BY id")->fetchAll(PDO::FETCH_ASSOC);
 
-// ---- WORKFORCE: restrict to own department ----
+// ---- WORKFORCE / MANAGER: restrict to own department ----
 $workforceDeptId = null;
-if ($_SESSION['user_role'] === 'workforce') {
+if (in_array($_SESSION['user_role'], ['workforce', 'manager'])) {
     $deptStmt = $pdo->prepare("SELECT department_id FROM employees WHERE id = ?");
     $deptStmt->execute([$_SESSION['user_id']]);
     $workforceDeptId = $deptStmt->fetchColumn();
@@ -370,6 +370,7 @@ $initialDeptFilter = isset($_GET['dept']) ? (int)$_GET['dept'] : 0;
 
                         <ul class="dropdown-menu dropdown-menu-end">
 
+                            <?php if ($_SESSION['user_role'] !== 'manager'): ?>
                             <li>
                                 <a class="dropdown-item"
                                 href="#"
@@ -380,6 +381,7 @@ $initialDeptFilter = isset($_GET['dept']) ? (int)$_GET['dept'] : 0;
                             </li>
 
                             <li><hr class="dropdown-divider"></li>
+                            <?php endif; ?>
 
                             <li>
                                 <a class="dropdown-item"

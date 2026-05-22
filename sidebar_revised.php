@@ -70,9 +70,9 @@ $schedulesOpen = in_array($currentPage, ['schedule', 'cutoffs']);
         <?php navLink('../regular_pages/dashboard_page.php', 'bi-columns-gap', 'Dashboard', $currentPage === 'dashboard'); ?>
         <?php navLink('../regular_pages/records_page.php', 'bi-bar-chart-steps',  'Records', $currentPage === 'records');    ?>
         
-        <?php if ($role === 'superadmin'): ?>
-            
-             <!-- SCHEDULE DROPDOWN -->
+        <?php if (in_array($role, ['superadmin'])): ?>
+
+            <!-- SCHEDULE DROPDOWN -->
             <div class="sidebar-dropdown">
                 <button
                     class="sidebar-link sidebar-dropdown-toggle <?= $schedulesOpen ? 'active' : '' ?>"
@@ -87,7 +87,7 @@ $schedulesOpen = in_array($currentPage, ['schedule', 'cutoffs']);
                 </button>
 
                 <div id="schedules-submenu" class="collapse <?= $schedulesOpen ? 'show' : '' ?>">
-                    
+
                     <!-- CALENDAR -->
                     <a href="../regular_pages/schedules_page.php"
                        class="sidebar-sub-link <?= ($currentPage === 'schedule') ? 'active' : '' ?>">
@@ -95,7 +95,7 @@ $schedulesOpen = in_array($currentPage, ['schedule', 'cutoffs']);
                         <span>Calendar</span>
                     </a>
 
-                     <!-- CUT-OFF PERIODS -->
+                    <!-- CUT-OFF PERIODS -->
                     <a href="../management_pages/admin_cutoff.php"
                        class="sidebar-sub-link <?= ($currentPage === 'cutoffs') ? 'active' : '' ?>">
                         <i class="bi bi-scissors"></i>
@@ -103,19 +103,21 @@ $schedulesOpen = in_array($currentPage, ['schedule', 'cutoffs']);
                     </a>
                 </div>
             </div>
-            <?php else: ?>
-            <?php navLink('../regular_pages/schedules_page.php', 'bi-calendar-week',  'Schedules', $currentPage === 'schedule'); ?>
-        <?php endif; ?>  
-        <?php navLink('../regular_pages/logs_page.php',        'bi-journal-text',  'Activity Logs',        $currentPage === 'logs'); ?>
 
+        <?php else: ?>
+            <?php navLink('../regular_pages/schedules_page.php', 'bi-calendar-week', 'Schedules', $currentPage === 'schedule'); ?>
+        <?php endif; ?>
 
-        <!-- ADMIN MENU -->
-        <?php if ($role === 'superadmin'): ?>
+        <?php navLink('../regular_pages/logs_page.php', 'bi-journal-text', 'Activity Logs', $currentPage === 'logs'); ?>
+
+        <!-- MANAGEMENT MENU -->
+        <?php if (in_array($role, ['superadmin', 'admin', 'manager'])): ?>
 
             <!-- MANAGE EMPLOYEES -->
-            <?php navLink('../management_pages/admin_manage_employees.php',    'bi-people', 'Manage Employees',   $currentPage === 'manage_employees');   ?>
+            <?php navLink('../management_pages/admin_manage_employees.php', 'bi-people', 'Manage Employees', $currentPage === 'manage_employees'); ?>
 
-            <!-- REQUESTS DROPDOWN -->
+            <!-- REQUESTS DROPDOWN — manager and superadmin only -->
+            <?php if (in_array($role, ['superadmin', 'manager'])): ?>
             <div class="sidebar-dropdown">
                 <button
                     class="sidebar-link sidebar-dropdown-toggle <?= $requestsOpen ? 'active' : '' ?>"
@@ -142,9 +144,12 @@ $schedulesOpen = in_array($currentPage, ['schedule', 'cutoffs']);
                     </a>
                 </div>
             </div>
+            <?php endif; ?>
 
-            <!-- DEPARTMENTS LIST -->
-            <?php navLink('../management_pages/admin_departments.php',    'bi-building-gear', 'Departments',       $currentPage === 'departments'); ?>
+            <!-- DEPARTMENTS — superadmin only -->
+            <?php if ($role === 'superadmin'): ?>
+                <?php navLink('../management_pages/admin_departments.php', 'bi-building-gear', 'Departments', $currentPage === 'departments'); ?>
+            <?php endif; ?>
 
         <?php endif; ?>
 

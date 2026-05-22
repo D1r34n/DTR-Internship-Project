@@ -11,7 +11,9 @@ if (!isset($_SESSION['user_id'])) {
 require_once '../db.php';
 date_default_timezone_set('Asia/Manila');
 
-$employeeId = $_SESSION['user_id'];
+$employeeId    = $_SESSION['user_id'];
+$autoApprove   = in_array($_SESSION['user_role'], ['superadmin', 'admin', 'manager']);
+$initialStatus = $autoApprove ? 'approved' : 'pending';
 
 $date     = $_POST['date']   ?? null;
 $time_in  = $_POST['time_in']  ?? null;
@@ -28,19 +30,20 @@ try {
     // 1. Insert into overtime_requests
     $stmt = $pdo->prepare("
         INSERT INTO overtime_requests (employee_id, date, time_in, time_out, reason, status)
-        VALUES (?, ?, ?, ?, ?, 'pending')
+        VALUES (?, ?, ?, ?, ?, ?)
     ");
-    $stmt->execute([$employeeId, $date, $time_in, $time_out, $reason]);
+    $stmt->execute([$employeeId, $date, $time_in, $time_out, $reason, $initialStatus]);
 
-    // 2. Update attendances overtime_status to 'pending'
+    // 2. Update attendances overtime_status to match
     $stmt2 = $pdo->prepare("
         UPDATE attendances
-        SET overtime_status = 'pending'
+        SET overtime_status = ?
         WHERE employee_id = ? AND work_date = ?
     ");
-    $stmt2->execute([$employeeId, $date]);
+    $stmt2->execute([$initialStatus, $employeeId, $date]);
 
-    echo json_encode(['success' => true, 'message' => 'OT request submitted!']);
+    $msg = $autoApprove ? 'OT request approved.' : 'OT request submitted!';
+    echo json_encode(['success' => true, 'message' => $msg]);
 
 } catch (Exception $e) {
     echo json_encode(['success' => false, 'message' => 'Something went wrong. Please try again.']);
