@@ -291,7 +291,7 @@ function renderRecordRows(data) {
                   barLeft: 0, barWidth: 100, midLeft: 50 };
         } else if (obStatus === 'approved') {
             g = { ...g, type: 'absent_or_future', barClass: 'ganttBarOB',
-                  labelClass: 'ganttAbsentLabel', labelText: 'On OB',
+                  labelClass: 'ganttOBLabel', labelText: 'On OB',
                   barLeft: 0, barWidth: 100, midLeft: 50 };
         }
 

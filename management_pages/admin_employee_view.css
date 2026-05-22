@@ -160,6 +160,23 @@ body {
     padding: 0 1rem 1rem 1rem;
 }
 
+/* Tab2 (Records) — scrollbar at card edge */
+.ev-tabs #tab2.tab-pane.show.active {
+    padding-right: 0;
+}
+#tab2 .records-card-body {
+    padding-right: 0;
+}
+
+/* Tab3 (Logs) — scrollbar at card edge */
+.ev-tabs #tab3.tab-pane.show.active {
+    padding-right: 0;
+}
+#tab3 .table-scroll-wrapper {
+    scrollbar-gutter: stable;
+    padding-right: 1rem;
+}
+
 #tab1 #sw-cal-wrapper {
     margin-right: -1rem;
     padding-right: 1rem;
@@ -1294,6 +1311,7 @@ body {
 }
 
 .ganttAbsentLabel  { color: var(--gantt-absent-color); }
+.ganttOBLabel      { color: #a07de0; }
 .ganttPendingLabel { color: var(--text-lightest); }
 
 .ganttMarker {

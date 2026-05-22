@@ -173,6 +173,8 @@
     min-height: 100%;
     overflow-y: auto;
     overflow-x: hidden;
+    scrollbar-gutter: stable;
+    padding-right: 1.5rem;
 }
 
 .gantt-container::-webkit-scrollbar {
@@ -420,18 +422,21 @@
 
 .ganttBar:hover .ganttBarLabel { opacity: 1; }
 
-.ganttAbsentLabel {
+.ganttAbsentLabel,
+.ganttOBLabel {
     position: absolute;
     top: 50%;
     transform: translate(-50%, -50%);
     font-size: 10px;
     font-weight: 600;
-    color: var(--gantt-absent-color);
     text-transform: uppercase;
     pointer-events: none;
     white-space: nowrap;
     z-index: 2;
 }
+
+.ganttAbsentLabel { color: var(--gantt-absent-color); }
+.ganttOBLabel     { color: #a07de0; }
 
 .ganttPendingLabel {
     position: absolute;
