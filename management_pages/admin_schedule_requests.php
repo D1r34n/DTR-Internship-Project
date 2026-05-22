@@ -251,17 +251,13 @@ function getStatusBadge(string $status): string {
                 </div>
 
                 <!-- Table -->
-                <div class="tableHeaderGlass">
-                    <table class="table table-borderless mb-0">
+                <div class="tableScroll">
+                    <table class="table table-hover mb-0">
                         <thead><tr>
                             <th>Employee</th><th>Department</th><th>Date</th>
                             <th>Time In</th><th>Time Out</th><th>Shift</th>
                             <th>Requested By</th><th>Status</th><th>Actions</th>
                         </tr></thead>
-                    </table>
-                </div>
-                <div class="tableScroll">
-                    <table class="table table-hover mb-0">
                         <tbody>
                             <?php if (count($scheduleRequests) > 0): ?>
                                 <?php foreach ($scheduleRequests as $row): ?>
