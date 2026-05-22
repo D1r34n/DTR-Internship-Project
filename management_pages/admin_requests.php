@@ -38,14 +38,14 @@ if (isset($_GET['action'], $_GET['type'], $_GET['id'])) {
         ")->execute([$status, $id]);
 
     } elseif ($type === 'log_edit') {
+        $leStmt = $pdo->prepare("SELECT * FROM log_edit_requests WHERE id = ?");
+        $leStmt->execute([$id]);
+        $le = $leStmt->fetch(PDO::FETCH_ASSOC);
+
         $pdo->prepare("UPDATE log_edit_requests SET status = ? WHERE id = ?")
             ->execute([$status, $id]);
 
-        if ($status === 'approved') {
-            $leStmt = $pdo->prepare("SELECT * FROM log_edit_requests WHERE id = ?");
-            $leStmt->execute([$id]);
-            $le = $leStmt->fetch(PDO::FETCH_ASSOC);
-
+        if ($status === 'approved' && $le) {
             // 1. Update the log row first
             if ($le['log_id']) {
                 $newTime = $le['requested_time_in'] ?? $le['requested_time_out'];

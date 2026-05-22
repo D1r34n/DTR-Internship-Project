@@ -589,6 +589,11 @@ swCalendar = new FullCalendar.Calendar(calEl, {
 
 swCalendar.render();
 
+/* ---- Resize for sidebar / window (keep calendar correctly sized) ---- */
+const swScopedSidebar = document.getElementById('sidebar');
+if (swScopedSidebar) new ResizeObserver(() => { swCalendar.updateSize(); }).observe(swScopedSidebar);
+window.addEventListener('resize', () => { swCalendar.updateSize(); });
+
 /* ---- Flatpickr ---- */
 swFpEdit = flatpickr('#swEditSchedDatePicker', {
     mode: 'range',
