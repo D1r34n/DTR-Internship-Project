@@ -117,6 +117,7 @@ if (in_array($_SESSION['user_role'], ['workforce', 'manager'])) {
 
 // ---- GET ALL EMPLOYEES ----
 if ($workforceDeptId) {
+    $hideManager = ($_SESSION['user_role'] === 'workforce') ? "AND r.role_key != 'manager'" : '';
     $empStmt = $pdo->prepare("
         SELECT e.*, CONCAT(e.first_name, ' ', e.last_name) AS name,
                r.role_key AS role, r.role_name,
@@ -124,7 +125,7 @@ if ($workforceDeptId) {
         FROM employees e
         LEFT JOIN roles r ON r.id = e.role_id
         LEFT JOIN departments d ON e.department_id = d.id
-        WHERE e.department_id = ?
+        WHERE e.department_id = ? {$hideManager}
         ORDER BY e.first_name, e.last_name
     ");
     $empStmt->execute([$workforceDeptId]);
@@ -370,7 +371,7 @@ $initialDeptFilter = isset($_GET['dept']) ? (int)$_GET['dept'] : 0;
 
                         <ul class="dropdown-menu dropdown-menu-end">
 
-                            <?php if ($_SESSION['user_role'] !== 'manager'): ?>
+                            <?php if (!in_array($_SESSION['user_role'], ['manager', 'workforce'])): ?>
                             <li>
                                 <a class="dropdown-item"
                                 href="#"

@@ -3,7 +3,7 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-if (!isset($_SESSION['user_id']) || !in_array($_SESSION['user_role'], ['superadmin', 'admin', 'manager'])) {
+if (!isset($_SESSION['user_id']) || !in_array($_SESSION['user_role'], ['superadmin', 'admin', 'manager', 'workforce'])) {
     header("Location: ../index.php");
     exit();
 }
@@ -43,7 +43,12 @@ if (!isset($_GET['employee_id'])) {
     exit();
 }
 
-$refStmt = $pdo->prepare("SELECT id, employee_id, department_id FROM employees WHERE employee_id = ? LIMIT 1");
+$refStmt = $pdo->prepare("
+    SELECT e.id, e.employee_id, e.department_id, r.role_key
+    FROM employees e
+    LEFT JOIN roles r ON r.id = e.role_id
+    WHERE e.employee_id = ? LIMIT 1
+");
 $refStmt->execute([trim($_GET['employee_id'])]);
 $empLookup = $refStmt->fetch(PDO::FETCH_ASSOC);
 if (!$empLookup) {
@@ -51,13 +56,19 @@ if (!$empLookup) {
     exit();
 }
 
-// Manager can only view employees within their own department
-if ($_SESSION['user_role'] === 'manager') {
+// Manager and workforce can only view employees within their own department (if they have one)
+if (in_array($_SESSION['user_role'], ['manager', 'workforce'])) {
     $myDeptId = $_SESSION['department_id'] ?? null;
-    if (!$myDeptId || $empLookup['department_id'] != $myDeptId) {
+    if ($myDeptId && $empLookup['department_id'] != $myDeptId) {
         header("Location: admin_manage_employees.php");
         exit();
     }
+}
+
+// Workforce cannot view manager profiles
+if ($_SESSION['user_role'] === 'workforce' && $empLookup['role_key'] === 'manager') {
+    header("Location: admin_manage_employees.php");
+    exit();
 }
 
 $employeeId = (int) $empLookup['id'];

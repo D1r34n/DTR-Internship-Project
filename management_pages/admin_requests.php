@@ -4,7 +4,7 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-if (!isset($_SESSION['user_id']) || !in_array($_SESSION['user_role'], ['superadmin', 'manager'])) {
+if (!isset($_SESSION['user_id']) || !in_array($_SESSION['user_role'], ['superadmin', 'manager', 'workforce'])) {
     header("Location: ../index.php");
     exit();
 }
@@ -14,7 +14,7 @@ date_default_timezone_set('Asia/Manila');
 
 $myRole     = $_SESSION['user_role'];
 $myDeptId   = $_SESSION['department_id'] ?? null;
-$deptScoped = ($myRole === 'manager' && $myDeptId);
+$deptScoped = (in_array($myRole, ['manager', 'workforce']) && $myDeptId);
 
 $success = "";
 $error   = "";

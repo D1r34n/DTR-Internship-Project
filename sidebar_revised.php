@@ -111,13 +111,13 @@ $schedulesOpen = in_array($currentPage, ['schedule', 'cutoffs']);
         <?php navLink('../regular_pages/logs_page.php', 'bi-journal-text', 'Activity Logs', $currentPage === 'logs'); ?>
 
         <!-- MANAGEMENT MENU -->
-        <?php if (in_array($role, ['superadmin', 'admin', 'manager'])): ?>
+        <?php if (in_array($role, ['superadmin', 'admin', 'manager', 'workforce'])): ?>
 
             <!-- MANAGE EMPLOYEES -->
             <?php navLink('../management_pages/admin_manage_employees.php', 'bi-people', 'Manage Employees', $currentPage === 'manage_employees'); ?>
 
-            <!-- REQUESTS DROPDOWN — manager and superadmin only -->
-            <?php if (in_array($role, ['superadmin', 'manager'])): ?>
+            <!-- REQUESTS DROPDOWN — manager, workforce, and superadmin only -->
+            <?php if (in_array($role, ['superadmin', 'manager', 'workforce'])): ?>
             <div class="sidebar-dropdown">
                 <button
                     class="sidebar-link sidebar-dropdown-toggle <?= $requestsOpen ? 'active' : '' ?>"
