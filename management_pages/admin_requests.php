@@ -1,4 +1,3 @@
-
 <?php
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
@@ -507,11 +506,14 @@ function getActionButtons($type, $id, $status) {
                                         <td class="actionsCol"><?= getActionButtons('log_edit', $row['id'], $row['status']) ?></td>
                                     </tr>
                                 <?php endforeach; ?>
-                                <?php if (empty($leaveRequests) && empty($overtimeRequests) && empty($obRequests) && empty($logEditRequests)): ?>
-                                    <tr><td colspan="6" class="text-center">No requests found.</td></tr>
-                                <?php endif; ?>
                             </tbody>
                         </table>
+                        <?php if (empty($leaveRequests) && empty($overtimeRequests) && empty($obRequests) && empty($logEditRequests)): ?>
+                        <div class="table-empty">
+                            <i class="bi bi-calendar2-x-fill"></i>
+                            <div class="text-meta">No requests found.</div>
+                        </div>
+                        <?php endif; ?>
                     </div>
                 </div>
 
@@ -524,23 +526,25 @@ function getActionButtons($type, $id, $status) {
                                 <th>End</th><th>Reason</th><th>Status</th><th>Actions</th>
                             </tr></thead>
                             <tbody>
-                                <?php if (count($leaveRequests) > 0): ?>
-                                    <?php foreach ($leaveRequests as $row): ?>
-                                        <tr>
-                                            <td><?= htmlspecialchars($row['employee_name']) ?></td>
-                                            <td><span class="badge request-leave"><?= ucfirst($row['leave_type']) ?></span></td>
-                                            <td><?= date('M d, Y', strtotime($row['start_date'])) ?></td>
-                                            <td><?= date('M d, Y', strtotime($row['end_date'])) ?></td>
-                                            <td class="reasonCol"><?= htmlspecialchars($row['reason']) ?></td>
-                                            <td><?= getStatusBadge($row['status']) ?></td>
-                                            <td class="actionsCol"><?= getActionButtons('leave', $row['id'], $row['status']) ?></td>
-                                        </tr>
-                                    <?php endforeach; ?>
-                                <?php else: ?>
-                                    <tr><td colspan="7" class="text-center">No leave requests found.</td></tr>
-                                <?php endif; ?>
+                                <?php foreach ($leaveRequests as $row): ?>
+                                    <tr>
+                                        <td><?= htmlspecialchars($row['employee_name']) ?></td>
+                                        <td><span class="badge request-leave"><?= ucfirst($row['leave_type']) ?></span></td>
+                                        <td><?= date('M d, Y', strtotime($row['start_date'])) ?></td>
+                                        <td><?= date('M d, Y', strtotime($row['end_date'])) ?></td>
+                                        <td class="reasonCol"><?= htmlspecialchars($row['reason']) ?></td>
+                                        <td><?= getStatusBadge($row['status']) ?></td>
+                                        <td class="actionsCol"><?= getActionButtons('leave', $row['id'], $row['status']) ?></td>
+                                    </tr>
+                                <?php endforeach; ?>
                             </tbody>
                         </table>
+                        <?php if (empty($leaveRequests)): ?>
+                        <div class="table-empty">
+                            <i class="bi bi-calendar2-x-fill"></i>
+                            <div class="text-meta">No leave requests found.</div>
+                        </div>
+                        <?php endif; ?>
                     </div>
                 </div>
 
@@ -553,23 +557,25 @@ function getActionButtons($type, $id, $status) {
                                 <th>Time Out</th><th>Reason</th><th>Status</th><th>Actions</th>
                             </tr></thead>
                             <tbody>
-                                <?php if (count($overtimeRequests) > 0): ?>
-                                    <?php foreach ($overtimeRequests as $row): ?>
-                                        <tr>
-                                            <td><?= htmlspecialchars($row['employee_name']) ?></td>
-                                            <td><?= date('M d, Y', strtotime($row['date'])) ?></td>
-                                            <td><?= date('h:i A', strtotime($row['time_in'])) ?></td>
-                                            <td><?= date('h:i A', strtotime($row['time_out'])) ?></td>
-                                            <td class="reasonCol"><?= htmlspecialchars($row['reason']) ?></td>
-                                            <td><?= getStatusBadge($row['status']) ?></td>
-                                            <td class="actionsCol"><?= getActionButtons('overtime', $row['id'], $row['status']) ?></td>
-                                        </tr>
-                                    <?php endforeach; ?>
-                                <?php else: ?>
-                                    <tr><td colspan="7" class="text-center">No overtime requests found.</td></tr>
-                                <?php endif; ?>
+                                <?php foreach ($overtimeRequests as $row): ?>
+                                    <tr>
+                                        <td><?= htmlspecialchars($row['employee_name']) ?></td>
+                                        <td><?= date('M d, Y', strtotime($row['date'])) ?></td>
+                                        <td><?= date('h:i A', strtotime($row['time_in'])) ?></td>
+                                        <td><?= date('h:i A', strtotime($row['time_out'])) ?></td>
+                                        <td class="reasonCol"><?= htmlspecialchars($row['reason']) ?></td>
+                                        <td><?= getStatusBadge($row['status']) ?></td>
+                                        <td class="actionsCol"><?= getActionButtons('overtime', $row['id'], $row['status']) ?></td>
+                                    </tr>
+                                <?php endforeach; ?>
                             </tbody>
                         </table>
+                        <?php if (empty($overtimeRequests)): ?>
+                        <div class="table-empty">
+                            <i class="bi bi-calendar2-x-fill"></i>
+                            <div class="text-meta">No overtime requests found.</div>
+                        </div>
+                        <?php endif; ?>
                     </div>
                 </div>
 
@@ -582,38 +588,40 @@ function getActionButtons($type, $id, $status) {
                                 <th>Correction</th><th>Reason</th><th>Requested By</th><th>Status</th><th>Actions</th>
                             </tr></thead>
                             <tbody>
-                                <?php if (count($logEditRequests) > 0): ?>
-                                    <?php foreach ($logEditRequests as $row): ?>
-                                        <tr>
-                                            <td><?= htmlspecialchars($row['employee_name']) ?></td>
-                                            <td><?= date('M d, Y', strtotime($row['work_date'])) ?></td>
-                                            <td>
-                                                <?php
-                                                $typeLabels = ['time_in' => 'Time In', 'time_out' => 'Time Out', 'both' => 'Both'];
-                                                echo htmlspecialchars($typeLabels[$row['request_type']] ?? $row['request_type']);
-                                                ?>
-                                            </td>
-                                            <td><?= $row['original_log_time'] ? date('h:i A', strtotime($row['original_log_time'])) : '—' ?></td>
-                                            <td>
-                                                <?php if ($row['request_type'] === 'time_in'): ?>
-                                                    In: <?= date('h:i A', strtotime($row['requested_time_in'])) ?>
-                                                <?php elseif ($row['request_type'] === 'time_out'): ?>
-                                                    Out: <?= date('h:i A', strtotime($row['requested_time_out'])) ?>
-                                                <?php else: ?>
-                                                    In: <?= date('h:i A', strtotime($row['requested_time_in'])) ?> &rarr; Out: <?= date('h:i A', strtotime($row['requested_time_out'])) ?>
-                                                <?php endif; ?>
-                                            </td>
-                                            <td class="reasonCol"><?= htmlspecialchars($row['reason']) ?></td>
-                                            <td><?= getRolePill($row['requested_by_name'] ?? null, $row['requested_by_role'] ?? null) ?></td>
-                                            <td><?= getStatusBadge($row['status']) ?></td>
-                                            <td class="actionsCol"><?= getActionButtons('log_edit', $row['id'], $row['status']) ?></td>
-                                        </tr>
-                                    <?php endforeach; ?>
-                                <?php else: ?>
-                                    <tr><td colspan="9" class="text-center">No log edit requests found.</td></tr>
-                                <?php endif; ?>
+                                <?php foreach ($logEditRequests as $row): ?>
+                                    <tr>
+                                        <td><?= htmlspecialchars($row['employee_name']) ?></td>
+                                        <td><?= date('M d, Y', strtotime($row['work_date'])) ?></td>
+                                        <td>
+                                            <?php
+                                            $typeLabels = ['time_in' => 'Time In', 'time_out' => 'Time Out', 'both' => 'Both'];
+                                            echo htmlspecialchars($typeLabels[$row['request_type']] ?? $row['request_type']);
+                                            ?>
+                                        </td>
+                                        <td><?= $row['original_log_time'] ? date('h:i A', strtotime($row['original_log_time'])) : '—' ?></td>
+                                        <td>
+                                            <?php if ($row['request_type'] === 'time_in'): ?>
+                                                In: <?= date('h:i A', strtotime($row['requested_time_in'])) ?>
+                                            <?php elseif ($row['request_type'] === 'time_out'): ?>
+                                                Out: <?= date('h:i A', strtotime($row['requested_time_out'])) ?>
+                                            <?php else: ?>
+                                                In: <?= date('h:i A', strtotime($row['requested_time_in'])) ?> &rarr; Out: <?= date('h:i A', strtotime($row['requested_time_out'])) ?>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td class="reasonCol"><?= htmlspecialchars($row['reason']) ?></td>
+                                        <td><?= getRolePill($row['requested_by_name'] ?? null, $row['requested_by_role'] ?? null) ?></td>
+                                        <td><?= getStatusBadge($row['status']) ?></td>
+                                        <td class="actionsCol"><?= getActionButtons('log_edit', $row['id'], $row['status']) ?></td>
+                                    </tr>
+                                <?php endforeach; ?>
                             </tbody>
                         </table>
+                        <?php if (empty($logEditRequests)): ?>
+                        <div class="table-empty">
+                            <i class="bi bi-calendar2-x-fill"></i>
+                            <div class="text-meta">No log edit requests found.</div>
+                        </div>
+                        <?php endif; ?>
                     </div>
                 </div>
 
@@ -626,22 +634,24 @@ function getActionButtons($type, $id, $status) {
                                 <th>Reason</th><th>Status</th><th>Actions</th>
                             </tr></thead>
                             <tbody>
-                                <?php if (count($obRequests) > 0): ?>
-                                    <?php foreach ($obRequests as $row): ?>
-                                        <tr>
-                                            <td><?= htmlspecialchars($row['employee_name']) ?></td>
-                                            <td><?= date('M d, Y', strtotime($row['start_date'])) ?></td>
-                                            <td><?= htmlspecialchars($row['client_name']) ?></td>
-                                            <td class="reasonCol"><?= htmlspecialchars($row['reason']) ?></td>
-                                            <td><?= getStatusBadge($row['status']) ?></td>
-                                            <td class="actionsCol"><?= getActionButtons('leave', $row['id'], $row['status']) ?></td>
-                                        </tr>
-                                    <?php endforeach; ?>
-                                <?php else: ?>
-                                    <tr><td colspan="6" class="text-center">No OB requests found.</td></tr>
-                                <?php endif; ?>
+                                <?php foreach ($obRequests as $row): ?>
+                                    <tr>
+                                        <td><?= htmlspecialchars($row['employee_name']) ?></td>
+                                        <td><?= date('M d, Y', strtotime($row['start_date'])) ?></td>
+                                        <td><?= htmlspecialchars($row['client_name']) ?></td>
+                                        <td class="reasonCol"><?= htmlspecialchars($row['reason']) ?></td>
+                                        <td><?= getStatusBadge($row['status']) ?></td>
+                                        <td class="actionsCol"><?= getActionButtons('leave', $row['id'], $row['status']) ?></td>
+                                    </tr>
+                                <?php endforeach; ?>
                             </tbody>
                         </table>
+                        <?php if (empty($obRequests)): ?>
+                        <div class="table-empty">
+                            <i class="bi bi-calendar2-x-fill"></i>
+                            <div class="text-meta">No OB requests found.</div>
+                        </div>
+                        <?php endif; ?>
                     </div>
                 </div>
 

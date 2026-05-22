@@ -612,6 +612,22 @@ body {
 }
 
 /* ============================================================
+   EMPTY STATE
+   ============================================================ */
+
+.table-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    color: var(--text-light);
+    font-size: 5rem;
+    min-height: 200px;
+    width: 100%;
+}
+
+/* ============================================================
    MOBILE
    ============================================================ */
 

@@ -259,50 +259,52 @@ function getStatusBadge(string $status): string {
                             <th>Requested By</th><th>Status</th><th>Actions</th>
                         </tr></thead>
                         <tbody>
-                            <?php if (count($scheduleRequests) > 0): ?>
-                                <?php foreach ($scheduleRequests as $row): ?>
-                                    <?php
-                                        $startHour    = $row['scheduled_start'] ? (int)date('H', strtotime($row['scheduled_start'])) : 6;
-                                        $isNightShift = ($startHour >= 18 || $startHour < 6);
-                                    ?>
-                                    <tr data-status="<?= $row['status'] ?>">
-                                        <td><?= htmlspecialchars($row['employee_name']) ?></td>
-                                        <td><?= $row['department_code'] ? htmlspecialchars($row['department_code']) : '—' ?></td>
-                                        <td><?= date('M d, Y', strtotime($row['schedule_date'])) ?></td>
-                                        <td><?= $row['scheduled_start'] ? date('h:i A', strtotime($row['scheduled_start'])) : '—' ?></td>
-                                        <td><?= $row['scheduled_end']   ? date('h:i A', strtotime($row['scheduled_end']))   : '—' ?></td>
-                                        <td>
-                                            <?php if ($isNightShift): ?>
-                                                <span class="badge request-overtime">Night</span>
-                                            <?php else: ?>
-                                                <span class="badge status-info">Day</span>
-                                            <?php endif; ?>
-                                        </td>
-                                        <td><?= getRolePill($row['requested_by_name'] ?? null, $row['requested_by_role'] ?? null) ?></td>
-                                        <td><?= getStatusBadge($row['status']) ?></td>
-                                        <td class="actionsCol">
-                                            <?php if ($row['status'] === 'pending'): ?>
-                                                <a href="admin_schedule_requests.php?action=approve&id=<?= $row['id'] ?>"
-                                                   class="btn btn-sm btn-success"
-                                                   onclick="return confirm('Approve this schedule?')">
-                                                    <i class="bi bi-check-lg"></i> Approve
-                                                </a>
-                                                <a href="admin_schedule_requests.php?action=reject&id=<?= $row['id'] ?>"
-                                                   class="btn btn-sm btn-danger"
-                                                   onclick="return confirm('Reject this schedule?')">
-                                                    <i class="bi bi-x-lg"></i> Reject
-                                                </a>
-                                            <?php else: ?>
-                                                <span class="no-action-text">No actions</span>
-                                            <?php endif; ?>
-                                        </td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            <?php else: ?>
-                                <tr><td colspan="9" class="text-center">No schedule requests found.</td></tr>
-                            <?php endif; ?>
+                            <?php foreach ($scheduleRequests as $row): ?>
+                                <?php
+                                    $startHour    = $row['scheduled_start'] ? (int)date('H', strtotime($row['scheduled_start'])) : 6;
+                                    $isNightShift = ($startHour >= 18 || $startHour < 6);
+                                ?>
+                                <tr data-status="<?= $row['status'] ?>">
+                                    <td><?= htmlspecialchars($row['employee_name']) ?></td>
+                                    <td><?= $row['department_code'] ? htmlspecialchars($row['department_code']) : '—' ?></td>
+                                    <td><?= date('M d, Y', strtotime($row['schedule_date'])) ?></td>
+                                    <td><?= $row['scheduled_start'] ? date('h:i A', strtotime($row['scheduled_start'])) : '—' ?></td>
+                                    <td><?= $row['scheduled_end']   ? date('h:i A', strtotime($row['scheduled_end']))   : '—' ?></td>
+                                    <td>
+                                        <?php if ($isNightShift): ?>
+                                            <span class="badge request-overtime">Night</span>
+                                        <?php else: ?>
+                                            <span class="badge status-info">Day</span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td><?= getRolePill($row['requested_by_name'] ?? null, $row['requested_by_role'] ?? null) ?></td>
+                                    <td><?= getStatusBadge($row['status']) ?></td>
+                                    <td class="actionsCol">
+                                        <?php if ($row['status'] === 'pending'): ?>
+                                            <a href="admin_schedule_requests.php?action=approve&id=<?= $row['id'] ?>"
+                                               class="btn btn-sm btn-success"
+                                               onclick="return confirm('Approve this schedule?')">
+                                                <i class="bi bi-check-lg"></i> Approve
+                                            </a>
+                                            <a href="admin_schedule_requests.php?action=reject&id=<?= $row['id'] ?>"
+                                               class="btn btn-sm btn-danger"
+                                               onclick="return confirm('Reject this schedule?')">
+                                                <i class="bi bi-x-lg"></i> Reject
+                                            </a>
+                                        <?php else: ?>
+                                            <span class="no-action-text">No actions</span>
+                                        <?php endif; ?>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
                         </tbody>
                     </table>
+                    <?php if (empty($scheduleRequests)): ?>
+                    <div class="table-empty">
+                        <i class="bi bi-calendar2-x-fill"></i>
+                        <div class="text-meta">No schedule requests found.</div>
+                    </div>
+                    <?php endif; ?>
                 </div>
 
             </div>
