@@ -1008,6 +1008,12 @@ button.btn-sm {
     transform: translateY(-2px);
 }
 
+.card-locked {
+    opacity: 0.45;
+    pointer-events: none;
+    user-select: none;
+}
+
 .card-neutral {
     background: var(--frosted-bg) linear-gradient(
         to right,

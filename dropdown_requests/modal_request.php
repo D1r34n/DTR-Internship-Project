@@ -160,7 +160,7 @@
         <small class="text-tertiary" style="line-height:1.5;">Enter the corrected time for any log below — you can submit one edit or both at once.</small>
 
         <!-- Time In Card -->
-        <div class="card card-success">
+        <div id="log-edit-card-in" class="card card-success">
           <div class="card-body">
             <div class="card-header p-0">
               <div class="hstack d-flex mb-3">
@@ -168,11 +168,10 @@
                   <i class="bi bi-box-arrow-in-right"></i>
                 </div>
                 <span class="text-primary ms-3 fw-bold">Time In</span>
-                <span class="text-primary ms-auto">
+                <span class="text-primary ms-auto d-flex align-items-center gap-1">
                   Current:
-                  <span class="text-secondary fw-bold" id="log-edit-current-in">No Time In</span>
-                  <span id="log-edit-pending-in" class="ms-1 text-warning" style="display:none;font-size:0.75rem;font-weight:600;"><i class="bi bi-hourglass-split"></i> Pending</span>
-                  <span id="log-edit-norecord-in" class="ms-1 text-tertiary" style="display:none;font-size:0.75rem;font-weight:600;">No record</span>
+                  <span class="text-secondary fw-bold" id="log-edit-current-in"></span>
+                  <span id="log-edit-status-in" class="badge rounded-pill d-none"></span>
                 </span>
               </div>
             </div>
@@ -191,20 +190,29 @@
         </div>
 
         <!-- Time Out Card -->
-        <div class="card card-danger">
+        <div id="log-edit-card-out" class="card card-danger">
           <div class="card-body">
             <div class="card-header p-0">
-              <div class="hstack d-flex mb-3">
+              <div class="d-flex align-items-center mb-3">
+
                 <div class="icon-box icon-box-sm icon-box-danger">
                   <i class="bi bi-box-arrow-right"></i>
                 </div>
-                <span class="text-primary ms-3 fw-bold">Time Out</span>
-                <span class="text-primary ms-auto">
-                  Current:
-                  <span class="text-secondary fw-bold" id="log-edit-current-out">No Time Out</span>
-                  <span id="log-edit-pending-out" class="ms-1 text-warning" style="display:none;font-size:0.75rem;font-weight:600;"><i class="bi bi-hourglass-split"></i> Pending</span>
-                  <span id="log-edit-norecord-out" class="ms-1 text-tertiary" style="display:none;font-size:0.75rem;font-weight:600;">No record</span>
+
+                <span class="text-primary ms-3 fw-bold">
+                  Time Out
                 </span>
+
+                <div class="ms-auto d-flex align-items-center flex-wrap gap-3 text-primary">
+
+                  <span class="d-flex align-items-center gap-1">
+                    Current:
+                    <span class="text-secondary fw-bold" id="log-edit-current-out"></span>
+                    <span id="log-edit-status-out" class="badge rounded-pill d-none"></span>
+                  </span>
+
+                </div>
+
               </div>
             </div>
 
@@ -978,9 +986,25 @@
     btn.innerHTML = '<i class="bi bi-send"></i> Submit Edit';
   });
 
+  function setLeCardLocked(type, locked) {
+    document.getElementById(`log-edit-card-${type}`).classList.toggle('card-locked', locked);
+    document.getElementById(`log-edit-new-time-${type}`).disabled = locked;
+  }
+
+  function setLeStatus(type, status) {
+    const el = document.getElementById(`log-edit-status-${type}`);
+    el.className = 'badge';
+    if (!status) { el.classList.add('d-none'); return; }
+    const cfg = {
+      pending:  ['status-pending',  '<i class="bi bi-hourglass-split"></i> Pending'],
+      approved: ['status-approved', '<i class="bi bi-check-circle-fill"></i> Edited'],
+      norecord: ['status-rejected', `<i class="bi bi-x-circle-fill"></i> No Time ${type === 'in' ? 'In' : 'Out'}`],
+    }[status];
+    el.classList.add(cfg[0]);
+    el.innerHTML = cfg[1];
+  }
+
   function loadLeTodayLogs() {
-    document.getElementById('log-edit-current-in').textContent  = '—';
-    document.getElementById('log-edit-current-out').textContent = '—';
     document.getElementById('log-edit-new-time-in').value  = '';
     document.getElementById('log-edit-new-time-out').value = '';
     document.getElementById('log-edit-reason-time-in').value  = '';
@@ -989,12 +1013,12 @@
     const inpIn  = document.getElementById('log-edit-new-time-in');
     const inpOut = document.getElementById('log-edit-new-time-out');
 
-    inpIn.disabled  = false;
-    inpOut.disabled = false;
-    document.getElementById('log-edit-pending-in').style.display   = 'none';
-    document.getElementById('log-edit-pending-out').style.display  = 'none';
-    document.getElementById('log-edit-norecord-in').style.display  = 'none';
-    document.getElementById('log-edit-norecord-out').style.display = 'none';
+    setLeCardLocked('in', false);
+    setLeCardLocked('out', false);
+    setLeStatus('in', null);
+    setLeStatus('out', null);
+    document.getElementById('log-edit-current-in').textContent  = '';
+    document.getElementById('log-edit-current-out').textContent = '';
 
     fetch('/DTR-Internship-Project/dropdown_requests/get_logedit_logs.php')
       .then(r => r.json())
@@ -1008,31 +1032,31 @@
           const timeOnly   = `${pad(dt.getHours())}:${pad(dt.getMinutes())}`;
           const fmt        = dt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
           const hasPending = log.has_pending == 1;
-
+          const hasApproved = log.has_approved == 1;
           if (log.log_type === 'IN') {
             le2LogIdIn = log.log_id;
+
             document.getElementById('log-edit-current-in').textContent = fmt;
-            inpIn.disabled = hasPending;
-            document.getElementById('log-edit-reason-time-in').disabled = hasPending;
-            document.getElementById('log-edit-pending-in').style.display = hasPending ? '' : 'none';
+
+            setLeCardLocked('in', hasPending || hasApproved);
+            setLeStatus('in', hasPending ? 'pending' : hasApproved ? 'approved' : null);
           } else if (log.log_type === 'OUT') {
             le2LogIdOut = log.log_id;
+
             document.getElementById('log-edit-current-out').textContent = fmt;
-            inpOut.disabled = hasPending;
-            document.getElementById('log-edit-reason-time-out').disabled = hasPending;
-            document.getElementById('log-edit-pending-out').style.display = hasPending ? '' : 'none';
+
+            setLeCardLocked('out', hasPending || hasApproved);
+            setLeStatus('out', hasPending ? 'pending' : hasApproved ? 'approved' : null);
           }
         });
 
         if (!le2LogIdIn) {
-          inpIn.disabled = true;
-          document.getElementById('log-edit-reason-time-in').disabled = true;
-          document.getElementById('log-edit-norecord-in').style.display = '';
+          setLeCardLocked('in', true);
+          setLeStatus('in', 'norecord');
         }
         if (!le2LogIdOut) {
-          inpOut.disabled = true;
-          document.getElementById('log-edit-reason-time-out').disabled = true;
-          document.getElementById('log-edit-norecord-out').style.display = '';
+          setLeCardLocked('out', true);
+          setLeStatus('out', 'norecord');
         }
 
         updateLeSubmitBtn();
