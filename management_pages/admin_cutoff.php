@@ -1,7 +1,7 @@
 <?php
 if (session_status() === PHP_SESSION_NONE) session_start();
 
-if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'superadmin') {
+if (!isset($_SESSION['user_id']) || !in_array($_SESSION['user_role'], ['superadmin', 'admin', 'manager'])) {
     header("Location: ../index.php");
     exit();
 }
@@ -182,7 +182,7 @@ $currentPage = 'cutoffs';
                     <div class="d-flex justify-content-between align-items-center rounded p-3 mt-3"
                          style="background:var(--frosted-bg);border:1px solid var(--frosted-border);">
                         <small style="color:var(--text-muted);">Download the template to ensure correct format.</small>
-                        <a href="cutoff_api.php?action=download_template" class="btn btn-sm ms-3">
+                        <a href="bulk_importing_api.php?action=download_cutoff_template" class="btn btn-sm ms-3">
                             <i class="bi bi-download"></i> Template
                         </a>
                     </div>
@@ -254,7 +254,7 @@ $currentPage = 'cutoffs';
 <script>
 document.addEventListener('DOMContentLoaded', function () {
 
-    const API = 'cutoff_api.php';
+    const API = 'bulk_importing_api.php';
     let cutoffs        = [];
     let activeCutoffId = null;
     let calendarInst   = null;
@@ -600,7 +600,7 @@ document.addEventListener('DOMContentLoaded', function () {
             resultEl.classList.add('d-none');
 
             try {
-                const res  = await fetch('cutoff_api.php?action=import', { method: 'POST', body: new FormData(this) });
+                const res  = await fetch('bulk_importing_api.php?action=import_cutoffs', { method: 'POST', body: new FormData(this) });
                 const data = await res.json();
                 if (data.status === 'success') {
                     let msg = `${data.inserted} cut-off period${data.inserted !== 1 ? 's' : ''} imported.`;

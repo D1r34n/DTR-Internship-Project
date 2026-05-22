@@ -3,7 +3,7 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'superadmin') {
+if (!isset($_SESSION['user_id']) || !in_array($_SESSION['user_role'], ['superadmin', 'admin', 'manager'])) {
     header("Location: ../index.php");
     exit();
 }
@@ -43,14 +43,24 @@ if (!isset($_GET['employee_id'])) {
     exit();
 }
 
-$refStmt = $pdo->prepare("SELECT id, employee_id FROM employees WHERE employee_id = ? LIMIT 1");
+$refStmt = $pdo->prepare("SELECT id, employee_id, department_id FROM employees WHERE employee_id = ? LIMIT 1");
 $refStmt->execute([trim($_GET['employee_id'])]);
 $empLookup = $refStmt->fetch(PDO::FETCH_ASSOC);
 if (!$empLookup) {
     header("Location: admin_manage_employees.php");
     exit();
 }
-$employeeId     = (int) $empLookup['id'];
+
+// Manager can only view employees within their own department
+if ($_SESSION['user_role'] === 'manager') {
+    $myDeptId = $_SESSION['department_id'] ?? null;
+    if (!$myDeptId || $empLookup['department_id'] != $myDeptId) {
+        header("Location: admin_manage_employees.php");
+        exit();
+    }
+}
+
+$employeeId = (int) $empLookup['id'];
 $urlEmpId   = $empLookup['employee_id'];
 $scheduleStatus = 'approved';
 

@@ -1088,11 +1088,15 @@
   }
 
   async function submitLeEdit() {
+    const btn    = document.getElementById('log-edit-submit-btn');
     const inpIn  = document.getElementById('log-edit-new-time-in');
     const inpOut = document.getElementById('log-edit-new-time-out');
 
     const hasIn  = !inpIn.disabled  && inpIn.value  && le2LogIdIn;
     const hasOut = !inpOut.disabled && inpOut.value && le2LogIdOut;
+
+    btn.disabled  = true;
+    btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Submitting...';
 
     const today = new Date();
     const pad   = n => String(n).padStart(2, '0');
@@ -1121,15 +1125,16 @@
           showToast('Time Out submitted. Time In: ' + rIn.message, 'warning');
         } else {
           showToast(rIn.message || rOut.message, 'danger');
+          updateLeSubmitBtn();
           return;
         }
       } else if (hasIn) {
         const r = await postEdit(le2LogIdIn, inpIn.value, document.getElementById('log-edit-reason-time-in').value.trim());
-        if (!r.success) { showToast(r.message, 'danger'); return; }
+        if (!r.success) { showToast(r.message, 'danger'); updateLeSubmitBtn(); return; }
         showToast(r.message, 'success');
       } else if (hasOut) {
         const r = await postEdit(le2LogIdOut, inpOut.value, document.getElementById('log-edit-reason-time-out').value.trim());
-        if (!r.success) { showToast(r.message, 'danger'); return; }
+        if (!r.success) { showToast(r.message, 'danger'); updateLeSubmitBtn(); return; }
         showToast(r.message, 'success');
       }
 
@@ -1137,6 +1142,7 @@
       if (modal) setTimeout(() => modal.hide(), 1500);
     } catch {
       showToast('Something went wrong. Please try again.', 'danger');
+      updateLeSubmitBtn();
     }
   }
 

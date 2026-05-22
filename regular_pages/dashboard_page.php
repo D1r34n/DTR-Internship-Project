@@ -166,7 +166,60 @@ foreach ($weeklyRows as $row) {
     $weeklyAbsent[$idx]  = $count - (int)$row['present_count'];
 }
 
-$isAdmin = isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'superadmin';
+$role           = $_SESSION['user_role'] ?? '';
+$isAdmin        = ($role === 'superadmin');
+$isManager      = ($role === 'manager');
+$showAdminCards = in_array($role, ['superadmin', 'admin', 'manager']);
+$myDeptId       = (int)($_SESSION['department_id'] ?? 0);
+
+// ── Department-scoped stats (manager only) ────────────────
+$deptCount = $deptPresent = $deptAbsent = $deptTotalPending = 0;
+if ($isManager && $myDeptId) {
+    $s = $pdo->prepare("SELECT COUNT(*) FROM employees WHERE department_id = ?");
+    $s->execute([$myDeptId]);
+    $deptCount = (int)$s->fetchColumn();
+
+    $s = $pdo->prepare("
+        SELECT COUNT(*)
+        FROM attendances a
+        JOIN employees e ON a.employee_id = e.id
+        WHERE a.work_date = ? AND a.actual_time_in IS NOT NULL AND e.department_id = ?
+    ");
+    $s->execute([$today, $myDeptId]);
+    $deptPresent = (int)$s->fetchColumn();
+
+    $s = $pdo->prepare("
+        SELECT COUNT(DISTINCT s.employee_id)
+        FROM schedules s
+        JOIN employees e ON s.employee_id = e.id
+        WHERE s.schedule_date = ?
+          AND s.status = 'approved'
+          AND (s.is_rest_day = 0 OR s.is_rest_day IS NULL)
+          AND e.department_id = ?
+          AND NOT EXISTS (
+              SELECT 1 FROM attendances a
+              WHERE a.employee_id = s.employee_id
+                AND a.work_date = ?
+                AND a.actual_time_in IS NOT NULL
+          )
+    ");
+    $s->execute([$today, $myDeptId, $today]);
+    $deptAbsent = (int)$s->fetchColumn();
+
+    $s = $pdo->prepare("SELECT COUNT(*) FROM leave_requests lr JOIN employees e ON lr.employee_id = e.id WHERE lr.status = 'pending' AND e.department_id = ?");
+    $s->execute([$myDeptId]);
+    $dp1 = (int)$s->fetchColumn();
+
+    $s = $pdo->prepare("SELECT COUNT(*) FROM overtime_requests ot JOIN employees e ON ot.employee_id = e.id WHERE ot.status = 'pending' AND e.department_id = ?");
+    $s->execute([$myDeptId]);
+    $dp2 = (int)$s->fetchColumn();
+
+    $s = $pdo->prepare("SELECT COUNT(*) FROM log_edit_requests le JOIN employees e ON le.employee_id = e.id WHERE le.status = 'pending' AND e.department_id = ?");
+    $s->execute([$myDeptId]);
+    $dp3 = (int)$s->fetchColumn();
+
+    $deptTotalPending = $dp1 + $dp2 + $dp3;
+}
 
 // ── All users: employee ID ────────────────────────────────
 $empId = (int)$_SESSION['user_id'];
@@ -179,7 +232,7 @@ $leaveTotal      = 0;
 $leaveUsed       = 0;
 $leaveData       = [];
 
-if (!$isAdmin) {
+if (!$showAdminCards) {
     $s = $pdo->prepare("
         SELECT
             SUM(CASE WHEN status IN ('present','late','undertime','overtime') THEN 1 ELSE 0 END) AS present_count,
@@ -456,8 +509,14 @@ for ($i = 0; $i < 7; $i++) {
                 </div>
                 <?php endif; ?>
 
-                <?php if ($isAdmin): ?>
-                    <!-- Summary Cards (admin) -->
+                <?php if ($showAdminCards):
+                    $sc     = $isManager ? $deptPresent      : $present;
+                    $sa     = $isManager ? $deptAbsent       : $absent;
+                    $sn     = $isManager ? $deptCount        : $count;
+                    $sTotal = $isManager ? $deptTotalPending : $totalPending;
+                    $scope  = $isManager ? 'in your dept.' : 'of employees';
+                ?>
+                    <!-- Summary Cards (admin / manager) -->
                     <div class="row g-2 mb-2">
                         <div class="col-4">
                             <div class="card card-success p-3">
@@ -468,16 +527,16 @@ for ($i = 0; $i < 7; $i++) {
                                         </div>
                                         <div class="d-flex flex-column ms-auto text-end">
                                             <div class="hstack gap-1 justify-content-end align-items-baseline">
-                                                <div class="stats-number" style="color:var(--status-success-color)"><?= $present ?></div>
-                                                <span class="text-meta">/ <?= $count ?></span>
+                                                <div class="stats-number" style="color:var(--status-success-color)"><?= $sc ?></div>
+                                                <span class="text-meta">/ <?= $sn ?></span>
                                             </div>
                                             <div class="text-meta">Present Today</div>
-                                            <small class="text-meta-secondary"><?= $count > 0 ? round($present / $count * 100) : 0 ?>% of employees</small>
+                                            <small class="text-meta-secondary"><?= $sn > 0 ? round($sc / $sn * 100) : 0 ?>% <?= $scope ?></small>
                                         </div>
                                     </div>
                                     <div class="progress" style="height: 4px;">
                                         <div class="progress-bar"
-                                            style="width: <?= $count > 0 ? ($present / $count * 100) : 0 ?>%; background-color:var(--status-success-color)">
+                                            style="width: <?= $sn > 0 ? ($sc / $sn * 100) : 0 ?>%; background-color:var(--status-success-color)">
                                         </div>
                                     </div>
                                 </div>
@@ -492,16 +551,16 @@ for ($i = 0; $i < 7; $i++) {
                                         </div>
                                         <div class="d-flex flex-column ms-auto text-end">
                                             <div class="hstack gap-1 justify-content-end align-items-baseline">
-                                                <div class="stats-number" style="color:var(--danger-color)"><?= $absent ?></div>
-                                                <span class="text-meta">/ <?= $count ?></span>
+                                                <div class="stats-number" style="color:var(--danger-color)"><?= $sa ?></div>
+                                                <span class="text-meta">/ <?= $sn ?></span>
                                             </div>
                                             <div class="text-meta">Absent Today</div>
-                                            <small class="text-meta-secondary"><?= $count > 0 ? round($absent / $count * 100) : 0 ?>% of employees</small>
+                                            <small class="text-meta-secondary"><?= $sn > 0 ? round($sa / $sn * 100) : 0 ?>% <?= $scope ?></small>
                                         </div>
                                     </div>
                                     <div class="progress" style="height: 4px;">
                                         <div class="progress-bar"
-                                            style="width: <?= $count > 0 ? ($absent / $count * 100) : 0 ?>%; background-color:var(--danger-color)">
+                                            style="width: <?= $sn > 0 ? ($sa / $sn * 100) : 0 ?>%; background-color:var(--danger-color)">
                                         </div>
                                     </div>
                                 </div>
@@ -515,8 +574,8 @@ for ($i = 0; $i < 7; $i++) {
                                             <i class="bi bi-bell-fill fs-3"></i>
                                         </div>
                                         <div class="d-flex flex-column ms-auto text-end">
-                                            <div class="stats-number" style="color:var(--warning-color)"><?= $totalPending ?></div>
-                                            <div class="text-meta">Pending <?= $totalPending == 1 ? 'Request' : 'Requests' ?></div>
+                                            <div class="stats-number" style="color:var(--warning-color)"><?= $sTotal ?></div>
+                                            <div class="text-meta">Pending <?= $sTotal == 1 ? 'Request' : 'Requests' ?></div>
                                             <small class="text-meta-secondary">Awaiting Approval</small>
                                         </div>
                                     </div>
@@ -622,7 +681,7 @@ for ($i = 0; $i < 7; $i++) {
 
                 <!-- Fills remaining space -->
                 <div class="dash-grow d-flex flex-column gap-2">
-                <?php if ($isAdmin): ?>
+                <?php if ($showAdminCards): ?>
                 <div class="row g-2" style="flex:1 1 0;min-height:0;">
 
                     <!-- Birthday Summary -->
@@ -827,8 +886,8 @@ for ($i = 0; $i < 7; $i++) {
             <!-- Right Column -->
             <div class="col-6 dash-col">
 
-                <?php if ($isAdmin): ?>
-                <!-- My Week (admin) -->
+                <?php if ($showAdminCards): ?>
+                <!-- My Week (admin / manager) -->
                 <div class="card card-info mb-2 flex-shrink-0">
                     <div class="card-body py-3">
                         <div class="summaryTop mb-2">

@@ -33,7 +33,7 @@ function hasApprovedLogEdit($pdo, $logId) {
 // ================================================
 // ADMIN PATH — directly applies edit to any employee's log
 // ================================================
-if ($myRole === 'superadmin') {
+if (in_array($myRole, ['superadmin', 'admin', 'manager'])) {
 
     $employeeId  = intval($_POST['employee_id'] ?? $myId);
     $logId       = intval($_POST['log_id']       ?? 0);

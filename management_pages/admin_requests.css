@@ -280,34 +280,35 @@ body {
 }
 
 /* ============================================================
-   REQUEST TABLE  (matches logs_page tableHeaderGlass + tableScroll)
+   REQUEST TABLE  (matches logs_page table-scroll-wrapper pattern)
    ============================================================ */
-.reqTabContent .tableHeaderGlass {
-    flex-shrink: 0;
-    margin: 0;
-    padding: 0 1rem 0 0;
+.reqTabContent .table-scroll-wrapper {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+    padding-right: 1rem;
+    scrollbar-gutter: stable;
 }
 
-.reqTabContent .tableScroll {
-    overflow-x: auto;
+.requests-card-body > .table-scroll-wrapper {
     scrollbar-gutter: stable;
     padding-right: 1rem;
 }
 
-/* Schedule requests: tableHeaderGlass + tableScroll sit directly in requests-card-body */
-.requests-card-body > .tableHeaderGlass {
-    padding-right: 1rem;
+.reqTabContent thead th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: var(--glass-bg);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
 }
 
-.requests-card-body > .tableScroll {
-    scrollbar-gutter: stable;
-    padding-right: 1rem;
-}
-.reqTabContent .tableScroll tbody tr td {
+.reqTabContent tbody tr td {
     vertical-align: middle;
 }
 
-.reqTabContent .tableScroll tbody tr:hover td {
+.reqTabContent tbody tr:hover td {
     background-color: rgba(151, 190, 65, 0.08);
     color: #fff;
 }
