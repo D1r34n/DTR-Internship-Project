@@ -18,6 +18,18 @@ $scopedToEmployee = $userRole === 'superadmin' && !empty($_GET['employee_id']);
 if ($scopedToEmployee) $employeeId = intval($_GET['employee_id']);
 date_default_timezone_set('Asia/Manila');
 
+// Department-scoped visibility for manager / workforce
+$deptScopeRoles = null;
+$deptScopeId    = null;
+if (in_array($userRole, ['manager', 'workforce'])) {
+    $ds = $pdo->prepare("SELECT department_id FROM employees WHERE id = ?");
+    $ds->execute([$currentUserId]);
+    $deptScopeId    = $ds->fetchColumn() ?: null;
+    $deptScopeRoles = $userRole === 'manager'
+        ? ['manager', 'workforce', 'employee']
+        : ['workforce', 'employee'];
+}
+
 $startDate = !empty($_GET['start']) ? date('Y-m-d', strtotime($_GET['start'])) : '';
 $endDate   = !empty($_GET['end'])   ? date('Y-m-d', strtotime($_GET['end']))   : '';
 
@@ -53,6 +65,30 @@ function reqEditRole(bool $isAdmin, bool $scoped, int $currentUserId, int $rowEm
 }
 
 /* =========================
+   HELPER — APPLY VISIBILITY FILTER
+   $empCol  : e.g. "l.employee_id"
+   $deptRoles / $deptId : from setup block above
+========================= */
+function applyLogsFilter(string &$sql, array &$params, string $empCol, bool $scoped, ?array $deptRoles, ?int $deptId, int $empId, string $role): void {
+    if ($scoped) {
+        $sql     .= " AND $empCol = ?";
+        $params[] = $empId;
+    } elseif ($deptRoles !== null) {
+        if ($deptId) {
+            $ph       = implode(',', array_fill(0, count($deptRoles), '?'));
+            $sql     .= " AND e.department_id = ? AND r.role_key IN ($ph)";
+            $params[] = $deptId;
+            foreach ($deptRoles as $dr) $params[] = $dr;
+        } else {
+            $sql .= " AND 1=0";
+        }
+    } elseif ($role !== 'superadmin' && $role !== 'admin') {
+        $sql     .= " AND $empCol = ?";
+        $params[] = $empId;
+    }
+}
+
+/* =========================
    1. CLOCK LOGS
 ========================= */
 if ($showLogs) {
@@ -81,10 +117,7 @@ if ($showLogs) {
 
     $params = [];
 
-    if ($userRole !== 'superadmin' || $scopedToEmployee) {
-        $sql .= " AND l.employee_id = ?";
-        $params[] = $employeeId;
-    }
+    applyLogsFilter($sql, $params, 'l.employee_id', $scopedToEmployee, $deptScopeRoles, $deptScopeId, (int)$employeeId, $userRole);
 
     if ($startDate !== '') {
         $sql .= " AND log_time >= ?";
@@ -111,16 +144,15 @@ if ($showLogs) {
                ler.initiated_by_id, r_init.role_key AS initiator_role, e_init.first_name AS initiator_name
         FROM log_edit_requests ler
         JOIN logs l ON l.id = ler.log_id
+        LEFT JOIN employees e ON ler.employee_id = e.id
+        LEFT JOIN roles r ON r.id = e.role_id
         LEFT JOIN employees e_init ON ler.initiated_by_id = e_init.id
         LEFT JOIN roles r_init ON r_init.id = e_init.role_id
         WHERE 1=1
     ";
     $editParams = [];
 
-    if ($userRole !== 'superadmin' || $scopedToEmployee) {
-        $editSql .= " AND ler.employee_id = ?";
-        $editParams[] = $employeeId;
-    }
+    applyLogsFilter($editSql, $editParams, 'ler.employee_id', $scopedToEmployee, $deptScopeRoles, $deptScopeId, (int)$employeeId, $userRole);
     if ($startDate !== '') {
         $editSql    .= " AND l.log_time >= ?";
         $editParams[] = $startDate;
@@ -211,10 +243,7 @@ if ($showOT) {
         WHERE 1=1
     ";
     $params = [];
-    if ($userRole !== 'superadmin' || $scopedToEmployee) {
-        $sql .= " AND ot.employee_id = ?";
-        $params[] = $employeeId;
-    }
+    applyLogsFilter($sql, $params, 'ot.employee_id', $scopedToEmployee, $deptScopeRoles, $deptScopeId, (int)$employeeId, $userRole);
     if ($startDate !== '') {
         $sql .= " AND DATE(ot.created_at) >= ?";
         $params[] = $startDate;
@@ -272,10 +301,7 @@ if ($showLeave) {
         WHERE lr.leave_type != 'ob leave'
     ";
     $params = [];
-    if ($userRole !== 'superadmin' || $scopedToEmployee) {
-        $sql .= " AND lr.employee_id = ?";
-        $params[] = $employeeId;
-    }
+    applyLogsFilter($sql, $params, 'lr.employee_id', $scopedToEmployee, $deptScopeRoles, $deptScopeId, (int)$employeeId, $userRole);
     if ($startDate !== '') {
         $sql .= " AND DATE(lr.created_at) >= ?";
         $params[] = $startDate;
@@ -333,10 +359,7 @@ if ($showOB) {
         WHERE lr.leave_type = 'ob leave'
     ";
     $params = [];
-    if ($userRole !== 'superadmin' || $scopedToEmployee) {
-        $sql .= " AND lr.employee_id = ?";
-        $params[] = $employeeId;
-    }
+    applyLogsFilter($sql, $params, 'lr.employee_id', $scopedToEmployee, $deptScopeRoles, $deptScopeId, (int)$employeeId, $userRole);
     if ($startDate !== '') {
         $sql .= " AND DATE(lr.created_at) >= ?";
         $params[] = $startDate;
@@ -399,10 +422,7 @@ if ($showLogEdit) {
         WHERE 1=1
     ";
     $params = [];
-    if ($userRole !== 'superadmin' || $scopedToEmployee) {
-        $sql .= " AND ler.employee_id = ?";
-        $params[] = $employeeId;
-    }
+    applyLogsFilter($sql, $params, 'ler.employee_id', $scopedToEmployee, $deptScopeRoles, $deptScopeId, (int)$employeeId, $userRole);
     if ($startDate !== '') {
         $sql .= " AND DATE(ler.created_at) >= ?";
         $params[] = $startDate;
@@ -470,10 +490,7 @@ if ($showChangeSched) {
           AND s.status IN ('pending', 'rejected')
     ";
     $params = [];
-    if ($userRole !== 'superadmin' || $scopedToEmployee) {
-        $sql .= " AND s.employee_id = ?";
-        $params[] = $employeeId;
-    }
+    applyLogsFilter($sql, $params, 's.employee_id', $scopedToEmployee, $deptScopeRoles, $deptScopeId, (int)$employeeId, $userRole);
     if ($startDate !== '') {
         $sql .= " AND s.schedule_date >= ?";
         $params[] = $startDate;

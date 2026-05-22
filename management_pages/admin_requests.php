@@ -85,7 +85,15 @@ if (isset($_GET['action'], $_GET['type'], $_GET['id'])) {
 
             if ($schedule) {
                 require_once __DIR__ . '/../system_functions/system_service.php';
-                finalizeEmployeeAttendance($pdo, (int)$le['employee_id'], $schedule, date('Y-m-d H:i:s'));
+
+                // Use the latest of the edited log times and current time as $now.
+                // finalizeEmployeeAttendance filters logs with `log_time <= $now`, so
+                // if the edited time is in the future relative to approval time, the
+                // updated log would be excluded and missed_time_out would wrongly fire.
+                $times        = array_filter([$le['requested_time_in'], $le['requested_time_out'], date('Y-m-d H:i:s')]);
+                $effectiveNow = max($times);
+
+                finalizeEmployeeAttendance($pdo, (int)$le['employee_id'], $schedule, $effectiveNow);
             }
         }
 

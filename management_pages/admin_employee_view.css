@@ -171,9 +171,13 @@ body {
 /* Tab3 (Logs) — scrollbar at card edge */
 .ev-tabs #tab3.tab-pane.show.active {
     padding-right: 0;
+    padding-bottom: 0;
 }
 #tab3 .table-scroll-wrapper {
     scrollbar-gutter: stable;
+    padding-right: 1rem;
+}
+#tab3 .logs-header {
     padding-right: 1rem;
 }
 

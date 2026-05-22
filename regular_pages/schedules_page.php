@@ -75,15 +75,31 @@ foreach ($pdo->query("SELECT id, title, description, event_type, start_datetime,
     ];
 }
 
-// ── Birthdays (admin only) ────────────────────────────────
+// ── Birthdays ─────────────────────────────────────────────
 $schedBirthdayEvents = [];
-if ($isAdmin) {
-    $curYear = (int) date('Y');
-    foreach ($pdo->query("SELECT CONCAT(first_name,' ',last_name) AS full_name, birthdate FROM employees WHERE birthdate IS NOT NULL")->fetchAll(PDO::FETCH_ASSOC) as $r) {
-        $md = date('m-d', strtotime($r['birthdate']));
-        foreach (range($curYear - 1, $curYear + 2) as $yr) {
-            $schedBirthdayEvents[] = ['title' => $r['full_name'], 'start' => "$yr-$md", 'allDay' => true, 'color' => '#8b5cf6', 'textColor' => '#fff', 'extendedProps' => ['shift_type' => 'birthday']];
-        }
+$curYear = (int) date('Y');
+
+$userRole = $_SESSION['user_role'] ?? '';
+if ($isAdmin || $userRole === 'admin') {
+    $bdayRows = $pdo->query("SELECT CONCAT(first_name,' ',last_name) AS full_name, birthdate FROM employees WHERE birthdate IS NOT NULL")->fetchAll(PDO::FETCH_ASSOC);
+} else {
+    $deptStmt = $pdo->prepare("SELECT department_id FROM employees WHERE id = ?");
+    $deptStmt->execute([$_SESSION['user_id']]);
+    $userDeptId = $deptStmt->fetchColumn();
+
+    if ($userDeptId) {
+        $bdayStmt = $pdo->prepare("SELECT CONCAT(first_name,' ',last_name) AS full_name, birthdate FROM employees WHERE birthdate IS NOT NULL AND department_id = ?");
+        $bdayStmt->execute([$userDeptId]);
+        $bdayRows = $bdayStmt->fetchAll(PDO::FETCH_ASSOC);
+    } else {
+        $bdayRows = [];
+    }
+}
+
+foreach ($bdayRows as $r) {
+    $md = date('m-d', strtotime($r['birthdate']));
+    foreach (range($curYear - 1, $curYear + 2) as $yr) {
+        $schedBirthdayEvents[] = ['title' => $r['full_name'], 'start' => "$yr-$md", 'allDay' => true, 'color' => '#8b5cf6', 'textColor' => '#fff', 'extendedProps' => ['shift_type' => 'birthday']];
     }
 }
 

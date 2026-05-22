@@ -100,6 +100,20 @@ $isScoped = $schedEmployeeId !== null;
         <div class="shiftLegendItem"><div class="shiftLegendDot leave-pending"></div> Leave/OB Pending</div>
         <div class="shiftLegendItem"><div class="shiftLegendDot leave-rejected"></div> Leave/OB Rejected</div>
     </div>
+
+    <!-- filter select; moved into FC toolbar by JS after render -->
+    <select id="sw-schedule-filter" class="schedule-filter-select" style="display:none">
+        <option value="all">All</option>
+        <option value="events">All Events</option>
+        <option value="leave">On Leave</option>
+        <option value="ob">On OB</option>
+        <option value="birthday">Birthday</option>
+        <option value="holiday">Holiday</option>
+        <option value="meeting">Meeting</option>
+        <option value="announcement">Announcement</option>
+        <option value="party">Party</option>
+        <option value="other">Other</option>
+    </select>
     <?php endif; ?>
 
     <!-- ── Calendar ── -->
@@ -462,6 +476,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const calEl = document.getElementById('sw-calendar');
 
 <?php if ($isScoped): ?>
+{
 /* ================================================================
    MODE: ADMIN SCOPED  (employee-specific schedule calendar)
 ================================================================ */
@@ -870,7 +885,10 @@ window.swPrev  = function () { if (swCalendar) swCalendar.prev(); };
 window.swNext  = function () { if (swCalendar) swCalendar.next(); };
 window.swToday = function () { if (swCalendar) swCalendar.today(); };
 
+} /* end admin scoped block */
+
 <?php elseif ($isAdmin): ?>
+{
 /* ================================================================
    MODE: ADMIN GLOBAL  (full calendar with events + birthdays)
 ================================================================ */
@@ -1161,11 +1179,40 @@ document.getElementById('swViewEvtDeleteBtn').addEventListener('click', async fu
     } catch (e) { alert('Network error. Please try again.'); }
 });
 
+} /* end admin global block */
+
 <?php else: ?>
+{
 /* ================================================================
    MODE: EMPLOYEE  (personal schedule, read-only)
 ================================================================ */
-let swIsRefreshing = false;
+let swIsRefreshing  = false;
+let swCurrentFilter = 'all';
+
+function swMatchesFilter(el) {
+    if (swCurrentFilter === 'all') return true;
+    const st = el.dataset.st;
+    const et = el.dataset.et;
+    if (swCurrentFilter === 'leave')  return st && st.startsWith('leave_');
+    if (swCurrentFilter === 'ob')     return st && st.startsWith('ob_');
+    if (swCurrentFilter === 'events') return st === 'cal_event';
+    return st === 'cal_event' && et === swCurrentFilter;
+}
+
+function swApplyFilter(el) { el.style.display = swMatchesFilter(el) ? '' : 'none'; }
+
+const swFilterEl = document.getElementById('sw-schedule-filter');
+if (swFilterEl) {
+    const urlFilter = new URLSearchParams(window.location.search).get('filter');
+    if (urlFilter && swFilterEl.querySelector(`option[value="${urlFilter}"]`)) {
+        swFilterEl.value = urlFilter;
+        swCurrentFilter  = urlFilter;
+    }
+    swFilterEl.addEventListener('change', function () {
+        swCurrentFilter = this.value;
+        document.querySelectorAll('#sw-calendar .fc-event').forEach(swApplyFilter);
+    });
+}
 
 swCalendar = new FullCalendar.Calendar(calEl, {
     initialView:  'dayGridMonth',
@@ -1196,6 +1243,7 @@ swCalendar = new FullCalendar.Calendar(calEl, {
     eventSources: [
         { url: SW_SCHED_API, method: 'GET', failure: function () { console.error('Failed to fetch schedule.'); } },
         { events: function(info, successCallback) { successCallback(SW_CAL_EVENTS); } },
+        { events: function(info, successCallback) { successCallback(SW_BIRTHDAY_EVENTS); } },
     ],
 
     eventContent: function (arg) {
@@ -1210,10 +1258,13 @@ swCalendar = new FullCalendar.Calendar(calEl, {
     eventDidMount: function (info) {
         const shiftType = info.event.extendedProps.shift_type;
         info.el.dataset.st = shiftType || '';
+        info.el.dataset.et = info.event.extendedProps.event_type || '';
+        swApplyFilter(info.el);
 
         if (shiftType === 'birthday') {
             const tEl = info.el.querySelector('.fc-event-title');
             if (tEl) tEl.innerHTML = '<i class="bi bi-cake"></i> ' + info.event.title;
+            info.el.style.cursor = 'pointer';
         }
         if (shiftType === 'cal_event') {
             const iconMap = {
@@ -1231,8 +1282,20 @@ swCalendar = new FullCalendar.Calendar(calEl, {
 
     eventClick: function (info) {
         const props = info.event.extendedProps;
-        if (props.shift_type !== 'cal_event') return;
         info.jsEvent.preventDefault();
+
+        if (props.shift_type === 'birthday') {
+            const dateStr = info.event.start ? info.event.start.toLocaleDateString('en-CA') : '—';
+            document.getElementById('swEmpViewEvtTitle').textContent    = info.event.title;
+            document.getElementById('swEmpViewEvtTypeBadge').innerHTML  = '<i class="bi bi-cake me-1"></i>Birthday';
+            document.getElementById('swEmpViewEvtTypeBadge').style.color = '#8b5cf6';
+            document.getElementById('swEmpViewEvtDate').textContent     = dateStr;
+            document.getElementById('swEmpViewEvtDesc').textContent     = '';
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('swEmpViewEventModal')).show();
+            return;
+        }
+
+        if (props.shift_type !== 'cal_event') return;
 
         const iconMap  = { holiday:'bi-umbrella-fill', party:'bi-balloon-fill', meeting:'bi-people-fill', announcement:'bi-megaphone-fill', other:'bi-pin-fill' };
         const colorMap = { holiday:'#ef4444', party:'#ec4899', meeting:'#3b82f6', announcement:'#f59e0b', other:'#6b7280' };
@@ -1253,6 +1316,14 @@ swCalendar = new FullCalendar.Calendar(calEl, {
 
 swCalendar.render();
 
+/* ---- Move filter select into FC toolbar beside Today ---- */
+const swFilterSelect = document.getElementById('sw-schedule-filter');
+const swLeftChunk    = calEl.querySelector('.fc-toolbar-chunk:first-child');
+if (swFilterSelect && swLeftChunk) {
+    swLeftChunk.appendChild(swFilterSelect);
+    swFilterSelect.style.display = '';
+}
+
 /* ---- Move modal to <body> to avoid stacking context issues ---- */
 const swEmpViewModal = document.getElementById('swEmpViewEventModal');
 if (swEmpViewModal) document.body.appendChild(swEmpViewModal);
@@ -1265,6 +1336,8 @@ if (swRefreshBtn) swRefreshBtn.innerHTML = '<i class="bi bi-arrow-clockwise"></i
 const swSidebar = document.getElementById('sidebar');
 if (swSidebar) new ResizeObserver(() => { swCalendar.updateSize(); }).observe(swSidebar);
 window.addEventListener('resize', () => { swCalendar.updateSize(); });
+
+} /* end employee block */
 
 <?php endif; ?>
 }); /* end DOMContentLoaded */

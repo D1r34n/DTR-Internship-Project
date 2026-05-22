@@ -124,7 +124,10 @@ const COLS = {
 };
 
 function updateHeader(user_role, scoped_to_employee) {
-    const key  = user_role !== 'superadmin' ? 'employee' : (scoped_to_employee ? 'admin_scoped' : 'superadmin');
+    const deptScoped = user_role === 'manager' || user_role === 'workforce';
+    const key = scoped_to_employee ? 'admin_scoped'
+              : (user_role === 'superadmin' || deptScoped) ? 'superadmin'
+              : 'employee';
     const cols = COLS[key];
     document.getElementById('logs_colgroup').innerHTML = '';
     document.getElementById('logs_header_row').innerHTML = cols.map(c =>
@@ -212,7 +215,7 @@ function renderLogRows({ meta, rows }) {
         }
 
         let adminCols = '';
-        if (user_role === 'superadmin' && !scoped_to_employee) {
+        if ((user_role === 'superadmin' || user_role === 'manager' || user_role === 'workforce') && !scoped_to_employee) {
             const roleLabel = row.employee_role
                 ? row.employee_role.charAt(0).toUpperCase() + row.employee_role.slice(1)
                 : '';

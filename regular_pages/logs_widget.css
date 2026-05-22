@@ -32,6 +32,7 @@
     gap: 0.5rem;
     flex-wrap: wrap;
     margin-bottom: 0.75rem;
+    padding-right: 1.5rem;
 }
 
 .logs-header .dropdown {

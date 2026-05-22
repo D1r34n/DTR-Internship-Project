@@ -79,18 +79,47 @@ $pendingLogEdit = (int) $pdo->query("SELECT COUNT(*) FROM log_edit_requests  WHE
 $totalPending   = $pendingLeave + $pendingOT + $pendingLogEdit;
 
 // ── Birthdays this month ──────────────────────────────────
-$birthdaysThisMonth = $pdo->query("
-    SELECT
-        CONCAT(first_name, ' ', last_name) AS full_name,
-        birthdate,
-        profile_image
-    FROM employees
-    WHERE birthdate IS NOT NULL
-      AND MONTH(birthdate) = MONTH(CURDATE())
-    ORDER BY
-        CASE WHEN DAY(birthdate) >= DAY(CURDATE()) THEN 0 ELSE 1 END ASC,
-        DAY(birthdate) ASC
-")->fetchAll(PDO::FETCH_ASSOC);
+$dashUserRole = $_SESSION['user_role'] ?? '';
+$dashIsPrivileged = in_array($dashUserRole, ['superadmin', 'admin']);
+
+if ($dashIsPrivileged) {
+    $birthdaysThisMonth = $pdo->query("
+        SELECT
+            CONCAT(first_name, ' ', last_name) AS full_name,
+            birthdate,
+            profile_image
+        FROM employees
+        WHERE birthdate IS NOT NULL
+          AND MONTH(birthdate) = MONTH(CURDATE())
+        ORDER BY
+            CASE WHEN DAY(birthdate) >= DAY(CURDATE()) THEN 0 ELSE 1 END ASC,
+            DAY(birthdate) ASC
+    ")->fetchAll(PDO::FETCH_ASSOC);
+} else {
+    $dashDeptStmt = $pdo->prepare("SELECT department_id FROM employees WHERE id = ?");
+    $dashDeptStmt->execute([$_SESSION['user_id']]);
+    $dashDeptId = $dashDeptStmt->fetchColumn();
+
+    if ($dashDeptId) {
+        $dashBdayStmt = $pdo->prepare("
+            SELECT
+                CONCAT(first_name, ' ', last_name) AS full_name,
+                birthdate,
+                profile_image
+            FROM employees
+            WHERE birthdate IS NOT NULL
+              AND MONTH(birthdate) = MONTH(CURDATE())
+              AND department_id = ?
+            ORDER BY
+                CASE WHEN DAY(birthdate) >= DAY(CURDATE()) THEN 0 ELSE 1 END ASC,
+                DAY(birthdate) ASC
+        ");
+        $dashBdayStmt->execute([$dashDeptId]);
+        $birthdaysThisMonth = $dashBdayStmt->fetchAll(PDO::FETCH_ASSOC);
+    } else {
+        $birthdaysThisMonth = [];
+    }
+}
 
 // ── Upcoming events ───────────────────────────────────────
 $upcomingEvents = $pdo->query("
