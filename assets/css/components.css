@@ -287,7 +287,7 @@ hr {
     padding: 0.6rem 0.8rem !important;
     height: auto !important;
     overflow: auto !important;
-    resize: vertical;
+    resize: none;
 }
 
 .modal-body .form-control {

@@ -171,7 +171,7 @@
                 <span class="text-primary ms-auto d-flex align-items-center gap-1">
                   Current:
                   <span class="text-secondary fw-bold" id="log-edit-current-in"></span>
-                  <span id="log-edit-status-in" class="badge rounded-pill d-none"></span>
+                  <span id="log-edit-status-in" class="badge rounded-pill" style="display:none !important"></span>
                 </span>
               </div>
             </div>
@@ -193,26 +193,16 @@
         <div id="log-edit-card-out" class="card card-danger">
           <div class="card-body">
             <div class="card-header p-0">
-              <div class="d-flex align-items-center mb-3">
-
+              <div class="hstack d-flex mb-3">
                 <div class="icon-box icon-box-sm icon-box-danger">
                   <i class="bi bi-box-arrow-right"></i>
                 </div>
-
-                <span class="text-primary ms-3 fw-bold">
-                  Time Out
+                <span class="text-primary ms-3 fw-bold">Time Out</span>
+                <span class="text-primary ms-auto d-flex align-items-center gap-1">
+                  Current:
+                  <span class="text-secondary fw-bold" id="log-edit-current-out"></span>
+                  <span id="log-edit-status-out" class="badge rounded-pill" style="display:none"></span>
                 </span>
-
-                <div class="ms-auto d-flex align-items-center flex-wrap gap-3 text-primary">
-
-                  <span class="d-flex align-items-center gap-1">
-                    Current:
-                    <span class="text-secondary fw-bold" id="log-edit-current-out"></span>
-                    <span id="log-edit-status-out" class="badge rounded-pill d-none"></span>
-                  </span>
-
-                </div>
-
               </div>
             </div>
 
@@ -993,8 +983,9 @@
 
   function setLeStatus(type, status) {
     const el = document.getElementById(`log-edit-status-${type}`);
-    el.className = 'badge';
-    if (!status) { el.classList.add('d-none'); return; }
+    el.className = 'badge rounded-pill';
+    if (!status) { el.style.setProperty('display', 'none', 'important'); return; }
+    el.style.removeProperty('display');
     const cfg = {
       pending:  ['status-pending',  '<i class="bi bi-hourglass-split"></i> Pending'],
       approved: ['status-approved', '<i class="bi bi-check-circle-fill"></i> Edited'],
