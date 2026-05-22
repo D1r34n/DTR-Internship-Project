@@ -2,19 +2,6 @@
    BOOTSTRAP MODAL OVERRIDE
    ================================================ */
 
-/* ================================================
-   TEXTAREA — GLOBAL
-   ================================================ */
-textarea {
-    border: none !important;
-    padding: 0 !important;
-    resize: none !important;
-    overflow: hidden !important;
-    box-shadow: none !important;
-    outline: none !important;
-    background: transparent !important;
-    border-radius: 0 !important;
-}
 
 
 :root {

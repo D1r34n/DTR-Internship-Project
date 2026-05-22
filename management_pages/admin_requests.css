@@ -71,7 +71,7 @@ body {
     flex: 1;
     min-height: 0;
     overflow: hidden;
-    padding: 0 1rem 1rem 1rem;
+    padding: 0 0 1rem 1rem;
 }
 
 /* Filter Wrapper */
@@ -79,7 +79,7 @@ body {
     display: flex;
     align-items: center;
     gap: 1rem;
-    padding: 1rem 0rem 1rem 0rem;
+    padding: 1rem 1rem 1rem 0rem;
     flex-wrap: wrap;
 }
 
@@ -276,7 +276,7 @@ body {
     flex-direction: column;
     height: 100%;
     overflow: hidden;
-    padding: 1rem;
+    padding: 1rem 0 1rem 1rem;
 }
 
 /* ============================================================
@@ -285,11 +285,23 @@ body {
 .reqTabContent .tableHeaderGlass {
     flex-shrink: 0;
     margin: 0;
-    padding: 0;
+    padding: 0 1rem 0 0;
 }
 
 .reqTabContent .tableScroll {
     overflow-x: auto;
+    scrollbar-gutter: stable;
+    padding-right: 1rem;
+}
+
+/* Schedule requests: tableHeaderGlass + tableScroll sit directly in requests-card-body */
+.requests-card-body > .tableHeaderGlass {
+    padding-right: 1rem;
+}
+
+.requests-card-body > .tableScroll {
+    scrollbar-gutter: stable;
+    padding-right: 1rem;
 }
 .reqTabContent .tableScroll tbody tr td {
     vertical-align: middle;

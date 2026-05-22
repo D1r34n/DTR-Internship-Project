@@ -1087,6 +1087,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (activeTab !== '#tab1') {
         loadTab(activeTab, currentMonth);
         tabLoadedMonth[activeTab] = currentMonth;
+    } else {
+        // Calendar initialized before layout is fully painted — force a size recalc
+        requestAnimationFrame(() => {
+            if (typeof window.swUpdateSize === 'function') window.swUpdateSize();
+        });
     }
 
     // ---- Schedule delete → invalidate Records tab ----
