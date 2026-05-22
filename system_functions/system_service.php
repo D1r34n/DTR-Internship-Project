@@ -594,7 +594,7 @@ function finalizeEmployeeAttendance(PDO $pdo, int $employeeId, array $schedule, 
     // Note: fallback IN cases force 'incomplete' above, so only set here if not already set
     if (!isset($status)) {
         $status = 'incomplete';
-        if ($firstIn && $lastOut) {
+        if ($firstIn && $lastOut && ($totalWorkHours * 60) >= 30) {
             $status = 'present';
         }
     }
