@@ -575,7 +575,12 @@ swCalendar = new FullCalendar.Calendar(calEl, {
             btn.className = 'sched-cal-action-btn delete';
             btn.title = 'Delete';
             btn.innerHTML = '<i class="bi bi-trash"></i>';
-            btn.addEventListener('click', e => { e.stopPropagation(); swDeleteSchedule(props.dateStr); });
+            btn.addEventListener('click', e => {
+                e.stopPropagation();
+                _swSkipDateClick = true;
+                setTimeout(() => { _swSkipDateClick = false; }, 100);
+                swDeleteSchedule(props.dateStr);
+            });
             wrap.appendChild(btn);
         }
         frame.appendChild(wrap);
@@ -861,9 +866,9 @@ function swDeleteSchedule(date) {
         });
 }
 
-function swPrev()  { if (swCalendar) swCalendar.prev(); }
-function swNext()  { if (swCalendar) swCalendar.next(); }
-function swToday() { if (swCalendar) swCalendar.today(); }
+window.swPrev  = function () { if (swCalendar) swCalendar.prev(); };
+window.swNext  = function () { if (swCalendar) swCalendar.next(); };
+window.swToday = function () { if (swCalendar) swCalendar.today(); };
 
 <?php elseif ($isAdmin): ?>
 /* ================================================================
