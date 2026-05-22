@@ -1072,6 +1072,9 @@ document.addEventListener('DOMContentLoaded', () => {
         btn.addEventListener('shown.bs.tab', e => {
             const target = e.target.dataset.bsTarget;
             localStorage.setItem(key, target);
+            if (target === '#tab1' && typeof window.swUpdateSize === 'function') {
+                window.swUpdateSize();
+            }
             if (tabLoadedMonth[target] !== currentMonth) {
                 loadTab(target, currentMonth);
                 tabLoadedMonth[target] = currentMonth;
