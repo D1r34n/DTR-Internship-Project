@@ -93,6 +93,31 @@ $recordsOut = array_map(fn($r) => [
     'last_break_out'    => $r['last_break_out'],
 ], $records);
 
+// Inject upcoming scheduled days that have no attendance record yet
+$today          = date('Y-m-d');
+$existingDates  = array_column($recordsOut, 'work_date');
+foreach ($schedules as $date => $sched) {
+    if ($date > $today && !in_array($date, $existingDates)) {
+        $recordsOut[] = [
+            'work_date'         => $date,
+            'scheduled_start'   => $sched['scheduled_start'],
+            'scheduled_end'     => $sched['scheduled_end'],
+            'actual_time_in'    => null,
+            'actual_time_out'   => null,
+            'status'            => 'upcoming',
+            'late_minutes'      => 0,
+            'undertime_minutes' => 0,
+            'overtime_minutes'  => 0,
+            'break_minutes'     => 0,
+            'overtime_status'   => null,
+            'missed_time_out'   => 0,
+            'first_break_in'    => null,
+            'last_break_out'    => null,
+        ];
+    }
+}
+usort($recordsOut, fn($a, $b) => strcmp($b['work_date'], $a['work_date']));
+
 echo json_encode([
     'meta' => [
         'monthLabel'   => $monthLabel,
