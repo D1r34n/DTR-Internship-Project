@@ -271,8 +271,10 @@ function renderRecordRows(data) {
     if (statPresent) statPresent.textContent = meta.presentCount;
     if (statAbsent)  statAbsent.textContent  = meta.absentCount;
 
-    const dateRangeLabel = document.getElementById('dateRangeLabel');
-    if (dateRangeLabel) dateRangeLabel.textContent = meta.monthLabel;
+    if (monthHidden.dataset.cutoffMode !== '1') {
+        const dateRangeLabel = document.getElementById('dateRangeLabel');
+        if (dateRangeLabel) dateRangeLabel.textContent = meta.monthLabel;
+    }
 
     let html    = '';
     let hasRows = false;

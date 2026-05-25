@@ -75,7 +75,7 @@ $absent = (int) $stmt->fetchColumn();
 // ── Pending requests ──────────────────────────────────────
 $pendingLeave   = (int) $pdo->query("SELECT COUNT(*) FROM leave_requests    WHERE status = 'pending'")->fetchColumn();
 $pendingOT      = (int) $pdo->query("SELECT COUNT(*) FROM overtime_requests WHERE status = 'pending'")->fetchColumn();
-$pendingLogEdit = (int) $pdo->query("SELECT COUNT(*) FROM log_edit_requests  WHERE status = 'pending'")->fetchColumn();
+$pendingLogEdit = (int) $pdo->query("SELECT COUNT(*) FROM logs WHERE edit_status = 'pending'")->fetchColumn();
 $totalPending   = $pendingLeave + $pendingOT + $pendingLogEdit;
 
 // ── Birthdays this month ──────────────────────────────────
@@ -214,7 +214,7 @@ if ($isManager && $myDeptId) {
     $s->execute([$myDeptId]);
     $dp2 = (int)$s->fetchColumn();
 
-    $s = $pdo->prepare("SELECT COUNT(*) FROM log_edit_requests le JOIN employees e ON le.employee_id = e.id WHERE le.status = 'pending' AND e.department_id = ?");
+    $s = $pdo->prepare("SELECT COUNT(*) FROM logs le JOIN employees e ON le.employee_id = e.id WHERE le.edit_status = 'pending' AND e.department_id = ?");
     $s->execute([$myDeptId]);
     $dp3 = (int)$s->fetchColumn();
 
@@ -255,7 +255,7 @@ if (!$showAdminCards) {
     $s->execute([$empId]);
     $empPendingOT = (int)$s->fetchColumn();
 
-    $s = $pdo->prepare("SELECT COUNT(*) FROM log_edit_requests  WHERE employee_id = ? AND status = 'pending'");
+    $s = $pdo->prepare("SELECT COUNT(*) FROM logs WHERE employee_id = ? AND edit_status = 'pending'");
     $s->execute([$empId]);
     $empPendingLogEdit = (int)$s->fetchColumn();
 
@@ -1331,7 +1331,9 @@ document.getElementById('saveQuoteBtn').addEventListener('click', function () {
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => {
-        new bootstrap.Tooltip(el, { container: 'body', trigger: 'hover' });
+        if (!el.closest('#sidebar')) {
+            new bootstrap.Tooltip(el, { container: 'body', trigger: 'hover' });
+        }
     });
 });
 </script>

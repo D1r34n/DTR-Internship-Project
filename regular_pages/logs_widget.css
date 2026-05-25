@@ -50,7 +50,8 @@
 .logs-widget td {
     white-space: nowrap;
     padding: 6px 8px;
-    font-size: 0.8rem;
+    font-size: 0.875rem;
+    vertical-align: middle;
 }
 
 .table-scroll-wrapper {

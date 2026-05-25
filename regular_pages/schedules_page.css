@@ -102,6 +102,17 @@ body {
     color: var(--primary-color);
 }
 
+.d-flex.overflow-auto {
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+}
+
+.d-flex.overflow-auto > div {
+    scroll-snap-align: start;
+    flex-shrink: 0;
+    width: calc((100% - (3 * 0.5rem)) / 4); /* 4 cards, 3 gaps of gap-2 (0.5rem each) */
+}
+
 /* ============================================================
    SHIFT TYPE LEGEND
    ============================================================ */

@@ -42,8 +42,8 @@ $logsInlineHeader ??= false;
             </div>
 
             <input type="hidden" id="logTypeFilter" value="ALL">
-            <input type="hidden" id="startDate" value="<?= $startDate ?? null ?>">
-            <input type="hidden" id="endDate" value="<?= $endDate ?? null ?>">
+            <input type="hidden" id="startDate" value="<?= $startDate ?? date('Y-m-d') ?>">
+            <input type="hidden" id="endDate"   value="<?= $endDate   ?? date('Y-m-d') ?>">
         </div>
         <?php endif; ?>
 
@@ -227,7 +227,8 @@ function renderLogRows({ meta, rows }) {
 
         let editBtnCol = '';
         if (scoped_to_employee) {
-            const editBtn = BASE_LOG_TYPES.includes(row.log_type)
+            const canEdit = ['superadmin', 'admin'].includes(user_role);
+            const editBtn = BASE_LOG_TYPES.includes(row.log_type) && canEdit
                 ? `<button class="leEditRowBtn" title="Edit log entry"
                         data-log-id="${row.log_id}"
                         data-log-type="${esc(row.log_type)}"
@@ -348,16 +349,11 @@ function updateDateLabel(dates) {
 flatpickr(document.getElementById('datePickerBtn'), {
     mode: 'range',
     dateFormat: 'Y-m-d',
-    defaultDate: [startInput.value, endInput.value],
-
-    onReady(dates) {
-        updateDateLabel(dates);
-    },
+    defaultDate: [startInput.value || toLocalStr(new Date()), endInput.value || toLocalStr(new Date())],
 
     onChange(dates) {
         updateDateLabel(dates);
         if (dates.length !== 2) return;
-
         startInput.value = toLocalStr(dates[0]);
         endInput.value   = toLocalStr(dates[1]);
         fetchLogs();

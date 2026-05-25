@@ -434,7 +434,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save_
 // ---- HANDLE EMPLOYEE DELETE ----
 if (isset($_GET['action']) && $_GET['action'] === 'delete_employee') {
 
-    $pdo->prepare("DELETE ler FROM log_edit_requests ler INNER JOIN logs l ON ler.log_id = l.id WHERE l.employee_id = ?")->execute([$employeeId]);
     $pdo->prepare("DELETE FROM logs WHERE employee_id = ?")->execute([$employeeId]);
     $pdo->prepare("DELETE FROM attendances WHERE employee_id = ?")->execute([$employeeId]);
     $pdo->prepare("DELETE FROM schedules WHERE employee_id = ?")->execute([$employeeId]);
@@ -666,7 +665,7 @@ $leaveTypes = [
 
         <div class="card-body">
             <div class="tab-content">
-
+                <!-- Tab 1: Schedules -->
                 <div class="tab-pane fade show active" id="tab1" role="tabpanel">
 
                     <?php
@@ -681,6 +680,7 @@ $leaveTypes = [
 
                 </div>
 
+                <!-- Tab 2: Records -->
                 <div class="tab-pane fade" id="tab2" role="tabpanel">
                     <?php 
                     $recordsEmployeeId = $employeeId;
@@ -692,16 +692,15 @@ $leaveTypes = [
                     include '../regular_pages/records_widget.php'; ?>
                 </div>
 
+                <!-- Tab 3: Logs -->
                 <div class="tab-pane fade" id="tab3" role="tabpanel">
-
                     <?php
                     $logsEmployeeId = $employeeId;
-                    $startDate      = $monthStart;
-                    $endDate        = $monthEnd;
                     $logsApiPath    = '../get_logs.php';
+                    $startDate      = null;
+                    $endDate        = null;
                     include '../regular_pages/logs_widget.php';
                     ?>
-
                 </div>
 
                 <!-- Tab 4: Leave Balance -->
@@ -1052,7 +1051,7 @@ function loadTab(tabTarget, ym) {
     const { startDate, endDate } = monthDates(ym);
     if      (tabTarget === '#tab1') { if (typeof window.swUpdateSize === 'function') window.swUpdateSize(); }
     else if (tabTarget === '#tab2') loadRecords(startDate, endDate);
-    else if (tabTarget === '#tab3') loadLogs(startDate, endDate);
+    else if (tabTarget === '#tab3') loadLogs();
 }
 
 

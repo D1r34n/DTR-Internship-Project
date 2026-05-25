@@ -10,12 +10,17 @@ if (!isset($_SESSION['user_id'])) {
 header('Content-Type: application/json');
 
 $userRole      = $_SESSION['user_role'] ?? 'employee';
-$employeeId    = $_SESSION['user_id']   ?? null;
 $currentUserId = (int)($_SESSION['user_id'] ?? 0);
 
-// Admin viewing a specific employee's profile — scope to that employee, hide employee columns
-$scopedToEmployee = $userRole === 'superadmin' && !empty($_GET['employee_id']);
-if ($scopedToEmployee) $employeeId = intval($_GET['employee_id']);
+$scopedToEmployee =
+    $userRole !== 'employee' &&
+    !empty($_GET['employee_id']);
+$employeeId       = $scopedToEmployee ? intval($_GET['employee_id']) : $currentUserId;
+if ($scopedToEmployee) {
+    $employeeId = intval($_GET['employee_id']);
+} else {
+    $employeeId = (int)($_SESSION['user_id'] ?? 0);
+}
 date_default_timezone_set('Asia/Manila');
 
 // Department-scoped visibility for manager / workforce
@@ -59,8 +64,7 @@ $allRows = [];
 /* =========================
    HELPER — EDIT ROLE FOR REQUEST ROWS
 ========================= */
-function reqEditRole(bool $isAdmin, bool $scoped, int $currentUserId, int $rowEmpId): string {
-    if (!$isAdmin || $scoped) return 'self';
+function reqEditRole(int $currentUserId, int $rowEmpId): string {
     return ($rowEmpId === $currentUserId) ? 'self' : 'employee';
 }
 
@@ -103,6 +107,10 @@ if ($showLogs) {
             l.is_within_office,
             l.distance_meters,
             l.photo_path,
+            l.edit_status,
+            l.edit_requested_by,
+            CONCAT(e_init.first_name, ' ', e_init.last_name) AS initiator_name,
+            r_init.role_key AS initiator_role,
 
             e.id AS employee_id,
             CONCAT(e.first_name, ' ', e.last_name) AS employee_name,
@@ -112,6 +120,8 @@ if ($showLogs) {
         LEFT JOIN employees e ON l.employee_id = e.id
         LEFT JOIN roles r ON r.id = e.role_id
         LEFT JOIN departments d ON e.department_id = d.id
+        LEFT JOIN employees e_init ON l.edit_requested_by = e_init.id
+        LEFT JOIN roles r_init ON r_init.id = e_init.role_id
         WHERE 1=1
     ";
 
@@ -137,56 +147,15 @@ if ($showLogs) {
     $stmt->execute($params);
     $logRecords = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    /* --- edit request map keyed by log_id --- */
-    $editMap    = [];
-    $editSql = "
-        SELECT ler.log_id, ler.status,
-               ler.initiated_by_id, r_init.role_key AS initiator_role, CONCAT(e_init.first_name, ' ', e_init.last_name) AS initiator_name
-        FROM log_edit_requests ler
-        JOIN logs l ON l.id = ler.log_id
-        LEFT JOIN employees e ON ler.employee_id = e.id
-        LEFT JOIN roles r ON r.id = e.role_id
-        LEFT JOIN employees e_init ON ler.initiated_by_id = e_init.id
-        LEFT JOIN roles r_init ON r_init.id = e_init.role_id
-        WHERE 1=1
-    ";
-    $editParams = [];
-
-    applyLogsFilter($editSql, $editParams, 'ler.employee_id', $scopedToEmployee, $deptScopeRoles, $deptScopeId, (int)$employeeId, $userRole);
-    if ($startDate !== '') {
-        $editSql    .= " AND l.log_time >= ?";
-        $editParams[] = $startDate;
-    }
-    if ($endDate !== '') {
-        $editSql    .= " AND l.log_time < DATE_ADD(?, INTERVAL 1 DAY)";
-        $editParams[] = $endDate;
-    }
-    $editSql .= " ORDER BY ler.created_at DESC";
-
-    $erStmt = $pdo->prepare($editSql);
-    $erStmt->execute($editParams);
-    foreach ($erStmt->fetchAll(PDO::FETCH_ASSOC) as $er) {
-        $logId = $er['log_id'];
-        if ($logId && !isset($editMap[$logId])) {
-            $editMap[$logId] = [
-                'status'          => $er['status'],
-                'initiated_by_id' => $er['initiated_by_id'],
-                'initiator_role'  => $er['initiator_role'],
-                'initiator_name'  => $er['initiator_name'],
-            ];
-        }
-    }
-
     foreach ($logRecords as $row) {
-        $editEntry     = $editMap[$row['log_id']] ?? null;
-        $editStatus    = $editEntry['status']          ?? null;
-        $initiatedById = $editEntry['initiated_by_id'] ?? null;
-        $initiatorRole = $editEntry['initiator_role']  ?? null;
-        $initiatorName = $editEntry['initiator_name']  ?? null;
+        $editStatus    = $row['edit_status']      ?? null;
+        $initiatedById = $row['edit_requested_by'] ?? null;
+        $initiatorRole = $row['initiator_role']   ?? null;
+        $initiatorName = $row['initiator_name']   ?? null;
 
         if ($initiatedById === null) {
             $editRole = null;
-        } elseif (!$scopedToEmployee && (int)$initiatedById === $currentUserId) {
+        } elseif ((int)$initiatedById === $currentUserId) {
             $editRole = 'self';
         } else {
             $editRole = $initiatorRole;
@@ -271,7 +240,7 @@ if ($showOT) {
             'employee_name'    => $row['employee_name'],
             'employee_role'    => $row['employee_role'],
             'department_name'  => $row['department_name'],
-            'edit_role'        => reqEditRole($userRole === 'superadmin', $scopedToEmployee, $currentUserId, (int)$row['employee_id']),
+            'edit_role'        => reqEditRole($currentUserId, (int)$row['employee_id']),
             'edit_status'      => $row['status'],
             'initiator_name'   => $row['employee_name'],
             'photo_path'       => null,
@@ -329,7 +298,7 @@ if ($showLeave) {
             'employee_name'    => $row['employee_name'],
             'employee_role'    => $row['employee_role'],
             'department_name'  => $row['department_name'],
-            'edit_role'        => reqEditRole($userRole === 'superadmin', $scopedToEmployee, $currentUserId, (int)$row['employee_id']),
+            'edit_role'        => reqEditRole($currentUserId, (int)$row['employee_id']),
             'edit_status'      => $row['status'],
             'initiator_name'   => $row['employee_name'],
             'photo_path'       => null,
@@ -387,7 +356,7 @@ if ($showOB) {
             'employee_name'    => $row['employee_name'],
             'employee_role'    => $row['employee_role'],
             'department_name'  => $row['department_name'],
-            'edit_role'        => reqEditRole($userRole === 'superadmin', $scopedToEmployee, $currentUserId, (int)$row['employee_id']),
+            'edit_role'        => reqEditRole($currentUserId, (int)$row['employee_id']),
             'edit_status'      => $row['status'],
             'initiator_name'   => $row['employee_name'],
             'photo_path'       => null,
@@ -402,33 +371,33 @@ if ($showOB) {
 if ($showLogEdit) {
     $sql = "
         SELECT
-            CONCAT('logedit_', ler.id) AS log_id,
-            ler.employee_id,
+            CONCAT('logedit_', l.id) AS log_id,
+            l.employee_id,
             CONCAT(e.first_name, ' ', e.last_name) AS employee_name,
             r.role_key AS employee_role,
             d.department_name,
-            ler.work_date AS req_date,
-            ler.created_at,
-            ler.status,
-            ler.initiated_by_id,
+            DATE(l.log_time) AS req_date,
+            l.created_at,
+            l.edit_status AS status,
+            l.edit_requested_by AS initiated_by_id,
             r_init.role_key AS initiator_role,
             CONCAT(e_init.first_name, ' ', e_init.last_name) AS initiator_name
-        FROM log_edit_requests ler
-        LEFT JOIN employees e ON ler.employee_id = e.id
+        FROM logs l
+        LEFT JOIN employees e ON l.employee_id = e.id
         LEFT JOIN roles r ON r.id = e.role_id
         LEFT JOIN departments d ON e.department_id = d.id
-        LEFT JOIN employees e_init ON ler.initiated_by_id = e_init.id
+        LEFT JOIN employees e_init ON l.edit_requested_by = e_init.id
         LEFT JOIN roles r_init ON r_init.id = e_init.role_id
-        WHERE 1=1
+        WHERE l.edit_status IS NOT NULL
     ";
     $params = [];
-    applyLogsFilter($sql, $params, 'ler.employee_id', $scopedToEmployee, $deptScopeRoles, $deptScopeId, (int)$employeeId, $userRole);
+    applyLogsFilter($sql, $params, 'l.employee_id', $scopedToEmployee, $deptScopeRoles, $deptScopeId, (int)$employeeId, $userRole);
     if ($startDate !== '') {
-        $sql .= " AND DATE(ler.created_at) >= ?";
+        $sql .= " AND DATE(l.log_time) >= ?";
         $params[] = $startDate;
     }
     if ($endDate !== '') {
-        $sql .= " AND DATE(ler.created_at) <= ?";
+        $sql .= " AND DATE(l.log_time) <= ?";
         $params[] = $endDate;
     }
     $stmt = $pdo->prepare($sql);
@@ -439,7 +408,7 @@ if ($showLogEdit) {
 
         if (!$initiatedById) {
             $editRole = null;
-        } elseif (!$scopedToEmployee && $initiatedById === $currentUserId) {
+        } elseif ($initiatedById === $currentUserId) {
             $editRole = 'self';
         } else {
             $editRole = $row['initiator_role'];
@@ -518,7 +487,7 @@ if ($showChangeSched) {
             'employee_name'    => $row['employee_name'],
             'employee_role'    => $row['employee_role'],
             'department_name'  => $row['department_name'],
-            'edit_role'        => reqEditRole($userRole === 'superadmin', $scopedToEmployee, $currentUserId, (int)$row['employee_id']),
+            'edit_role'        => reqEditRole($currentUserId, (int)$row['employee_id']),
             'edit_status'      => $row['status'],
             'initiator_name'   => $row['employee_name'],
             'photo_path'       => null,

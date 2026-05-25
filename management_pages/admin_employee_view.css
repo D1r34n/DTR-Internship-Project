@@ -145,19 +145,9 @@ body {
     padding: 1rem;
 }
 
-#tab1.tab-pane.show.active,
-#tab1.tab-pane.active {
-    padding-top: 0;
-}
-
-#tab1 .sw-header {
-    margin-top: -0.9rem;
-    padding-top: 0;
-}
-
-/* Tab1 never gets padding-top — set via shorthand so there is nothing to override */
+/* Tab1: no top padding — sw-header sits flush at the top of the content area */
 .ev-tabs #tab1.tab-pane.show.active {
-    padding: 0 1rem 1rem 1rem;
+    padding: 1rem;
 }
 
 /* Tab2 (Records) — scrollbar at card edge */
@@ -339,42 +329,6 @@ body {
 
 .night-shift-badge {
     background: var(--shift-night);
-    color: var(--text-lightest);
-}
-
-/* ------------------------------------------------
-   TABLE SCROLL WRAPPER
-   ------------------------------------------------ */
-
-.table-scroll-wrapper {
-    min-height: 220px;
-    overflow-y: auto;
-    border-radius: 6px;
-    border: 1px solid var(--glass-border);
-}
-
-.table-scroll-wrapper table           { margin-bottom: 0; border-color: var(--glass-border) !important; }
-.table-scroll-wrapper table td,
-.table-scroll-wrapper table th        { border-color: var(--glass-border) !important; }
-
-.table-scroll-wrapper thead th {
-    position: sticky;
-    top: 0;
-    background-color: var(--bg-dark) !important;
-    color: var(--text-muted) !important;
-    z-index: 1;
-    border-color: var(--glass-border) !important;
-}
-
-.table-scroll-wrapper tbody tr td {
-    background-color: rgba(0, 0, 0, 0.2);
-    color: var(--text-light);
-    border-color: var(--glass-border);
-    vertical-align: middle;
-}
-
-.table-scroll-wrapper tbody tr:hover td {
-    background-color: var(--primary-bg);
     color: var(--text-lightest);
 }
 
@@ -1626,48 +1580,6 @@ body {
 .ev-logs-scroll::-webkit-scrollbar       { width: 6px; }
 .ev-logs-scroll::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 10px; }
 
-#tab3 .table {
-    color: var(--text-light);
-    margin: 0;
-    border: none;
-    width: 100%;
-    table-layout: fixed;
-    border-collapse: collapse;
-}
-
-#tab3 .table thead th,
-#tab3 .table tbody td,
-#tab3 .table tbody tr { border-bottom: 1px solid var(--text-dark); }
-
-#tab3 .table thead th {
-    background: transparent;
-    font-weight: 300;
-    font-size: 0.875rem;
-    color: var(--text-muted);
-}
-
-#tab3 .table tbody td {
-    padding: 1rem 0.5rem;
-    background: transparent;
-    font-size: 0.875rem;
-    color: var(--text-light);
-    user-select: none;
-    vertical-align: middle;
-}
-
-#tab3 .table tbody tr:not(.emptyRow):hover { background: var(--overlay-soft); }
-
-#tab3 .table tbody tr.emptyRow,
-#tab3 .table tbody tr.emptyRow:hover {
-    background: transparent !important;
-    border-bottom: none;
-}
-
-#tab3 .table tbody tr.emptyRow td {
-    background: transparent !important;
-    border-bottom: none !important;
-    pointer-events: none;
-}
 
 /* ------------------------------------------------
    LOGS TAB — EMPTY STATE

@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
@@ -163,33 +163,42 @@ $schedulesOpen = in_array($currentPage, ['schedule', 'cutoffs']);
 
         const initTooltips = () => {
             document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => {
-                bootstrap.Tooltip.getOrCreateInstance(el, {
-                    placement: 'right',
-                    trigger: 'hover',
-                    container: 'body',
-                    delay: { show: 100, hide: 100 }
-                });
+                if (!bootstrap.Tooltip.getInstance(el)) {
+                    new bootstrap.Tooltip(el, {
+                        placement: 'right',
+                        trigger: 'hover',
+                        container: 'body',
+                        delay: { show: 100, hide: 100 }
+                    });
+                }
             });
             document.querySelectorAll('[data-tooltip-title]').forEach(el => {
-                bootstrap.Tooltip.getOrCreateInstance(el, {
-                    title: el.getAttribute('data-tooltip-title'),
-                    placement: 'right',
-                    trigger: 'hover',
-                    container: 'body',
-                    delay: { show: 100, hide: 100 }
-                });
+                if (!bootstrap.Tooltip.getInstance(el)) {
+                    new bootstrap.Tooltip(el, {
+                        title: el.dataset.tooltipTitle,
+                        placement: 'right',
+                        trigger: 'hover',
+                        container: 'body',
+                        delay: { show: 100, hide: 100 }
+                    });
+                }
             });
         };
 
         const destroyTooltips = () => {
             document.querySelectorAll('[data-bs-toggle="tooltip"], [data-tooltip-title]').forEach(el => {
                 const instance = bootstrap.Tooltip.getInstance(el);
-                if (instance) instance.dispose();
+                if (instance) {
+                    instance.hide();
+                    instance.dispose();
+                }
             });
         };
 
         const toggleTooltips = () => {
-            if (sidebar.classList.contains('collapsed')) {
+            const collapsed = sidebar.classList.contains('collapsed');
+
+            if (collapsed) {
                 initTooltips();
             } else {
                 destroyTooltips();

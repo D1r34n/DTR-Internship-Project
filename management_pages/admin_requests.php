@@ -35,7 +35,7 @@ if (isset($_GET['action'], $_GET['type'], $_GET['id'])) {
         $tblName = match($type) {
             'leave'    => 'leave_requests',
             'overtime' => 'overtime_requests',
-            'log_edit' => 'log_edit_requests',
+            'log_edit' => 'logs',
             default    => null,
         };
         if ($tblName) {
@@ -64,63 +64,46 @@ if (isset($_GET['action'], $_GET['type'], $_GET['id'])) {
         ")->execute([$status, $id]);
 
     } elseif ($type === 'log_edit') {
-        $leStmt = $pdo->prepare("SELECT * FROM log_edit_requests WHERE id = ?");
+        $leStmt = $pdo->prepare("SELECT id, employee_id, log_time, proposed_log_time FROM logs WHERE id = ?");
         $leStmt->execute([$id]);
         $le = $leStmt->fetch(PDO::FETCH_ASSOC);
 
-        $pdo->prepare("UPDATE log_edit_requests SET status = ? WHERE id = ?")
-            ->execute([$status, $id]);
+        if ($status === 'approved' && $le && $le['proposed_log_time']) {
+            // Apply proposed time, preserve original for audit
+            $pdo->prepare("
+                UPDATE logs
+                SET log_time          = proposed_log_time,
+                    edit_status       = 'approved'
+                WHERE id = ?
+            ")->execute([$id]);
 
-        if ($status === 'approved' && $le) {
-            // 1. Update the log row first
-            if ($le['log_id']) {
-                $newTime = $le['requested_time_in'] ?? $le['requested_time_out'];
-                $pdo->prepare("UPDATE logs SET log_time = ? WHERE id = ?")
-                    ->execute([$newTime, $le['log_id']]);
-            }
+            $workDate = date('Y-m-d', strtotime($le['log_time']));
 
-            // For 'both' request type, also update the OUT log
-            if ($le['request_type'] === 'both' && $le['requested_time_out']) {
-                $outLog = $pdo->prepare("
-                    SELECT id FROM logs
-                    WHERE employee_id = ? AND log_type = 'OUT' AND DATE(log_time) = ?
-                    ORDER BY log_time ASC LIMIT 1
-                ");
-                $outLog->execute([$le['employee_id'], $le['work_date']]);
-                $outLogId = $outLog->fetchColumn();
-                if ($outLogId) {
-                    $pdo->prepare("UPDATE logs SET log_time = ? WHERE id = ?")
-                        ->execute([$le['requested_time_out'], $outLogId]);
-                }
-            }
-
-            // 2. Reset attendance status so finalizer can overwrite it
+            // Reset attendance so finalizer can recalculate
             $pdo->prepare("
                 UPDATE attendances SET status = 'incomplete'
-                WHERE id = ?
-            ")->execute([$le['attendance_id']]);
+                WHERE employee_id = ? AND work_date = ?
+            ")->execute([$le['employee_id'], $workDate]);
 
-            // 3. Re-finalize after commit
+            // Re-finalize attendance
             $schedStmt = $pdo->prepare("
                 SELECT schedule_date, scheduled_start, scheduled_end
                 FROM schedules
                 WHERE employee_id = ? AND schedule_date = ?
             ");
-            $schedStmt->execute([$le['employee_id'], $le['work_date']]);
+            $schedStmt->execute([$le['employee_id'], $workDate]);
             $schedule = $schedStmt->fetch(PDO::FETCH_ASSOC);
 
             if ($schedule) {
                 require_once __DIR__ . '/../system_functions/system_service.php';
-
-                // Use the latest of the edited log times and current time as $now.
-                // finalizeEmployeeAttendance filters logs with `log_time <= $now`, so
-                // if the edited time is in the future relative to approval time, the
-                // updated log would be excluded and missed_time_out would wrongly fire.
-                $times        = array_filter([$le['requested_time_in'], $le['requested_time_out'], date('Y-m-d H:i:s')]);
-                $effectiveNow = max($times);
-
+                $effectiveNow = max(array_filter([$le['proposed_log_time'], date('Y-m-d H:i:s')]));
                 finalizeEmployeeAttendance($pdo, (int)$le['employee_id'], $schedule, $effectiveNow);
             }
+        } else {
+            // rejected — clear proposed time
+            $pdo->prepare("
+                UPDATE logs SET edit_status = 'rejected', proposed_log_time = NULL WHERE id = ?
+            ")->execute([$id]);
         }
 
     }
@@ -134,7 +117,7 @@ if ($deptScoped) {
     $lrC  = $pdo->prepare("SELECT COUNT(*) FROM leave_requests lr JOIN employees e ON lr.employee_id = e.id WHERE lr.status = ? AND e.department_id = ?");
     $otC  = $pdo->prepare("SELECT COUNT(*) FROM overtime_requests o JOIN employees e ON o.employee_id = e.id WHERE o.status = ? AND e.department_id = ?");
     $obC  = $pdo->prepare("SELECT COUNT(*) FROM leave_requests lr JOIN employees e ON lr.employee_id = e.id WHERE lr.leave_type = 'ob leave' AND lr.status = ? AND e.department_id = ?");
-    $leC  = $pdo->prepare("SELECT COUNT(*) FROM log_edit_requests l JOIN employees e ON l.employee_id = e.id WHERE l.status = ? AND e.department_id = ?");
+    $leC  = $pdo->prepare("SELECT COUNT(*) FROM logs l JOIN employees e ON l.employee_id = e.id WHERE l.edit_status = ? AND e.department_id = ?");
 
     $lrC->execute(['pending',  $myDeptId]); $pendingLeave     = (int)$lrC->fetchColumn();
     $lrC->execute(['approved', $myDeptId]); $approvedLeave    = (int)$lrC->fetchColumn();
@@ -158,9 +141,9 @@ if ($deptScoped) {
     $pendingOB        = $pdo->query("SELECT COUNT(*) FROM leave_requests WHERE leave_type = 'ob leave' AND status = 'pending'")->fetchColumn();
     $approvedOB       = $pdo->query("SELECT COUNT(*) FROM leave_requests WHERE leave_type = 'ob leave' AND status = 'approved'")->fetchColumn();
     $rejectedOB       = $pdo->query("SELECT COUNT(*) FROM leave_requests WHERE leave_type = 'ob leave' AND status = 'rejected'")->fetchColumn();
-    $pendingLogEdit   = $pdo->query("SELECT COUNT(*) FROM log_edit_requests   WHERE status = 'pending'")->fetchColumn();
-    $approvedLogEdit  = $pdo->query("SELECT COUNT(*) FROM log_edit_requests   WHERE status = 'approved'")->fetchColumn();
-    $rejectedLogEdit  = $pdo->query("SELECT COUNT(*) FROM log_edit_requests   WHERE status = 'rejected'")->fetchColumn();
+    $pendingLogEdit   = $pdo->query("SELECT COUNT(*) FROM logs WHERE edit_status = 'pending'")->fetchColumn();
+    $approvedLogEdit  = $pdo->query("SELECT COUNT(*) FROM logs WHERE edit_status = 'approved'")->fetchColumn();
+    $rejectedLogEdit  = $pdo->query("SELECT COUNT(*) FROM logs WHERE edit_status = 'rejected'")->fetchColumn();
 }
 
 $totalPending  = $pendingLeave  + $pendingOvertime  + $pendingOB  + $pendingLogEdit;
@@ -199,25 +182,24 @@ if ($deptScoped) {
 
 // ---- GET LOG EDIT REQUESTS ----
 $leBaseSql = "
-    SELECT le.id, le.employee_id, le.attendance_id, le.log_id, le.request_type,
-           le.requested_time_in, le.requested_time_out, le.reason, le.status, le.created_at,
+    SELECT l.id, l.employee_id, l.log_type, l.edit_status AS status,
+           l.edit_reason AS reason, l.original_log_time, l.proposed_log_time,
+           l.edit_requested_by AS requested_by_id,
+           DATE(l.log_time) AS work_date, l.created_at,
            CONCAT(e.first_name, ' ', e.last_name) AS employee_name,
-           COALESCE(a.work_date, le.work_date) AS work_date,
-           l.log_time AS original_log_time,
            CONCAT(r.first_name, ' ', r.last_name) AS requested_by_name,
            rr.role_key AS requested_by_role
-    FROM log_edit_requests le
-    JOIN employees e ON le.employee_id = e.id
-    LEFT JOIN attendances a ON le.attendance_id = a.id
-    LEFT JOIN logs l ON le.log_id = l.id
-    LEFT JOIN employees r ON le.initiated_by_id = r.id
-    LEFT JOIN roles rr ON r.role_id = rr.id";
+    FROM logs l
+    JOIN employees e ON l.employee_id = e.id
+    LEFT JOIN employees r ON l.edit_requested_by = r.id
+    LEFT JOIN roles rr ON r.role_id = rr.id
+    WHERE l.edit_status IS NOT NULL";
 if ($deptScoped) {
-    $s = $pdo->prepare($leBaseSql . " WHERE e.department_id = ? ORDER BY le.created_at DESC");
+    $s = $pdo->prepare($leBaseSql . " AND e.department_id = ? ORDER BY l.created_at DESC");
     $s->execute([$myDeptId]);
     $logEditRequests = $s->fetchAll(PDO::FETCH_ASSOC);
 } else {
-    $logEditRequests = $pdo->query($leBaseSql . " ORDER BY le.created_at DESC")->fetchAll(PDO::FETCH_ASSOC);
+    $logEditRequests = $pdo->query($leBaseSql . " ORDER BY l.created_at DESC")->fetchAll(PDO::FETCH_ASSOC);
 }
 
 // ---- HELPER FUNCTIONS ----
@@ -492,14 +474,12 @@ function getActionButtons($type, $id, $status) {
                                         <td><?= htmlspecialchars($row['employee_name']) ?></td>
                                         <td><span class="badge request-log-edit">Log Edit</span></td>
                                         <td><?= date('M d, Y', strtotime($row['work_date'])) ?> |
-                                            <?php $origTime = $row['original_log_time'] ? date('h:i A', strtotime($row['original_log_time'])) : '—'; ?>
-                                            <?php if ($row['request_type'] === 'time_in'): ?>
-                                                In: <?= $origTime ?> &rarr; <?= date('h:i A', strtotime($row['requested_time_in'])) ?>
-                                            <?php elseif ($row['request_type'] === 'time_out'): ?>
-                                                Out: <?= $origTime ?> &rarr; <?= date('h:i A', strtotime($row['requested_time_out'])) ?>
-                                            <?php else: ?>
-                                                <?= $origTime ?> &rarr; In: <?= date('h:i A', strtotime($row['requested_time_in'])) ?> | Out: <?= date('h:i A', strtotime($row['requested_time_out'])) ?>
-                                            <?php endif; ?>
+                                            <?php
+                                            $origTime = $row['original_log_time'] ? date('h:i A', strtotime($row['original_log_time'])) : '—';
+                                            $propTime = $row['proposed_log_time']  ? date('h:i A', strtotime($row['proposed_log_time']))  : '—';
+                                            $typeLabel = match($row['log_type']) { 'IN' => 'In', 'OUT' => 'Out', 'BREAK_IN' => 'Break In', 'BREAK_OUT' => 'Break Out', default => $row['log_type'] };
+                                            ?>
+                                            <?= $typeLabel ?>: <?= $origTime ?> &rarr; <?= $propTime ?>
                                         </td>
                                         <td class="reasonCol"><?= htmlspecialchars($row['reason']) ?></td>
                                         <td><?= getStatusBadge($row['status']) ?></td>
@@ -594,22 +574,14 @@ function getActionButtons($type, $id, $status) {
                                         <td><?= date('M d, Y', strtotime($row['work_date'])) ?></td>
                                         <td>
                                             <?php
-                                            $typeLabels = ['time_in' => 'Time In', 'time_out' => 'Time Out', 'both' => 'Both'];
-                                            echo htmlspecialchars($typeLabels[$row['request_type']] ?? $row['request_type']);
+                                            $typeLabels = ['IN' => 'Time In', 'OUT' => 'Time Out', 'BREAK_IN' => 'Break In', 'BREAK_OUT' => 'Break Out'];
+                                            echo htmlspecialchars($typeLabels[$row['log_type']] ?? $row['log_type']);
                                             ?>
                                         </td>
                                         <td><?= $row['original_log_time'] ? date('h:i A', strtotime($row['original_log_time'])) : '—' ?></td>
-                                        <td>
-                                            <?php if ($row['request_type'] === 'time_in'): ?>
-                                                In: <?= date('h:i A', strtotime($row['requested_time_in'])) ?>
-                                            <?php elseif ($row['request_type'] === 'time_out'): ?>
-                                                Out: <?= date('h:i A', strtotime($row['requested_time_out'])) ?>
-                                            <?php else: ?>
-                                                In: <?= date('h:i A', strtotime($row['requested_time_in'])) ?> &rarr; Out: <?= date('h:i A', strtotime($row['requested_time_out'])) ?>
-                                            <?php endif; ?>
-                                        </td>
+                                        <td><?= $row['proposed_log_time'] ? date('h:i A', strtotime($row['proposed_log_time'])) : '—' ?></td>
                                         <td class="reasonCol"><?= htmlspecialchars($row['reason']) ?></td>
-                                        <td><?= getRolePill($row['requested_by_name'] ?? null, $row['requested_by_role'] ?? null) ?></td>
+                                        <td><?= ((int)($row['requested_by_id'] ?? 0) === (int)$_SESSION['user_id']) ? '<span class="pill"><i class="bi bi-person-fill"></i> You</span>' : getRolePill($row['requested_by_name'] ?? null, $row['requested_by_role'] ?? null) ?></td>
                                         <td><?= getStatusBadge($row['status']) ?></td>
                                         <td class="actionsCol"><?= getActionButtons('log_edit', $row['id'], $row['status']) ?></td>
                                     </tr>
@@ -722,7 +694,7 @@ function getActionButtons($type, $id, $status) {
             const confirmBtn = document.getElementById('confirmActionBtn');
             confirmBtn.href      = url;
             confirmBtn.className = 'btn ' + (isApprove ? 'btn-success' : 'btn-danger');
-            confirmBtn.textContent = label;
+            confirmBtn.textContent = label + ' Request';
         });
 
         <?php if ($success || $error): ?>

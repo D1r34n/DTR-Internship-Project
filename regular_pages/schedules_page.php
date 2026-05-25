@@ -103,6 +103,16 @@ foreach ($bdayRows as $r) {
     }
 }
 
+// ── Summary card stats ────────────────────────────────────
+$today      = date('Y-m-d');
+$monthStart = date('Y-m-01');
+$monthEnd   = date('Y-m-t');
+$weekEnd    = date('Y-m-d', strtotime('+6 days'));
+
+$statEventsMonth  = count(array_filter($schedCalEvents, fn($e) => substr($e['start'], 0, 10) >= $monthStart && substr($e['start'], 0, 10) <= $monthEnd));
+$statUpcomingWeek = count(array_filter($schedCalEvents, fn($e) => substr($e['start'], 0, 10) >= $today && substr($e['start'], 0, 10) <= $weekEnd));
+$statBirthdays    = count(array_filter($bdayRows, fn($r) => date('m', strtotime($r['birthdate'])) === date('m')));
+
 $currentPage        = 'schedule';
 $schedEventApiPath  = 'schedules_page.php';
 $schedCurrentMonth  = date('Y-m');
@@ -137,6 +147,133 @@ $schedInitialDate   = date('Y-m-01');
     <div id="main-wrapper">
         <?php include '../topbar_revised.php'; ?>
 
+        <!-- SUMMARY CARDS -->
+        <div class="container-fluid flex-shrink-0 px-3 pt-2">
+            <div class="d-flex flex-nowrap gap-2 overflow-auto pb-2">
+
+                <!-- Day Shifts -->
+                <div class="flex-shrink-0">
+                    <div class="card card-success p-3 h-100">
+                        <div class="card-body d-flex align-items-center gap-3 p-0">
+                            <div class="icon-box icon-box-success">
+                                <i class="bi bi-sun-fill fs-4"></i>
+                            </div>
+                            <div class="d-flex flex-column ms-auto text-end">
+                                <div class="stats-number" id="sched-stat-day">—</div>
+                                <div class="text-meta">Day Shifts</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Night Shifts -->
+                <div class="flex-shrink-0">
+                    <div class="card card-info p-3 h-100">
+                        <div class="card-body d-flex align-items-center gap-3 p-0">
+                            <div class="icon-box icon-box-info">
+                                <i class="bi bi-moon-stars-fill fs-4"></i>
+                            </div>
+                            <div class="d-flex flex-column ms-auto text-end">
+                                <div class="stats-number" id="sched-stat-night">—</div>
+                                <div class="text-meta">Night Shifts</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Rest Days -->
+                <div class="flex-shrink-0">
+                    <div class="card card-warning p-3 h-100">
+                        <div class="card-body d-flex align-items-center gap-3 p-0">
+                            <div class="icon-box icon-box-warning">
+                                <i class="bi bi-cup-hot-fill fs-4"></i>
+                            </div>
+                            <div class="d-flex flex-column ms-auto text-end">
+                                <div class="stats-number" id="sched-stat-rest">—</div>
+                                <div class="text-meta">Rest Days</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- On Leave -->
+                <div class="flex-shrink-0">
+                    <div class="card card-danger p-3 h-100">
+                        <div class="card-body d-flex align-items-center gap-3 p-0">
+                            <div class="icon-box icon-box-coral">
+                                <i class="bi bi-person-check-fill fs-4"></i>
+                            </div>
+                            <div class="d-flex flex-column ms-auto text-end">
+                                <div class="stats-number" id="sched-stat-leave">—</div>
+                                <div class="text-meta">On Leave</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- On OB -->
+                <div class="flex-shrink-0">
+                    <div class="card card-purple p-3 h-100">
+                        <div class="card-body d-flex align-items-center gap-3 p-0">
+                            <div class="icon-box icon-box-purple">
+                                <i class="bi bi-briefcase-fill fs-4"></i>
+                            </div>
+                            <div class="d-flex flex-column ms-auto text-end">
+                                <div class="stats-number" id="sched-stat-ob">—</div>
+                                <div class="text-meta">On OB</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Events This Month -->
+                <div class="flex-shrink-0">
+                    <div class="card card-neutral p-3 h-100">
+                        <div class="card-body d-flex align-items-center gap-3 p-0">
+                            <div class="icon-box icon-box-neutral">
+                                <i class="bi bi-calendar-event-fill fs-4"></i>
+                            </div>
+                            <div class="d-flex flex-column ms-auto text-end">
+                                <div class="stats-number"><?= $statEventsMonth ?></div>
+                                <div class="text-meta">Events This Month</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Upcoming Events -->
+                <div class="flex-shrink-0">
+                    <div class="card card-warning p-3 h-100">
+                        <div class="card-body d-flex align-items-center gap-3 p-0">
+                            <div class="icon-box icon-box-warning">
+                                <i class="bi bi-hourglass-split fs-4"></i>
+                            </div>
+                            <div class="d-flex flex-column ms-auto text-end">
+                                <div class="stats-number"><?= $statUpcomingWeek ?></div>
+                                <div class="text-meta">Upcoming This Week</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Birthdays This Month -->
+                <div class="flex-shrink-0">
+                    <div class="card card-purple p-3 h-100">
+                        <div class="card-body d-flex align-items-center gap-3 p-0">
+                            <div class="icon-box icon-box-purple">
+                                <i class="bi bi-cake2-fill fs-4"></i>
+                            </div>
+                            <div class="d-flex flex-column ms-auto text-end">
+                                <div class="stats-number"><?= $statBirthdays ?></div>
+                                <div class="text-meta">Birthdays This Month</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
         <div class="card card-neutral schedules-card">
             <div class="card-body d-flex flex-column schedules-card-body">
                 <?php include 'schedules_widget.php'; ?>
@@ -144,6 +281,15 @@ $schedInitialDate   = date('Y-m-01');
         </div>
 
     </div><!-- #main-wrapper -->
+
+<script>
+    const cardStrip = document.querySelector('.d-flex.overflow-auto');
+    cardStrip.addEventListener('wheel', (e) => {
+        if (e.deltaY === 0) return;
+        e.preventDefault();
+        cardStrip.scrollBy({ left: e.deltaY * 2, behavior: 'smooth' });
+    }, { passive: false });
+</script>
 
 </body>
 </html>

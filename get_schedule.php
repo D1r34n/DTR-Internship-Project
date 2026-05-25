@@ -10,8 +10,18 @@ require_once 'db.php';
 date_default_timezone_set('Asia/Manila');
 
 // Admin viewing a specific employee's calendar — richer scoped format
-$userRole         = $_SESSION['user_role'] ?? 'employee';
-$scopedToEmployee = $userRole === 'superadmin' && !empty($_GET['employee_id']);
+$userRole = $_SESSION['user_role'] ?? 'employee';
+
+$allowedRoles = [
+    'superadmin',
+    'admin',
+    'manager',
+    'workforce'
+];
+
+$scopedToEmployee =
+    isset($_GET['employee_id']) &&
+    in_array($userRole, $allowedRoles, true);
 
 if ($scopedToEmployee) {
     header('Content-Type: application/json');

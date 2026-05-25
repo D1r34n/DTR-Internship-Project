@@ -369,7 +369,12 @@ CREATE TABLE `logs` (
   `is_within_office` tinyint(1) NOT NULL DEFAULT 0,
   `distance_meters` float DEFAULT NULL,
   `photo_path` varchar(255) DEFAULT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `original_log_time` datetime DEFAULT NULL,
+  `proposed_log_time` datetime DEFAULT NULL,
+  `edit_status` enum('pending','approved','rejected') DEFAULT NULL,
+  `edit_reason` text DEFAULT NULL,
+  `edit_requested_by` int(11) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -395,40 +400,6 @@ INSERT INTO `logs` (`id`, `employee_id`, `log_type`, `log_time`, `longitude`, `l
 (850, 20, 'BREAK_IN', '2026-05-20 13:50:13', 120.9955088, 14.5842496, 55, 1, 22.38, NULL, '2026-05-20 05:50:13'),
 (851, 20, 'BREAK_OUT', '2026-05-20 13:50:22', 120.9955088, 14.5842496, 55, 1, 22.38, NULL, '2026-05-20 05:50:22'),
 (852, 20, 'OUT', '2026-05-20 13:50:27', 120.9955088, 14.5842496, 55, 1, 22.3849, 'cap_20_20260520_135027.jpg', '2026-05-20 05:50:27');
-
--- --------------------------------------------------------
-
---
--- Table structure for table `log_edit_requests`
---
-
-CREATE TABLE `log_edit_requests` (
-  `id` bigint(20) UNSIGNED NOT NULL,
-  `employee_id` bigint(20) UNSIGNED NOT NULL,
-  `attendance_id` bigint(20) UNSIGNED DEFAULT NULL,
-  `log_id` bigint(20) DEFAULT NULL,
-  `work_date` date NOT NULL,
-  `request_type` enum('time_in','time_out','both') NOT NULL DEFAULT 'time_out',
-  `requested_time_in` datetime DEFAULT NULL,
-  `requested_time_out` datetime DEFAULT NULL,
-  `reason` text NOT NULL,
-  `initiated_by_id` int(11) DEFAULT NULL,
-  `status` enum('pending','approved','rejected') NOT NULL DEFAULT 'pending',
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `log_edit_requests`
---
-
-INSERT INTO `log_edit_requests` (`id`, `employee_id`, `attendance_id`, `log_id`, `work_date`, `request_type`, `requested_time_in`, `requested_time_out`, `reason`, `initiated_by_id`, `status`, `created_at`, `updated_at`) VALUES
-(19, 22, 270, 828, '2026-05-12', 'time_in', '2026-05-12 07:21:00', NULL, 'No reason provided', 3, 'approved', '2026-05-12 08:23:02', '2026-05-12 08:23:02'),
-(20, 22, 270, 831, '2026-05-12', 'time_out', NULL, '2026-05-12 18:22:00', 'No reason provided', 3, 'approved', '2026-05-12 08:24:19', '2026-05-12 08:24:19'),
-(21, 22, 270, 830, '2026-05-12', '', NULL, NULL, 'No reason provided', 3, 'approved', '2026-05-12 09:07:38', '2026-05-12 09:07:38'),
-(22, 22, 270, 829, '2026-05-12', '', NULL, NULL, 'No reason provided', 3, 'approved', '2026-05-12 09:07:53', '2026-05-12 09:07:53'),
-(23, 22, 283, 840, '2026-05-19', 'time_out', NULL, '2026-05-19 20:00:00', 'No reason provided', 3, 'approved', '2026-05-19 07:11:47', '2026-05-19 07:11:47'),
-(24, 22, 291, 848, '2026-05-21', 'time_out', NULL, '2026-05-21 20:00:00', 'No reason provided', 3, 'approved', '2026-05-20 06:10:53', '2026-05-20 06:10:53');
 
 -- --------------------------------------------------------
 
@@ -800,13 +771,6 @@ ALTER TABLE `logs`
   ADD KEY `idx_log_type` (`log_type`);
 
 --
--- Indexes for table `log_edit_requests`
---
-ALTER TABLE `log_edit_requests`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `log_id` (`log_id`);
-
---
 -- Indexes for table `overtime_requests`
 --
 ALTER TABLE `overtime_requests`
@@ -894,12 +858,6 @@ ALTER TABLE `logs`
   MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=853;
 
 --
--- AUTO_INCREMENT for table `log_edit_requests`
---
-ALTER TABLE `log_edit_requests`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=25;
-
---
 -- AUTO_INCREMENT for table `overtime_requests`
 --
 ALTER TABLE `overtime_requests`
@@ -951,12 +909,6 @@ ALTER TABLE `employee_leave_balances`
 --
 ALTER TABLE `leave_requests`
   ADD CONSTRAINT `leave_requests_ibfk_1` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`);
-
---
--- Constraints for table `log_edit_requests`
---
-ALTER TABLE `log_edit_requests`
-  ADD CONSTRAINT `log_edit_requests_ibfk_1` FOREIGN KEY (`log_id`) REFERENCES `logs` (`id`);
 
 --
 -- Constraints for table `overtime_requests`

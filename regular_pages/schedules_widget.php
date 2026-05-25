@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /*
  * Schedules Widget
  *
@@ -1280,6 +1280,24 @@ swCalendar = new FullCalendar.Calendar(calEl, {
         }
     },
 
+    eventsSet: function (events) {
+        const c = { day: 0, night: 0, rest: 0, leave: 0, ob: 0 };
+        events.forEach(function (e) {
+            const st = e.extendedProps.shift_type;
+            if      (st === 'day')           c.day++;
+            else if (st === 'night')         c.night++;
+            else if (st === 'rest')          c.rest++;
+            else if (st === 'leave_approved') c.leave++;
+            else if (st === 'ob_approved')   c.ob++;
+        });
+        [['sched-stat-day', c.day], ['sched-stat-night', c.night],
+         ['sched-stat-rest', c.rest], ['sched-stat-leave', c.leave],
+         ['sched-stat-ob', c.ob]].forEach(function ([id, val]) {
+            const el = document.getElementById(id);
+            if (el) el.textContent = val;
+        });
+    },
+
     eventClick: function (info) {
         const props = info.event.extendedProps;
         info.jsEvent.preventDefault();
@@ -1312,6 +1330,7 @@ swCalendar = new FullCalendar.Calendar(calEl, {
 
         bootstrap.Modal.getOrCreateInstance(document.getElementById('swEmpViewEventModal')).show();
     },
+
 });
 
 swCalendar.render();

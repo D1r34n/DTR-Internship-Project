@@ -15,25 +15,10 @@ date_default_timezone_set('Asia/Manila');
 $myId   = $_SESSION['user_id'];
 $myRole = $_SESSION['user_role'] ?? '';
 
-/**
- * CHECK IF LOG WAS ALREADY APPROVED/EDITED
- */
-function hasApprovedLogEdit($pdo, $logId) {
-    $stmt = $pdo->prepare("
-        SELECT id 
-        FROM log_edit_requests 
-        WHERE log_id = ? 
-          AND status = 'approved'
-        LIMIT 1
-    ");
-    $stmt->execute([$logId]);
-    return (bool) $stmt->fetch();
-}
-
 // ================================================
 // ADMIN PATH — directly applies edit to any employee's log
 // ================================================
-if (in_array($myRole, ['superadmin', 'admin', 'manager'])) {
+if ($myRole === 'superadmin') {
 
     $employeeId  = intval($_POST['employee_id'] ?? $myId);
     $logId       = intval($_POST['log_id']       ?? 0);
@@ -45,7 +30,7 @@ if (in_array($myRole, ['superadmin', 'admin', 'manager'])) {
         exit();
     }
 
-    $logStmt = $pdo->prepare("SELECT log_time, log_type FROM logs WHERE id = ? AND employee_id = ?");
+    $logStmt = $pdo->prepare("SELECT log_time, log_type, edit_status FROM logs WHERE id = ? AND employee_id = ?");
     $logStmt->execute([$logId, $employeeId]);
     $log = $logStmt->fetch(PDO::FETCH_ASSOC);
 
@@ -54,12 +39,8 @@ if (in_array($myRole, ['superadmin', 'admin', 'manager'])) {
         exit();
     }
 
-    // ❌ BLOCK IF ALREADY EDITED
-    if (hasApprovedLogEdit($pdo, $logId)) {
-        echo json_encode([
-            'success' => false,
-            'message' => 'This log has already been edited.'
-        ]);
+    if ($log['edit_status'] === 'approved') {
+        echo json_encode(['success' => false, 'message' => 'This log has already been edited.']);
         exit();
     }
 
@@ -69,46 +50,31 @@ if (in_array($myRole, ['superadmin', 'admin', 'manager'])) {
         exit();
     }
 
-    $workDate    = date('Y-m-d', strtotime($log['log_time']));
-    $requestType = match($log['log_type']) {
-        'IN'        => 'time_in',
-        'OUT'       => 'time_out',
-        'BREAK_IN'  => 'break_in',
-        'BREAK_OUT' => 'break_out',
-        default     => strtolower($log['log_type']),
-    };
+    $workDate = date('Y-m-d', strtotime($log['log_time']));
 
-    $attStmt = $pdo->prepare("SELECT id, actual_time_in FROM attendances WHERE employee_id = ? AND work_date = ?");
+    $attStmt = $pdo->prepare("SELECT id FROM attendances WHERE employee_id = ? AND work_date = ?");
     $attStmt->execute([$employeeId, $workDate]);
     $att = $attStmt->fetch(PDO::FETCH_ASSOC) ?: null;
-
-    $reqTimeIn  = ($requestType === 'time_in')  ? $newDT : null;
-    $reqTimeOut = ($requestType === 'time_out') ? $newDT : null;
 
     try {
         $pdo->beginTransaction();
 
-        // 1. Update log row
-        $pdo->prepare("UPDATE logs SET log_time = ? WHERE id = ?")
-            ->execute([$newDT, $logId]);
-
-        // 2. Insert audit record (approved)
+        // Save original time (only on first edit), apply new time, mark approved
         $pdo->prepare("
-            INSERT INTO log_edit_requests
-                (employee_id, attendance_id, log_id, work_date,
-                 request_type, requested_time_in, requested_time_out, reason, status, initiated_by_id, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'approved', ?, NOW())
-        ")->execute([
-            $employeeId, $att['id'] ?? null, $logId, $workDate,
-            $requestType, $reqTimeIn, $reqTimeOut, $reason, $myId,
-        ]);
+            UPDATE logs
+            SET original_log_time = COALESCE(original_log_time, log_time),
+                log_time           = ?,
+                proposed_log_time  = ?,
+                edit_status        = 'approved',
+                edit_reason        = ?,
+                edit_requested_by  = ?
+            WHERE id = ?
+        ")->execute([$newDT, $newDT, $reason, $myId, $logId]);
 
-        // 3. Reset attendance status
+        // Reset attendance so finalizer can recalculate
         if ($att) {
-            $pdo->prepare("
-                UPDATE attendances SET status = 'incomplete'
-                WHERE employee_id = ? AND work_date = ?
-            ")->execute([$employeeId, $workDate]);
+            $pdo->prepare("UPDATE attendances SET status = 'incomplete' WHERE employee_id = ? AND work_date = ?")
+                ->execute([$employeeId, $workDate]);
         }
 
         $pdo->commit();
@@ -119,7 +85,7 @@ if (in_array($myRole, ['superadmin', 'admin', 'manager'])) {
         exit();
     }
 
-    // 4. Re-finalize attendance
+    // Re-finalize attendance
     try {
         $schedStmt = $pdo->prepare("
             SELECT schedule_date, scheduled_start, scheduled_end
@@ -139,9 +105,9 @@ if (in_array($myRole, ['superadmin', 'admin', 'manager'])) {
 }
 
 // ================================================
-// EMPLOYEE PATH — editing own log
+// EMPLOYEE PATH — editing own log (creates pending request)
 // ================================================
-if (in_array($myRole, ['employee', 'superadmin'])) {
+if ($myRole !== 'superadmin') {
 
     $employeeId  = $myId;
     $logId       = intval($_POST['log_id']       ?? 0);
@@ -153,7 +119,7 @@ if (in_array($myRole, ['employee', 'superadmin'])) {
         exit();
     }
 
-    $logStmt = $pdo->prepare("SELECT log_time, log_type FROM logs WHERE id = ? AND employee_id = ?");
+    $logStmt = $pdo->prepare("SELECT log_time, log_type, edit_status FROM logs WHERE id = ? AND employee_id = ?");
     $logStmt->execute([$logId, $employeeId]);
     $log = $logStmt->fetch(PDO::FETCH_ASSOC);
 
@@ -167,12 +133,13 @@ if (in_array($myRole, ['employee', 'superadmin'])) {
         exit();
     }
 
-    // ❌ BLOCK IF ALREADY EDITED
-    if (hasApprovedLogEdit($pdo, $logId)) {
-        echo json_encode([
-            'success' => false,
-            'message' => 'This log has already been edited.'
-        ]);
+    if ($log['edit_status'] === 'approved') {
+        echo json_encode(['success' => false, 'message' => 'This log has already been edited.']);
+        exit();
+    }
+
+    if ($log['edit_status'] === 'pending') {
+        echo json_encode(['success' => false, 'message' => 'A pending request for this log entry already exists.']);
         exit();
     }
 
@@ -182,45 +149,16 @@ if (in_array($myRole, ['employee', 'superadmin'])) {
         exit();
     }
 
-    $workDate    = date('Y-m-d', strtotime($log['log_time']));
-    $requestType = ($log['log_type'] === 'IN') ? 'time_in' : 'time_out';
-
-    $attStmt = $pdo->prepare("SELECT id FROM attendances WHERE employee_id = ? AND work_date = ?");
-    $attStmt->execute([$employeeId, $workDate]);
-    $att = $attStmt->fetch(PDO::FETCH_ASSOC) ?: null;
-
-    // check pending
-    $dup = $pdo->prepare("
-        SELECT id 
-        FROM log_edit_requests 
-        WHERE log_id = ? 
-          AND status = 'pending'
-        LIMIT 1
-    ");
-    $dup->execute([$logId]);
-
-    if ($dup->fetch()) {
-        echo json_encode(['success' => false, 'message' => 'A pending request for this log entry already exists.']);
-        exit();
-    }
-
     try {
         $pdo->prepare("
-            INSERT INTO log_edit_requests
-                (employee_id, attendance_id, log_id, work_date,
-                 request_type, requested_time_in, requested_time_out, reason, status, initiated_by_id)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?)
-        ")->execute([
-            $employeeId,
-            $att['id'] ?? null,
-            $logId,
-            $workDate,
-            $requestType,
-            $requestType === 'time_in'  ? $newDT : null,
-            $requestType === 'time_out' ? $newDT : null,
-            $reason,
-            $employeeId,
-        ]);
+            UPDATE logs
+            SET original_log_time = COALESCE(original_log_time, log_time),
+                proposed_log_time  = ?,
+                edit_status        = 'pending',
+                edit_reason        = ?,
+                edit_requested_by  = ?
+            WHERE id = ? AND employee_id = ?
+        ")->execute([$newDT, $reason, $employeeId, $logId, $employeeId]);
 
         echo json_encode(['success' => true, 'message' => 'Log edit request submitted for admin review.']);
     } catch (Exception $e) {
