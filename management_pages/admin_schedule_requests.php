@@ -237,17 +237,12 @@ function formatScheduleDates(string $allDates): string {
         }
     }
 
-    if ($consecutive) {
-        $first = new DateTime($dates[0]);
-        $last  = new DateTime($dates[$n - 1]);
-        if ($first->format('M Y') === $last->format('M Y')) {
-            return $first->format('M d') . ' – ' . $last->format('d, Y');
-        }
-        return $first->format('M d') . ' – ' . $last->format('M d, Y');
+    $first = new DateTime($dates[0]);
+    $last  = new DateTime($dates[$n - 1]);
+    if ($first->format('M Y') === $last->format('M Y')) {
+        return $first->format('M d') . ' – ' . $last->format('d, Y');
     }
-
-    $parts = array_map(fn($d) => date('M d', strtotime($d)), $dates);
-    return implode(', ', $parts) . ', ' . date('Y', strtotime($dates[0]));
+    return $first->format('M d') . ' – ' . $last->format('M d, Y');
 }
 
 function getRolePill(?string $name, ?string $role): string {
@@ -409,9 +404,11 @@ function getStatusBadge(string $status): string {
                                             ? 'batch_id=' . urlencode($row['batch_id'])
                                             : 'id=' . $row['id'];
                                         $dateLabel       = formatScheduleDates($row['all_dates']);
-                                        $firstDate       = explode(',', $row['all_dates'])[0] ?? '';
+                                        $allDatesParts   = array_values(array_filter(explode(',', $row['all_dates'])));
+                                        $firstDate       = $allDatesParts[0] ?? '';
+                                        $lastDate        = end($allDatesParts) ?: $firstDate;
                                     ?>
-                                    <tr data-status="<?= $rowStatus ?>" data-date="<?= htmlspecialchars($firstDate) ?>">
+                                    <tr data-status="<?= $rowStatus ?>" data-date="<?= htmlspecialchars($firstDate) ?>" data-date-end="<?= htmlspecialchars($lastDate) ?>">
                                         <td><?= htmlspecialchars($row['employee_name']) ?></td>
                                         <td><?= $row['department_code'] ? htmlspecialchars($row['department_code']) : '—' ?></td>
                                         <td><?= htmlspecialchars($dateLabel) ?></td>
@@ -582,7 +579,7 @@ function getStatusBadge(string $status): string {
             const filtered = allRowsSR.filter(r => {
                 const matchSearch = r.textContent.toLowerCase().includes(search);
                 const matchStatus = currentStatus === 'ALL' || r.dataset.status === currentStatus;
-                const matchDate   = !srDateFrom || (r.dataset.date >= srDateFrom && r.dataset.date <= srDateTo);
+                const matchDate   = !srDateFrom || (r.dataset.date <= srDateTo && (r.dataset.dateEnd || r.dataset.date) >= srDateFrom);
                 return matchSearch && matchStatus && matchDate;
             });
 
