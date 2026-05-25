@@ -417,7 +417,7 @@ function getStatusBadge(string $status): string {
                                             <?php endif; ?>
                                         </td>
                                         <td><?= getTypeBadge($row['request_type'] ?? null) ?></td>
-                                        <td><?= getRolePill($row['requested_by_name'] ?? null, $row['requested_by_role'] ?? null) ?></td>
+                                        <td><?= ((int)($row['requested_by'] ?? 0) === (int)$_SESSION['user_id']) ? '<span class="pill"><i class="bi bi-person-fill"></i> You</span>' : getRolePill($row['requested_by_name'] ?? null, $row['requested_by_role'] ?? null) ?></td>
                                         <td>
                                             <?php if ($isArchived): ?>
                                                 <?= getStatusBadge('deleted') ?>
