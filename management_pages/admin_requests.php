@@ -495,6 +495,7 @@ function getActionButtons($type, $id, $status) {
                         </div>
                         <?php endif; ?>
                     </div>
+                    <div id="pag-all" class="reqPagination"></div>
                 </div>
 
                 <!-- LEAVE TAB -->
@@ -526,6 +527,7 @@ function getActionButtons($type, $id, $status) {
                         </div>
                         <?php endif; ?>
                     </div>
+                    <div id="pag-leave" class="reqPagination"></div>
                 </div>
 
                 <!-- OVERTIME TAB -->
@@ -557,6 +559,7 @@ function getActionButtons($type, $id, $status) {
                         </div>
                         <?php endif; ?>
                     </div>
+                    <div id="pag-overtime" class="reqPagination"></div>
                 </div>
 
                 <!-- LOG EDIT TAB -->
@@ -595,6 +598,7 @@ function getActionButtons($type, $id, $status) {
                         </div>
                         <?php endif; ?>
                     </div>
+                    <div id="pag-log-edit" class="reqPagination"></div>
                 </div>
 
                 <!-- OFFICIAL BUSINESS TAB -->
@@ -625,6 +629,7 @@ function getActionButtons($type, $id, $status) {
                         </div>
                         <?php endif; ?>
                     </div>
+                    <div id="pag-ob" class="reqPagination"></div>
                 </div>
 
                 </div><!-- /.tab-content -->
@@ -667,12 +672,138 @@ function getActionButtons($type, $id, $status) {
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
 
-        // ---- SEARCH TABLE ----
-        function searchTable() {
-            const input = document.getElementById('search-input').value.toLowerCase();
-            document.querySelectorAll('.tab-pane.active tbody tr').forEach(row => {
-                row.style.display = row.textContent.toLowerCase().includes(input) ? '' : 'none';
+        // ---- PAGINATION STATE ----
+        const TAB_IDS  = ['all', 'leave', 'overtime', 'ob', 'log-edit'];
+        const tabState = {};
+        TAB_IDS.forEach(id => { tabState[id] = { page: 1 }; });
+        let REQ_ROWS_PER_PAGE = parseInt(localStorage.getItem('reqRowsPerPage') || '10');
+        const reqLastTotals   = {};
+
+        document.addEventListener('DOMContentLoaded', () => {
+            TAB_IDS.forEach(id => applyFiltersReq(id));
+
+            document.getElementById('search-input')
+                .addEventListener('input', () => {
+                    const tabId = getActiveTabId();
+                    tabState[tabId].page = 1;
+                    applyFiltersReq(tabId);
+                });
+
+            document.querySelectorAll('#reqTab .nav-link').forEach(btn => {
+                btn.addEventListener('shown.bs.tab', e => {
+                    const tabId = e.target.dataset.bsTarget.replace('#', '');
+                    applyFiltersReq(tabId);
+                });
             });
+        });
+
+        function getActiveTabId() {
+            const active = document.querySelector('#reqTab .nav-link.active');
+            return active?.dataset?.bsTarget?.replace('#', '') ?? 'all';
+        }
+
+        function searchTable() {
+            const tabId = getActiveTabId();
+            tabState[tabId].page = 1;
+            applyFiltersReq(tabId);
+        }
+
+        function applyFiltersReq(tabId) {
+            const q    = document.getElementById('search-input').value.toLowerCase();
+            const rows = Array.from(document.querySelectorAll('#' + tabId + ' tbody tr'));
+
+            const filtered   = rows.filter(r => r.textContent.toLowerCase().includes(q));
+            const total      = filtered.length;
+            reqLastTotals[tabId] = total;
+            const totalPages = Math.max(1, Math.ceil(total / REQ_ROWS_PER_PAGE));
+
+            if (tabState[tabId].page > totalPages) tabState[tabId].page = 1;
+
+            const start    = (tabState[tabId].page - 1) * REQ_ROWS_PER_PAGE;
+            const pageRows = filtered.slice(start, start + REQ_ROWS_PER_PAGE);
+
+            rows.forEach(r => r.style.display = 'none');
+            pageRows.forEach(r => r.style.display = '');
+
+            renderReqPagination(tabId, total, totalPages, start);
+        }
+
+        function renderReqPagination(tabId, total, totalPages, start) {
+            const pag = document.getElementById('pag-' + tabId);
+            if (!pag) return;
+            if (total === 0) { pag.innerHTML = ''; return; }
+
+            const cur     = tabState[tabId].page;
+            const end     = Math.min(start + REQ_ROWS_PER_PAGE, total);
+            const showing = `${start + 1}–${end} of ${total}`;
+
+            let html = `
+                <div class="row align-items-center g-2 w-100">
+                    <div class="col-md d-flex align-items-center gap-2">
+                        <span class="text-meta">Showing ${showing}</span>
+                    </div>
+                    <div class="col-md d-flex justify-content-center">
+                        <ul class="pagination pagination-sm mb-0">
+                            <li class="page-item${cur === 1 ? ' disabled' : ''}">
+                                <button class="page-link" onclick="changeReqPage('${tabId}',${cur - 1})"><i class="bi bi-chevron-left"></i></button>
+                            </li>
+            `;
+
+            getReqPageNums(cur, totalPages).forEach(p => {
+                if (p === '...') {
+                    html += `<li class="page-item disabled"><span class="page-link">…</span></li>`;
+                } else {
+                    html += `<li class="page-item${p === cur ? ' active' : ''}">
+                        <button class="page-link" onclick="changeReqPage('${tabId}',${p})">${p}</button>
+                    </li>`;
+                }
+            });
+
+            html += `
+                            <li class="page-item${cur === totalPages ? ' disabled' : ''}">
+                                <button class="page-link" onclick="changeReqPage('${tabId}',${cur + 1})"><i class="bi bi-chevron-right"></i></button>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="col-md d-flex justify-content-md-end align-items-center gap-2">
+                        <span class="text-meta text-nowrap">Rows per page</span>
+                        <div class="dropdown">
+                            <button class="btn btn-sm dropdown-toggle" data-bs-toggle="dropdown">
+                                <span>${REQ_ROWS_PER_PAGE} Rows</span>
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li><button class="dropdown-item" onclick="changeReqRows(10)">10</button></li>
+                                <li><button class="dropdown-item" onclick="changeReqRows(25)">25</button></li>
+                                <li><button class="dropdown-item" onclick="changeReqRows(50)">50</button></li>
+                                <li><button class="dropdown-item" onclick="changeReqRows(100)">100</button></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            pag.innerHTML = html;
+        }
+
+        function getReqPageNums(cur, tot) {
+            if (tot <= 7) return Array.from({ length: tot }, (_, i) => i + 1);
+            if (cur <= 4) return [1, 2, 3, 4, 5, '...', tot];
+            if (cur >= tot - 3) return [1, '...', tot - 4, tot - 3, tot - 2, tot - 1, tot];
+            return [1, '...', cur - 1, cur, cur + 1, '...', tot];
+        }
+
+        function changeReqPage(tabId, n) {
+            const totalPages = Math.max(1, Math.ceil((reqLastTotals[tabId] || 0) / REQ_ROWS_PER_PAGE));
+            if (n < 1 || n > totalPages) return;
+            tabState[tabId].page = n;
+            applyFiltersReq(tabId);
+        }
+
+        function changeReqRows(value) {
+            REQ_ROWS_PER_PAGE = parseInt(value);
+            localStorage.setItem('reqRowsPerPage', value);
+            TAB_IDS.forEach(id => { tabState[id].page = 1; });
+            applyFiltersReq(getActiveTabId());
         }
 
         // ---- CLOSE MODAL ----

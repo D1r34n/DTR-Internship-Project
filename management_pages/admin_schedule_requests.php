@@ -292,6 +292,7 @@ function getStatusBadge(string $status): string {
     <link rel="stylesheet" href="../navbars_revised.css">
 
     <link rel="stylesheet" href="admin_requests.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 </head>
 <body>
 
@@ -373,6 +374,13 @@ function getStatusBadge(string $status): string {
                         </ul>
                     </div>
 
+                    <div class="dropdown">
+                        <button class="btn btn-sm dropdown-toggle" id="srDatePickerBtn" type="button">
+                            <i class="bi bi-calendar3"></i>
+                            <span id="srDateRangeLabel">Today</span>
+                        </button>
+                    </div>
+
                     <div class="input-group input-group-sm ms-auto" style="max-width:200px;">
                         <span class="input-group-text"><i class="bi bi-search"></i></span>
                         <input type="text" id="searchInput" class="form-control"
@@ -390,8 +398,7 @@ function getStatusBadge(string $status): string {
                             <th>Type</th><th>Requested By</th><th>Status</th><th>Actions</th>
                         </tr></thead>
                         <tbody>
-                            <?php if (count($scheduleRequests) > 0): ?>
-                                <?php foreach ($scheduleRequests as $row): ?>
+                            <?php foreach ($scheduleRequests as $row): ?>
                                     <?php
                                         $startHour       = $row['scheduled_start'] ? (int)date('H', strtotime($row['scheduled_start'])) : 6;
                                         $isNightShift    = $startHour >= 18 || $startHour < 6;
@@ -402,8 +409,9 @@ function getStatusBadge(string $status): string {
                                             ? 'batch_id=' . urlencode($row['batch_id'])
                                             : 'id=' . $row['id'];
                                         $dateLabel       = formatScheduleDates($row['all_dates']);
+                                        $firstDate       = explode(',', $row['all_dates'])[0] ?? '';
                                     ?>
-                                    <tr data-status="<?= $rowStatus ?>">
+                                    <tr data-status="<?= $rowStatus ?>" data-date="<?= htmlspecialchars($firstDate) ?>">
                                         <td><?= htmlspecialchars($row['employee_name']) ?></td>
                                         <td><?= $row['department_code'] ? htmlspecialchars($row['department_code']) : '—' ?></td>
                                         <td><?= htmlspecialchars($dateLabel) ?></td>
@@ -473,19 +481,15 @@ function getStatusBadge(string $status): string {
                                             <?php endif; ?>
                                         </td>
                                     </tr>
-                                <?php endforeach; ?>
-                            <?php else: ?>
-                                <tr><td colspan="10" class="text-center">No schedule requests found.</td></tr>
-                            <?php endif; ?>
+                            <?php endforeach; ?>
                         </tbody>
                     </table>
-                    <?php if (empty($scheduleRequests)): ?>
-                    <div class="table-empty">
+                    <div id="srEmptyState" class="table-empty" style="display:none">
                         <i class="bi bi-calendar2-x-fill"></i>
                         <div class="text-meta">No schedule requests found.</div>
                     </div>
-                    <?php endif; ?>
                 </div>
+                <div id="srPagination" class="reqPagination"></div>
 
             </div>
         </div>
@@ -514,16 +518,167 @@ function getStatusBadge(string $status): string {
     <?php include '../toast.php'; ?>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script>
-        let currentStatus = 'ALL';
+        let currentStatus    = 'ALL';
+        const fmtISO         = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+        const todayISO       = fmtISO(new Date());
+        let srDateFrom       = todayISO;
+        let srDateTo         = todayISO;
+        let SR_ROWS_PER_PAGE = parseInt(localStorage.getItem('srRowsPerPage') || '10');
+        let srCurrentPage    = 1;
+        let srLastTotal      = 0;
+        let allRowsSR        = [];
+
+        document.addEventListener('DOMContentLoaded', () => {
+            allRowsSR = Array.from(document.querySelectorAll('.tableScroll tbody tr'));
+            applyFiltersSR();
+
+            flatpickr(document.getElementById('srDatePickerBtn'), {
+                mode: 'range',
+                dateFormat: 'Y-m-d',
+                defaultDate: 'today',
+                onChange(dates) {
+                    if (dates.length === 2) {
+                        srDateFrom = fmtISO(dates[0]);
+                        srDateTo   = fmtISO(dates[1]);
+                    } else if (dates.length === 1) {
+                        srDateFrom = fmtISO(dates[0]);
+                        srDateTo   = srDateFrom;
+                    } else {
+                        srDateFrom = srDateTo = null;
+                    }
+                    updateSRDateLabel(dates);
+                    srCurrentPage = 1;
+                    applyFiltersSR();
+                }
+            });
+
+        });
+
+        function updateSRDateLabel(dates) {
+            if (!dates.length) {
+                document.getElementById('srDateRangeLabel').textContent = 'Today';
+                return;
+            }
+            const today = fmtISO(new Date());
+            const fmt = d => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+            const isSame = dates.length > 1 && dates[0].toDateString() === dates[1].toDateString();
+            const singleDay = dates.length === 1 || isSame;
+            const d0ISO = fmtISO(dates[0]);
+            document.getElementById('srDateRangeLabel').textContent = (singleDay && d0ISO === today)
+                ? 'Today'
+                : singleDay ? fmt(dates[0]) : fmt(dates[0]) + ' – ' + fmt(dates[1]);
+        }
 
         function filterTable() {
+            srCurrentPage = 1;
+            applyFiltersSR();
+        }
+
+        function applyFiltersSR() {
             const search = document.getElementById('searchInput').value.toLowerCase();
-            document.querySelectorAll('.tableScroll tbody tr').forEach(row => {
-                const matchSearch = row.textContent.toLowerCase().includes(search);
-                const matchStatus = currentStatus === 'ALL' || row.dataset.status === currentStatus;
-                row.style.display = (matchSearch && matchStatus) ? '' : 'none';
+
+            const filtered = allRowsSR.filter(r => {
+                const matchSearch = r.textContent.toLowerCase().includes(search);
+                const matchStatus = currentStatus === 'ALL' || r.dataset.status === currentStatus;
+                const matchDate   = !srDateFrom || (r.dataset.date >= srDateFrom && r.dataset.date <= srDateTo);
+                return matchSearch && matchStatus && matchDate;
             });
+
+            const total      = filtered.length;
+            srLastTotal      = total;
+            const totalPages = Math.max(1, Math.ceil(total / SR_ROWS_PER_PAGE));
+
+            if (srCurrentPage > totalPages) srCurrentPage = 1;
+
+            const start    = (srCurrentPage - 1) * SR_ROWS_PER_PAGE;
+            const pageRows = filtered.slice(start, start + SR_ROWS_PER_PAGE);
+
+            allRowsSR.forEach(r => r.style.display = 'none');
+            pageRows.forEach(r => r.style.display = '');
+
+            const emptyState = document.getElementById('srEmptyState');
+            if (emptyState) emptyState.style.display = total === 0 ? '' : 'none';
+
+            renderSRPagination(total, totalPages, start);
+        }
+
+        function renderSRPagination(total, totalPages, start) {
+            const pag = document.getElementById('srPagination');
+            if (!pag) return;
+            if (total === 0) { pag.innerHTML = ''; return; }
+
+            const end     = Math.min(start + SR_ROWS_PER_PAGE, total);
+            const showing = `${start + 1}–${end} of ${total}`;
+
+            let html = `
+                <div class="row align-items-center g-2 w-100">
+                    <div class="col-md d-flex align-items-center gap-2">
+                        <span class="text-meta">Showing ${showing}</span>
+                    </div>
+                    <div class="col-md d-flex justify-content-center">
+                        <ul class="pagination pagination-sm mb-0">
+                            <li class="page-item${srCurrentPage === 1 ? ' disabled' : ''}">
+                                <button class="page-link" onclick="changeSRPage(${srCurrentPage - 1})"><i class="bi bi-chevron-left"></i></button>
+                            </li>
+            `;
+
+            getSRPageNums(srCurrentPage, totalPages).forEach(p => {
+                if (p === '...') {
+                    html += `<li class="page-item disabled"><span class="page-link">…</span></li>`;
+                } else {
+                    html += `<li class="page-item${p === srCurrentPage ? ' active' : ''}">
+                        <button class="page-link" onclick="changeSRPage(${p})">${p}</button>
+                    </li>`;
+                }
+            });
+
+            html += `
+                            <li class="page-item${srCurrentPage === totalPages ? ' disabled' : ''}">
+                                <button class="page-link" onclick="changeSRPage(${srCurrentPage + 1})"><i class="bi bi-chevron-right"></i></button>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="col-md d-flex justify-content-md-end align-items-center gap-2">
+                        <span class="text-meta text-nowrap">Rows per page</span>
+                        <div class="dropdown">
+                            <button class="btn btn-sm dropdown-toggle" data-bs-toggle="dropdown">
+                                <span>${SR_ROWS_PER_PAGE} Rows</span>
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li><button class="dropdown-item" onclick="changeSRRows(10)">10</button></li>
+                                <li><button class="dropdown-item" onclick="changeSRRows(25)">25</button></li>
+                                <li><button class="dropdown-item" onclick="changeSRRows(50)">50</button></li>
+                                <li><button class="dropdown-item" onclick="changeSRRows(100)">100</button></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            pag.innerHTML = html;
+        }
+
+        function getSRPageNums(cur, tot) {
+            if (tot <= 7) return Array.from({ length: tot }, (_, i) => i + 1);
+            if (cur <= 4) return [1, 2, 3, 4, 5, '...', tot];
+            if (cur >= tot - 3) return [1, '...', tot - 4, tot - 3, tot - 2, tot - 1, tot];
+            return [1, '...', cur - 1, cur, cur + 1, '...', tot];
+        }
+
+        function changeSRPage(n) {
+            const totalPages = Math.max(1, Math.ceil(srLastTotal / SR_ROWS_PER_PAGE));
+            if (n < 1 || n > totalPages) return;
+            srCurrentPage = n;
+            applyFiltersSR();
+        }
+
+        function changeSRRows(value) {
+            SR_ROWS_PER_PAGE = parseInt(value);
+            localStorage.setItem('srRowsPerPage', value);
+            srCurrentPage = 1;
+            applyFiltersSR();
         }
 
         document.querySelectorAll('#statusMenu .dropdown-item').forEach(item => {
@@ -531,7 +686,8 @@ function getStatusBadge(string $status): string {
                 e.preventDefault();
                 document.getElementById('statusLabel').textContent = item.textContent.trim();
                 currentStatus = item.dataset.value;
-                filterTable();
+                srCurrentPage = 1;
+                applyFiltersSR();
             });
         });
 
