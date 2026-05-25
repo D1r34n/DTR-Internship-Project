@@ -8,6 +8,7 @@ if (!isset($_SESSION['user_id'])) {
 
 require_once 'db.php';
 date_default_timezone_set('Asia/Manila');
+try { $pdo->exec("ALTER TABLE schedules ADD COLUMN is_archived TINYINT(1) NOT NULL DEFAULT 0"); } catch (PDOException $e) {}
 
 // Admin viewing a specific employee's calendar — richer scoped format
 $userRole = $_SESSION['user_role'] ?? 'employee';
@@ -36,6 +37,8 @@ if ($scopedToEmployee) {
         SELECT schedule_date, scheduled_start, scheduled_end, is_rest_day, status
         FROM schedules
         WHERE employee_id = ? AND schedule_date BETWEEN ? AND ?
+          AND COALESCE(is_archived, 0) = 0
+          AND status != 'rejected'
         ORDER BY schedule_date
     ");
     $stmt->execute([$employeeId, $firstDay, $lastDay]);
@@ -213,6 +216,7 @@ $stmt = $pdo->prepare("
     WHERE employee_id = ?
     AND schedule_date BETWEEN ? AND ?
     AND status = 'approved'
+    AND COALESCE(is_archived, 0) = 0
     ORDER BY schedule_date ASC
 ");
 $stmt->execute([$employeeId, $start, $end]);

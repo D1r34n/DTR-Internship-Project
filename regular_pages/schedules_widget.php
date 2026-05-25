@@ -16,7 +16,8 @@
  *   $schedSaveApiPath    — POST endpoint for schedule save (admin-scoped only)
  */
 if (session_status() === PHP_SESSION_NONE) session_start();
-$isAdmin = isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'superadmin';
+$isAdmin     = isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'superadmin';
+$isWorkforce = isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'workforce';
 
 $schedApiPath        ??= '../get_schedule.php';
 $schedCalEvents      ??= [];
@@ -234,7 +235,8 @@ $isScoped = $schedEmployeeId !== null;
 
                 <div class="modal-footer">
                     <button type="submit" class="btn btn-success w-100">
-                        <i class="bi bi-check-circle-fill me-1"></i> Save Schedule
+                        <i class="bi bi-check-circle-fill me-1"></i>
+                        <?= $isWorkforce ? 'Submit for Approval' : 'Save Schedule' ?>
                     </button>
                 </div>
             </form>
@@ -252,8 +254,7 @@ $isScoped = $schedEmployeeId !== null;
 
             <div class="modal-header">
                 <h5 class="modal-title" id="swSchedModalTitle">Edit Schedule</h5>
-                <button type="button" class="btn-close btn-close-white"
-                        onclick="swCloseEditModal()"></button>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
 
             <form method="POST" action="<?= htmlspecialchars($schedSaveApiPath) ?>" id="swEditSchedForm">
@@ -264,11 +265,6 @@ $isScoped = $schedEmployeeId !== null;
                 <input type="hidden" name="is_rest_day"    id="swModalIsRestDay" value="0">
 
                 <div class="modal-body">
-
-                    <div class="mb-3">
-                        <label class="form-label">Employee</label>
-                        <input type="text" class="form-control" value="<?= htmlspecialchars($schedEmpName ?? '') ?>" readonly>
-                    </div>
 
                     <div class="form-check mb-3" id="swRestDayCheckRow">
                         <input class="form-check-input" type="checkbox" id="swModalRestDayCheck">
@@ -433,8 +429,9 @@ $isScoped = $schedEmployeeId !== null;
 /* ================================================================
    SCHEDULES WIDGET  —  JavaScript
 ================================================================ */
-const SW_IS_ADMIN  = <?= $isAdmin ? 'true' : 'false' ?>;
-const SW_IS_SCOPED = <?= $isScoped ? 'true' : 'false' ?>;
+const SW_IS_ADMIN     = <?= $isAdmin ? 'true' : 'false' ?>;
+const SW_IS_SCOPED    = <?= $isScoped ? 'true' : 'false' ?>;
+const SW_IS_WORKFORCE = <?= $isWorkforce ? 'true' : 'false' ?>;
 const SW_EMP_ID    = <?= $isScoped ? (int)$schedEmployeeId : 'null' ?>;
 const SW_EMP_URL_ID = <?= $isScoped ? json_encode($schedEmpUrlId) : 'null' ?>;
 const SW_CAL_API   = <?= json_encode($schedCalApiPath) ?>;
@@ -549,7 +546,7 @@ swCalendar = new FullCalendar.Calendar(calEl, {
         const props = arg.event.extendedProps;
         let html = '<div class="fc-admin-inner">';
         html += `<span class="fc-admin-label">${arg.event.title}</span>`;
-        if (props.timeInStr && props.timeOutStr) {
+        if (props.timeInStr && props.timeOutStr && props.type !== 'pending-schedule') {
             html += `<span class="fc-admin-time">${props.timeInStr} – ${props.timeOutStr}</span>`;
         }
         html += '</div>';
@@ -712,7 +709,8 @@ document.getElementById('swAddSchedForm').addEventListener('submit', function (e
         .then(r => {
             if (!r.ok && r.status !== 200) throw new Error('save failed');
             bootstrap.Modal.getInstance(document.getElementById('swManageScheduleModal'))?.hide();
-            if (typeof showToast === 'function') showToast('Schedule saved successfully', 'success');
+            const msg = SW_IS_WORKFORCE ? 'Schedule submitted for approval.' : 'Schedule saved successfully.';
+            if (typeof showToast === 'function') showToast(msg, 'success');
             if (swCalendar) swCalendar.refetchEvents();
         })
         .catch(() => {
@@ -725,10 +723,18 @@ document.getElementById('swEditSchedForm').addEventListener('submit', function (
     e.preventDefault();
     if (!swPrepareEditSubmit()) return;
     fetch(this.getAttribute('action'), { method: 'POST', body: new FormData(this) })
-        .then(r => {
-            if (!r.ok && r.status !== 200) throw new Error('save failed');
+        .then(r => r.text())
+        .then(text => {
+            try {
+                const data = JSON.parse(text);
+                if (data.error === 'already_pending') {
+                    if (typeof showToast === 'function') showToast('Edit Already Pending', 'warning');
+                    return;
+                }
+            } catch(e) {}
             swCloseEditModal();
-            if (typeof showToast === 'function') showToast('Schedule saved successfully', 'success');
+            const msg = SW_IS_WORKFORCE ? 'Schedule edit submitted for approval.' : 'Schedule saved successfully.';
+            if (typeof showToast === 'function') showToast(msg, 'success');
             if (swCalendar) swCalendar.refetchEvents();
         })
         .catch(() => {
@@ -843,7 +849,7 @@ function swOpenRestDayEditModal(dateStr) {
 
 function swOpenEditModal(date, timeIn, timeOut) {
     document.getElementById('swSchedModalTitle').textContent  = 'Edit Schedule';
-    document.getElementById('swSchedSubmitLabel').textContent = 'Update Schedule';
+    document.getElementById('swSchedSubmitLabel').textContent = SW_IS_WORKFORCE ? 'Submit for Approval' : 'Update Schedule';
     document.getElementById('swIsEditMode').value             = '1';
     document.getElementById('swModalIsRestDay').value         = '0';
     document.getElementById('swModalRestDayCheck').checked    = false;
@@ -875,7 +881,20 @@ function swDeleteSchedule(date) {
     if (!confirm('Delete schedule for ' + date + '?')) return;
     const base = SW_SAVE_API.replace(/\?.*$/, '');
     fetch(`${base}?employee_id=${SW_EMP_URL_ID}&ajax_delete=1&emp=${SW_EMP_ID}&date=${date}`)
-        .then(() => {
+        .then(r => r.text())
+        .then(text => {
+            try {
+                const data = JSON.parse(text);
+                if (data.error === 'already_pending_delete') {
+                    if (typeof showToast === 'function') showToast('Delete Schedule Already Pending', 'warning');
+                    return;
+                }
+                if (data.status === 'pending') {
+                    if (typeof showToast === 'function') showToast('Delete request submitted for approval.', 'success');
+                    if (swCalendar) swCalendar.refetchEvents();
+                    return;
+                }
+            } catch(e) {}
             if (swCalendar) swCalendar.refetchEvents();
             document.dispatchEvent(new CustomEvent('scheduleDeleted', { detail: { date } }));
         });
