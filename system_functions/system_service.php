@@ -467,7 +467,7 @@ function finalizeEmployeeAttendance(PDO $pdo, int $employeeId, array $schedule, 
         FROM logs
         WHERE employee_id = ?
         AND log_time BETWEEN DATE_SUB(?, INTERVAL 2 HOUR)
-                        AND DATE_ADD(?, INTERVAL 2 HOUR)
+                        AND DATE_ADD(?, INTERVAL 6 HOUR)
         AND log_time <= ?
         ORDER BY log_time ASC
     ");

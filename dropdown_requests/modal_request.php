@@ -40,7 +40,7 @@
           <button type="button" class="btn btn-outline-secondary" onclick="backToStep1()">
             <i class="bi bi-arrow-left"></i> Back
           </button>
-          <button type="button" class="btn btn-primary" onclick="submitOTRequest()">
+          <button type="button" id="otSubmitBtn" class="btn btn-primary" onclick="submitOTRequest()">
             <i class="bi bi-check-circle-fill"></i> Submit OT Request
           </button>
         </div>
@@ -287,6 +287,9 @@
 
   document.getElementById('otModal').addEventListener('hidden.bs.modal', () => {
     otSelectedRecord = null;
+    const btn = document.getElementById('otSubmitBtn');
+    btn.disabled  = false;
+    btn.innerHTML = '<i class="bi bi-check-circle-fill"></i> Submit OT Request';
   });
 
   function openOTModal() {
@@ -461,6 +464,10 @@
     }
     if (!otSelectedRecord) return;
 
+    const btn = document.getElementById('otSubmitBtn');
+    btn.disabled  = true;
+    btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Submitting...';
+
     const formData = new FormData();
     formData.append('date',     otSelectedRecord.date);
     formData.append('time_in',  otSelectedRecord.time_in);
@@ -479,11 +486,15 @@
           document.getElementById('otFooterStep2').style.display = 'none';
           setTimeout(() => otModal.hide(), 2000);
         } else {
-          showToast(data.message);
+          showToast(data.message, 'danger');
+          btn.disabled  = false;
+          btn.innerHTML = '<i class="bi bi-check-circle-fill"></i> Submit OT Request';
         }
       })
       .catch(() => {
         showToast('Something went wrong. Please try again.', 'danger');
+        btn.disabled  = false;
+        btn.innerHTML = '<i class="bi bi-check-circle-fill"></i> Submit OT Request';
       });
   }
 
