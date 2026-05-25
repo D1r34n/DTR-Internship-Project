@@ -248,13 +248,14 @@ if ($action === 'import_schedule') {
 
         $upsertStmt = $pdo->prepare("
             INSERT INTO schedules
-                (employee_id, schedule_date, scheduled_start, scheduled_end, requested_by)
+                (employee_id, schedule_date, scheduled_start, scheduled_end, requested_by, request_type)
             VALUES
-                (:employee_id, :schedule_date, :start, :end, :requested_by)
+                (:employee_id, :schedule_date, :start, :end, :requested_by, 'added')
             ON DUPLICATE KEY UPDATE
                 scheduled_start = VALUES(scheduled_start),
                 scheduled_end   = VALUES(scheduled_end),
-                requested_by    = VALUES(requested_by)
+                requested_by    = VALUES(requested_by),
+                request_type    = 'edit'
         ");
 
         $pdo->beginTransaction();
