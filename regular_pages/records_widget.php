@@ -455,6 +455,7 @@ function _applySelection(start, end, btnLabel, rangeLabel) {
     document.getElementById('cutoff-btn-label').textContent   = btnLabel;
     document.getElementById('cutoff-range-label').textContent = rangeLabel;
     document.querySelectorAll('.cutoff-item').forEach(el => el.classList.remove('active'));
+    sessionStorage.setItem('recordsCutoffSel', JSON.stringify({ start, end, btnLabel, rangeLabel }));
     fetchRecords(start, end);
     showToast(rangeLabel, 'info');
     _dropdownObj.hide();
@@ -597,6 +598,22 @@ flatpickr('#month-picker-btn', {
 ========================= */
 document.addEventListener('DOMContentLoaded', () => {
     if (_cutoffMode) {
+        try {
+            const saved = sessionStorage.getItem('recordsCutoffSel');
+            if (saved) {
+                const sel = JSON.parse(saved);
+                monthHidden.dataset.cutoffStart = sel.start;
+                monthHidden.dataset.cutoffEnd   = sel.end;
+                const btnLbl = document.getElementById('cutoff-btn-label');
+                const rngLbl = document.getElementById('cutoff-range-label');
+                if (btnLbl) btnLbl.textContent = sel.btnLabel;
+                if (rngLbl) rngLbl.textContent = sel.rangeLabel;
+                document.querySelectorAll('.cutoff-item').forEach(el => {
+                    el.classList.toggle('active',
+                        el.dataset.start === sel.start && el.dataset.end === sel.end);
+                });
+            }
+        } catch (e) {}
         fetchActiveCutoff();
     } else {
         fetchRecords(monthHidden.value);
