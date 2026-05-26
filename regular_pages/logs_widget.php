@@ -38,6 +38,11 @@ $logsInlineHeader ??= false;
                     <li><a class="dropdown-item" href="#" data-value="REQUEST_OB">Request OB</a></li>
                     <li><a class="dropdown-item" href="#" data-value="REQUEST_LOG_EDIT">Request Log Edit</a></li>
                     <li><a class="dropdown-item" href="#" data-value="REQUEST_CHANGE_SCHEDULE">Request Change Schedule</a></li>
+                    <li><hr class="dropdown-divider"></li>                                             
+                    <li><a class="dropdown-item" href="#" data-value="ADD_EMPLOYEE">Added Employee</a></li> 
+                    <li><a class="dropdown-item" href="#" data-value="EDIT_EMPLOYEE">Edited Employee</a></li>
+                    <li><a class="dropdown-item" href="#" data-value="ADD_SCHEDULE">Added Schedule</a></li>
+                    <li><a class="dropdown-item" href="#" data-value="EDIT_SCHEDULE">Edited Schedule</a></li>
                 </ul>
             </div>
 
@@ -157,6 +162,10 @@ const LOG_TYPE_CLASS = {
     REQUEST_OB:              'request-official-business',
     REQUEST_LOG_EDIT:        'request-log-edit',
     REQUEST_CHANGE_SCHEDULE: 'status-info',
+    ADD_EMPLOYEE:            'status-approved',
+    EDIT_EMPLOYEE:           'status-info',
+    ADD_SCHEDULE:            'status-info',
+    EDIT_SCHEDULE:           'status-info', 
 };
 const LOG_TYPE_LABEL = {
     IN: 'Time In', OUT: 'Time Out', BREAK_IN: 'Break In', BREAK_OUT: 'Break Out',
@@ -165,6 +174,10 @@ const LOG_TYPE_LABEL = {
     REQUEST_OB:              'Request OB',
     REQUEST_LOG_EDIT:        'Request Log Edit',
     REQUEST_CHANGE_SCHEDULE: 'Request Change Schedule',
+    ADD_EMPLOYEE:            'Added Employee',
+    EDIT_EMPLOYEE:           'Edited Employee',
+    ADD_SCHEDULE:            'Added Schedule',
+    EDIT_SCHEDULE:           'Edited Schedule',
 };
 
 /* =========================

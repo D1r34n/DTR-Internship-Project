@@ -84,6 +84,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $pdo->prepare("INSERT INTO employee_leave_balances (employee_id) VALUES (?)")
             ->execute([$employeeId]);
+        
+       $pdo->prepare("
+            INSERT INTO logs (employee_id, log_type, log_time, longitude, latitude, is_within_office, edit_requested_by)
+            VALUES (?, 'ADD_EMPLOYEE', NOW(), 0, 0, 0, ?)")
+            ->execute([$employeeId, $_SESSION['user_id']]);     
+
+        $safeName = htmlspecialchars($fullName);    
 
         $safeName = htmlspecialchars($fullName);
         sendMail($email, $safeName, 'Your HSN DTR Account', "

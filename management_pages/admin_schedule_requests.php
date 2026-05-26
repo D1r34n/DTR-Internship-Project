@@ -69,7 +69,23 @@ if (isset($_GET['action']) && (isset($_GET['id']) || isset($_GET['batch_id']))) 
                     $sched['scheduled_start'], $sched['scheduled_end'],
                 ]);
             }
+             }
+
+        // ADD HERE:
+        if (!empty($schedList)) {
+            $empId = $schedList[0]['employee_id'];
+            $pdo->prepare("
+                UPDATE logs 
+                SET edit_status = 'approved'
+                WHERE employee_id = ? 
+                AND log_type IN ('ADD_SCHEDULE', 'EDIT_SCHEDULE')
+                AND edit_status = 'pending'
+                ORDER BY id DESC
+                LIMIT 1
+            ")->execute([$empId]);
+            
         }
+
         if (!empty($schedList)) $success = "Schedule approved successfully!";
 
     } elseif ($action === 'reject') {
@@ -106,6 +122,18 @@ if (isset($_GET['action']) && (isset($_GET['id']) || isset($_GET['batch_id']))) 
                 $rejectStmt->execute([$row['id']]);
             }
             $delAtt->execute([$row['employee_id'], $row['schedule_date']]);
+        }
+        if (!empty($rows)) {
+            $empId = $rows[0]['employee_id'];
+            $pdo->prepare("
+                UPDATE logs 
+                SET edit_status = 'rejected'
+                WHERE employee_id = ? 
+                AND log_type IN ('ADD_SCHEDULE', 'EDIT_SCHEDULE')
+                AND edit_status = 'pending'
+                ORDER BY id DESC
+                LIMIT 1
+            ")->execute([$empId]);
         }
         $success = "Schedule request rejected.";
 

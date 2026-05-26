@@ -489,8 +489,7 @@ hr {
    ROLE VARIANTS (BRIGHT GLASS — NO GLOW)
    ------------------------------------------------ */
 
-.empRole-employee,
-.request-leave {
+.empRole-employee{
     background: var(--employee-bg) !important;
     border-color: var(--employee-border) !important;
     color: var(--employee) !important;
@@ -538,7 +537,8 @@ hr {
     color: var(--status-success-color) !important;
 }
 
-.status-pending {
+.status-pending,
+.request-leave {
     background: var(--status-warning-bg) !important;
     border-color: var(--status-warning-border) !important;
     color: var(--status-warning-color) !important;
