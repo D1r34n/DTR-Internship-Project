@@ -49,6 +49,7 @@ $titles = [
         'employee_requests' => 'Employee Requests',
         'schedule_requests' => 'Schedule Requests',
         'departments'       => 'Departments',
+        'attendance_report' => 'Attendance Report'
     ],
 ];
 
@@ -61,7 +62,7 @@ $parts = array_values(array_filter(explode('/', $_SERVER['PHP_SELF'])));
 
 $excludeSegments = [
     'localhost', 'DTR-Internship-Project', 'DTR Internship Project',
-    'management_pages', 'regular_pages',
+    'regular_pages',
     'system_functions', 'dropdown_requests', 'assets', 'includes', 'db',
 ];
 
@@ -73,9 +74,11 @@ foreach ($parts as $part) {
 }
 
 $breadcrumbLabels = [
-    'dashboard_page' => 'Dashboard',
-    'records_page'  => 'Records',
-    'employee_schedule' => 'Schedule',
+    'dashboard_page'     => 'Dashboard',
+    'records_page'       => 'Records',
+    'management_pages'   => 'Management',
+    'employee_schedule'  => 'Schedule',
+    'reports_pages'      => 'Reports'
 ];
 
 $breadcrumbPath = [['label' => 'HSN DTR System']];
@@ -83,7 +86,7 @@ foreach ($segments as $index => $seg) {
     $label = $breadcrumbLabels[$seg] ?? ucwords(str_replace('_', ' ', $seg));
     $breadcrumbPath[] = $index === array_key_last($segments)
         ? ['label' => $label]
-        : ['label' => $label, 'url' => '/' . $seg . '.php'];
+        : ['label' => $label];
 }
 
 /* =========================================================

@@ -1909,6 +1909,53 @@ button.btn-sm {
     box-shadow: none;
 }
 
+/* ── Go To Page Glass Theme Extensions ──────────────── */
+#pageJumpWrapper {
+    font-family: 'Poppins', sans-serif;
+    font-size: 0.75rem;
+}
+
+#pageJumpInput {
+    font-family: 'Poppins', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--text-light);
+    background: var(--neutral-glass);
+    border: 1px solid var(--neutral-border);
+    border-radius: 6px;
+    backdrop-filter: var(--frosted-blur);
+    -webkit-backdrop-filter: var(--frosted-blur);
+    box-shadow: var(--glass-inset);
+    outline: none;
+    transition: background 0.18s, border-color 0.18s, box-shadow 0.18s;
+}
+
+/* Hover over the input box field */
+#pageJumpInput:hover {
+    background: var(--primary-glass-hover);
+    border-color: var(--neutral-border-hover, var(--neutral-border));
+}
+
+/* Active focus input layout state */
+#pageJumpInput:focus {
+    background: var(--neutral-glass);
+    border-color: var(--primary-border);
+    color: var(--text-light);
+    box-shadow: var(--glass-shadow), 0 0 0 2px rgba(30, 144, 255, 0.25);
+}
+
+/* Strip native inner arrow wheels from chrome/safari/edge variants */
+#pageJumpInput::-webkit-outer-spin-button,
+#pageJumpInput::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+/* Strip native inner arrow wheels from Firefox engines */
+#pageJumpInput[type=number] {
+    -moz-appearance: textfield;
+}
+
 /* =========================
    CAPTION
 ========================= */

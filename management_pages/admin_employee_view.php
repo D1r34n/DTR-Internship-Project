@@ -14,15 +14,6 @@ require_once '../system_functions/system_service.php';
 require_once '../system_functions/system_library.php';
 date_default_timezone_set('Asia/Manila');
 
-try { $pdo->exec("ALTER TABLE schedules ADD COLUMN pending_delete TINYINT(1) NOT NULL DEFAULT 0"); } catch (PDOException $e) {}
-try { $pdo->exec("ALTER TABLE schedules ADD COLUMN updated_at TIMESTAMP NULL DEFAULT NULL"); } catch (PDOException $e) {}
-try { $pdo->exec("ALTER TABLE schedules ADD COLUMN is_archived TINYINT(1) NOT NULL DEFAULT 0"); } catch (PDOException $e) {}
-try { $pdo->exec("ALTER TABLE schedules ADD COLUMN request_type ENUM('added','edit','deleted') NULL DEFAULT NULL"); } catch (PDOException $e) {}
-try { $pdo->exec("ALTER TABLE schedules ADD COLUMN batch_id VARCHAR(32) NULL DEFAULT NULL"); } catch (PDOException $e) {}
-try { $pdo->exec("ALTER TABLE schedules ADD COLUMN orig_is_rest_day TINYINT(1) NULL DEFAULT NULL"); } catch (PDOException $e) {}
-try { $pdo->exec("ALTER TABLE schedules ADD COLUMN orig_scheduled_start DATETIME NULL DEFAULT NULL"); } catch (PDOException $e) {}
-try { $pdo->exec("ALTER TABLE schedules ADD COLUMN orig_scheduled_end DATETIME NULL DEFAULT NULL"); } catch (PDOException $e) {}
-
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['leave_type'])) {
     header('Content-Type: application/json');
     $employeeId = intval($_POST['employee_id'] ?? 0);
@@ -245,7 +236,6 @@ if (isset($_GET['ajax_delete'])) {
             echo json_encode(['status' => 'pending']);
         } else {
             $pdo->prepare("DELETE FROM schedules WHERE employee_id = ? AND schedule_date = ?")->execute([$empId, $date]);
-            $pdo->prepare("DELETE FROM attendances WHERE employee_id = ? AND work_date = ? AND actual_time_in IS NULL")->execute([$empId, $date]);
             echo json_encode(['status' => 'ok']);
         }
     } else {
@@ -298,13 +288,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' &&
             }
         } else {
             $updateStmt       = $pdo->prepare("UPDATE schedules SET orig_is_rest_day = is_rest_day, orig_scheduled_start = scheduled_start, orig_scheduled_end = scheduled_end, scheduled_start = ?, scheduled_end = ?, is_rest_day = 0, status = ?, requested_by = ?, request_type = ?, batch_id = ?, is_archived = 0 WHERE employee_id = ? AND schedule_date = ?");
-            $updateAttendance = $pdo->prepare("UPDATE attendances SET scheduled_start = ?, scheduled_end = ? WHERE employee_id = ? AND work_date = ? AND actual_time_in IS NULL");
             $insertSchedule   = $pdo->prepare("INSERT INTO schedules (employee_id, schedule_date, scheduled_start, scheduled_end, is_rest_day, status, requested_by, request_type, batch_id) VALUES (?, ?, ?, ?, 0, ?, ?, 'added', ?)");
-            $insertAttendance = $pdo->prepare("
-                INSERT INTO attendances (employee_id, schedule_id, work_date, scheduled_start, scheduled_end, actual_time_in, actual_time_out, total_work_minutes, late_minutes, undertime_minutes, overtime_minutes, status, missed_time_out)
-                VALUES (?, ?, ?, ?, ?, NULL, NULL, 0, 0, 0, 0, 'incomplete', 0)
-                ON DUPLICATE KEY UPDATE scheduled_start = VALUES(scheduled_start), scheduled_end = VALUES(scheduled_end)
-            ");
 
             foreach ($dates as $date) {
                 $startDT = $date . ' ' . $time_in  . ':00';
@@ -318,15 +302,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' &&
                     $isStale = $existing['is_archived'] || $existing['status'] === 'rejected';
                     $rtype   = $isStale ? 'added' : 'edit';
                     $updateStmt->execute([$startDT, $endDT, $scheduleStatus, $_SESSION['user_id'], $rtype, $batchId, $postEmpId, $date]);
-                    if (!$isStale) {
-                        $updateAttendance->execute([$startDT, $endDT, $postEmpId, $date]);
-                    }
                 } else {
                     $insertSchedule->execute([$postEmpId, $date, $startDT, $endDT, $scheduleStatus, $_SESSION['user_id'], $batchId]);
-                    if ($scheduleStatus !== 'pending') {
-                        $schedId = $pdo->lastInsertId() ?: null;
-                        $insertAttendance->execute([$postEmpId, $schedId, $date, $startDT, $endDT]);
-                    }
                 }
             }
         }
@@ -335,6 +312,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' &&
     header("Location: admin_employee_view.php?employee_id=$urlEmpId");
     exit();
 }
+
 // ---- HANDLE SAVE COMBINED (schedule dates + rest days in one submit) ----
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save_combined') {
     $postEmpId     = intval($_POST['employee_id'] ?? 0);
@@ -349,13 +327,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save_
     if (!empty($dates) && $postEmpId && $time_in && $time_out) {
         $existsStmt       = $pdo->prepare("SELECT id, COALESCE(is_archived, 0) AS is_archived, status FROM schedules WHERE employee_id = ? AND schedule_date = ?");
         $updateStmt       = $pdo->prepare("UPDATE schedules SET orig_is_rest_day = is_rest_day, orig_scheduled_start = scheduled_start, orig_scheduled_end = scheduled_end, scheduled_start = ?, scheduled_end = ?, is_rest_day = 0, status = ?, requested_by = ?, request_type = ?, batch_id = ?, is_archived = 0 WHERE employee_id = ? AND schedule_date = ?");
-        $updateAttendance = $pdo->prepare("UPDATE attendances SET scheduled_start = ?, scheduled_end = ? WHERE employee_id = ? AND work_date = ? AND actual_time_in IS NULL");
         $insertSchedule   = $pdo->prepare("INSERT INTO schedules (employee_id, schedule_date, scheduled_start, scheduled_end, is_rest_day, status, requested_by, request_type, batch_id) VALUES (?, ?, ?, ?, 0, ?, ?, 'added', ?)");
-        $insertAttendance = $pdo->prepare("
-            INSERT INTO attendances (employee_id, schedule_id, work_date, scheduled_start, scheduled_end, actual_time_in, actual_time_out, total_work_minutes, late_minutes, undertime_minutes, overtime_minutes, status, missed_time_out)
-            VALUES (?, ?, ?, ?, ?, NULL, NULL, 0, 0, 0, 0, 'incomplete', 0)
-            ON DUPLICATE KEY UPDATE scheduled_start = VALUES(scheduled_start), scheduled_end = VALUES(scheduled_end)
-        ");
 
         foreach ($dates as $date) {
             $startDT = $date . ' ' . $time_in  . ':00';
@@ -369,15 +341,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save_
                 $isStale = $existing['is_archived'] || $existing['status'] === 'rejected';
                 $rtype   = $isStale ? 'added' : 'edit';
                 $updateStmt->execute([$startDT, $endDT, $scheduleStatus, $_SESSION['user_id'], $rtype, $batchId, $postEmpId, $date]);
-                if (!$isStale) {
-                    $updateAttendance->execute([$startDT, $endDT, $postEmpId, $date]);
-                }
             } else {
                 $insertSchedule->execute([$postEmpId, $date, $startDT, $endDT, $scheduleStatus, $_SESSION['user_id'], $batchId]);
-                if ($scheduleStatus !== 'pending') {
-                    $schedId = $pdo->lastInsertId() ?: null;
-                    $insertAttendance->execute([$postEmpId, $schedId, $date, $startDT, $endDT]);
-                }
             }
         }
     }
@@ -388,7 +353,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save_
         $chkStmt = $pdo->prepare("SELECT id, COALESCE(is_archived, 0) AS is_archived, status FROM schedules WHERE employee_id = ? AND schedule_date = ?");
         $insRest = $pdo->prepare("INSERT INTO schedules (employee_id, schedule_date, scheduled_start, scheduled_end, is_rest_day, status, requested_by, request_type, batch_id) VALUES (?, ?, NULL, NULL, 1, ?, ?, 'added', ?)");
         $updRest = $pdo->prepare("UPDATE schedules SET orig_is_rest_day = is_rest_day, orig_scheduled_start = scheduled_start, orig_scheduled_end = scheduled_end, is_rest_day = 1, scheduled_start = NULL, scheduled_end = NULL, status = ?, requested_by = ?, request_type = ?, batch_id = ?, is_archived = 0 WHERE employee_id = ? AND schedule_date = ?");
-        $delAtt  = $pdo->prepare("DELETE FROM attendances WHERE employee_id = ? AND work_date = ? AND actual_time_in IS NULL");
         foreach ($singleRestDates as $date) {
             if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) continue;
             $chkStmt->execute([$postEmpId, $date]);
@@ -400,7 +364,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save_
             } else {
                 $insRest->execute([$postEmpId, $date, $restDayStatus, $_SESSION['user_id'], $batchId]);
             }
-            $delAtt->execute([$postEmpId, $date]);
         }
     }
 
@@ -443,6 +406,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save_
     header("Location: admin_employee_view.php?employee_id=$urlEmpId");
     exit();
 }
+
 // ---- HANDLE SAVE REST DAY ----
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save_rest_day') {
     $postEmpId = intval($_POST['employee_id'] ?? 0);
@@ -492,15 +456,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save_
 // ---- HANDLE EMPLOYEE DELETE ----
 if (isset($_GET['action']) && $_GET['action'] === 'delete_employee') {
 
-    $pdo->prepare("DELETE FROM logs WHERE employee_id = ?")->execute([$employeeId]);
-    $pdo->prepare("DELETE FROM attendances WHERE employee_id = ?")->execute([$employeeId]);
     $pdo->prepare("DELETE FROM schedules WHERE employee_id = ?")->execute([$employeeId]);
     $pdo->prepare("DELETE FROM employees WHERE id = ?")->execute([$employeeId]);
 
     header("Location: admin_manage_employees.php");
     exit();
 }
-
 
 // ---- GET EMPLOYEE ----
 $stmt = $pdo->prepare("
@@ -540,20 +501,8 @@ $nextMonth  = date('Y-m', strtotime($monthStart . ' +1 month'));
 $monthLabel = date('F Y', strtotime($monthStart));
 $todayStr   = date('Y-m-d');
 
-
 // ---- RECORDS (gantt) ----
-$records       = getAttendanceRecords($pdo, $employeeId, $monthStart, $monthEnd);
 $schedForGantt = getSchedulesByDateRange($pdo, $employeeId, $monthStart, $monthEnd);
-
-// ---- LOGS ----
-$logsStmt = $pdo->prepare("
-    SELECT log_type, log_time, is_within_office, distance_meters
-    FROM logs
-    WHERE employee_id = ? AND DATE(log_time) BETWEEN ? AND ?
-    ORDER BY log_time DESC
-");
-$logsStmt->execute([$employeeId, $monthStart, $monthEnd]);
-$tapLogs = $logsStmt->fetchAll(PDO::FETCH_ASSOC);
 
 // ---- LEAVE BALANCE ----
 $balStmt = $pdo->prepare("SELECT * FROM employee_leave_balances WHERE employee_id = ?");

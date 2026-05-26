@@ -25,6 +25,7 @@ if (!empty($_SESSION['must_change_password'])) {
 
 $requestsOpen  = in_array($currentPage, ['employee_requests', 'schedule_requests']);
 $schedulesOpen = in_array($currentPage, ['schedule', 'cutoffs']);
+$reportsOpen = in_array($currentPage, ['attendance_report', 'filing_report', 'leave_report']);
 ?>
 
 <div id="sidebar" class="d-flex flex-column flex-shrink-0">
@@ -132,11 +133,14 @@ $schedulesOpen = in_array($currentPage, ['schedule', 'cutoffs']);
                 </button>
 
                 <div id="requests-submenu" class="collapse <?= $requestsOpen ? 'show' : '' ?>">
+                    <!-- Employee Requests -->
                     <a href="../management_pages/admin_requests.php"
                        class="sidebar-sub-link <?= ($currentPage === 'employee_requests') ? 'active' : '' ?>">
                         <i class="bi bi-file-earmark-text"></i>
                         <span>Employee Requests</span>
                     </a>
+
+                    <!-- Schedule Requests -->
                     <a href="../management_pages/admin_schedule_requests.php"
                        class="sidebar-sub-link <?= ($currentPage === 'schedule_requests') ? 'active' : '' ?>">
                         <i class="bi bi-calendar-check"></i>
@@ -149,6 +153,37 @@ $schedulesOpen = in_array($currentPage, ['schedule', 'cutoffs']);
             <!-- DEPARTMENTS — superadmin only -->
             <?php if ($role === 'superadmin'): ?>
                 <?php navLink('../management_pages/admin_departments.php', 'bi-building-gear', 'Departments', $currentPage === 'departments'); ?>
+                
+                <!-- REPORTS DROPDOWN -->
+                <div class="sidebar-dropdown">
+                    <button
+                        class="sidebar-link sidebar-dropdown-toggle <?= $reportsOpen ? 'active' : '' ?>"
+                        data-bs-toggle="collapse"
+                        data-bs-target="#reports-submenu"
+                        aria-expanded="<?= $reportsOpen ? 'true' : 'false' ?>"
+                        data-tooltip-title="Reports"
+                    >
+                        <i class="bi bi-file-earmark-bar-graph"></i>
+                        <span>Reports</span>
+                        <i class="bi bi-chevron-down transition-chevron"></i>
+                    </button>
+
+                    <div id="reports-submenu" class="collapse <?= $reportsOpen ? 'show' : '' ?>">
+
+                        <!-- Attendance Reports -->
+                        <a href="../reports_pages/attendance_report_page.php"
+                        class="sidebar-sub-link <?= ($currentPage === 'attendance_report') ? 'active' : '' ?>">
+                            <i class="bi bi-file-earmark-text"></i>
+                            <span>Attendance Report</span>
+                        </a>
+                        <a href="../management_pages/admin_schedule_requests.php"
+                        class="sidebar-sub-link <?= ($currentPage === 'schedule_requests') ? 'active' : '' ?>">
+                            <i class="bi bi-calendar-check"></i>
+                            <span>Schedule Requests</span>
+                        </a>
+                    </div>
+                </div>
+
             <?php endif; ?>
 
         <?php endif; ?>

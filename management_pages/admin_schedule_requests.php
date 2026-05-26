@@ -11,31 +11,6 @@ if (!isset($_SESSION['user_id']) || !in_array($_SESSION['user_role'], ['superadm
 require_once '../db.php';
 date_default_timezone_set('Asia/Manila');
 
-try {
-    $pdo->exec("ALTER TABLE schedules ADD COLUMN pending_delete TINYINT(1) NOT NULL DEFAULT 0");
-} catch (PDOException $e) {}
-try {
-    $pdo->exec("ALTER TABLE schedules ADD COLUMN updated_at TIMESTAMP NULL DEFAULT NULL");
-} catch (PDOException $e) {}
-try {
-    $pdo->exec("ALTER TABLE schedules ADD COLUMN is_archived TINYINT(1) NOT NULL DEFAULT 0");
-} catch (PDOException $e) {}
-try {
-    $pdo->exec("ALTER TABLE schedules ADD COLUMN request_type ENUM('added','edit','deleted') NULL DEFAULT NULL");
-} catch (PDOException $e) {}
-try {
-    $pdo->exec("ALTER TABLE schedules ADD COLUMN batch_id VARCHAR(32) NULL DEFAULT NULL");
-} catch (PDOException $e) {}
-try {
-    $pdo->exec("ALTER TABLE schedules ADD COLUMN orig_is_rest_day TINYINT(1) NULL DEFAULT NULL");
-} catch (PDOException $e) {}
-try {
-    $pdo->exec("ALTER TABLE schedules ADD COLUMN orig_scheduled_start DATETIME NULL DEFAULT NULL");
-} catch (PDOException $e) {}
-try {
-    $pdo->exec("ALTER TABLE schedules ADD COLUMN orig_scheduled_end DATETIME NULL DEFAULT NULL");
-} catch (PDOException $e) {}
-
 $myRole     = $_SESSION['user_role'];
 $myDeptId   = $_SESSION['department_id'] ?? null;
 $deptScoped = in_array($myRole, ['manager', 'workforce']) && $myDeptId;

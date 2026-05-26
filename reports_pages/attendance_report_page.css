@@ -1,0 +1,134 @@
+/* ================================================
+   ATTENDANCE REPORT
+   ================================================
+   Page-specific styles for the admin logs page.
+   Depends on: root.css, typography.css,
+               components.css, navbars.css
+   ================================================ */
+
+/* ============================================================
+   BACKGROUND
+   ============================================================ */
+
+body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: url('../assets/images/drt_bg.jpg') center / cover no-repeat;
+    z-index: -2;
+}
+
+/* ------------------------------------------------
+   BODY BASE
+   ------------------------------------------------ */
+
+html {
+    height: 100%;
+}
+
+body {
+    display: flex;
+    min-height: 100vh;
+    margin: 0;
+
+    font-family: 'Poppins', sans-serif;
+
+    /* keep horizontal clean, allow vertical scroll */
+    overflow-x: hidden;
+
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* =========================
+   LAYOUT
+========================= */
+
+#main-wrapper {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    min-width: 0;
+    height: 100vh;
+    overflow: hidden;
+}
+
+/* =========================
+   CARD WRAPPER
+========================= */
+
+.requests-card {
+    flex: 1;
+    min-height: 0;
+    margin: 0.5rem 1rem 1rem;
+    overflow: visible !important;
+}
+
+.requests-card-body {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    padding: 0 0 1rem 1rem;
+}
+
+/* Filter Wrapper */
+.filterWrapper {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 1rem 1rem 0rem;
+    flex-wrap: wrap;
+}
+
+/* ============================================================
+   TITLE ROW (Header + Search)
+   ============================================================ */
+.adminTitleRow {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+/* ============================================================
+   SUMMARY CARDS
+   ============================================================ */
+.summaryCards {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.icon-wrap {
+    width: 42px;
+    height: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 10px;
+
+    background: var(--neutral-glass);
+    border: 1px solid var(--neutral-border);
+
+    color: var(--text-light);
+}
+
+.requests-card,
+.requests-card .card-header { overflow: visible !important; }
+.requests-card              { position: relative; z-index: 1; }
+.requests-card .card-header { position: relative; z-index: 20; }
+
+.ar-empty {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    color: var(--text-light);
+    font-size: 5rem;
+}
+

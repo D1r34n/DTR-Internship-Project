@@ -164,15 +164,28 @@ $loadCutoff    = null;
                         </li>
                         <li><hr class="dropdown-divider mt-0"></li>
 
-                        <li class="px-3 pb-2">
-                            <label class="form-label small fw-semibold text-tertiary mb-1">Select a month</label>
-                            <input type="text" id="rw-period-fp"
-                                   class="form-control form-control-sm"
-                                   placeholder="Pick a month…" readonly>
+<li>
+                            <label for="rw-period-fp" class="form-label text-meta ms-2 mb-2">
+                                Selected Month
+                            </label>
+
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="bi bi-calendar3"></i>
+                                </span>
+
+                                <input type="text"
+                                    id="rw-period-fp"
+                                    class="form-control"
+                                    placeholder="Pick a month…"
+                                    readonly>
+                            </div>
+
+                            <hr class="dropdown-divider my-3">
                         </li>
 
                         <div id="rw-period-list">
-                            <p class="text-muted small text-center px-3 py-2 mb-0">
+                            <p class="text-meta small text-center px-3 py-2 mb-0">
                                 Pick a month above to see its cut-off periods.
                             </p>
                         </div>
