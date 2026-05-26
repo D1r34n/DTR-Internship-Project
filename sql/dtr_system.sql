@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: May 26, 2026 at 11:08 AM
+-- Generation Time: May 26, 2026 at 11:14 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -350,7 +350,7 @@ CREATE TABLE `logs` (
   `id` bigint(20) NOT NULL,
   `employee_id` bigint(20) NOT NULL,
   `schedule_id` bigint(20) UNSIGNED DEFAULT NULL,
-  `log_type` enum('IN','OUT','BREAK_IN','BREAK_OUT') NOT NULL,
+  `log_type` enum('IN','OUT','BREAK_IN','BREAK_OUT','ADD_EMPLOYEE','EDIT_EMPLOYEE','DELETE_EMPLOYEE','ADD_SCHEDULE','EDIT_SCHEDULE') DEFAULT NULL,
   `log_time` datetime NOT NULL,
   `longitude` decimal(10,7) NOT NULL,
   `latitude` decimal(10,7) NOT NULL,
