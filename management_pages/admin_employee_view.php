@@ -177,6 +177,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'edit_
         $department,
         $employeeId
     ]);
+    $pdo->prepare("
+        INSERT INTO logs (employee_id, log_type, log_time, longitude, latitude, is_within_office, edit_requested_by)
+        VALUES (?, 'EDIT_EMPLOYEE', NOW(), 0, 0, 0, ?)
+    ")->execute([$employeeId, $_SESSION['user_id']]);
 
     $notifyName  = htmlspecialchars($firstName . ' ' . $lastName);
     $emailChanged = $oldEmail && strtolower($oldEmail) !== strtolower($email);
@@ -331,6 +335,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' &&
             }
         }
     }
+    
+    $pdo->prepare("
+    INSERT INTO logs (employee_id, log_type, log_time, longitude, latitude, is_within_office, edit_status, edit_requested_by)
+    VALUES (?, ?, NOW(), 0, 0, 0, 'pending', ?)
+")->execute([$postEmpId, $is_edit ? 'EDIT_SCHEDULE' : 'ADD_SCHEDULE', $_SESSION['user_id']]);
 
     header("Location: admin_employee_view.php?employee_id=$urlEmpId");
     exit();
@@ -357,6 +366,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save_
             ON DUPLICATE KEY UPDATE scheduled_start = VALUES(scheduled_start), scheduled_end = VALUES(scheduled_end)
         ");
 
+        $wasEdit = false; // ADD HERE
+
         foreach ($dates as $date) {
             $startDT = $date . ' ' . $time_in  . ':00';
             $endDT   = $is_overnight
@@ -366,6 +377,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save_
             $existsStmt->execute([$postEmpId, $date]);
             $existing = $existsStmt->fetch(PDO::FETCH_ASSOC);
             if ($existing) {
+                $wasEdit = true; // ADD HERE
                 $isStale = $existing['is_archived'] || $existing['status'] === 'rejected';
                 $rtype   = $isStale ? 'added' : 'edit';
                 $updateStmt->execute([$startDT, $endDT, $scheduleStatus, $_SESSION['user_id'], $rtype, $batchId, $postEmpId, $date]);
@@ -439,6 +451,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save_
             }
         }
     }
+    $pdo->prepare("
+    INSERT INTO logs (employee_id, log_type, log_time, longitude, latitude, is_within_office, edit_status, edit_requested_by)
+    VALUES (?, ?, NOW(), 0, 0, 0, 'pending', ?)
+    ")->execute([$postEmpId, $wasEdit ? 'EDIT_SCHEDULE' : 'ADD_SCHEDULE', $_SESSION['user_id']]);
 
     header("Location: admin_employee_view.php?employee_id=$urlEmpId");
     exit();
