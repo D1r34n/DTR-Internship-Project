@@ -12,9 +12,10 @@ require_once 'system_functions/system_service.php';
 header('Content-Type: application/json');
 date_default_timezone_set('Asia/Manila');
 
-$isAdmin    = $_SESSION['user_role'] === 'superadmin';
-$requested  = isset($_GET['employee_id']) ? (int)$_GET['employee_id'] : 0;
-$employeeId = ($isAdmin && $requested > 0) ? $requested : (int)$_SESSION['user_id'];
+$elevatedRoles = ['superadmin', 'admin', 'manager', 'workforce'];
+$isAdmin       = in_array($_SESSION['user_role'], $elevatedRoles);
+$requested     = isset($_GET['employee_id']) ? (int)$_GET['employee_id'] : 0;
+$employeeId    = ($isAdmin && $requested > 0) ? $requested : (int)$_SESSION['user_id'];
 
 if (!empty($_GET['start']) && !empty($_GET['end'])) {
     $startDate  = date('Y-m-d', strtotime($_GET['start']));
@@ -93,18 +94,18 @@ $recordsOut = array_map(fn($r) => [
     'last_break_out'    => $r['last_break_out'],
 ], $records);
 
-// Inject upcoming scheduled days that have no attendance record yet
+// Inject scheduled days that have no attendance record (upcoming = future, absent = past)
 $today          = date('Y-m-d');
 $existingDates  = array_column($recordsOut, 'work_date');
 foreach ($schedules as $date => $sched) {
-    if ($date > $today && !in_array($date, $existingDates)) {
+    if (!in_array($date, $existingDates)) {
         $recordsOut[] = [
             'work_date'         => $date,
             'scheduled_start'   => $sched['scheduled_start'],
             'scheduled_end'     => $sched['scheduled_end'],
             'actual_time_in'    => null,
             'actual_time_out'   => null,
-            'status'            => 'upcoming',
+            'status'            => ($date >= $today) ? 'upcoming' : 'absent',
             'late_minutes'      => 0,
             'undertime_minutes' => 0,
             'overtime_minutes'  => 0,

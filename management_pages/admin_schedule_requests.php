@@ -71,29 +71,27 @@ if (isset($_GET['action']) && (isset($_GET['id']) || isset($_GET['batch_id']))) 
             }
              }
 
-        // ADD HERE:
         if (!empty($schedList)) {
-            $empId = $schedList[0]['employee_id'];
+            $empId       = $schedList[0]['employee_id'];
+            $requestedBy = $schedList[0]['requested_by'] ?? null;
             $pdo->prepare("
-                UPDATE logs 
+                UPDATE logs
                 SET edit_status = 'approved'
-                WHERE employee_id = ? 
+                WHERE employee_id = ?
+                AND edit_requested_by = ?
                 AND log_type IN ('ADD_SCHEDULE', 'EDIT_SCHEDULE')
                 AND edit_status = 'pending'
-                ORDER BY id DESC
-                LIMIT 1
-            ")->execute([$empId]);
-            
+            ")->execute([$empId, $requestedBy]);
         }
 
         if (!empty($schedList)) $success = "Schedule approved successfully!";
 
     } elseif ($action === 'reject') {
         if ($batchId) {
-            $q = $pdo->prepare("SELECT id, employee_id, schedule_date, request_type, orig_is_rest_day FROM schedules WHERE batch_id = ? AND status = 'pending'");
+            $q = $pdo->prepare("SELECT id, employee_id, schedule_date, request_type, orig_is_rest_day, requested_by FROM schedules WHERE batch_id = ? AND status = 'pending'");
             $q->execute([$batchId]);
         } else {
-            $q = $pdo->prepare("SELECT id, employee_id, schedule_date, request_type, orig_is_rest_day FROM schedules WHERE id = ? AND status = 'pending'");
+            $q = $pdo->prepare("SELECT id, employee_id, schedule_date, request_type, orig_is_rest_day, requested_by FROM schedules WHERE id = ? AND status = 'pending'");
             $q->execute([$id]);
         }
         $rows = $q->fetchAll(PDO::FETCH_ASSOC);
@@ -124,16 +122,16 @@ if (isset($_GET['action']) && (isset($_GET['id']) || isset($_GET['batch_id']))) 
             $delAtt->execute([$row['employee_id'], $row['schedule_date']]);
         }
         if (!empty($rows)) {
-            $empId = $rows[0]['employee_id'];
+            $empId       = $rows[0]['employee_id'];
+            $requestedBy = $rows[0]['requested_by'] ?? null;
             $pdo->prepare("
-                UPDATE logs 
+                UPDATE logs
                 SET edit_status = 'rejected'
-                WHERE employee_id = ? 
+                WHERE employee_id = ?
+                AND edit_requested_by = ?
                 AND log_type IN ('ADD_SCHEDULE', 'EDIT_SCHEDULE')
                 AND edit_status = 'pending'
-                ORDER BY id DESC
-                LIMIT 1
-            ")->execute([$empId]);
+            ")->execute([$empId, $requestedBy]);
         }
         $success = "Schedule request rejected.";
 
@@ -232,13 +230,6 @@ function formatScheduleDates(string $allDates): string {
     $n = count($dates);
     if ($n === 0) return '—';
     if ($n === 1) return date('M d, Y', strtotime($dates[0]));
-
-    $consecutive = true;
-    for ($i = 1; $i < $n; $i++) {
-        if ((strtotime($dates[$i]) - strtotime($dates[$i - 1])) !== 86400) {
-            $consecutive = false; break;
-        }
-    }
 
     $first = new DateTime($dates[0]);
     $last  = new DateTime($dates[$n - 1]);

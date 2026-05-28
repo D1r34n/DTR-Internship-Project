@@ -57,7 +57,6 @@ $showOT          = $type === 'ALL' || $type === 'REQUEST_OT';
 $showLeave       = $type === 'ALL' || $type === 'REQUEST_LEAVE';
 $showOB          = $type === 'ALL' || $type === 'REQUEST_OB';
 $showLogEdit     = $type === 'ALL' || $type === 'REQUEST_LOG_EDIT';
-$showChangeSched = $type === 'ALL' || $type === 'REQUEST_CHANGE_SCHEDULE';
 
 $allRows = [];
 
@@ -160,6 +159,11 @@ if ($showLogs) {
         $acc  = isset($row['accuracy'])        ? round($row['accuracy'], 1)        : null;
         $dist = isset($row['distance_meters']) ? round($row['distance_meters'], 1) : null;
 
+        $clockDetails = [
+            'IN' => 'Clocked in:', 'OUT' => 'Clocked out:',
+            'BREAK_IN' => 'Break started:', 'BREAK_OUT' => 'Break ended:',
+        ];
+
         $ts = strtotime($row['log_time']);
         $allRows[] = [
             'log_id'           => (int)$row['log_id'],
@@ -167,6 +171,7 @@ if ($showLogs) {
             'time'             => date('h:i A', $ts),
             'log_datetime'     => date('Y-m-d\TH:i', $ts),
             'log_type'         => $row['log_type'],
+            'details'          => $clockDetails[$row['log_type']] ?? $row['log_type'],
             'is_within_office' => (bool)$row['is_within_office'],
             'latitude'         => (float)$lat,
             'longitude'        => (float)$lng,
@@ -225,6 +230,7 @@ if ($showOT) {
             'time'             => date('h:i A', $ts),
             'log_datetime'     => date('Y-m-d\TH:i', $ts),
             'log_type'         => 'REQUEST_OT',
+            'details'          => 'Overtime request submitted',
             'is_within_office' => null,
             'latitude'         => null,
             'longitude'        => null,
@@ -283,6 +289,7 @@ if ($showLeave) {
             'time'             => date('h:i A', $ts),
             'log_datetime'     => date('Y-m-d\TH:i', $ts),
             'log_type'         => 'REQUEST_LEAVE',
+            'details'          => 'Leave request submitted',
             'is_within_office' => null,
             'latitude'         => null,
             'longitude'        => null,
@@ -341,6 +348,7 @@ if ($showOB) {
             'time'             => date('h:i A', $ts),
             'log_datetime'     => date('Y-m-d\TH:i', $ts),
             'log_type'         => 'REQUEST_OB',
+            'details'          => 'Official business request submitted',
             'is_within_office' => null,
             'latitude'         => null,
             'longitude'        => null,
@@ -382,7 +390,7 @@ if ($showLogEdit) {
         LEFT JOIN departments d ON e.department_id = d.id
         LEFT JOIN employees e_init ON l.edit_requested_by = e_init.id
         LEFT JOIN roles r_init ON r_init.id = e_init.role_id
-        WHERE l.edit_status IS NOT NULL AND l.log_type != 'ADD_EMPLOYEE'
+        WHERE l.edit_status IS NOT NULL AND l.log_type NOT IN ('ADD_EMPLOYEE', 'EDIT_EMPLOYEE', 'ADD_SCHEDULE', 'EDIT_SCHEDULE')
     ";
     $params = [];
     applyLogsFilter($sql, $params, 'l.employee_id', $scopedToEmployee, $deptScopeRoles, $deptScopeId, (int)$employeeId, $userRole);
@@ -414,6 +422,7 @@ if ($showLogEdit) {
             'time'             => date('h:i A', $ts),
             'log_datetime'     => date('Y-m-d\TH:i', $ts),
             'log_type'         => 'REQUEST_LOG_EDIT',
+            'details'          => 'Requested log edit',
             'is_within_office' => null,
             'latitude'         => null,
             'longitude'        => null,
@@ -432,63 +441,6 @@ if ($showLogEdit) {
     }
 }
 
-/* =========================
-   6. CHANGE SCHEDULE REQUESTS
-========================= */
-if ($showChangeSched) {
-    $sql = "
-        SELECT
-            CONCAT('sched_', s.id) AS log_id,
-            s.employee_id,
-            CONCAT(e.first_name, ' ', e.last_name) AS employee_name,
-            r.role_key AS employee_role,
-            d.department_name,
-            s.schedule_date AS req_date,
-            s.status
-        FROM schedules s
-        LEFT JOIN employees e ON s.employee_id = e.id
-        LEFT JOIN roles r ON r.id = e.role_id
-        LEFT JOIN departments d ON e.department_id = d.id
-        WHERE s.is_rest_day = 0
-          AND s.status IN ('pending', 'rejected')
-    ";
-    $params = [];
-    applyLogsFilter($sql, $params, 's.employee_id', $scopedToEmployee, $deptScopeRoles, $deptScopeId, (int)$employeeId, $userRole);
-    if ($startDate !== '') {
-        $sql .= " AND s.schedule_date >= ?";
-        $params[] = $startDate;
-    }
-    if ($endDate !== '') {
-        $sql .= " AND s.schedule_date <= ?";
-        $params[] = $endDate;       
-    }
-    $stmt = $pdo->prepare($sql);
-    $stmt->execute($params);
-    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
-        $ts = strtotime($row['req_date']);
-        $allRows[] = [
-            'log_id'           => $row['log_id'],
-            'date'             => date('F d, Y', $ts),
-            'time'             => date('h:i A', $ts),
-            'log_datetime'     => date('Y-m-d\TH:i', $ts),
-            'log_type'         => 'REQUEST_CHANGE_SCHEDULE',
-            'is_within_office' => null,
-            'latitude'         => null,
-            'longitude'        => null,
-            'accuracy'         => null,
-            'distance_meters'  => null,
-            'employee_id'      => (int)$row['employee_id'],
-            'employee_name'    => $row['employee_name'],
-            'employee_role'    => $row['employee_role'],
-            'department_name'  => $row['department_name'],
-            'edit_role' => ((int)$row['employee_id'] === $currentUserId) ? 'self' : $row['employee_role'],
-            'edit_status'      => $row['status'],
-            'initiator_name'   => $row['employee_name'],
-            'photo_path'       => null,
-            '_ts'              => $ts,
-        ];
-    }
-}
 
 /* =========================
    7. ADD EMPLOYEE
@@ -499,7 +451,10 @@ if ($showAddEmployee) {
         SELECT
             CONCAT('addemp_', l.id) AS log_id,
             l.employee_id,
+            e.employee_id AS emp_ref_id,
             CONCAT(e.first_name, ' ', e.last_name) AS employee_name,
+            e.email,
+            e.birthdate,
             r.role_key AS employee_role,
             d.department_name,
             l.log_time,
@@ -530,12 +485,19 @@ if ($showAddEmployee) {
     foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
         $ts            = strtotime($row['log_time']);
         $initiatedById = (int)($row['initiated_by_id'] ?? 0);
+        $empDetails  = "Employee ID:\n" . ($row['emp_ref_id'] ?? '—');
+        $empDetails .= "\nName:\n" . ($row['employee_name'] ?? '—');
+        $empDetails .= "\nEmail:\n" . ($row['email'] ?? '—');
+        $empDetails .= "\nBirthdate:\n" . ($row['birthdate'] ? date('F j, Y', strtotime($row['birthdate'])) : '—');
+        $empDetails .= "\nRole:\n" . ($row['employee_role'] ?? '—');
+        $empDetails .= "\nDepartment:\n" . ($row['department_name'] ?? '—');
         $allRows[] = [
             'log_id'           => $row['log_id'],
             'date'             => date('F d, Y', $ts),
             'time'             => date('h:i A', $ts),
             'log_datetime'     => date('Y-m-d\TH:i', $ts),
             'log_type'         => 'ADD_EMPLOYEE',
+            'details'          => $empDetails,
             'is_within_office' => null,
             'latitude'         => null,
             'longitude'        => null,
@@ -557,17 +519,18 @@ if ($showAddEmployee) {
 /* =========================
    8. EDIT EMPLOYEE
 ========================= */
-$showEditEmployee = $type === 'ALL' || $type === 'EDIT_EMPLOYEE';  
-if ($showEditEmployee) {                                            
+$showEditEmployee = $type === 'ALL' || $type === 'EDIT_EMPLOYEE';
+if ($showEditEmployee) {
     $sql = "
         SELECT
-            CONCAT('editemp_', l.id) AS log_id,                  
+            CONCAT('editemp_', l.id) AS log_id,
             l.employee_id,
             CONCAT(e.first_name, ' ', e.last_name) AS employee_name,
             r.role_key AS employee_role,
             d.department_name,
             l.log_time,
             l.created_at,
+            l.edit_reason,
             l.edit_requested_by AS initiated_by_id,
             CONCAT(e_init.first_name, ' ', e_init.last_name) AS initiator_name,
             r_init.role_key AS initiator_role
@@ -577,7 +540,7 @@ if ($showEditEmployee) {
         LEFT JOIN departments d ON e.department_id = d.id
         LEFT JOIN employees e_init ON l.edit_requested_by = e_init.id
         LEFT JOIN roles r_init ON r_init.id = e_init.role_id
-        WHERE l.log_type = 'EDIT_EMPLOYEE'                        
+        WHERE l.log_type = 'EDIT_EMPLOYEE'
     ";
     $params = [];
     applyLogsFilter($sql, $params, 'l.employee_id', $scopedToEmployee, $deptScopeRoles, $deptScopeId, (int)$employeeId, $userRole);
@@ -594,12 +557,25 @@ if ($showEditEmployee) {
     foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
         $ts            = strtotime($row['log_time']);
         $initiatedById = (int)($row['initiated_by_id'] ?? 0);
+        $diff          = $row['edit_reason'] ? json_decode($row['edit_reason'], true) : null;
+        if ($diff && is_array($diff)) {
+            $editDetails = '';
+            foreach ($diff as $label => $change) {
+                $before = $change['before'] ?? '—';
+                $after  = $change['after']  ?? '—';
+                if ($editDetails !== '') $editDetails .= "\n";
+                $editDetails .= "$label:\nBefore:\n$before\nAfter:\n$after";
+            }
+        } else {
+            $editDetails = 'Employee information updated';
+        }
         $allRows[] = [
             'log_id'           => $row['log_id'],
             'date'             => date('F d, Y', $ts),
             'time'             => date('h:i A', $ts),
             'log_datetime'     => date('Y-m-d\TH:i', $ts),
-            'log_type'         => 'EDIT_EMPLOYEE',                 
+            'log_type'         => 'EDIT_EMPLOYEE',
+            'details'          => $editDetails,
             'is_within_office' => null,
             'latitude'         => null,
             'longitude'        => null,
@@ -635,7 +611,11 @@ if ($showAddSchedule) {
             l.edit_status,
             l.edit_requested_by AS initiated_by_id,
             CONCAT(e_init.first_name, ' ', e_init.last_name) AS initiator_name,
-            r_init.role_key AS initiator_role
+            r_init.role_key AS initiator_role,
+            (SELECT MIN(s.schedule_date)    FROM schedules s WHERE s.employee_id = l.employee_id AND s.batch_id = l.edit_reason AND l.edit_reason IS NOT NULL) AS sched_min_date,
+            (SELECT MAX(s.schedule_date)    FROM schedules s WHERE s.employee_id = l.employee_id AND s.batch_id = l.edit_reason AND l.edit_reason IS NOT NULL) AS sched_max_date,
+            (SELECT MIN(s.scheduled_start)  FROM schedules s WHERE s.employee_id = l.employee_id AND s.batch_id = l.edit_reason AND l.edit_reason IS NOT NULL) AS sched_start,
+            (SELECT MIN(s.scheduled_end)    FROM schedules s WHERE s.employee_id = l.employee_id AND s.batch_id = l.edit_reason AND l.edit_reason IS NOT NULL) AS sched_end
         FROM logs l
         LEFT JOIN employees e ON l.employee_id = e.id
         LEFT JOIN roles r ON r.id = e.role_id
@@ -659,12 +639,28 @@ if ($showAddSchedule) {
     foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
         $ts            = strtotime($row['log_time']);
         $initiatedById = (int)($row['initiated_by_id'] ?? 0);
+        $minDate   = $row['sched_min_date'] ?? null;
+        $maxDate   = $row['sched_max_date'] ?? null;
+        $schedStart = $row['sched_start'] ?? null;
+        $schedEnd   = $row['sched_end']   ?? null;
+        if ($minDate) {
+            $minFmt  = date('M j, Y', strtotime($minDate));
+            $maxFmt  = date('M j, Y', strtotime($maxDate));
+            $dateStr = ($minDate === $maxDate) ? $minFmt : "$minFmt – $maxFmt";
+            $timeStr = ($schedStart && $schedEnd)
+                ? date('g:i A', strtotime($schedStart)) . ' - ' . date('g:i A', strtotime($schedEnd))
+                : '';
+            $schedDetails = "Schedule assigned:\n$dateStr" . ($timeStr ? "\n\nTime:\n$timeStr" : '');
+        } else {
+            $schedDetails = 'Schedule assigned';
+        }
         $allRows[] = [
             'log_id'           => $row['log_id'],
             'date'             => date('F d, Y', $ts),
             'time'             => date('h:i A', $ts),
             'log_datetime'     => date('Y-m-d\TH:i', $ts),
             'log_type'         => 'ADD_SCHEDULE',
+            'details'          => $schedDetails,
             'is_within_office' => null,
             'latitude'         => null,
             'longitude'        => null,
@@ -675,7 +671,7 @@ if ($showAddSchedule) {
             'employee_role'    => $row['employee_role'],
             'department_name'  => $row['department_name'],
             'edit_role'        => ($initiatedById === $currentUserId) ? 'self' : $row['initiator_role'],
-            'edit_status'      => $row['edit_status'] ?? null,
+            'edit_status'      => $row['edit_status'] ?? (in_array($row['initiator_role'], ['superadmin', 'admin']) ? 'approved' : ($initiatedById ? 'pending' : null)),
             'initiator_name'   => $row['initiator_name'],
             'photo_path'       => null,
             '_ts'              => $ts,
@@ -700,7 +696,13 @@ if ($showEditSchedule) {
             l.edit_status,
             l.edit_requested_by AS initiated_by_id,
             CONCAT(e_init.first_name, ' ', e_init.last_name) AS initiator_name,
-            r_init.role_key AS initiator_role
+            r_init.role_key AS initiator_role,
+            (SELECT MIN(s.schedule_date)        FROM schedules s WHERE s.employee_id = l.employee_id AND s.batch_id = l.edit_reason AND l.edit_reason IS NOT NULL) AS sched_min_date,
+            (SELECT MAX(s.schedule_date)        FROM schedules s WHERE s.employee_id = l.employee_id AND s.batch_id = l.edit_reason AND l.edit_reason IS NOT NULL) AS sched_max_date,
+            (SELECT MIN(s.orig_scheduled_start) FROM schedules s WHERE s.employee_id = l.employee_id AND s.batch_id = l.edit_reason AND l.edit_reason IS NOT NULL) AS orig_sched_start,
+            (SELECT MIN(s.orig_scheduled_end)   FROM schedules s WHERE s.employee_id = l.employee_id AND s.batch_id = l.edit_reason AND l.edit_reason IS NOT NULL) AS orig_sched_end,
+            (SELECT MIN(s.scheduled_start)      FROM schedules s WHERE s.employee_id = l.employee_id AND s.batch_id = l.edit_reason AND l.edit_reason IS NOT NULL) AS sched_start,
+            (SELECT MIN(s.scheduled_end)        FROM schedules s WHERE s.employee_id = l.employee_id AND s.batch_id = l.edit_reason AND l.edit_reason IS NOT NULL) AS sched_end
         FROM logs l
         LEFT JOIN employees e ON l.employee_id = e.id
         LEFT JOIN roles r ON r.id = e.role_id
@@ -724,12 +726,35 @@ if ($showEditSchedule) {
     foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
         $ts            = strtotime($row['log_time']);
         $initiatedById = (int)($row['initiated_by_id'] ?? 0);
+        $minDate        = $row['sched_min_date']   ?? null;
+        $maxDate        = $row['sched_max_date']   ?? null;
+        $origSchedStart = $row['orig_sched_start'] ?? null;
+        $origSchedEnd   = $row['orig_sched_end']   ?? null;
+        $schedStart     = $row['sched_start']      ?? null;
+        $schedEnd       = $row['sched_end']        ?? null;
+        if ($minDate) {
+            $minFmt  = date('M j, Y', strtotime($minDate));
+            $maxFmt  = date('M j, Y', strtotime($maxDate));
+            $dateStr = ($minDate === $maxDate) ? $minFmt : "$minFmt – $maxFmt";
+            $schedDetails = "Schedule updated:\n$dateStr";
+            if ($origSchedStart && $origSchedEnd && $schedStart && $schedEnd) {
+                $beforeTime = date('g:i A', strtotime($origSchedStart)) . ' - ' . date('g:i A', strtotime($origSchedEnd));
+                $afterTime  = date('g:i A', strtotime($schedStart))     . ' - ' . date('g:i A', strtotime($schedEnd));
+                $schedDetails .= "\n\nBefore:\n$beforeTime\nNow:\n$afterTime";
+            } elseif ($schedStart && $schedEnd) {
+                $afterTime    = date('g:i A', strtotime($schedStart)) . ' - ' . date('g:i A', strtotime($schedEnd));
+                $schedDetails .= "\nTime:\n$afterTime";
+            }
+        } else {
+            $schedDetails = 'Schedule updated';
+        }
         $allRows[] = [
             'log_id'           => $row['log_id'],
             'date'             => date('F d, Y', $ts),
             'time'             => date('h:i A', $ts),
             'log_datetime'     => date('Y-m-d\TH:i', $ts),
             'log_type'         => 'EDIT_SCHEDULE',
+            'details'          => $schedDetails,
             'is_within_office' => null,
             'latitude'         => null,
             'longitude'        => null,
@@ -740,7 +765,7 @@ if ($showEditSchedule) {
             'employee_role'    => $row['employee_role'],
             'department_name'  => $row['department_name'],
             'edit_role'        => ($initiatedById === $currentUserId) ? 'self' : $row['initiator_role'],
-            'edit_status'      => $row['edit_status'] ?? null,
+            'edit_status'      => $row['edit_status'] ?? (in_array($row['initiator_role'], ['superadmin', 'admin']) ? 'approved' : ($initiatedById ? 'pending' : null)),
             'initiator_name'   => $row['initiator_name'],
             'photo_path'       => null,
             '_ts'              => $ts,
@@ -753,7 +778,7 @@ if ($showEditSchedule) {
 usort($allRows, function ($a, $b) use ($sort, $isAsc) {
     switch ($sort) {
         case 'date':
-            $cmp = (int)date('Ymd', $a['_ts']) <=> (int)date('Ymd', $b['_ts']);
+            $cmp = $a['_ts'] <=> $b['_ts'];
             break;
         case 'time':
             $cmp = ($a['_ts'] % 86400) <=> ($b['_ts'] % 86400);

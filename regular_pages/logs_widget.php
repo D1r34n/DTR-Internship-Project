@@ -81,6 +81,27 @@ $logsInlineHeader ??= false;
     </div>
 </div>
 
+<!-- Log Detail Modal -->
+<div class="modal fade" id="logDetailModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content glass-modal">
+            <div class="modal-header">
+                <h5 class="modal-title" id="ldm-type-pill-container"></h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p id="ldm-details" class="mb-0"></p>
+                <div id="ldm-photo-container" style="display:none; margin-top:14px; text-align:center;">
+                    <img id="ldm-photo" src="" alt="Attendance capture" class="cap-preview-img" style="max-width:100%; border-radius:8px;">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 const LOGS_EMPLOYEE_ID = <?= $logsEmployeeId ? (int)$logsEmployeeId : 'null' ?>;
 
@@ -131,7 +152,7 @@ const COLS = {
 function updateHeader(user_role, scoped_to_employee) {
     const deptScoped = user_role === 'manager' || user_role === 'workforce';
     const key = scoped_to_employee ? 'admin_scoped'
-              : (user_role === 'superadmin' || deptScoped) ? 'superadmin'
+              : (user_role === 'superadmin' || user_role === 'admin' || deptScoped) ? 'superadmin'
               : 'employee';
     const cols = COLS[key];
     document.getElementById('logs_colgroup').innerHTML = '';
@@ -194,11 +215,6 @@ function renderLogRows({ meta, rows }) {
     }
     document.getElementById('logsEmptyState').style.display = 'none';
 
-    // Dispose existing popovers before re-render
-    document.querySelectorAll('.photo-trigger').forEach(el => {
-        bootstrap.Popover.getInstance(el)?.dispose();
-    });
-
     tbody.innerHTML = rows.map(row => {
         const isInside = row.is_within_office;
         const locLabel = isInside ? 'Within Office' : 'Outside Office';
@@ -227,7 +243,7 @@ function renderLogRows({ meta, rows }) {
         }
 
         let adminCols = '';
-        if ((user_role === 'superadmin' || user_role === 'manager' || user_role === 'workforce') && !scoped_to_employee) {
+        if ((user_role === 'superadmin' || user_role === 'admin' || user_role === 'manager' || user_role === 'workforce') && !scoped_to_employee) {
             const roleLabel = row.employee_role
                 ? row.employee_role.charAt(0).toUpperCase() + row.employee_role.slice(1)
                 : '';
@@ -257,16 +273,19 @@ function renderLogRows({ meta, rows }) {
 
         const hasPhoto = row.photo_path && (row.log_type === 'IN' || row.log_type === 'OUT');
         const typePill = hasPhoto
-            ? `<span class="pill ${typeClass} photo-trigger"
-                     role="button" tabindex="0"
-                     data-bs-toggle="popover"
-                     data-bs-trigger="click"
-                     data-bs-placement="bottom"
-                     data-bs-html="true"
+            ? `<span class="pill ${typeClass} log-detail-pill" role="button"
+                     data-type-label="${esc(typeLabel)}"
+                     data-type-class="${esc(typeClass)}"
+                     data-details="${esc(row.details ?? '')}"
                      data-photo="${esc(row.photo_path)}">
                      <i class="bi bi-camera-fill" style="font-size:0.65rem;opacity:0.8;"></i> ${typeLabel}
                </span>`
-            : `<span class="pill ${typeClass}">${typeLabel}</span>`;
+            : `<span class="pill ${typeClass} log-detail-pill" role="button"
+                     data-type-label="${esc(typeLabel)}"
+                     data-type-class="${esc(typeClass)}"
+                     data-details="${esc(row.details ?? '')}">
+                     ${typeLabel}
+               </span>`;
 
         const locCell = row.is_within_office === null
             ? `<span style="color:rgba(255,255,255,0.2);font-size:0.75rem;">—</span>`
@@ -287,23 +306,12 @@ function renderLogRows({ meta, rows }) {
             ${adminCols}
             <td>${typePill}</td>
             <td>${locCell}</td>
-
             <td>${editRoleHtml}</td>
             <td>${editStatusHtml}</td>
             ${editBtnCol}
         </tr>`;
     }).join('');
 
-    // Initialize popovers for photo pills
-    document.querySelectorAll('.photo-trigger').forEach(el => {
-        bootstrap.Popover.getOrCreateInstance(el, {
-            html:      true,
-            trigger:   'focus',
-            placement: 'left',
-            content:   `<img src="../assets/attendance_captures/${el.dataset.photo}"
-                             class="cap-preview-img">`
-        });
-    });
 }
 
 /* =========================
@@ -326,6 +334,35 @@ function fetchLogs() {
 const startInput     = document.getElementById('startDate');
 const endInput       = document.getElementById('endDate');
 const dateRangeLabel = document.getElementById('dateRangeLabel');
+
+/* =========================
+   LOCAL STORAGE STATE
+========================= */
+const LS_KEY = 'logs_state_v2_' + (LOGS_EMPLOYEE_ID !== null ? LOGS_EMPLOYEE_ID : 'global');
+
+function saveState() {
+    localStorage.setItem(LS_KEY, JSON.stringify({
+        startDate:    startInput.value,
+        endDate:      endInput.value,
+        logType:      document.getElementById('logTypeFilter').value,
+        logTypeLabel: document.getElementById('logTypeLabel').textContent,
+        sortColumn,
+        sortDirection,
+    }));
+}
+
+function loadState() {
+    try { return JSON.parse(localStorage.getItem(LS_KEY)); }
+    catch { return null; }
+}
+
+const _savedState = loadState();
+if (_savedState) {
+    if (_savedState.sortColumn)              sortColumn        = _savedState.sortColumn;
+    if (_savedState.sortDirection)           sortDirection     = _savedState.sortDirection;
+    if (_savedState.startDate !== undefined) startInput.value  = _savedState.startDate;
+    if (_savedState.endDate   !== undefined) endInput.value    = _savedState.endDate;
+}
 
 function fmtDate(d) {
     return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
@@ -359,10 +396,10 @@ function updateDateLabel(dates) {
 /* =========================
    FLATPICKR
 ========================= */
-flatpickr(document.getElementById('datePickerBtn'), {
+const fp = flatpickr(document.getElementById('datePickerBtn'), {
     mode: 'range',
     dateFormat: 'Y-m-d',
-    defaultDate: [startInput.value || toLocalStr(new Date()), endInput.value || toLocalStr(new Date())],
+    defaultDate: (startInput.value && endInput.value) ? [startInput.value, endInput.value] : [],
 
     onChange(dates) {
         updateDateLabel(dates);
@@ -370,8 +407,15 @@ flatpickr(document.getElementById('datePickerBtn'), {
         startInput.value = toLocalStr(dates[0]);
         endInput.value   = toLocalStr(dates[1]);
         fetchLogs();
+        saveState();
     }
 });
+
+if (startInput.value && endInput.value) {
+    updateDateLabel([new Date(startInput.value + 'T00:00'), new Date(endInput.value + 'T00:00')]);
+} else {
+    dateRangeLabel.textContent = 'All Logs';
+}
 
 /* =========================
    LOG TYPE FILTER
@@ -379,12 +423,18 @@ flatpickr(document.getElementById('datePickerBtn'), {
 const logTypeHidden = document.getElementById('logTypeFilter');
 const logTypeLabel  = document.getElementById('logTypeLabel');
 
+if (_savedState && _savedState.logType) {
+    logTypeHidden.value      = _savedState.logType;
+    logTypeLabel.textContent = _savedState.logTypeLabel || _savedState.logType;
+}
+
 document.querySelectorAll('#logTypeMenu .dropdown-item').forEach(item => {
     item.addEventListener('click', e => {
         e.preventDefault();
         logTypeLabel.textContent = item.textContent.trim();
         logTypeHidden.value = item.dataset.value;
         fetchLogs();
+        saveState();
     });
 });
 
@@ -425,6 +475,7 @@ document.getElementById('logs_thead').addEventListener('click', e => {
 
     applyHeaderUI();
     fetchLogs();
+    saveState();
 });
 
 /* =========================
@@ -507,17 +558,6 @@ document.addEventListener('click', e => {
 });
 
 /* =========================
-   PHOTO POPOVER — CLICK OUTSIDE DISMISS
-========================= */
-document.addEventListener('click', e => {
-    if (!e.target.closest('.photo-trigger') && !e.target.closest('.popover')) {
-        document.querySelectorAll('.photo-trigger').forEach(el => {
-            bootstrap.Popover.getInstance(el)?.hide();
-        });
-    }
-});
-
-/* =========================
    MOUSE WHEEL SCROLL
    If cursor is over the horizontal scrollbar strip (bottom ~16 px),
    redirect wheel deltaY to horizontal scroll.
@@ -542,6 +582,44 @@ document.addEventListener('click', e => {
         wrapper.scrollLeft += e.deltaY + e.deltaX;
     }, { passive: false });
 })();
+
+/* =========================
+   LOG DETAIL PILL — CLICK TO MODAL
+========================= */
+(function () {
+    const m = document.getElementById('logDetailModal');
+    if (m) document.body.appendChild(m);
+})();
+
+document.addEventListener('click', e => {
+    const pill = e.target.closest('.log-detail-pill');
+    if (!pill) return;
+
+    const typeLabel = pill.dataset.typeLabel;
+    const typeClass = pill.dataset.typeClass;
+    const details   = pill.dataset.details;
+    const photo     = pill.dataset.photo;
+
+    document.getElementById('ldm-type-pill-container').innerHTML =
+        `<span class="pill ${typeClass}">${typeLabel}</span>`;
+    document.getElementById('ldm-details').innerHTML = details
+        ? details.split('\n').map(line =>
+            /:\s*$/.test(line) ? `<span class="text-meta">${esc(line)}</span>` : esc(line)
+          ).join('<br>')
+        : '—';
+
+    const photoContainer = document.getElementById('ldm-photo-container');
+    const photoImg       = document.getElementById('ldm-photo');
+    if (photo) {
+        photoImg.src = `../assets/attendance_captures/${photo}`;
+        photoContainer.style.display = '';
+    } else {
+        photoContainer.style.display = 'none';
+        photoImg.src = '';
+    }
+
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('logDetailModal')).show();
+});
 
 /* =========================
    INIT
