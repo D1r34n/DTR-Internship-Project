@@ -261,7 +261,7 @@ if ($showLeave) {
         LEFT JOIN employees e ON lr.employee_id = e.id
         LEFT JOIN roles r ON r.id = e.role_id
         LEFT JOIN departments d ON e.department_id = d.id
-        WHERE lr.leave_type != 'ob leave'
+        WHERE lr.leave_type_id != (SELECT id FROM leave_types WHERE name = 'ob leave')
     ";
     $params = [];
     applyLogsFilter($sql, $params, 'lr.employee_id', $scopedToEmployee, $deptScopeRoles, $deptScopeId, (int)$employeeId, $userRole);
@@ -319,7 +319,7 @@ if ($showOB) {
         LEFT JOIN employees e ON lr.employee_id = e.id
         LEFT JOIN roles r ON r.id = e.role_id
         LEFT JOIN departments d ON e.department_id = d.id
-        WHERE lr.leave_type = 'ob leave'
+        WHERE lr.leave_type_id = (SELECT id FROM leave_types WHERE name = 'ob leave')
     ";
     $params = [];
     applyLogsFilter($sql, $params, 'lr.employee_id', $scopedToEmployee, $deptScopeRoles, $deptScopeId, (int)$employeeId, $userRole);

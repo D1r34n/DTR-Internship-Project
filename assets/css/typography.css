@@ -100,7 +100,7 @@ body {
 }
 
 .text-tertiary {
-    font-size: 0.75em;    /* 14px */
+    font-size: 0.75rem;    /* 14px */
     font-weight: 300;
     line-height: 1.5;
     color: var(--text-light) !important;
@@ -119,6 +119,22 @@ body {
     line-height: 1.2;
     color: var(--text-muted);
     opacity: 0.8;
+}
+
+.text-success {
+    color: var(--primary-color) !important;
+}
+
+.text-danger {
+    color: var(--danger-color) !important;
+}
+
+.text-warning {
+    color: var(--warning-color) !important;
+}
+
+.text-info {
+    color: var(--info-color) !important;
 }
 
 /* ------------------------------------------------
@@ -166,24 +182,6 @@ select,
 textarea {
     font-family: 'Poppins', sans-serif;
     font-size: 0.95rem;
-    font-weight: 300;
-    line-height: 1.5;
-}
-
-/* ------------------------------------------------
-   TABLES
-   ------------------------------------------------ */
-
-table th {
-    font-size: 0.8rem;
-    font-weight: 500;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    line-height: 1.4;
-}
-
-table td {
-    font-size: 0.875rem;    /* 14px */
     font-weight: 300;
     line-height: 1.5;
 }

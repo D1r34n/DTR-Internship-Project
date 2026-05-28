@@ -304,23 +304,6 @@ body {
     table-layout: auto;
 }
 
-.reqTabContent th,
-.reqTabContent td,
-.tableScroll th,
-.tableScroll td {
-    white-space: nowrap;
-    vertical-align: middle;
-}
-
-.reqTabContent thead th,
-.tableScroll thead th {
-    position: sticky;
-    top: 0;
-    z-index: 2;
-    background: var(--glass-bg);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-}
 
 .reqTabContent tbody tr:hover td,
 .tableScroll tbody tr:hover td {

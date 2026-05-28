@@ -49,7 +49,9 @@ $titles = [
         'employee_requests' => 'Employee Requests',
         'schedule_requests' => 'Schedule Requests',
         'departments'       => 'Departments',
-        'attendance_report' => 'Attendance Report'
+        'attendance_report' => 'Attendance Report',
+        'filing_report'     => 'Filing Report',
+        'leave_report'      => 'Leave Balances Report'
     ],
 ];
 

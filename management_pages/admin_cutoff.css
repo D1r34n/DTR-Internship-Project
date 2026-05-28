@@ -96,27 +96,14 @@ body {
 }
 
 .cutoff-table-scroll thead th {
-    position: sticky;
-    top: 0;
-    z-index: 2;
-    background: var(--glass-bg);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    color: var(--text-muted);
-    font-size: 0.75rem;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    padding: 6px 10px;
     border-color: var(--neutral-border);
 }
 
 .cutoff-table-scroll td {
-    padding: 6px 10px;
-    font-size: 0.8rem;
     border-color: var(--neutral-border);
-    color: var(--text-light);
-    vertical-align: middle;
 }
 
 .cutoff-item {

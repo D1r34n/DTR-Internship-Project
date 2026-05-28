@@ -38,8 +38,8 @@ $logsInlineHeader ??= false;
                     <li><a class="dropdown-item" href="#" data-value="REQUEST_OB">Request OB</a></li>
                     <li><a class="dropdown-item" href="#" data-value="REQUEST_LOG_EDIT">Request Log Edit</a></li>
                     <li><a class="dropdown-item" href="#" data-value="REQUEST_CHANGE_SCHEDULE">Request Change Schedule</a></li>
-                    <li><hr class="dropdown-divider"></li>                                             
-                    <li><a class="dropdown-item" href="#" data-value="ADD_EMPLOYEE">Added Employee</a></li> 
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item" href="#" data-value="ADD_EMPLOYEE">Added Employee</a></li>
                     <li><a class="dropdown-item" href="#" data-value="EDIT_EMPLOYEE">Edited Employee</a></li>
                     <li><a class="dropdown-item" href="#" data-value="ADD_SCHEDULE">Added Schedule</a></li>
                     <li><a class="dropdown-item" href="#" data-value="EDIT_SCHEDULE">Edited Schedule</a></li>

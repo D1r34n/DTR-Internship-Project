@@ -11,7 +11,7 @@ if (!isset($_SESSION['user_id']) || !in_array($_SESSION['user_role'], ['superadm
 require_once '../db.php';
 
 date_default_timezone_set('Asia/Manila');
-$currentPage = 'attendance_report';
+$currentPage = 'filing_report';
 
 $cutoffs = $pdo->query("SELECT id, start_date, end_date FROM cutoffs ORDER BY start_date DESC")->fetchAll(PDO::FETCH_ASSOC);
 require_once 'cutoff_helpers.php';
@@ -21,7 +21,7 @@ require_once 'cutoff_helpers.php';
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Attendance Report</title>
+    <title>Filing Report</title>
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
@@ -57,15 +57,21 @@ require_once 'cutoff_helpers.php';
             </div>
 
             <div class="dropdown">
-                <button class="btn btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <button class="btn btn-sm btn-success dropdown-toggle" type="button" data-bs-toggle="dropdown" data-bs-boundary="viewport" aria-expanded="false">
                     <i class="bi bi-funnel"></i>
-                    <span id="status-label">All Status</span>
+                    <span id="status-label">Select Request Type</span>
                 </button>
                 <ul class="dropdown-menu" style="z-index:1055;">
-                    <li><a class="dropdown-item status-opt" href="#" data-value="ALL">All Status</a></li>
-                    <li><a class="dropdown-item status-opt" href="#" data-value="present">Present</a></li>
-                    <li><a class="dropdown-item status-opt" href="#" data-value="absent">Absent</a></li>
-                    <li><a class="dropdown-item status-opt" href="#" data-value="incomplete">Incomplete</a></li>
+                    <li><a class="dropdown-item status-opt" href="#" data-value="ALL">All Filings</a></li>
+                    <li><a class="dropdown-item status-opt" href="#" data-value="overtime">OT Request</a></li>
+                    <li><a class="dropdown-item status-opt" href="#" data-value="ob leave">OB Request</a></li>
+                    <li><a class="dropdown-item status-opt" href="#" data-value="log_edit">Log Edit Request</a></li>
+                    <li><a class="dropdown-item status-opt" href="#" data-value="schedule_edit">Schedule Edit Request</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item status-opt" href="#" data-value="sick leave">Sick Leave Request</a></li>
+                    <li><a class="dropdown-item status-opt" href="#" data-value="vacation leave">Vacation Leave Request</a></li>
+                    <li><a class="dropdown-item status-opt" href="#" data-value="birthday leave">Birthday Leave</a></li>
+                    <li><a class="dropdown-item status-opt" href="#" data-value="solo parent leave">Solo Parent Leave</a></li>
                 </ul>
             </div>
 
@@ -77,7 +83,7 @@ require_once 'cutoff_helpers.php';
                     <span id="ar-btn-label"><?= htmlspecialchars($defaultLabel ?? '') ?></span>
                 </button>
 
-                <ul class="dropdown-menu" style="min-width:280px; z-index:1055;">
+                <ul class="dropdown-menu">
                     <div id="ar-panel-1">
                         <?php include 'cutoff_dropdown_items.php'; ?>
 
@@ -159,8 +165,12 @@ require_once 'cutoff_helpers.php';
             </div>
 
             <div id="ar-unloaded-state" class="ar-empty">
-                <i class="bi bi-bar-chart-line-fill"></i>
-                <div class="text-meta">No report loaded. Select an alternate period view up top.</div>
+                <i class="bi bi-funnel-fill" style="font-size: 2.5rem;"></i>
+                <div class="text-secondary mt-2">Awaiting View Criteria</div>
+                <small class="text-tertiary text-center px-4">
+                    Please pick a <strong class="text-success">Request type</strong> and select a<strong class="text-success"> Cut-off period </strong>
+                    <br> from the options above to assemble this log summary.
+                </small>
             </div>
 
             <div class="tableScroll" id="report-table-container" style="display:none;">
@@ -171,14 +181,7 @@ require_once 'cutoff_helpers.php';
                             <th>Name</th>
                             <th>Department</th>
                             <th>Role</th>
-                            <th>Date</th>
-                            <th>Time In</th>
-                            <th>Time Out</th>
-                            <th>Regular Hours</th>
-                            <th>Tardiness</th>
-                            <th>Leave</th>
-                            <th>Undertime</th>
-                            <th>Overtime</th>
+                            <th>Request Date</th>
                             <th>Status</th>
                         </tr>
                     </thead>
@@ -239,28 +242,25 @@ require_once 'cutoff_helpers.php';
 <?php include '../toast.php'; ?>
 
 <script>
-/* ── Shared State ───────────────────────────────────────── */
+/* ── State ─────────────────────────────────────────────── */
 const _allCutoffs = <?= json_encode(array_values($cutoffs)) ?>;
 
-let _selStart  = <?= json_encode($defaultStart) ?>;
-let _selEnd    = <?= json_encode($defaultEnd) ?>;
-let _selBtnLbl = <?= json_encode($defaultLabel) ?>;
-let _selRngLbl = <?= json_encode($defaultRange) ?>;
+let _selStart  = null;
+let _selEnd    = null;
+let _selBtnLbl = "Select Period";
+let _selRngLbl = "";
 
-let activeStatus     = 'ALL';
+let activeStatus     = '';
 let currentPageIndex = 1;
 let rowsPerPage      = parseInt(localStorage.getItem('ar_rows_per_page')) || 10;
 let searchTimeout    = null;
 
-const _dropBtn  = document.getElementById('ar-cutoff-btn');
-const _dropObj  = bootstrap.Dropdown.getOrCreateInstance(_dropBtn);
-const _panel1   = document.getElementById('ar-panel-1');
-const _panel2   = document.getElementById('ar-panel-2');
-const _periodLi = document.getElementById('ar-period-list');
+let hasSelectedStatus = false;
+let hasSelectedPeriod = false;
 
 /* ── Fetch ──────────────────────────────────────────────── */
-function fetchAttendanceReport() {
-    if (!_selStart || !_selEnd) return;
+function fetchFilingReport() {
+    if (!hasSelectedStatus || !hasSelectedPeriod || !_selStart || !_selEnd) return;
 
     const unloadedState  = document.getElementById('ar-unloaded-state');
     const loadingState   = document.getElementById('ar-loading-state');
@@ -277,7 +277,7 @@ function fetchAttendanceReport() {
     document.getElementById('export-btn').disabled = true;
 
     const params = new URLSearchParams({
-        action: 'attendance',
+        action: 'reports',
         start:  _selStart,
         end:    _selEnd,
         page:   currentPageIndex,
@@ -312,8 +312,8 @@ function fetchAttendanceReport() {
 
             dataRows.forEach(row => {
                 let sc = 'status-pending';
-                if (row.status === 'present') sc = 'status-approved';
-                if (row.status === 'absent')  sc = 'status-rejected';
+                if (row.status === 'approved' || row.status === 'present') sc = 'status-approved';
+                if (row.status === 'rejected' || row.status === 'absent')  sc = 'status-rejected';
 
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
@@ -321,14 +321,7 @@ function fetchAttendanceReport() {
                     <td>${row.employee_name  || '—'}</td>
                     <td>${row.department_name|| '—'}</td>
                     <td>${row.role_name      || '—'}</td>
-                    <td>${parseDateString(row.work_date)}</td>
-                    <td>${parseTimeString(row.actual_time_in)}</td>
-                    <td>${parseTimeString(row.actual_time_out)}</td>
-                    <td>${formatMinutes(row.total_work_minutes)}</td>
-                    <td>${formatMinutes(row.late_minutes)}</td>
-                    <td>—</td>
-                    <td>${formatMinutes(row.undertime_minutes)}</td>
-                    <td>${formatMinutes(row.overtime_minutes)}</td>
+                    <td>${parseDateString(row.request_date)}</td>
                     <td><span class="pill ${sc}">${row.status ? row.status.charAt(0).toUpperCase() + row.status.slice(1) : '—'}</span></td>
                 `;
                 tbody.appendChild(tr);
@@ -353,15 +346,15 @@ function fetchAttendanceReport() {
         });
 }
 
-/* ── Range selection — saves to localStorage ────────────── */
+/* ── Range selection ────────────────────────────────────── */
 function _selectRange(start, end, btnLabel, rangeLabel) {
     _selStart  = start;
     _selEnd    = end;
     _selBtnLbl = btnLabel;
     _selRngLbl = rangeLabel;
-    currentPageIndex = 1;
 
-    localStorage.setItem('ar_cutoff', JSON.stringify({ start, end, btnLabel, rangeLabel }));
+    hasSelectedPeriod = true;
+    currentPageIndex  = 1;
 
     document.getElementById('ar-btn-label').textContent   = btnLabel;
     document.getElementById('ar-range-label').textContent = rangeLabel;
@@ -371,58 +364,105 @@ function _selectRange(start, end, btnLabel, rangeLabel) {
     });
 
     _dropObj.hide();
-    fetchAttendanceReport();
-}
-
-function formatMinutes(mins) {
-    if (mins === null || mins === undefined) return '—';
-    mins = parseInt(mins, 10);
-    if (isNaN(mins)) return '—';
-    if (mins === 0)  return '0m';
-    const h = Math.floor(mins / 60);
-    const m = mins % 60;
-    if (h > 0 && m > 0) return `${h}h ${m}m`;
-    if (h > 0)           return `${h}h`;
-    return `${m}m`;
+    fetchFilingReport();
 }
 
 function renderPaginationControls(totalPages) {
-    _renderPaginationControls(totalPages, currentPageIndex, fetchAttendanceReport, n => { currentPageIndex = n; });
+    _renderPaginationControls(totalPages, currentPageIndex, fetchFilingReport, n => { currentPageIndex = n; });
 }
 
-/* ── Panel navigation ───────────────────────────────────── */
-function _goPanel1() {
-    _periodLi.innerHTML = '<p class="text-meta small text-center px-3 py-2 mb-0">Pick a month above to see its cut-off periods.</p>';
-    if (typeof _periodFp !== 'undefined') _periodFp.clear();
-    _panel2.style.display = 'none';
-    _panel1.style.display = 'block';
+/* ── Search (debounced) ─────────────────────────────────── */
+function handleSearchInput() {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+        currentPageIndex = 1;
+        fetchFilingReport();
+    }, 400);
 }
 
-document.getElementById('ar-open-period-panel').addEventListener('click', e => {
-    e.preventDefault(); e.stopPropagation();
-    _panel1.style.display = 'none';
-    _panel2.style.display = 'block';
-    setTimeout(() => _periodFp.open(), 30);
-});
+/* ── Rows per page ──────────────────────────────────────── */
+function changeRowsPerPage(val) {
+    rowsPerPage = parseInt(val);
+    localStorage.setItem('ar_rows_per_page', val);
+    document.getElementById('rowsPerPageBtn').textContent = `${val} rows`;
+    currentPageIndex = 1;
+    fetchFilingReport();
+}
 
-document.getElementById('ar-back-btn').addEventListener('click', e => {
-    e.preventDefault(); e.stopPropagation();
-    _goPanel1();
-});
-
-_dropBtn.closest('.dropdown').addEventListener('hidden.bs.dropdown', _goPanel1);
-
-/* ── Cutoff items ───────────────────────────────────────── */
-document.querySelectorAll('.cutoff-item').forEach(item => {
-    item.addEventListener('click', e => {
-        e.preventDefault();
-        _selectRange(item.dataset.start, item.dataset.end,
-                     item.dataset.btnLabel, item.dataset.rangeLabel);
+/* ── Export ─────────────────────────────────────────────── */
+function getExportData() {
+    const q = (document.getElementById('search-input')?.value || '').trim();
+    const params = new URLSearchParams({
+        action: 'reports', start: _selStart, end: _selEnd,
+        status: activeStatus, search: q, bypass_pagination: '1'
     });
-});
+    return fetch(`reports_api.php?${params.toString()}`).then(r => r.json());
+}
 
-/* ── Flatpickr: period panel ────────────────────────────── */
+function exportAllCSV() {
+    getExportData().then(resData => {
+        const dataRows = resData.data || [];
+        if (!dataRows.length) { showToast('No records to export.', 'warning'); return; }
+
+        const headers = ['Employee ID', 'Name', 'Department', 'Role', 'Request Date', 'Filing Type', 'Status'];
+        const escCSV  = v => '"' + String(v || '').replace(/"/g,'""').replace(/\n/g,' ').trim() + '"';
+        const rows    = dataRows.map(r => [
+            escCSV(r.employee_id),
+            escCSV(r.employee_name),
+            escCSV(r.department_name),
+            escCSV(r.role_name),
+            escCSV(parseDateString(r.request_date)),
+            escCSV(r.request_type ? r.request_type.toUpperCase().replace('_', ' ') : '—'),
+            escCSV(r.status ? r.status.toUpperCase() : '—')
+        ].join(','));
+
+        const blob = new Blob(["﻿" + [headers.join(','), ...rows].join('\n')], { type: 'text/csv;charset=utf-8;' });
+        const a    = Object.assign(document.createElement('a'), {
+            href: URL.createObjectURL(blob),
+            download: `filing_report_${_selStart}_to_${_selEnd}.csv`
+        });
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    });
+}
+
+async function exportAllPDF() {
+    const resData  = await getExportData();
+    const dataRows = resData.data || [];
+    if (!dataRows.length) { showToast('No records to export.', 'warning'); return; }
+
+    const logoBlob = await fetch('../assets/images/hsn_logo.png').then(r => r.blob());
+    const logoB64  = await new Promise(res => { const fr = new FileReader(); fr.onloadend = () => res(fr.result); fr.readAsDataURL(logoBlob); });
+    const fmtD     = s => { const [y,m,d] = s.split('-').map(Number); return new Date(y,m-1,d).toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'}); };
+
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF('landscape');
+    const pw  = doc.internal.pageSize.width;
+
+    doc.addImage(logoB64, 'PNG', pw - 44, 4, 18, 8);
+    doc.setFontSize(14);
+    doc.text(`Filing Summary Report for ${fmtD(_selStart)} to ${fmtD(_selEnd)}`, 14, 12);
+
+    const head = [['Employee ID', 'Name', 'Department', 'Role', 'Date of Request', 'Filing Type', 'Status']];
+    const body = dataRows.map(r => [
+        r.employee_id || '—',
+        r.employee_name || '—',
+        r.department_name || '—',
+        r.role_name || '—',
+        parseDateString(r.request_date),
+        r.request_type ? r.request_type.toUpperCase().replace('_', ' ') : '—',
+        r.status ? r.status.toUpperCase() : '—'
+    ]);
+    doc.autoTable({ head, body, startY: 20, styles: { fontSize: 9, cellPadding: 3 }, headStyles: { fillColor: [151, 190, 65] } });
+    doc.save(`filing_report_${_selStart}_to_${_selEnd}.pdf`);
+}
+
+/* ── Flatpickr init ─────────────────────────────────────── */
 let _fpOpen = false;
+const _dropBtn  = document.getElementById('ar-cutoff-btn');
+const _dropObj  = bootstrap.Dropdown.getOrCreateInstance(_dropBtn);
+const _panel1   = document.getElementById('ar-panel-1');
+const _panel2   = document.getElementById('ar-panel-2');
+const _periodLi = document.getElementById('ar-period-list');
 
 const _periodFp = flatpickr('#ar-period-fp', {
     plugins: [new monthSelectPlugin({ shorthand: true, dateFormat: 'Y-m', altFormat: 'F Y' })],
@@ -456,20 +496,16 @@ const _periodFp = flatpickr('#ar-period-fp', {
         _periodLi.querySelectorAll('.rw-period-item').forEach(item => {
             item.addEventListener('click', e => {
                 e.preventDefault();
-                _selectRange(item.dataset.start, item.dataset.end,
-                             item.dataset.btn, item.dataset.range);
+                _selectRange(item.dataset.start, item.dataset.end, item.dataset.btn, item.dataset.range);
             });
         });
     }
 });
 
-_dropBtn.addEventListener('hide.bs.dropdown', e => { if (_fpOpen) e.preventDefault(); });
-
-/* ── Flatpickr: full month ──────────────────────────────── */
 const _monthFp = flatpickr('#ar-month-fp-anchor', {
     plugins: [new monthSelectPlugin({ shorthand: true, dateFormat: 'Y-m', altFormat: 'F Y' })],
     disableMobile: true,
-    positionElement: document.getElementById('ar-cutoff-btn'),
+    positionElement: _dropBtn,
     onChange(selectedDates) {
         if (!selectedDates.length) return;
         const d = selectedDates[0], y = d.getFullYear(), mo = d.getMonth();
@@ -480,145 +516,77 @@ const _monthFp = flatpickr('#ar-month-fp-anchor', {
     }
 });
 
-document.getElementById('ar-open-month-picker').addEventListener('click', e => {
-    e.preventDefault();
-    _dropObj.hide();
-    setTimeout(() => _monthFp.open(), 50);
-});
-
-/* ── Status filter ──────────────────────────────────────── */
-document.querySelectorAll('.status-opt').forEach(item => {
-    item.addEventListener('click', e => {
-        e.preventDefault();
-        activeStatus = item.dataset.value;
-        document.getElementById('status-label').textContent = item.textContent.trim();
-        currentPageIndex = 1;
-        fetchAttendanceReport();
-    });
-});
-
-/* ── Search (debounced) ─────────────────────────────────── */
-function handleSearchInput() {
-    clearTimeout(searchTimeout);
-    searchTimeout = setTimeout(() => {
-        currentPageIndex = 1;
-        fetchAttendanceReport();
-    }, 400);
-}
-
-/* ── Rows per page ──────────────────────────────────────── */
-function changeRowsPerPage(val) {
-    rowsPerPage = parseInt(val);
-    localStorage.setItem('ar_rows_per_page', val);
-    document.getElementById('rowsPerPageBtn').textContent = `${val} rows`;
-    currentPageIndex = 1;
-    fetchAttendanceReport();
-}
-
-/* ── Export ─────────────────────────────────────────────── */
-function getExportData() {
-    const q = (document.getElementById('search-input')?.value || '').trim();
-    const params = new URLSearchParams({
-        action: 'attendance', start: _selStart, end: _selEnd,
-        status: activeStatus, search: q, bypass_pagination: '1'
-    });
-    return fetch(`reports_api.php?${params.toString()}`).then(r => r.json());
-}
-
-function exportAllCSV() {
-    getExportData().then(resData => {
-        const dataRows = resData.data || [];
-        if (!dataRows.length) { showToast('No records to export.', 'warning'); return; }
-
-        const headers = ['Employee ID','Name','Department','Role','Date','Time In','Time Out','Status'];
-        const escCSV  = v => '"' + String(v || '').replace(/"/g,'""').replace(/\n/g,' ').trim() + '"';
-        const rows    = dataRows.map(r => [
-            escCSV(r.employee_id), escCSV(r.employee_name), escCSV(r.department_name),
-            escCSV(r.role_name),   escCSV(parseDateString(r.work_date)),
-            escCSV(parseTimeString(r.actual_time_in)), escCSV(parseTimeString(r.actual_time_out)),
-            escCSV(r.status)
-        ].join(','));
-
-        const blob = new Blob(["﻿" + [headers.join(','), ...rows].join('\n')], { type: 'text/csv;charset=utf-8;' });
-        const a    = Object.assign(document.createElement('a'), {
-            href: URL.createObjectURL(blob),
-            download: `attendance_report_${_selStart}_to_${_selEnd}.csv`
-        });
-        document.body.appendChild(a); a.click(); document.body.removeChild(a);
-    });
-}
-
-async function exportAllPDF() {
-    const resData  = await getExportData();
-    const dataRows = resData.data || [];
-    if (!dataRows.length) { showToast('No records to export.', 'warning'); return; }
-
-    const logoBlob = await fetch('../assets/images/hsn_logo.png').then(r => r.blob());
-    const logoB64  = await new Promise(res => { const fr = new FileReader(); fr.onloadend = () => res(fr.result); fr.readAsDataURL(logoBlob); });
-    const fmtD     = s => { const [y,m,d] = s.split('-').map(Number); return new Date(y,m-1,d).toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'}); };
-
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF('landscape');
-    const pw  = doc.internal.pageSize.width;
-
-    doc.addImage(logoB64, 'PNG', pw - 44, 4, 18, 8);
-    doc.setFontSize(14);
-    doc.text(`Attendance Report for ${fmtD(_selStart)} to ${fmtD(_selEnd)}`, 14, 12);
-
-    const head = [['Employee ID','Name','Department','Role','Date','Time In','Time Out','Status']];
-    const body = dataRows.map(r => [
-        r.employee_id || '—', r.employee_name || '—', r.department_name || '—', r.role_name || '—',
-        parseDateString(r.work_date), parseTimeString(r.actual_time_in),
-        parseTimeString(r.actual_time_out), r.status ? r.status.toUpperCase() : '—'
-    ]);
-    doc.autoTable({ head, body, startY: 20, styles: { fontSize: 9, cellPadding: 3 }, headStyles: { fillColor: [151, 190, 65] } });
-    doc.save(`attendance_report_${_selStart}_to_${_selEnd}.pdf`);
-}
-
-/* ── Init ───────────────────────────────────────────────── */
+/* ── DOM event listeners ────────────────────────────────── */
 document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('ar-btn-label').textContent   = _selBtnLbl;
+    document.getElementById('ar-range-label').textContent = _selRngLbl;
 
     document.getElementById('rowsPerPageBtn').textContent = `${rowsPerPage} rows`;
 
-    try {
-        const saved = localStorage.getItem('ar_cutoff');
-        if (saved) {
-            const { start, end, btnLabel, rangeLabel } = JSON.parse(saved);
-            _selStart  = start;
-            _selEnd    = end;
-            _selBtnLbl = btnLabel;
-            _selRngLbl = rangeLabel;
-            document.getElementById('ar-btn-label').textContent   = btnLabel;
-            document.getElementById('ar-range-label').textContent = rangeLabel;
-            document.querySelectorAll('.cutoff-item').forEach(el => {
-                el.classList.toggle('active', el.dataset.start === start && el.dataset.end === end);
-            });
-        }
-    } catch (e) { /* corrupt storage — fall back to PHP defaults */ }
-
-    const jumpInput = document.getElementById('page-jump-input');
-    if (jumpInput) {
-        jumpInput.addEventListener('keydown', function (e) {
-            if (e.key !== 'Enter') return;
+    document.querySelectorAll('.row-limit-opt').forEach(opt => {
+        opt.addEventListener('click', e => {
             e.preventDefault();
-            let target = parseInt(this.value);
-            const max  = parseInt(this.max) || 1;
-            if (isNaN(target) || target < 1) target = 1;
-            if (target > max) target = max;
-            this.value       = target;
-            currentPageIndex = target;
-            fetchAttendanceReport();
+            changeRowsPerPage(opt.dataset.value);
         });
-    }
-
-    document.body.addEventListener('click', e => {
-        const target = e.target.closest('.row-limit-opt');
-        if (!target) return;
-        e.preventDefault();
-        changeRowsPerPage(target.dataset.value);
     });
 
-    fetchAttendanceReport();
+    function _goPanel1() {
+        _periodLi.innerHTML = '<p class="text-meta small text-center px-3 py-2 mb-0">Pick a month above to see its cut-off periods.</p>';
+        if (typeof _periodFp !== 'undefined') _periodFp.clear();
+        _panel2.style.display = 'none';
+        _panel1.style.display = 'block';
+    }
+
+    document.getElementById('ar-open-period-panel').addEventListener('click', e => {
+        e.preventDefault(); e.stopPropagation();
+        _panel1.style.display = 'none';
+        _panel2.style.display = 'block';
+        setTimeout(() => _periodFp.open(), 30);
+    });
+
+    document.getElementById('ar-back-btn').addEventListener('click', e => {
+        e.preventDefault(); e.stopPropagation();
+        _goPanel1();
+    });
+
+    _dropBtn.closest('.dropdown').addEventListener('hidden.bs.dropdown', _goPanel1);
+    _dropBtn.addEventListener('hide.bs.dropdown', e => { if (_fpOpen) e.preventDefault(); });
+
+    document.querySelectorAll('.cutoff-item').forEach(item => {
+        item.addEventListener('click', e => {
+            e.preventDefault();
+            _selectRange(item.dataset.start, item.dataset.end, item.dataset.btnLabel, item.dataset.rangeLabel);
+        });
+    });
+
+    document.getElementById('ar-open-month-picker').addEventListener('click', e => {
+        e.preventDefault();
+        _dropObj.hide();
+        setTimeout(() => _monthFp.open(), 50);
+    });
+
+    document.querySelectorAll('.status-opt').forEach(item => {
+        item.addEventListener('click', e => {
+            e.preventDefault();
+            activeStatus = item.dataset.value;
+            document.getElementById('status-label').textContent = item.textContent.trim();
+            hasSelectedStatus = true;
+            currentPageIndex  = 1;
+            fetchFilingReport();
+        });
+    });
+
+    document.getElementById('page-jump-input')?.addEventListener('keydown', e => {
+        if (e.key !== 'Enter') return;
+        e.preventDefault();
+        let target = parseInt(e.target.value);
+        const max  = parseInt(e.target.max) || 1;
+        if (isNaN(target) || target < 1) target = 1;
+        if (target > max) target = max;
+        e.target.value   = target;
+        currentPageIndex = target;
+        fetchFilingReport();
+    });
 });
 </script>
 </body>

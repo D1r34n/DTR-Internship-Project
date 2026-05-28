@@ -53,10 +53,11 @@ if ($dupCheck->fetchColumn() > 0) {
 
 // ---- INSERT INTO leave_requests ----
 try {
+    $obLeaveTypeId = (int)$pdo->query("SELECT id FROM leave_types WHERE name = 'ob leave'")->fetchColumn();
     $pdo->prepare("
-        INSERT INTO leave_requests (employee_id, leave_type, start_date, end_date, selected_dates, reason, client_name, status)
-        VALUES (?, 'ob leave', ?, ?, ?, ?, ?, ?)
-    ")->execute([$employeeId, $obDate, $obDate, json_encode([$obDate]), $reason, $clientName, $initialStatus]);
+        INSERT INTO leave_requests (employee_id, leave_type_id, start_date, end_date, selected_dates, reason, client_name, status)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    ")->execute([$employeeId, $obLeaveTypeId, $obDate, $obDate, json_encode([$obDate]), $reason, $clientName, $initialStatus]);
 
     $msg = $autoApprove ? 'OB request approved.' : 'OB request submitted successfully!';
     echo json_encode(['success' => true, 'message' => $msg]);

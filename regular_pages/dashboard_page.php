@@ -276,10 +276,11 @@ if (!$showAdminCards) {
     $leaveBal = $s->fetch(PDO::FETCH_ASSOC) ?: [];
 
     $s = $pdo->prepare("
-        SELECT leave_type, selected_dates, start_date, end_date
-        FROM leave_requests
-        WHERE employee_id = ? AND status = 'approved' AND leave_type != 'ob leave'
-          AND YEAR(start_date) = YEAR(CURDATE())
+        SELECT lt.name AS leave_type, lr.selected_dates, lr.start_date, lr.end_date
+        FROM leave_requests lr
+        JOIN leave_types lt ON lt.id = lr.leave_type_id
+        WHERE lr.employee_id = ? AND lr.status = 'approved' AND lt.name != 'ob leave'
+          AND YEAR(lr.start_date) = YEAR(CURDATE())
     ");
     $s->execute([$empId]);
     $usedPerType = [];
@@ -331,7 +332,7 @@ foreach ($s->fetchAll(PDO::FETCH_ASSOC) as $r) {
 $s = $pdo->prepare("
     SELECT selected_dates, start_date, end_date
     FROM leave_requests
-    WHERE employee_id = ? AND leave_type != 'ob leave' AND status = 'approved'
+    WHERE employee_id = ? AND leave_type_id != (SELECT id FROM leave_types WHERE name = 'ob leave') AND status = 'approved'
       AND (start_date BETWEEN ? AND ? OR end_date BETWEEN ? AND ?
            OR (start_date <= ? AND end_date >= ?))
 ");
@@ -357,7 +358,7 @@ foreach ($s->fetchAll(PDO::FETCH_ASSOC) as $r) {
     // OB (approved)
     $s = $pdo->prepare("
         SELECT start_date FROM leave_requests
-        WHERE employee_id = ? AND leave_type = 'ob leave' AND status = 'approved'
+        WHERE employee_id = ? AND leave_type_id = (SELECT id FROM leave_types WHERE name = 'ob leave') AND status = 'approved'
           AND start_date BETWEEN ? AND ?
     ");
     $s->execute([$empId, $weekMon, $weekSun]);

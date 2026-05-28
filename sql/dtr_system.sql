@@ -309,13 +309,38 @@ INSERT INTO `events` (`id`, `title`, `description`, `event_type`, `start_datetim
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `leave_types`
+--
+
+CREATE TABLE IF NOT EXISTS `leave_types` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(50) NOT NULL,
+  `label` varchar(100) NOT NULL,
+  `max_days` int(11) NOT NULL DEFAULT 1,
+  `direction` enum('past','future','any') NOT NULL DEFAULT 'any',
+  `description_label` varchar(200) DEFAULT NULL,
+  `is_active` tinyint(1) NOT NULL DEFAULT 1,
+  `sort_order` int(11) NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_leave_type_name` (`name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+INSERT INTO `leave_types` (`name`, `label`, `max_days`, `direction`, `description_label`, `sort_order`) VALUES
+('sick leave',        'Sick Leave',        4,   'past',   'up to 4 past dates only (before today)', 1),
+('vacation leave',    'Vacation Leave',    999, 'future', 'future dates only',                      2),
+('birthday leave',    'Birthday Leave',    1,   'any',    '1 day only',                              3),
+('solo parent leave', 'Solo Parent Leave', 2,   'any',    'up to 2 days',                            4);
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `leave_requests`
 --
 
 CREATE TABLE `leave_requests` (
   `id` int(11) NOT NULL,
   `employee_id` int(11) DEFAULT NULL,
-  `leave_type` varchar(50) DEFAULT NULL,
+  `leave_type_id` int(11) NOT NULL,
   `start_date` date DEFAULT NULL,
   `end_date` date DEFAULT NULL,
   `selected_dates` text DEFAULT NULL,

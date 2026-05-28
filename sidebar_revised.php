@@ -176,10 +176,19 @@ $reportsOpen = in_array($currentPage, ['attendance_report', 'filing_report', 'le
                             <i class="bi bi-file-earmark-text"></i>
                             <span>Attendance Report</span>
                         </a>
-                        <a href="../management_pages/admin_schedule_requests.php"
-                        class="sidebar-sub-link <?= ($currentPage === 'schedule_requests') ? 'active' : '' ?>">
-                            <i class="bi bi-calendar-check"></i>
-                            <span>Schedule Requests</span>
+
+                        <!-- Filing Report -->
+                        <a href="../reports_pages/filing_report_page.php"
+                        class="sidebar-sub-link <?= ($currentPage === 'filing_report') ? 'active' : '' ?>">
+                            <i class="bi bi-file-earmark-check"></i>
+                            <span>Filing Report</span>
+                        </a>
+
+                        <!-- Leave Balances Report -->
+                        <a href="../reports_pages/leave_report_page.php"
+                        class="sidebar-sub-link <?= ($currentPage === 'leave_report') ? 'active' : '' ?>">
+                            <i class="bi bi-file-earmark-easel"></i>
+                            <span>Leave Report</span>
                         </a>
                     </div>
                 </div>

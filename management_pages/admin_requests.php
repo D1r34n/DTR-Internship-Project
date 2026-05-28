@@ -116,7 +116,7 @@ skip_action_ar:
 if ($deptScoped) {
     $lrC  = $pdo->prepare("SELECT COUNT(*) FROM leave_requests lr JOIN employees e ON lr.employee_id = e.id WHERE lr.status = ? AND e.department_id = ?");
     $otC  = $pdo->prepare("SELECT COUNT(*) FROM overtime_requests o JOIN employees e ON o.employee_id = e.id WHERE o.status = ? AND e.department_id = ?");
-    $obC  = $pdo->prepare("SELECT COUNT(*) FROM leave_requests lr JOIN employees e ON lr.employee_id = e.id WHERE lr.leave_type = 'ob leave' AND lr.status = ? AND e.department_id = ?");
+    $obC  = $pdo->prepare("SELECT COUNT(*) FROM leave_requests lr JOIN employees e ON lr.employee_id = e.id WHERE lr.leave_type_id = (SELECT id FROM leave_types WHERE name = 'ob leave') AND lr.status = ? AND e.department_id = ?");
     $leC  = $pdo->prepare("SELECT COUNT(*) FROM logs l JOIN employees e ON l.employee_id = e.id WHERE l.edit_status = ? AND e.department_id = ?");
 
     $lrC->execute(['pending',  $myDeptId]); $pendingLeave     = (int)$lrC->fetchColumn();
@@ -138,9 +138,9 @@ if ($deptScoped) {
     $pendingOvertime  = $pdo->query("SELECT COUNT(*) FROM overtime_requests WHERE status = 'pending'")->fetchColumn();
     $approvedOvertime = $pdo->query("SELECT COUNT(*) FROM overtime_requests WHERE status = 'approved'")->fetchColumn();
     $rejectedOvertime = $pdo->query("SELECT COUNT(*) FROM overtime_requests WHERE status = 'rejected'")->fetchColumn();
-    $pendingOB        = $pdo->query("SELECT COUNT(*) FROM leave_requests WHERE leave_type = 'ob leave' AND status = 'pending'")->fetchColumn();
-    $approvedOB       = $pdo->query("SELECT COUNT(*) FROM leave_requests WHERE leave_type = 'ob leave' AND status = 'approved'")->fetchColumn();
-    $rejectedOB       = $pdo->query("SELECT COUNT(*) FROM leave_requests WHERE leave_type = 'ob leave' AND status = 'rejected'")->fetchColumn();
+    $pendingOB        = $pdo->query("SELECT COUNT(*) FROM leave_requests WHERE leave_type_id = (SELECT id FROM leave_types WHERE name = 'ob leave') AND status = 'pending'")->fetchColumn();
+    $approvedOB       = $pdo->query("SELECT COUNT(*) FROM leave_requests WHERE leave_type_id = (SELECT id FROM leave_types WHERE name = 'ob leave') AND status = 'approved'")->fetchColumn();
+    $rejectedOB       = $pdo->query("SELECT COUNT(*) FROM leave_requests WHERE leave_type_id = (SELECT id FROM leave_types WHERE name = 'ob leave') AND status = 'rejected'")->fetchColumn();
     $pendingLogEdit   = $pdo->query("SELECT COUNT(*) FROM logs WHERE edit_status = 'pending'")->fetchColumn();
     $approvedLogEdit  = $pdo->query("SELECT COUNT(*) FROM logs WHERE edit_status = 'approved'")->fetchColumn();
     $rejectedLogEdit  = $pdo->query("SELECT COUNT(*) FROM logs WHERE edit_status = 'rejected'")->fetchColumn();
@@ -155,11 +155,11 @@ $totalLogEdit  = $pendingLogEdit + $approvedLogEdit + $rejectedLogEdit;
 
 // ---- GET LEAVE REQUESTS (non-OB) ----
 if ($deptScoped) {
-    $s = $pdo->prepare("SELECT lr.*, CONCAT(e.first_name, ' ', e.last_name) AS employee_name FROM leave_requests lr JOIN employees e ON lr.employee_id = e.id WHERE lr.leave_type != 'ob leave' AND e.department_id = ? ORDER BY lr.created_at DESC");
+    $s = $pdo->prepare("SELECT lr.*, lt.label AS leave_type, CONCAT(e.first_name, ' ', e.last_name) AS employee_name FROM leave_requests lr JOIN leave_types lt ON lt.id = lr.leave_type_id JOIN employees e ON lr.employee_id = e.id WHERE lt.name != 'ob leave' AND e.department_id = ? ORDER BY lr.created_at DESC");
     $s->execute([$myDeptId]);
     $leaveRequests = $s->fetchAll(PDO::FETCH_ASSOC);
 } else {
-    $leaveRequests = $pdo->query("SELECT lr.*, CONCAT(e.first_name, ' ', e.last_name) AS employee_name FROM leave_requests lr JOIN employees e ON lr.employee_id = e.id WHERE lr.leave_type != 'ob leave' ORDER BY lr.created_at DESC")->fetchAll(PDO::FETCH_ASSOC);
+    $leaveRequests = $pdo->query("SELECT lr.*, lt.label AS leave_type, CONCAT(e.first_name, ' ', e.last_name) AS employee_name FROM leave_requests lr JOIN leave_types lt ON lt.id = lr.leave_type_id JOIN employees e ON lr.employee_id = e.id WHERE lt.name != 'ob leave' ORDER BY lr.created_at DESC")->fetchAll(PDO::FETCH_ASSOC);
 }
 
 // ---- GET OVERTIME REQUESTS ----
@@ -173,11 +173,11 @@ if ($deptScoped) {
 
 // ---- GET OB REQUESTS ----
 if ($deptScoped) {
-    $s = $pdo->prepare("SELECT lr.*, CONCAT(e.first_name, ' ', e.last_name) AS employee_name FROM leave_requests lr JOIN employees e ON lr.employee_id = e.id WHERE lr.leave_type = 'ob leave' AND e.department_id = ? ORDER BY lr.created_at DESC");
+    $s = $pdo->prepare("SELECT lr.*, lt.label AS leave_type, CONCAT(e.first_name, ' ', e.last_name) AS employee_name FROM leave_requests lr JOIN leave_types lt ON lt.id = lr.leave_type_id JOIN employees e ON lr.employee_id = e.id WHERE lt.name = 'ob leave' AND e.department_id = ? ORDER BY lr.created_at DESC");
     $s->execute([$myDeptId]);
     $obRequests = $s->fetchAll(PDO::FETCH_ASSOC);
 } else {
-    $obRequests = $pdo->query("SELECT lr.*, CONCAT(e.first_name, ' ', e.last_name) AS employee_name FROM leave_requests lr JOIN employees e ON lr.employee_id = e.id WHERE lr.leave_type = 'ob leave' ORDER BY lr.created_at DESC")->fetchAll(PDO::FETCH_ASSOC);
+    $obRequests = $pdo->query("SELECT lr.*, lt.label AS leave_type, CONCAT(e.first_name, ' ', e.last_name) AS employee_name FROM leave_requests lr JOIN leave_types lt ON lt.id = lr.leave_type_id JOIN employees e ON lr.employee_id = e.id WHERE lt.name = 'ob leave' ORDER BY lr.created_at DESC")->fetchAll(PDO::FETCH_ASSOC);
 }
 
 // ---- GET LOG EDIT REQUESTS ----

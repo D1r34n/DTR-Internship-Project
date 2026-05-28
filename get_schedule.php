@@ -50,7 +50,7 @@ if ($scopedToEmployee) {
     $leaveStmt = $pdo->prepare("
         SELECT start_date, end_date, selected_dates, status
         FROM leave_requests
-        WHERE employee_id = ? AND leave_type != 'ob leave'
+        WHERE employee_id = ? AND leave_type_id != (SELECT id FROM leave_types WHERE name = 'ob leave')
         AND (start_date <= ? AND end_date >= ?)
     ");
     $leaveStmt->execute([$employeeId, $lastDay, $firstDay]);
@@ -75,7 +75,7 @@ if ($scopedToEmployee) {
     $obStmt = $pdo->prepare("
         SELECT start_date, end_date, selected_dates, status
         FROM leave_requests
-        WHERE employee_id = ? AND leave_type = 'ob leave'
+        WHERE employee_id = ? AND leave_type_id = (SELECT id FROM leave_types WHERE name = 'ob leave')
         AND (start_date <= ? AND end_date >= ?)
     ");
     $obStmt->execute([$employeeId, $lastDay, $firstDay]);
@@ -492,11 +492,12 @@ if (($_SESSION['user_role'] ?? '') === 'superadmin') {
 
     $stmt = $pdo->prepare("
         SELECT lr.selected_dates, lr.start_date, lr.end_date, lr.status,
-               lr.leave_type, lr.reason,
+               lt.name AS leave_type, lr.reason,
                CONCAT(e.first_name, ' ', e.last_name) AS full_name
         FROM leave_requests lr
+        JOIN leave_types lt ON lt.id = lr.leave_type_id
         JOIN employees e ON e.id = lr.employee_id
-        WHERE lr.leave_type != 'ob leave'
+        WHERE lt.name != 'ob leave'
           AND (
               lr.start_date BETWEEN ? AND ?
               OR lr.end_date   BETWEEN ? AND ?
@@ -543,7 +544,7 @@ if (($_SESSION['user_role'] ?? '') === 'superadmin') {
                CONCAT(e.first_name, ' ', e.last_name) AS full_name
         FROM leave_requests lr
         JOIN employees e ON e.id = lr.employee_id
-        WHERE lr.leave_type = 'ob leave'
+        WHERE lr.leave_type_id = (SELECT id FROM leave_types WHERE name = 'ob leave')
           AND lr.start_date BETWEEN ? AND ?
     ");
     $stmt->execute([$start, $end]);

@@ -69,10 +69,7 @@
               <i class="bi bi-chevron-down"></i>
             </div>
             <div class="leaveTypeMenu" id="leaveTypeDropdown">
-              <div class="leaveTypeItem" onclick="selectLeaveType('sick leave', 'Sick Leave')">Sick Leave</div>
-              <div class="leaveTypeItem" onclick="selectLeaveType('vacation leave', 'Vacation Leave')">Vacation Leave</div>
-              <div class="leaveTypeItem" onclick="selectLeaveType('birthday leave', 'Birthday Leave')">Birthday Leave</div>
-              <div class="leaveTypeItem" onclick="selectLeaveType('solo parent leave', 'Solo Parent Leave')">Solo Parent Leave</div>
+              <div class="leaveTypeItem text-meta" style="pointer-events:none;opacity:0.5;">Loading types…</div>
             </div>
           </div>
           <input type="hidden" id="leaveType" value="">
@@ -505,6 +502,7 @@
   let leaveExistingDates    = [];
   let leaveSelectedDates    = [];
   let currentLeaveType      = '';
+  let _leaveTypesData       = [];
 
   document.getElementById('leaveModal').addEventListener('hidden.bs.modal', () => {
     if (leaveCalendarInstance) {
@@ -521,13 +519,26 @@
   });
 
   function getLeaveRules(type) {
-    switch (type) {
-      case 'sick leave':         return { maxDays: 4,   direction: 'past',   label: 'up to 4 past dates only (before today)' };
-      case 'vacation leave':    return { maxDays: 999, direction: 'future', label: 'future dates only' };
-      case 'birthday leave':    return { maxDays: 1,   direction: 'any',    label: '1 day only' };
-      case 'solo parent leave': return { maxDays: 2,   direction: 'any',    label: 'up to 2 days' };
-      default:                   return { maxDays: 0,   direction: 'none',   label: '' };
+    const found = _leaveTypesData.find(t => t.name === type);
+    if (!found) return { maxDays: 0, direction: 'none', label: '' };
+    return {
+      maxDays:   parseInt(found.max_days, 10),
+      direction: found.direction,
+      label:     found.description_label || ''
+    };
+  }
+
+  function buildLeaveTypeMenu(types) {
+    const menu = document.getElementById('leaveTypeDropdown');
+    if (!types || !types.length) {
+      menu.innerHTML = '<div class="leaveTypeItem" style="pointer-events:none;opacity:0.5;">No leave types available.</div>';
+      return;
     }
+    menu.innerHTML = types.map(t => {
+      const safeName  = t.name.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+      const safeLabel = t.label.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+      return `<div class="leaveTypeItem" onclick="selectLeaveType('${safeName}','${safeLabel}')">${t.label}</div>`;
+    }).join('');
   }
 
   function isDateSelectable(dateStr, rules) {
@@ -594,6 +605,16 @@
     currentLeaveType   = '';
     leaveSelectedDates = [];
     leaveExistingDates = [];
+
+    if (_leaveTypesData.length === 0) {
+      fetch('/DTR-Internship-Project/dropdown_requests/get_leave_types.php')
+        .then(r => r.json())
+        .then(types => {
+          _leaveTypesData = types;
+          buildLeaveTypeMenu(types);
+        })
+        .catch(() => showToast('Failed to load leave types. Please try again.', 'danger'));
+    }
 
     renderLeaveCalendar();
     leaveModal.show();

@@ -26,14 +26,22 @@ if (!$leaveType || !$startDate || !$endDate || !$reason || !$selectedDates) {
     exit();
 }
 
-$validTypes = ['sick leave', 'vacation leave', 'birthday leave', 'solo parent leave'];
-if (!in_array(strtolower($leaveType), $validTypes)) {
+// ---- LOAD LEAVE TYPE RULES FROM DB ----
+$typeStmt = $pdo->query("SELECT id, name, label, max_days, direction FROM leave_types WHERE is_active = 1");
+$leaveTypeRules = [];
+foreach ($typeStmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+    $leaveTypeRules[strtolower($row['name'])] = $row;
+}
+
+if (!array_key_exists(strtolower($leaveType), $leaveTypeRules)) {
     echo json_encode(['success' => false, 'message' => 'Invalid leave type.']);
     exit();
 }
 
-$today         = date('Y-m-d');
-$datesArray    = json_decode($selectedDates, true);
+$typeRule = $leaveTypeRules[strtolower($leaveType)];
+
+$today      = date('Y-m-d');
+$datesArray = json_decode($selectedDates, true);
 
 if (!is_array($datesArray) || empty($datesArray)) {
     echo json_encode(['success' => false, 'message' => 'No dates selected.']);
@@ -42,41 +50,29 @@ if (!is_array($datesArray) || empty($datesArray)) {
 
 $days = count($datesArray);
 
-// ---- PER TYPE RULES ----
-if (strtolower($leaveType) === 'sick leave') {
+// ---- PER TYPE RULES (from DB) ----
+if ($typeRule['direction'] === 'past') {
     foreach ($datesArray as $d) {
         if ($d >= $today) {
-            echo json_encode(['success' => false, 'message' => 'Sick leave can only be filed for past dates (before today).']);
+            echo json_encode(['success' => false, 'message' => "{$typeRule['label']} can only be filed for past dates (before today)."]);
             exit();
         }
     }
-    if ($days > 4) {
-        echo json_encode(['success' => false, 'message' => 'Sick leave is limited to 4 days maximum.']);
-        exit();
-    }
 }
 
-if (strtolower($leaveType) === 'vacation leave') {
+if ($typeRule['direction'] === 'future') {
     foreach ($datesArray as $d) {
         if ($d <= $today) {
-            echo json_encode(['success' => false, 'message' => 'Vacation leave can only be filed for future dates.']);
+            echo json_encode(['success' => false, 'message' => "{$typeRule['label']} can only be filed for future dates."]);
             exit();
         }
     }
 }
 
-if (strtolower($leaveType) === 'birthday leave') {
-    if ($days > 1) {
-        echo json_encode(['success' => false, 'message' => 'Birthday leave is limited to 1 day only.']);
-        exit();
-    }
-}
-
-if (strtolower($leaveType) === 'solo parent leave') {
-    if ($days > 2) {
-        echo json_encode(['success' => false, 'message' => 'Solo parent leave is limited to 2 days maximum.']);
-        exit();
-    }
+if ($typeRule['max_days'] < 999 && $days > $typeRule['max_days']) {
+    $dayWord = $typeRule['max_days'] === 1 ? 'day' : 'days';
+    echo json_encode(['success' => false, 'message' => "{$typeRule['label']} is limited to {$typeRule['max_days']} {$dayWord} maximum."]);
+    exit();
 }
 
 // ---- ANNUAL CAP CHECK (16 days per year; approved + pending both count) ----
@@ -135,9 +131,9 @@ if ($check->fetchColumn() > 0) {
 // ---- INSERT ----
 try {
     $pdo->prepare("
-        INSERT INTO leave_requests (employee_id, leave_type, start_date, end_date, selected_dates, reason, status)
+        INSERT INTO leave_requests (employee_id, leave_type_id, start_date, end_date, selected_dates, reason, status)
         VALUES (?, ?, ?, ?, ?, ?, ?)
-    ")->execute([$employeeId, $leaveType, $startDate, $endDate, $selectedDates, $reason, $initialStatus]);
+    ")->execute([$employeeId, $typeRule['id'], $startDate, $endDate, $selectedDates, $reason, $initialStatus]);
 
     $msg = $autoApprove ? 'Leave request approved.' : 'Leave request submitted successfully!';
     echo json_encode(['success' => true, 'message' => $msg]);

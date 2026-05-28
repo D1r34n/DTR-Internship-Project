@@ -46,31 +46,6 @@
     table-layout: auto;
 }
 
-.logs-widget th,
-.logs-widget td {
-    white-space: nowrap;
-    padding: 6px 8px;
-    font-size: 0.875rem;
-    vertical-align: middle;
-}
-
-.table-scroll-wrapper {
-    flex: 1;
-    min-height: 0;
-    overflow: auto;
-    position: relative;
-    -webkit-overflow-scrolling: touch;
-    width: 100%;
-}
-
-.logs-widget thead th {
-    position: sticky;
-    top: 0;
-    z-index: 2;
-    background: var(--glass-bg);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-}
 
 /* Empty state */
 .logs-empty {

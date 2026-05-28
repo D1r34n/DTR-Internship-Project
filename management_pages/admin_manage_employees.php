@@ -416,9 +416,9 @@ $initialDeptFilter = isset($_GET['dept']) ? (int)$_GET['dept'] : 0;
 
             </div>
 
-                <!-- Table Header -->
-                <div class="tableHeaderGlass">
-                    <table class="table table-borderless mb-0">
+                <!-- Table -->
+                <div class="table-scroll-wrapper">
+                    <table class="table table-hover mb-0">
                         <colgroup>
                             <col style="width:8%">
                             <col style="width:22%">
@@ -437,20 +437,6 @@ $initialDeptFilter = isset($_GET['dept']) ? (int)$_GET['dept'] : 0;
                                 <th class="text-end">Actions</th>
                             </tr>
                         </thead>
-                    </table>
-                </div>
-
-                <!-- Scrollable Body -->
-                <div class="tableScroll">
-                    <table class="table table-hover mb-0">
-                        <colgroup>
-                            <col style="width:8%">
-                            <col style="width:22%">
-                            <col style="width:26%">
-                            <col style="width:12%">
-                            <col style="width:20%">
-                            <col style="width:12%">
-                        </colgroup>
                         <tbody id="empList">
                             <?php foreach ($employees as $emp): ?>
                                 <tr class="empRow"
@@ -505,7 +491,7 @@ $initialDeptFilter = isset($_GET['dept']) ? (int)$_GET['dept'] : 0;
                             <?php endif; ?>
                         </tbody>
                     </table>
-                </div>
+                </div><!-- .table-scroll-wrapper -->
 
                 <!-- Pagination -->
                 <div id="empPagination" class="empPagination"></div>

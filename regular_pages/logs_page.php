@@ -53,8 +53,47 @@ $currentPage = 'logs';
         <?php include '../topbar_revised.php'; ?>
 
         <div class="card card-neutral logs-card">
+            <div class="card-header logs-header">
+                <div class="dropdown">
+                    <button class="btn btn-sm dropdown-toggle" id="datePickerBtn" type="button">
+                        <i class="bi bi-calendar3"></i>
+                        <span id="dateRangeLabel">Today</span>
+                    </button>
+                </div>
+
+                <div class="dropdown">
+                    <button class="btn btn-sm dropdown-toggle" type="button" id="logTypeToggle"
+                            data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="bi bi-funnel"></i>
+                        <span id="logTypeLabel">All Types</span>
+                    </button>
+                    <ul class="dropdown-menu" id="logTypeMenu" style="max-height:340px;overflow-y:auto!important;overflow-x:hidden!important;">
+                        <li><a class="dropdown-item" href="#" data-value="ALL">All Types</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="#" data-value="IN">Time In</a></li>
+                        <li><a class="dropdown-item" href="#" data-value="OUT">Time Out</a></li>
+                        <li><a class="dropdown-item" href="#" data-value="BREAK_IN">Break In</a></li>
+                        <li><a class="dropdown-item" href="#" data-value="BREAK_OUT">Break Out</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="#" data-value="REQUEST_OT">Request OT</a></li>
+                        <li><a class="dropdown-item" href="#" data-value="REQUEST_LEAVE">Request Leave</a></li>
+                        <li><a class="dropdown-item" href="#" data-value="REQUEST_OB">Request OB</a></li>
+                        <li><a class="dropdown-item" href="#" data-value="REQUEST_LOG_EDIT">Request Log Edit</a></li>
+                        <li><a class="dropdown-item" href="#" data-value="REQUEST_CHANGE_SCHEDULE">Request Change Schedule</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="#" data-value="ADD_EMPLOYEE">Added Employee</a></li>
+                        <li><a class="dropdown-item" href="#" data-value="EDIT_EMPLOYEE">Edited Employee</a></li>
+                        <li><a class="dropdown-item" href="#" data-value="ADD_SCHEDULE">Added Schedule</a></li>
+                        <li><a class="dropdown-item" href="#" data-value="EDIT_SCHEDULE">Edited Schedule</a></li>
+                    </ul>
+                </div>
+
+                <input type="hidden" id="logTypeFilter" value="ALL">
+                <input type="hidden" id="startDate" value="<?= $startDate ?>">
+                <input type="hidden" id="endDate"   value="<?= $endDate ?>">
+            </div>
             <div class="card-body logs-card-body">
-                <?php include 'logs_widget.php'; ?>
+                <?php $logsInlineHeader = true; include 'logs_widget.php'; ?>
             </div>
         </div>
 

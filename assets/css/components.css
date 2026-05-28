@@ -2,8 +2,6 @@
    BOOTSTRAP MODAL OVERRIDE
    ================================================ */
 
-
-
 :root {
     --control-height: 38px;
 
@@ -933,8 +931,7 @@ button.btn-sm {
 
     box-shadow: var(--frosted-shadow) !important;
     padding: 0.4rem !important;
-
-    max-height: 260px;
+    
     overflow: visible !important;
 }
 
@@ -1910,12 +1907,12 @@ button.btn-sm {
 }
 
 /* ── Go To Page Glass Theme Extensions ──────────────── */
-#pageJumpWrapper {
+#page-jump-wrapper {
     font-family: 'Poppins', sans-serif;
     font-size: 0.75rem;
 }
 
-#pageJumpInput {
+#page-jump-input {
     font-family: 'Poppins', sans-serif;
     font-size: 0.75rem;
     font-weight: 500;
@@ -1931,13 +1928,13 @@ button.btn-sm {
 }
 
 /* Hover over the input box field */
-#pageJumpInput:hover {
+#page-jump-input:hover {
     background: var(--primary-glass-hover);
     border-color: var(--neutral-border-hover, var(--neutral-border));
 }
 
 /* Active focus input layout state */
-#pageJumpInput:focus {
+#page-jump-input:focus {
     background: var(--neutral-glass);
     border-color: var(--primary-border);
     color: var(--text-light);
@@ -2016,11 +2013,24 @@ button.btn-sm {
 /* =========================
    TABLE BODY
 ========================= */
-.tableScroll {
+.tableScroll,
+.table-scroll-wrapper {
     width: 100%;
     flex: 1;
     min-height: 0;
     overflow-y: auto;
+    overflow-x: auto; /* Required for handling wide 12+ column data sets */
+    -webkit-overflow-scrolling: touch; /* Smooth scrolling for mobile */
+}
+
+.tableScroll thead th,
+.table-scroll-wrapper thead th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: var(--glass-bg);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
 }
 
 
@@ -2031,7 +2041,7 @@ button.btn-sm {
     border: none;
 
     width: 100%;
-    table-layout: fixed;
+    table-layout: auto;
     border-collapse: collapse;
 }
 
@@ -2043,17 +2053,23 @@ button.btn-sm {
     border-left: none;
     border-right: none;
     border-bottom: 1px solid var(--text-dark);
+    white-space: nowrap;
 }
 
 /* header fallback */
 .table thead th {
-    background: transparent;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+
     font-weight: 300;
-    font-size: 0.75rem;
+    font-size: 0.8rem;
     user-select: none;
     text-align: left;
     color: var(--text-muted);
-    text-transform: none !important;
+    text-transform: none;
+    padding: 0.5rem 0.75rem;
+    vertical-align: middle;
 }
 
 /* rows */
@@ -2084,11 +2100,12 @@ button.btn-sm {
 
 /* cells */
 .table tbody td {
-    padding: 1rem 0.5rem;
+    padding: 0.5rem 0.75rem;
     background: transparent;
-    font-size: 0.7rem;
+    font-size: 0.8rem;
     color: var(--text-light);
     user-select: none;
+    vertical-align: middle;
 }
 
 
@@ -2364,3 +2381,4 @@ button.btn-sm {
     border: 1px solid rgba(255,255,255,0.15) !important;
     color: #fff !important;
 }
+

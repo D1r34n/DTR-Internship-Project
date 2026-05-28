@@ -1529,44 +1529,6 @@ body {
 }
 
 /* ------------------------------------------------
-   LOGS TAB — STICKY HEADER
-   ------------------------------------------------ */
-
-.ev-logs-header-glass {
-    border-bottom: 1px solid var(--text-dark);
-    padding: 0 1rem;
-    flex-shrink: 0;
-}
-
-.ev-logs-header-glass th {
-    color: var(--text-muted);
-    font-weight: 500;
-    font-size: 0.9rem;
-    border: none !important;
-    padding: 0.6rem 0.5rem;
-    background: transparent;
-}
-
-.logs-sortable {
-    cursor: pointer;
-    user-select: none;
-    white-space: nowrap;
-    color: var(--text-muted);
-}
-
-.logs-sortable:hover                   { color: var(--primary-color) !important; }
-.logs-sortable.sorted                  { color: var(--primary-color) !important; }
-.logs-sortable.sorted .logs-sort-icon  { opacity: 1; color: var(--primary-color); }
-
-.logs-sort-icon {
-    font-size: 0.65rem;
-    margin-left: 3px;
-    opacity: 0.45;
-    vertical-align: middle;
-    transition: opacity 0.15s;
-}
-
-/* ------------------------------------------------
    LOGS TAB — SCROLLABLE BODY
    ------------------------------------------------ */
 

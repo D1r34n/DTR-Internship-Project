@@ -71,14 +71,14 @@ body {
 }
 
 .employee-list-card-body .filter-wrapper,
-.employee-list-card-body .tableHeaderGlass,
 .employee-list-card-body .empPagination {
     padding-right: 1rem;
 }
 
-.employee-list-card-body .tableScroll {
+.employee-list-card-body .table-scroll-wrapper {
     scrollbar-gutter: stable;
     padding-right: 1rem;
+    margin-top: 0.5rem;
 }
 
 /* Filter Wrapper */
@@ -791,39 +791,6 @@ body {
 .empFilterSelect:focus  { border-color: #97be41; }
 .empFilterSelect option { background: #1e1e1e; color: #fff; }
 
-/* ============================================================
-   SORTABLE HEADERS
-   ============================================================ */
-.sortable {
-    cursor: pointer;
-    user-select: none;
-    white-space: nowrap;
-    color: var(--text-muted);
-}
-
-/* hover */
-.sortable:hover {
-    color: var(--primary-color) !important;
-}
-
-/* ACTIVE SORT STATE */
-.sortable.sorted {
-    color: var(--primary-color) !important;
-}
-
-/* icon stays synced */
-.sortable.sorted .sortIcon {
-    opacity: 1;
-    color: var(--primary-color);
-}
-
-.sortIcon {
-    font-size: 0.65rem;
-    margin-left: 3px;
-    opacity: 0.45;
-    vertical-align: middle;
-    transition: opacity 0.15s;
-}
 
 /* Bulk Import Upload Area */
 .schedule-dropzone {
