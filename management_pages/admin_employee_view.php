@@ -144,10 +144,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'edit_
         exit();
     }
 
-    // Fetch old email before updating so we can notify it if it changes
-    $oldStmt = $pdo->prepare("SELECT email FROM employees WHERE id = ?");
+    // Fetch old values before updating
+    $oldStmt = $pdo->prepare("
+        SELECT e.employee_id AS emp_ref_id,
+               CONCAT(e.first_name, ' ', e.last_name) AS full_name,
+               e.email,
+               r.role_key,
+               d.department_name
+        FROM employees e
+        LEFT JOIN roles r ON r.id = e.role_id
+        LEFT JOIN departments d ON d.id = e.department_id
+        WHERE e.id = ?
+    ");
     $oldStmt->execute([$employeeId]);
-    $oldEmail = $oldStmt->fetchColumn() ?: null;
+    $oldData  = $oldStmt->fetch(PDO::FETCH_ASSOC) ?: [];
+    $oldEmail = $oldData['email'] ?? null;
+
+    // Fetch new role/department names for diff
+    $newRoleStmt = $pdo->prepare("SELECT role_key FROM roles WHERE id = ?");
+    $newRoleStmt->execute([$roleId]);
+    $newRoleKey = $newRoleStmt->fetchColumn() ?: $roleKey;
+
+    $newDeptStmt = $pdo->prepare("SELECT department_name FROM departments WHERE id = ?");
+    $newDeptStmt->execute([$department]);
+    $newDeptName = $newDeptStmt->fetchColumn() ?: null;
 
     $pdo->prepare("
         UPDATE employees
@@ -168,10 +188,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'edit_
         $department,
         $employeeId
     ]);
+
+    // Build diff for activity log
+    $newName = trim("$firstName $lastName");
+    $fields  = [
+        'Employee ID' => [$oldData['emp_ref_id'] ?? null, $empRefId !== '' ? $empRefId : null],
+        'Name'        => [$oldData['full_name']   ?? null, $newName],
+        'Email'       => [$oldData['email']       ?? null, $email],
+        'Role'        => [$oldData['role_key']    ?? null, $newRoleKey],
+        'Department'  => [$oldData['department_name'] ?? null, $newDeptName],
+    ];
+    $diff = [];
+    foreach ($fields as $label => [$before, $after]) {
+        if ((string)$before !== (string)$after) {
+            $diff[$label] = ['before' => $before, 'after' => $after];
+        }
+    }
+
     $pdo->prepare("
-        INSERT INTO logs (employee_id, log_type, log_time, longitude, latitude, is_within_office, edit_requested_by)
-        VALUES (?, 'EDIT_EMPLOYEE', NOW(), 0, 0, 0, ?)
-    ")->execute([$employeeId, $_SESSION['user_id']]);
+        INSERT INTO logs (employee_id, log_type, log_time, longitude, latitude, is_within_office, edit_requested_by, edit_reason)
+        VALUES (?, 'EDIT_EMPLOYEE', NOW(), 0, 0, 0, ?, ?)
+    ")->execute([$employeeId, $_SESSION['user_id'], $diff ? json_encode($diff) : null]);
 
     $notifyName  = htmlspecialchars($firstName . ' ' . $lastName);
     $emailChanged = $oldEmail && strtolower($oldEmail) !== strtolower($email);
@@ -313,10 +350,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' &&
         }
     }
     
+    $schedLogStatus = in_array($_SESSION['user_role'], ['superadmin', 'admin']) ? 'approved' : 'pending';
     $pdo->prepare("
-    INSERT INTO logs (employee_id, log_type, log_time, longitude, latitude, is_within_office, edit_status, edit_requested_by)
-    VALUES (?, ?, NOW(), 0, 0, 0, 'pending', ?)
-")->execute([$postEmpId, $is_edit ? 'EDIT_SCHEDULE' : 'ADD_SCHEDULE', $_SESSION['user_id']]);
+    INSERT INTO logs (employee_id, log_type, log_time, longitude, latitude, is_within_office, edit_status, edit_requested_by, edit_reason)
+    VALUES (?, ?, NOW(), 0, 0, 0, ?, ?, ?)
+")->execute([$postEmpId, $is_edit ? 'EDIT_SCHEDULE' : 'ADD_SCHEDULE', $schedLogStatus, $_SESSION['user_id'], $batchId]);
 
     header("Location: admin_employee_view.php?employee_id=$urlEmpId");
     exit();
@@ -333,12 +371,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save_
     $restDaysDirty = ($_POST['rest_days_dirty'] ?? '0') === '1';
     $is_overnight  = $time_out < $time_in;
 
+    $hasNew  = false;
+    $hasEdit = false;
+
     if (!empty($dates) && $postEmpId && $time_in && $time_out) {
         $existsStmt       = $pdo->prepare("SELECT id, COALESCE(is_archived, 0) AS is_archived, status FROM schedules WHERE employee_id = ? AND schedule_date = ?");
         $updateStmt       = $pdo->prepare("UPDATE schedules SET orig_is_rest_day = is_rest_day, orig_scheduled_start = scheduled_start, orig_scheduled_end = scheduled_end, scheduled_start = ?, scheduled_end = ?, is_rest_day = 0, status = ?, requested_by = ?, request_type = ?, batch_id = ?, is_archived = 0 WHERE employee_id = ? AND schedule_date = ?");
         $insertSchedule   = $pdo->prepare("INSERT INTO schedules (employee_id, schedule_date, scheduled_start, scheduled_end, is_rest_day, status, requested_by, request_type, batch_id) VALUES (?, ?, ?, ?, 0, ?, ?, 'added', ?)");
-
-        $wasEdit = false; // ADD HERE
 
         foreach ($dates as $date) {
             $startDT = $date . ' ' . $time_in  . ':00';
@@ -349,11 +388,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save_
             $existsStmt->execute([$postEmpId, $date]);
             $existing = $existsStmt->fetch(PDO::FETCH_ASSOC);
             if ($existing) {
-                $wasEdit = true; // ADD HERE
                 $isStale = $existing['is_archived'] || $existing['status'] === 'rejected';
                 $rtype   = $isStale ? 'added' : 'edit';
+                if ($isStale) { $hasNew = true; } else { $hasEdit = true; }
                 $updateStmt->execute([$startDT, $endDT, $scheduleStatus, $_SESSION['user_id'], $rtype, $batchId, $postEmpId, $date]);
             } else {
+                $hasNew = true;
                 $insertSchedule->execute([$postEmpId, $date, $startDT, $endDT, $scheduleStatus, $_SESSION['user_id'], $batchId]);
             }
         }
@@ -414,10 +454,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save_
             }
         }
     }
-    $pdo->prepare("
-    INSERT INTO logs (employee_id, log_type, log_time, longitude, latitude, is_within_office, edit_status, edit_requested_by)
-    VALUES (?, ?, NOW(), 0, 0, 0, 'pending', ?)
-    ")->execute([$postEmpId, $wasEdit ? 'EDIT_SCHEDULE' : 'ADD_SCHEDULE', $_SESSION['user_id']]);
+    $schedLogStatus = in_array($_SESSION['user_role'], ['superadmin', 'admin']) ? 'approved' : 'pending';
+    if ($hasNew) {
+        $pdo->prepare("
+        INSERT INTO logs (employee_id, log_type, log_time, longitude, latitude, is_within_office, edit_status, edit_requested_by, edit_reason)
+        VALUES (?, 'ADD_SCHEDULE', NOW(), 0, 0, 0, ?, ?, ?)
+        ")->execute([$postEmpId, $schedLogStatus, $_SESSION['user_id'], $batchId]);
+    }
+    if ($hasEdit) {
+        $pdo->prepare("
+        INSERT INTO logs (employee_id, log_type, log_time, longitude, latitude, is_within_office, edit_status, edit_requested_by, edit_reason)
+        VALUES (?, 'EDIT_SCHEDULE', NOW(), 0, 0, 0, ?, ?, ?)
+        ")->execute([$postEmpId, $schedLogStatus, $_SESSION['user_id'], $batchId]);
+    }
 
     header("Location: admin_employee_view.php?employee_id=$urlEmpId");
     exit();
@@ -720,8 +769,8 @@ $leaveTypes = [
                     <?php
                     $logsEmployeeId = $employeeId;
                     $logsApiPath    = '../get_logs.php';
-                    $startDate      = null;
-                    $endDate        = null;
+                    $startDate      = '';
+                    $endDate        = '';
                     include '../regular_pages/logs_widget.php';
                     ?>
                 </div>

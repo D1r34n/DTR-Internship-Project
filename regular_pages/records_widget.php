@@ -60,7 +60,7 @@ $loadCutoff    = null;
             }
         }
 
-        function co_label($c) {
+        function co_label(array $c) {
             return date('M j, Y', strtotime($c['start_date'])) .
                    ' – ' .
                    date('M j, Y', strtotime($c['end_date']));
@@ -431,9 +431,15 @@ function fetchRecords(monthOrStart, end) {
         url = `${_apiBase}?month=${encodeURIComponent(monthOrStart)}${_empParam}`;
     }
     fetch(url)
-        .then(res => res.json())
+        .then(res => {
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            return res.json();
+        })
         .then(data => renderRecordRows(data))
-        .catch(() => showToast('Failed to load records. Please try again.', 'danger'));
+        .catch(err => {
+            console.error('Failed to load records:', err, 'URL:', url);
+            showToast('Failed to load records. Please try again.', 'danger');
+        });
 }
 
 function fetchActiveCutoff() {

@@ -423,6 +423,18 @@ let isProcessing      = false;
 let isBreakProcessing = false;
 let cachedPosition    = null;
 
+const GEO_OPTS = { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 };
+
+function geoErrorMessage(err) {
+    if (!err) return 'Unable to get your location. Please try again.';
+    switch (err.code) {
+        case 1: return 'Location permission denied. Please allow location access in your browser settings and try again.';
+        case 2: return 'Location unavailable. Please check your device GPS or network settings.';
+        case 3: return 'Location request timed out. Please try again.';
+        default: return 'Unable to get your location. Please try again.';
+    }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
 
     // Cross-tab attendance sync
@@ -434,12 +446,17 @@ document.addEventListener('DOMContentLoaded', () => {
         statusEl.textContent = status === 'timed_in' ? 'Timed In' : 'Timed Out';
     });
 
-    // GPS cache
-    navigator.geolocation.watchPosition(
-        pos => cachedPosition = pos,
-        err => console.warn('GPS watch error:', err),
-        { enableHighAccuracy: false, maximumAge: 60000, timeout: 10000 }
-    );
+    // GPS cache — warm up position so Time In/Out is instant
+    // Only needed for roles that clock in; skip for admin/superadmin to avoid
+    // a console error when they have location permission denied.
+    const needsGeo = <?= in_array($role, ['employee', 'workforce', 'manager']) ? 'true' : 'false' ?>;
+    if (needsGeo && navigator.geolocation) {
+        navigator.geolocation.watchPosition(
+            pos => { cachedPosition = pos; },
+            err => console.warn('GPS watch error:', err.message),
+            { enableHighAccuracy: false, maximumAge: 60000, timeout: 15000 }
+        );
+    }
 });
 
 /* -------------------------------------------------------
@@ -550,7 +567,7 @@ const handleTimeIn = async () => {
     showSpinner();
 
     const reset   = () => { clearSpinner(originalHTML); isProcessing = false; };
-    const onError = () => { alert('Location permission required.'); reset(); };
+    const onError = err => { alert(geoErrorMessage(err)); reset(); };
 
     const submit = async pos => {
         try {
@@ -632,9 +649,10 @@ const handleTimeIn = async () => {
         }
     };
 
+    if (!navigator.geolocation) { onError(null); return; }
     cachedPosition
         ? submit(cachedPosition)
-        : navigator.geolocation.getCurrentPosition(submit, onError);
+        : navigator.geolocation.getCurrentPosition(submit, onError, GEO_OPTS);
 };
 
 /* -------------------------------------------------------
@@ -651,7 +669,7 @@ const handleBreak = async () => {
     setLoading(btn);
 
     const reset   = () => { restoreButton(btn); isBreakProcessing = false; };
-    const onError = () => { alert('Location permission required.'); reset(); };
+    const onError = err => { alert(geoErrorMessage(err)); reset(); };
 
     const submit = async pos => {
         try {
@@ -714,9 +732,10 @@ const handleBreak = async () => {
         }
     };
 
+    if (!navigator.geolocation) { onError(null); return; }
     cachedPosition
         ? submit(cachedPosition)
-        : navigator.geolocation.getCurrentPosition(submit, onError);
+        : navigator.geolocation.getCurrentPosition(submit, onError, GEO_OPTS);
 };
 
 window.handleTimeIn = handleTimeIn;
@@ -749,7 +768,7 @@ const openWebcamModal = () => {
 
     video.style.display   = 'block';
     errorEl.style.display = 'none';
-    confirmBtn.disabled   = false;
+    confirmBtn.disabled   = true;  // stay disabled until camera is producing frames
 
     webcamModalInst.show();
 
@@ -757,6 +776,9 @@ const openWebcamModal = () => {
         .then(stream => {
             webcamStream    = stream;
             video.srcObject = stream;
+            video.addEventListener('playing', () => {
+                confirmBtn.disabled = false;
+            }, { once: true });
         })
         .catch(() => {
             video.style.display   = 'none';

@@ -87,10 +87,24 @@ function processAttendanceTap($pdo, $employee_id, $lat, $lng, $accuracy, $now = 
         $schedule = $stmt->fetch(PDO::FETCH_ASSOC);
         $scheduleId = $schedule ? $schedule['id'] : null;
     } else {
-        // For OUT taps, lock onto the exact schedule track assigned during the IN tap
+        // For OUT taps, lock onto the schedule track from the original IN log.
+        // The last log may be BREAK_OUT or BREAK_IN (not IN) after a break cycle,
+        // so fall back to querying the most recent IN log when needed.
         if ($lastLog && $lastLog['log_type'] === 'IN' && $lastLog['schedule_id']) {
             $scheduleId = $lastLog['schedule_id'];
-            
+        } else {
+            $stmt = $pdo->prepare("
+                SELECT schedule_id FROM logs
+                WHERE employee_id = ? AND log_type = 'IN'
+                ORDER BY log_time DESC
+                LIMIT 1
+            ");
+            $stmt->execute([$employee_id]);
+            $inLog      = $stmt->fetch(PDO::FETCH_ASSOC);
+            $scheduleId = $inLog ? $inLog['schedule_id'] : null;
+        }
+
+        if ($scheduleId) {
             $stmt = $pdo->prepare("SELECT id, schedule_date, scheduled_start, scheduled_end FROM schedules WHERE id = ?");
             $stmt->execute([$scheduleId]);
             $schedule = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -212,8 +226,18 @@ function processAttendanceTapTest(PDO $pdo, int $employeeId, string $now): array
         $schedule = $stmt->fetch(PDO::FETCH_ASSOC);
         $scheduleId = $schedule ? $schedule['id'] : null;
     } else {
-        if ($lastLog && $lastLog['log_type'] === 'IN') {
+        if ($lastLog && $lastLog['log_type'] === 'IN' && $lastLog['schedule_id']) {
             $scheduleId = $lastLog['schedule_id'];
+        } else {
+            $stmt = $pdo->prepare("
+                SELECT schedule_id FROM logs
+                WHERE employee_id = ? AND log_type = 'IN'
+                ORDER BY log_time DESC
+                LIMIT 1
+            ");
+            $stmt->execute([$employeeId]);
+            $inLog      = $stmt->fetch(PDO::FETCH_ASSOC);
+            $scheduleId = $inLog ? $inLog['schedule_id'] : null;
         }
     }
 
@@ -558,14 +582,14 @@ function getAttendanceRecords(PDO $pdo, int $employeeId, string $startDate, stri
                 SELECT MIN(l.log_time)
                 FROM logs l
                 WHERE l.employee_id = a.employee_id
-                AND l.schedule_id = a.schedule_id
+                AND DATE(l.log_time) = a.work_date
                 AND l.log_type = 'BREAK_IN'
             ) AS first_break_in,
             (
                 SELECT MAX(l.log_time)
                 FROM logs l
                 WHERE l.employee_id = a.employee_id
-                AND l.schedule_id = a.schedule_id
+                AND DATE(l.log_time) = a.work_date
                 AND l.log_type = 'BREAK_OUT'
             ) AS last_break_out
         FROM attendances a
