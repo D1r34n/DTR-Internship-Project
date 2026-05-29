@@ -311,7 +311,7 @@ function fetchLeaveReport() {
                 const typeCells = types.map(t => {
                     const key = typeToColKey(t.name);
                     const val = parseInt(row[key] ?? 0, 10);
-                    return `<td>${val > 0 ? val : '<span class="text-tertiary">0</span>'}</td>`;
+                    return `<td>${val > 0 ? val : '<span class="text-tertiary">-</span>'}</td>`;
                 }).join('');
 
                 const bufferBal  = parseInt(row.balance_buffer_leave   ?? 0, 10);
@@ -325,7 +325,7 @@ function fetchLeaveReport() {
                     <td>${row.employee_name  || '—'}</td>
                     <td>${row.department_name || '—'}</td>
                     <td>${row.role_name       || '—'}</td>
-                    <td>${bufferBal > 0 ? bufferBal : '<span class="text-tertiary">0</span>'}</td>
+                    <td>${bufferBal > 0 ? bufferBal : '<span class="text-tertiary">-</span>'}</td>
                     ${typeCells}
                     <td>${leaveBalance}</td>
                 `;
