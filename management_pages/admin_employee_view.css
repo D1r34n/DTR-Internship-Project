@@ -1419,7 +1419,7 @@ body {
     text-align: center;
     gap: 0.25rem;
     position: relative;
-    cursor: pointer;
+    cursor: default;
     transition: background 0.2s, border-color 0.2s;
 }
 
@@ -1472,6 +1472,44 @@ body {
     line-height: 1;
 }
 
+.leave-card-balance-row {
+    display: flex;
+    align-items: baseline;
+    gap: 0.2rem;
+    margin: 0.15rem 0;
+}
+
+.leave-card-current {
+    font-size: 2.2rem;
+    font-weight: 700;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.leave-card-sep {
+    font-size: 1.3rem;
+    font-weight: 400;
+    color: var(--text-muted);
+    line-height: 1;
+    user-select: none;
+}
+
+.leave-card-total {
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--text-muted);
+    line-height: 1;
+}
+
+.leave-card-total.editable {
+    cursor: pointer;
+    text-decoration: underline dotted;
+}
+
+.leave-card-total.editable:hover {
+    color: var(--text-light);
+}
+
 .leave-card-name {
     font-size: 0.75rem;
     font-weight: 500;
@@ -1496,6 +1534,21 @@ body {
     outline: none;
     font-family: inherit;
     padding: 0;
+}
+
+.leave-days-input-sm {
+    width: 2.8rem;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid currentColor;
+    text-align: center;
+    font-size: 1rem;
+    font-weight: 500;
+    line-height: 1;
+    outline: none;
+    font-family: inherit;
+    padding: 0;
+    color: var(--text-muted);
 }
 
 .leave-days-input::-webkit-inner-spin-button,

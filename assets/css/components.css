@@ -1906,13 +1906,23 @@ button.btn-sm {
     box-shadow: none;
 }
 
+/* ── Shared Pagination Footer ──────────────────────── */
+.pagination-footer {
+    padding-top: 0.5rem;
+    margin-top: 0.25rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    flex-shrink: 0;
+}
+
 /* ── Go To Page Glass Theme Extensions ──────────────── */
-#page-jump-wrapper {
+#page-jump-wrapper,
+.pag-jump-wrapper {
     font-family: 'Poppins', sans-serif;
     font-size: 0.75rem;
 }
 
-#page-jump-input {
+#page-jump-input,
+.pag-jump-input {
     font-family: 'Poppins', sans-serif;
     font-size: 0.75rem;
     font-weight: 500;
@@ -1928,13 +1938,15 @@ button.btn-sm {
 }
 
 /* Hover over the input box field */
-#page-jump-input:hover {
+#page-jump-input:hover,
+.pag-jump-input:hover {
     background: var(--primary-glass-hover);
     border-color: var(--neutral-border-hover, var(--neutral-border));
 }
 
 /* Active focus input layout state */
-#page-jump-input:focus {
+#page-jump-input:focus,
+.pag-jump-input:focus {
     background: var(--neutral-glass);
     border-color: var(--primary-border);
     color: var(--text-light);

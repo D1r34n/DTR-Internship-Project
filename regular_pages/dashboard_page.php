@@ -60,8 +60,11 @@ $stmt = $pdo->prepare("
     SELECT COUNT(DISTINCT s.employee_id)
     FROM schedules s
     WHERE s.schedule_date = ?
-      AND s.status = 'approved'
       AND (s.is_rest_day = 0 OR s.is_rest_day IS NULL)
+      AND (
+          s.batch_id IS NULL
+          OR EXISTS (SELECT 1 FROM schedule_edit_requests ser WHERE ser.batch_id = s.batch_id AND ser.status = 'approved')
+      )
       AND NOT EXISTS (
           SELECT 1 FROM attendances a
           WHERE a.employee_id = s.employee_id
@@ -75,7 +78,7 @@ $absent = (int) $stmt->fetchColumn();
 // ── Pending requests ──────────────────────────────────────
 $pendingLeave   = (int) $pdo->query("SELECT COUNT(*) FROM leave_requests    WHERE status = 'pending'")->fetchColumn();
 $pendingOT      = (int) $pdo->query("SELECT COUNT(*) FROM overtime_requests WHERE status = 'pending'")->fetchColumn();
-$pendingLogEdit = (int) $pdo->query("SELECT COUNT(*) FROM logs WHERE edit_status = 'pending'")->fetchColumn();
+$pendingLogEdit = (int) $pdo->query("SELECT COUNT(*) FROM log_edit_requests WHERE status = 'pending'")->fetchColumn();
 $totalPending   = $pendingLeave + $pendingOT + $pendingLogEdit;
 
 // ── Birthdays this month ──────────────────────────────────
@@ -193,8 +196,11 @@ if ($isManager && $myDeptId) {
         FROM schedules s
         JOIN employees e ON s.employee_id = e.id
         WHERE s.schedule_date = ?
-          AND s.status = 'approved'
           AND (s.is_rest_day = 0 OR s.is_rest_day IS NULL)
+          AND (
+              s.batch_id IS NULL
+              OR EXISTS (SELECT 1 FROM schedule_edit_requests ser WHERE ser.batch_id = s.batch_id AND ser.status = 'approved')
+          )
           AND e.department_id = ?
           AND NOT EXISTS (
               SELECT 1 FROM attendances a
@@ -214,7 +220,7 @@ if ($isManager && $myDeptId) {
     $s->execute([$myDeptId]);
     $dp2 = (int)$s->fetchColumn();
 
-    $s = $pdo->prepare("SELECT COUNT(*) FROM logs le JOIN employees e ON le.employee_id = e.id WHERE le.edit_status = 'pending' AND e.department_id = ?");
+    $s = $pdo->prepare("SELECT COUNT(*) FROM log_edit_requests le JOIN employees e ON le.employee_id = e.id WHERE le.status = 'pending' AND e.department_id = ?");
     $s->execute([$myDeptId]);
     $dp3 = (int)$s->fetchColumn();
 
@@ -228,8 +234,6 @@ $empId = (int)$_SESSION['user_id'];
 $empMonthPresent = 0;
 $empMonthAbsent  = 0;
 $empTotalPending = 0;
-$leaveTotal      = 0;
-$leaveUsed       = 0;
 $leaveData       = [];
 
 if (!$showAdminCards) {
@@ -255,62 +259,43 @@ if (!$showAdminCards) {
     $s->execute([$empId]);
     $empPendingOT = (int)$s->fetchColumn();
 
-    $s = $pdo->prepare("SELECT COUNT(*) FROM logs WHERE employee_id = ? AND edit_status = 'pending'");
+    $s = $pdo->prepare("SELECT COUNT(*) FROM log_edit_requests WHERE employee_id = ? AND status = 'pending'");
     $s->execute([$empId]);
     $empPendingLogEdit = (int)$s->fetchColumn();
 
     $empTotalPending = $empPendingLeave + $empPendingOT + $empPendingLogEdit;
 
     $leaveTypeConfig = [
-        ['key' => 'buffer_leave',      'label' => 'Buffer',      'icon' => 'bi-shield-fill',      'color' => 'var(--primary-color)',  'card' => 'card-success', 'req_key' => null],
-        ['key' => 'vacation_leave',    'label' => 'Vacation',    'icon' => 'bi-umbrella-fill',    'color' => 'var(--info-color)',     'card' => 'card-info',    'req_key' => 'vacation leave'],
-        ['key' => 'sick_leave',        'label' => 'Sick',        'icon' => 'bi-heart-pulse-fill', 'color' => 'var(--danger-color)',   'card' => 'card-danger',  'req_key' => 'sick leave'],
-        ['key' => 'paternity_leave',   'label' => 'Paternity',   'icon' => 'bi-person-fill',      'color' => '#7dd9a8',               'card' => 'card-mint',    'req_key' => null],
-        ['key' => 'maternity_leave',   'label' => 'Maternity',   'icon' => 'bi-person-hearts',    'color' => '#fd7e14',               'card' => 'card-coral',   'req_key' => null],
-        ['key' => 'solo_parent_leave', 'label' => 'Solo Parent', 'icon' => 'bi-people-fill',      'color' => '#a07de0',               'card' => 'card-purple',  'req_key' => 'solo parent leave'],
-        ['key' => 'birthday_leave',    'label' => 'Birthday',    'icon' => 'bi-gift-fill',        'color' => 'var(--warning-color)',  'card' => 'card-warning', 'req_key' => 'birthday leave'],
+        ['key' => 'buffer_leave',      'label' => 'Buffer',      'icon' => 'bi-shield-fill',      'color' => 'var(--primary-color)',  'card' => 'card-success', 'allocation' => null],
+        ['key' => 'vacation_leave',    'label' => 'Vacation',    'icon' => 'bi-umbrella-fill',    'color' => 'var(--info-color)',     'card' => 'card-info',    'allocation' => null],
+        ['key' => 'sick_leave',        'label' => 'Sick',        'icon' => 'bi-heart-pulse-fill', 'color' => 'var(--danger-color)',   'card' => 'card-danger',  'allocation' => 4],
+        ['key' => 'paternity_leave',   'label' => 'Paternity',   'icon' => 'bi-person-fill',      'color' => '#7dd9a8',               'card' => 'card-mint',    'allocation' => 7],
+        ['key' => 'maternity_leave',   'label' => 'Maternity',   'icon' => 'bi-person-hearts',    'color' => '#fd7e14',               'card' => 'card-coral',   'allocation' => 90],
+        ['key' => 'solo_parent_leave', 'label' => 'Solo Parent', 'icon' => 'bi-people-fill',      'color' => '#a07de0',               'card' => 'card-purple',  'allocation' => 1],
+        ['key' => 'birthday_leave',    'label' => 'Birthday',    'icon' => 'bi-gift-fill',        'color' => 'var(--warning-color)',  'card' => 'card-warning', 'allocation' => 1],
     ];
 
     $s = $pdo->prepare("SELECT * FROM employee_leave_balances WHERE employee_id = ?");
     $s->execute([$empId]);
     $leaveBal = $s->fetch(PDO::FETCH_ASSOC) ?: [];
 
-    $s = $pdo->prepare("
-        SELECT lt.name AS leave_type, lr.selected_dates, lr.start_date, lr.end_date
-        FROM leave_requests lr
-        JOIN leave_types lt ON lt.id = lr.leave_type_id
-        WHERE lr.employee_id = ? AND lr.status = 'approved' AND lt.name != 'ob leave'
-          AND YEAR(lr.start_date) = YEAR(CURDATE())
-    ");
-    $s->execute([$empId]);
-    $usedPerType = [];
-    foreach ($s->fetchAll(PDO::FETCH_ASSOC) as $r) {
-        $rKey  = str_replace(' ', '_', $r['leave_type']);
-        $dates = json_decode($r['selected_dates'], true);
-        if (is_array($dates) && !empty($dates)) {
-            $usedPerType[$rKey] = ($usedPerType[$rKey] ?? 0) + count($dates);
-        } else {
-            $d1 = new DateTime($r['start_date']);
-            $d2 = new DateTime($r['end_date']);
-            $usedPerType[$rKey] = ($usedPerType[$rKey] ?? 0) + $d1->diff($d2)->days + 1;
-        }
-    }
-
     foreach ($leaveTypeConfig as $lt) {
-        $total       = (int)($leaveBal[$lt['key']] ?? 0);
-        $used        = (int)($usedPerType[$lt['key']] ?? 0);
-        $leaveData[] = array_merge($lt, ['total' => $total, 'used' => $used]);
-        $leaveTotal += $total;
-        $leaveUsed  += $used;
+        $raw       = $leaveBal[$lt['key']] ?? 0;
+        $remaining = $lt['key'] === 'vacation_leave' ? round((float)$raw, 2) : (int)$raw;
+        $leaveData[] = array_merge($lt, ['remaining' => $remaining]);
     }
 }
 
 // ── My Week — ALL roles ───────────────────────────────────
 $s = $pdo->prepare("
-    SELECT schedule_date, is_rest_day, scheduled_start
-    FROM schedules
-    WHERE employee_id = ? AND schedule_date BETWEEN ? AND ? AND status = 'approved'
+    SELECT s.schedule_date, s.is_rest_day, s.scheduled_start
+    FROM schedules s
+    INNER JOIN schedule_edit_requests ser ON s.batch_id = ser.batch_id
+    WHERE s.employee_id = ? 
+      AND s.schedule_date BETWEEN ? AND ? 
+      AND ser.status = 'approved'
 ");
+
 $s->execute([$empId, $weekMon, $weekSun]);
 $empSchedMap = [];
 foreach ($s->fetchAll(PDO::FETCH_ASSOC) as $r) {
@@ -657,8 +642,12 @@ for ($i = 0; $i < 7; $i++) {
                     <!-- Leave Balance Strip -->
                     <div class="lb-strip mb-2">
                         <?php foreach ($leaveData as $lt):
-                            $remaining = max(0, $lt['total'] - $lt['used']);
-                            $pct = $lt['total'] > 0 ? min(100, round($remaining / $lt['total'] * 100)) : 0;
+                            $remaining  = $lt['remaining'];
+                            $allocation = $lt['allocation'];
+                            $hasLimit   = $allocation !== null;
+                            $isVacation = $lt['key'] === 'vacation_leave';
+                            $fmtRem     = $isVacation ? number_format((float)$remaining, 2) : $remaining;
+                            $pct        = ($hasLimit && $allocation > 0) ? min(100, round($remaining / $allocation * 100)) : 0;
                         ?>
                         <div class="card <?= $lt['card'] ?> lb-strip-card p-3">
                             <div class="card-body d-flex flex-column gap-1 p-0">
@@ -667,12 +656,16 @@ for ($i = 0; $i < 7; $i++) {
                                     <span class="lb-label"><?= $lt['label'] ?></span>
                                 </div>
                                 <div class="lb-nums">
-                                    <span class="lb-remaining" style="color:<?= $lt['color'] ?>"><?= $remaining ?></span>
-                                    <span class="lb-total">/ <?= $lt['total'] ?></span>
+                                    <span class="lb-remaining" style="color:<?= $lt['color'] ?>"><?= $fmtRem ?></span>
+                                    <?php if ($hasLimit): ?>
+                                    <span class="lb-total">/ <?= $allocation ?></span>
+                                    <?php endif; ?>
                                 </div>
+                                <?php if ($hasLimit): ?>
                                 <div class="progress lb-progress">
                                     <div class="progress-bar" style="width:<?= $pct ?>%; background-color:<?= $lt['color'] ?>;"></div>
                                 </div>
+                                <?php endif; ?>
                             </div>
                         </div>
                         <?php endforeach; ?>

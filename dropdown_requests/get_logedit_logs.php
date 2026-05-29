@@ -18,13 +18,16 @@ $stmt = $pdo->prepare("
         l.log_time,
         l.log_type,
         a.id AS attendance_id,
-        CASE WHEN l.edit_status = 'pending'  THEN 1 ELSE 0 END AS has_pending,
-        CASE WHEN l.edit_status = 'approved' THEN 1 ELSE 0 END AS has_approved
+        CASE WHEN ler.status = 'pending'  THEN 1 ELSE 0 END AS has_pending,
+        CASE WHEN ler.status = 'approved' THEN 1 ELSE 0 END AS has_approved
 
     FROM logs l
     LEFT JOIN attendances a
         ON  a.employee_id = l.employee_id
         AND DATE(l.log_time) = a.work_date
+    LEFT JOIN log_edit_requests ler
+        ON  ler.log_id = l.id
+        AND ler.id = (SELECT MAX(id) FROM log_edit_requests WHERE log_id = l.id)
 
     WHERE l.employee_id = ?
         AND DATE(l.log_time) = CURDATE()

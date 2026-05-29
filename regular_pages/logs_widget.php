@@ -67,6 +67,45 @@ $logsInlineHeader ??= false;
 
         </div>
 
+        <!-- Pagination Footer -->
+        <div class="pagination-footer d-flex flex-sm-nowrap flex-wrap align-items-center justify-content-between gap-3 w-100"
+             id="logsPagContainer" style="display:none !important;">
+
+            <div id="logsPaginationInfo"
+                 class="small text-meta text-nowrap flex-sm-fill w-sm-100 text-sm-start text-center order-1">
+                Showing 0 to 0 of 0 entries
+            </div>
+
+            <div class="d-flex align-items-center justify-content-center flex-wrap gap-3 flex-sm-fill w-sm-100 order-2">
+                <nav aria-label="Logs Navigation">
+                    <ul class="pagination pagination-sm mb-0" id="logsPaginationList"></ul>
+                </nav>
+                <div class="d-flex align-items-center gap-1 pag-jump-wrapper" id="logsPageJumpWrapper" style="display:none !important;">
+                    <small class="text-meta text-nowrap">Go to:</small>
+                    <input type="number" id="logsPageJumpInput"
+                           class="form-control form-control-sm text-center px-1 pag-jump-input"
+                           min="1" style="width:45px;height:28px;" placeholder="Go">
+                </div>
+            </div>
+
+            <div class="d-flex align-items-center justify-content-sm-end justify-content-center gap-2 flex-sm-fill w-sm-100 order-3">
+                <small class="text-meta text-nowrap">Rows Per Page:</small>
+                <div class="dropdown">
+                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button"
+                            id="logsRowsPerPageBtn" data-bs-toggle="dropdown" aria-expanded="false">
+                        25 rows
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end" style="z-index:1056;">
+                        <li><a class="dropdown-item logs-row-limit-opt" href="#" data-value="10">10 rows</a></li>
+                        <li><a class="dropdown-item logs-row-limit-opt" href="#" data-value="25">25 rows</a></li>
+                        <li><a class="dropdown-item logs-row-limit-opt" href="#" data-value="50">50 rows</a></li>
+                        <li><a class="dropdown-item logs-row-limit-opt" href="#" data-value="100">100 rows</a></li>
+                    </ul>
+                </div>
+            </div>
+
+        </div>
+
     </div>
 </div>
 
@@ -116,6 +155,9 @@ const DEFAULT_SORT_DIR = 'desc';
 let sortColumn    = DEFAULT_SORT_COL;
 let sortDirection = DEFAULT_SORT_DIR;
 
+let logsCurrentPage = 1;
+let logsRowsPerPage = 25;
+
 /* =========================
    COLUMN DEFINITIONS
 ========================= */
@@ -131,7 +173,7 @@ const COLS = {
     superadmin: [
         { label: 'Date',         sort: 'date'     },
         { label: 'Time',         sort: 'time'     },
-        { label: 'Employee'                       },
+        { label: 'Employee',     sort: 'employee' },
         { label: 'Role'                           },
         { label: 'Log Type',     sort: 'type'     },
         { label: 'Location',     sort: 'location' },
@@ -158,7 +200,7 @@ function updateHeader(user_role, scoped_to_employee) {
     document.getElementById('logs_colgroup').innerHTML = '';
     document.getElementById('logs_header_row').innerHTML = cols.map(c =>
         c.sort
-            ? `<th class="sortable" data-sort="${c.sort}">${c.label} <i class="bi bi-arrow-down-up sortIcon" id="sort-${c.sort}"></i></th>`
+            ? `<th class="sortable" data-sort="${c.sort}">${c.label} <i class="bi bi-filter sortIcon" id="sort-${c.sort}"></i></th>`
             : `<th>${c.label}</th>`
     ).join('');
 }
@@ -204,16 +246,29 @@ const LOG_TYPE_LABEL = {
 /* =========================
    RENDER ROWS
 ========================= */
-function renderLogRows({ meta, rows }) {
+function renderLogRows({ meta, rows, total = 0 }) {
     const { user_role, scoped_to_employee } = meta;
     updateHeader(user_role, scoped_to_employee);
+    applyHeaderUI();
+
+    const pagContainer = document.getElementById('logsPagContainer');
 
     if (!rows.length) {
         tbody.innerHTML = '';
         document.getElementById('logsEmptyState').style.display = '';
+        pagContainer.setAttribute('style', 'display:none !important');
         return;
     }
     document.getElementById('logsEmptyState').style.display = 'none';
+
+    const startEntry = (logsCurrentPage - 1) * logsRowsPerPage + 1;
+    const endEntry   = Math.min(startEntry + logsRowsPerPage - 1, total);
+    document.getElementById('logsPaginationInfo').textContent =
+        `Showing ${startEntry} to ${endEntry} of ${total} entries`;
+
+    const totalPages = Math.ceil(total / logsRowsPerPage);
+    renderLogsPagination(totalPages);
+    pagContainer.setAttribute('style', totalPages > 0 ? 'display:flex !important' : 'display:none !important');
 
     tbody.innerHTML = rows.map(row => {
         const isInside = row.is_within_office;
@@ -323,7 +378,7 @@ function fetchLogs() {
     const type  = document.getElementById('logTypeFilter').value;
 
     const empParam = LOGS_EMPLOYEE_ID ? `&employee_id=${LOGS_EMPLOYEE_ID}` : '';
-    fetch(`<?= $logsApiPath ?>?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}&type=${encodeURIComponent(type)}&sort=${sortColumn}&dir=${sortDirection}${empParam}`)
+    fetch(`<?= $logsApiPath ?>?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}&type=${encodeURIComponent(type)}&sort=${sortColumn}&dir=${sortDirection}&page=${logsCurrentPage}&limit=${logsRowsPerPage}${empParam}`)
         .then(res => res.json())
         .then(data => renderLogRows(data));
 }
@@ -348,6 +403,7 @@ function saveState() {
         logTypeLabel: document.getElementById('logTypeLabel').textContent,
         sortColumn,
         sortDirection,
+        rowsPerPage:  logsRowsPerPage,
     }));
 }
 
@@ -362,7 +418,9 @@ if (_savedState) {
     if (_savedState.sortDirection)           sortDirection     = _savedState.sortDirection;
     if (_savedState.startDate !== undefined) startInput.value  = _savedState.startDate;
     if (_savedState.endDate   !== undefined) endInput.value    = _savedState.endDate;
+    if (_savedState.rowsPerPage)             logsRowsPerPage   = _savedState.rowsPerPage;
 }
+document.getElementById('logsRowsPerPageBtn').textContent = `${logsRowsPerPage} rows`;
 
 function fmtDate(d) {
     return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
@@ -406,6 +464,7 @@ const fp = flatpickr(document.getElementById('datePickerBtn'), {
         if (dates.length !== 2) return;
         startInput.value = toLocalStr(dates[0]);
         endInput.value   = toLocalStr(dates[1]);
+        logsCurrentPage  = 1;
         fetchLogs();
         saveState();
     }
@@ -433,6 +492,7 @@ document.querySelectorAll('#logTypeMenu .dropdown-item').forEach(item => {
         e.preventDefault();
         logTypeLabel.textContent = item.textContent.trim();
         logTypeHidden.value = item.dataset.value;
+        logsCurrentPage = 1;
         fetchLogs();
         saveState();
     });
@@ -444,14 +504,14 @@ document.querySelectorAll('#logTypeMenu .dropdown-item').forEach(item => {
 function applyHeaderUI() {
     document.querySelectorAll('.sortable').forEach(el => el.classList.remove('sorted'));
     document.querySelectorAll('.sortIcon').forEach(el => {
-        el.className = 'sortIcon bi bi-arrow-down-up';
+        el.className = 'sortIcon bi bi-filter';
     });
 
     const activeTh = document.querySelector(`.sortable[data-sort="${sortColumn}"]`);
     if (activeTh) {
         activeTh.classList.add('sorted');
         const icon = activeTh.querySelector('.sortIcon');
-        if (icon) icon.className = 'sortIcon bi ' + (sortDirection === 'asc' ? 'bi-arrow-up' : 'bi-arrow-down');
+        if (icon) icon.className = 'sortIcon bi ' + (sortDirection === 'asc' ? 'bi-sort-up' : 'bi-sort-down');
     }
 }
 
@@ -462,18 +522,19 @@ document.getElementById('logs_thead').addEventListener('click', e => {
     const col = th.dataset.sort;
 
     if (sortColumn === col) {
-        if (sortDirection === 'asc') {
-            sortDirection = 'desc';
+        if (sortDirection === 'desc') {
+            sortDirection = 'asc';
         } else {
             sortColumn    = DEFAULT_SORT_COL;
             sortDirection = DEFAULT_SORT_DIR;
         }
     } else {
         sortColumn    = col;
-        sortDirection = 'asc';
+        sortDirection = 'desc';
     }
 
     applyHeaderUI();
+    logsCurrentPage = 1;
     fetchLogs();
     saveState();
 });
@@ -619,6 +680,88 @@ document.addEventListener('click', e => {
     }
 
     bootstrap.Modal.getOrCreateInstance(document.getElementById('logDetailModal')).show();
+});
+
+/* =========================
+   PAGINATION
+========================= */
+function renderLogsPagination(totalPages) {
+    const list        = document.getElementById('logsPaginationList');
+    const jumpInput   = document.getElementById('logsPageJumpInput');
+    const jumpWrapper = document.getElementById('logsPageJumpWrapper');
+
+    list.innerHTML = '';
+
+    if (totalPages <= 1) {
+        jumpWrapper?.style.setProperty('display', 'none', 'important');
+        return;
+    }
+    jumpWrapper?.setAttribute('style', 'display:flex !important');
+
+    if (jumpInput) { jumpInput.max = totalPages; jumpInput.value = logsCurrentPage; }
+
+    const prevLi = document.createElement('li');
+    prevLi.className = `page-item ${logsCurrentPage === 1 ? 'disabled' : ''}`;
+    prevLi.innerHTML = `<a class="page-link" href="#">&laquo;</a>`;
+    if (logsCurrentPage > 1) {
+        prevLi.addEventListener('click', e => { e.preventDefault(); logsCurrentPage--; fetchLogs(); });
+    }
+    list.appendChild(prevLi);
+
+    const maxVisible = 5;
+    let startPage = Math.max(1, logsCurrentPage - 2);
+    let endPage   = Math.min(totalPages, logsCurrentPage + 2);
+    if (logsCurrentPage <= 3)              endPage   = Math.min(totalPages, maxVisible);
+    if (logsCurrentPage > totalPages - 3)  startPage = Math.max(1, totalPages - maxVisible + 1);
+
+    if (startPage > 1) { appendLogsPage(1); if (startPage > 2) appendLogsEllipsis(); }
+    for (let i = startPage; i <= endPage; i++) appendLogsPage(i);
+    if (endPage < totalPages) { if (endPage < totalPages - 1) appendLogsEllipsis(); appendLogsPage(totalPages); }
+
+    const nextLi = document.createElement('li');
+    nextLi.className = `page-item ${logsCurrentPage === totalPages ? 'disabled' : ''}`;
+    nextLi.innerHTML = `<a class="page-link" href="#">&raquo;</a>`;
+    if (logsCurrentPage < totalPages) {
+        nextLi.addEventListener('click', e => { e.preventDefault(); logsCurrentPage++; fetchLogs(); });
+    }
+    list.appendChild(nextLi);
+
+    function appendLogsPage(n) {
+        const li = document.createElement('li');
+        li.className = `page-item ${logsCurrentPage === n ? 'active' : ''}`;
+        li.innerHTML = `<a class="page-link" href="#">${n}</a>`;
+        li.addEventListener('click', e => { e.preventDefault(); logsCurrentPage = n; fetchLogs(); });
+        list.appendChild(li);
+    }
+    function appendLogsEllipsis() {
+        const li = document.createElement('li');
+        li.className = 'page-item disabled';
+        li.innerHTML = `<span class="page-link text-meta">...</span>`;
+        list.appendChild(li);
+    }
+}
+
+document.getElementById('logsPageJumpInput').addEventListener('keydown', function (e) {
+    if (e.key !== 'Enter') return;
+    e.preventDefault();
+    let target = parseInt(this.value);
+    const max  = parseInt(this.max) || 1;
+    if (isNaN(target) || target < 1) target = 1;
+    if (target > max) target = max;
+    this.value      = target;
+    logsCurrentPage = target;
+    fetchLogs();
+});
+
+document.getElementById('logsPagContainer').addEventListener('click', e => {
+    const opt = e.target.closest('.logs-row-limit-opt');
+    if (!opt) return;
+    e.preventDefault();
+    logsRowsPerPage = parseInt(opt.dataset.value);
+    logsCurrentPage = 1;
+    document.getElementById('logsRowsPerPageBtn').textContent = `${logsRowsPerPage} rows`;
+    saveState();
+    fetchLogs();
 });
 
 /* =========================

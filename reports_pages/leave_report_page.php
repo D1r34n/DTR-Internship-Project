@@ -99,10 +99,10 @@ $defaultEnd   = $today;
                 <table class="table table-hover mb-0" id="reportTable">
                     <thead id="reportTableHead">
                         <tr>
-                            <th>Employee ID</th>
-                            <th>Name</th>
-                            <th>Department</th>
-                            <th>Role</th>
+                            <th class="sortable" data-sort="employee_id">Employee ID <i class="sortIcon bi bi-filter"></i></th>
+                            <th class="sortable" data-sort="name">Name <i class="sortIcon bi bi-filter"></i></th>
+                            <th class="sortable" data-sort="department">Department <i class="sortIcon bi bi-filter"></i></th>
+                            <th class="sortable" data-sort="role">Role <i class="sortIcon bi bi-filter"></i></th>
                         </tr>
                     </thead>
                     <tbody id="reportTableBody"></tbody>
@@ -170,6 +170,12 @@ let currentPageIndex = 1;
 let rowsPerPage      = parseInt(localStorage.getItem('lr_rows_per_page')) || 10;
 let searchTimeout    = null;
 
+// SORTING STATE
+const LR_DEFAULT_SORT_COL = 'name';
+const LR_DEFAULT_SORT_DIR = 'asc';
+let lrSortColumn    = LR_DEFAULT_SORT_COL;
+let lrSortDirection = LR_DEFAULT_SORT_DIR;
+
 /* ── Helpers ──────────────────────────────────────── */
 function toLocalStr(d) {
     const pad = n => String(n).padStart(2, '0');
@@ -196,14 +202,52 @@ function typeToColKey(name) {
 /* ── Table header builder ─────────────────────────── */
 function buildTableHeaders(types) {
     const tr = document.querySelector('#reportTableHead tr');
+    
     tr.innerHTML = `
-        <th>Employee ID</th>
-        <th>Name</th>
-        <th>Department</th>
-        <th>Role</th>
+        <th class="sortable ${lrSortColumn === 'employee_id' ? 'sorted' : ''}" data-sort="employee_id">Employee ID <i class="sortIcon bi ${lrSortColumn === 'employee_id' ? (lrSortDirection === 'asc' ? 'bi-sort-up' : 'bi-sort-down') : 'bi-filter'}"></i></th>
+        <th class="sortable ${lrSortColumn === 'name' ? 'sorted' : ''}" data-sort="name">Name <i class="sortIcon bi ${lrSortColumn === 'name' ? (lrSortDirection === 'asc' ? 'bi-sort-up' : 'bi-sort-down') : 'bi-filter'}"></i></th>
+        <th class="sortable ${lrSortColumn === 'department' ? 'sorted' : ''}" data-sort="department">Department <i class="sortIcon bi ${lrSortColumn === 'department' ? (lrSortDirection === 'asc' ? 'bi-sort-up' : 'bi-sort-down') : 'bi-filter'}"></i></th>
+        <th class="sortable ${lrSortColumn === 'role' ? 'sorted' : ''}" data-sort="role">Role <i class="sortIcon bi ${lrSortColumn === 'role' ? (lrSortDirection === 'asc' ? 'bi-sort-up' : 'bi-sort-down') : 'bi-filter'}"></i></th>
+        <th class="sortable ${lrSortColumn === 'buffer' ? 'sorted' : ''}" data-sort="buffer">Buffer Leave <i class="sortIcon bi ${lrSortColumn === 'buffer' ? (lrSortDirection === 'asc' ? 'bi-sort-up' : 'bi-sort-down') : 'bi-filter'}"></i></th>
         ${types.map(t => `<th>${t.label}</th>`).join('')}
+        <th class="sortable ${lrSortColumn === 'balance' ? 'sorted' : ''}" data-sort="balance">Leave Balance <i class="sortIcon bi ${lrSortColumn === 'balance' ? (lrSortDirection === 'asc' ? 'bi-sort-up' : 'bi-sort-down') : 'bi-filter'}"></i></th>
     `;
 }
+
+function applyLrHeaderUI() {
+    document.querySelectorAll('#reportTableHead .sortable').forEach(el => el.classList.remove('sorted'));
+    document.querySelectorAll('#reportTableHead .sortIcon').forEach(el => {
+        el.className = 'sortIcon bi bi-filter';
+    });
+
+    const activeTh = document.querySelector(`#reportTableHead .sortable[data-sort="${lrSortColumn}"]`);
+    if (activeTh) {
+        activeTh.classList.add('sorted');
+        const icon = activeTh.querySelector('.sortIcon');
+        if (icon) icon.className = 'sortIcon bi ' + (lrSortDirection === 'asc' ? 'bi-sort-up' : 'bi-sort-down');
+    }
+}
+
+// FIXED CLICK LISTENER: Accurately switches directions when clicking the active item
+document.getElementById('reportTableHead').addEventListener('click', e => {
+    const th = e.target.closest('.sortable');
+    if (!th) return;
+
+    const col = th.dataset.sort;
+
+    if (lrSortColumn === col) {
+        // Toggle direction smoothly on the same header field
+        lrSortDirection = (lrSortDirection === 'asc') ? 'desc' : 'asc';
+    } else {
+        // New column chosen: reset to that column and default to ascending sorting order
+        lrSortColumn    = col;
+        lrSortDirection = 'asc';
+    }
+
+    applyLrHeaderUI();
+    currentPageIndex = 1;
+    fetchLeaveReport();
+});
 
 /* ── Fetch ────────────────────────────────────────── */
 function fetchLeaveReport() {
@@ -223,13 +267,16 @@ function fetchLeaveReport() {
     loadingState.style.display   = 'flex';
     document.getElementById('export-btn').disabled = true;
 
+    // Synchronized API mapping keys
     const params = new URLSearchParams({
-        action: 'leave',
-        start:  _selStart,
-        end:    _selEnd,
-        page:   currentPageIndex,
-        limit:  rowsPerPage,
-        search: q
+        action:         'leave',
+        start:          _selStart,
+        end:            _selEnd,
+        page:           currentPageIndex,
+        limit:          rowsPerPage,
+        search:         q,
+        sort_column:    lrSortColumn,
+        sort_direction: lrSortDirection
     });
 
     fetch(`reports_api.php?${params.toString()}`)
@@ -264,16 +311,23 @@ function fetchLeaveReport() {
                 const typeCells = types.map(t => {
                     const key = typeToColKey(t.name);
                     const val = parseInt(row[key] ?? 0, 10);
-                    return `<td>${val > 0 ? val : '<span class="text-tertiary">—</span>'}</td>`;
+                    return `<td>${val > 0 ? val : '<span class="text-tertiary">0</span>'}</td>`;
                 }).join('');
+
+                const bufferBal  = parseInt(row.balance_buffer_leave   ?? 0, 10);
+                const vacBal     = parseInt(row.balance_vacation_leave ?? 0, 10);
+                const sickBal    = parseInt(row.balance_sick_leave     ?? 0, 10);
+                const leaveBalance = vacBal + sickBal;
 
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
-                    <td>${row.employee_id    || '—'}</td>
+                    <td>${row.employee_id    || '-'}</td>
                     <td>${row.employee_name  || '—'}</td>
                     <td>${row.department_name || '—'}</td>
                     <td>${row.role_name       || '—'}</td>
+                    <td>${bufferBal > 0 ? bufferBal : '<span class="text-tertiary">0</span>'}</td>
                     ${typeCells}
+                    <td>${leaveBalance}</td>
                 `;
                 tbody.appendChild(tr);
             });
@@ -355,11 +409,13 @@ function exportAllCSV() {
 
         const esc = v => '"' + String(v ?? '').replace(/"/g, '""').trim() + '"';
         const headers = ['Employee ID', 'Name', 'Department', 'Role',
-                         ...types.map(t => t.label)];
+                         'Buffer Leave', ...types.map(t => t.label), 'Leave Balance'];
         const rows = dataRows.map(r => {
-            const typeCols = types.map(t => esc(parseInt(r[typeToColKey(t.name)] ?? 0, 10)));
+            const typeCols   = types.map(t => esc(parseInt(r[typeToColKey(t.name)] ?? 0, 10)));
+            const bufferBal  = parseInt(r.balance_buffer_leave   ?? 0, 10);
+            const balance    = parseInt(r.balance_vacation_leave ?? 0, 10) + parseInt(r.balance_sick_leave ?? 0, 10);
             return [esc(r.employee_id), esc(r.employee_name), esc(r.department_name),
-                    esc(r.role_name), ...typeCols].join(',');
+                    esc(r.role_name), esc(bufferBal), ...typeCols, esc(balance)].join(',');
         });
 
         const blob = new Blob(["﻿" + [headers.join(','), ...rows].join('\n')],
@@ -390,12 +446,15 @@ async function exportAllPDF() {
     doc.setFontSize(14);
     doc.text(`Leave Consumed Report for ${fmtD(_selStart)} to ${fmtD(_selEnd)}`, 14, 12);
 
-    const head = [['Employee ID', 'Name', 'Department', 'Role', ...types.map(t => t.label)]];
+    const head = [['Employee ID', 'Name', 'Department', 'Role',
+                   'Buffer Leave', ...types.map(t => t.label), 'Leave Balance']];
     const body = dataRows.map(r => {
-        const typeCols = types.map(t => parseInt(r[typeToColKey(t.name)] ?? 0, 10));
+        const typeCols  = types.map(t => parseInt(r[typeToColKey(t.name)] ?? 0, 10));
+        const bufferBal = parseInt(r.balance_buffer_leave   ?? 0, 10);
+        const balance   = parseInt(r.balance_vacation_leave ?? 0, 10) + parseInt(r.balance_sick_leave ?? 0, 10);
         return [r.employee_id || '—', r.employee_name || '—',
                 r.department_name || '—', r.role_name || '—',
-                ...typeCols];
+                bufferBal, ...typeCols, balance];
     });
     doc.autoTable({ head, body, startY: 20, styles: { fontSize: 9, cellPadding: 3 }, headStyles: { fillColor: [151, 190, 65] } });
     doc.save(`leave_consumed_${_selStart}_to_${_selEnd}.pdf`);
@@ -424,6 +483,7 @@ document.addEventListener('DOMContentLoaded', () => {
         changeRowsPerPage(target.dataset.value);
     });
 
+    applyLrHeaderUI();
     fetchLeaveReport();
 });
 </script>

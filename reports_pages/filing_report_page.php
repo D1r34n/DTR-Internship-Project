@@ -57,21 +57,26 @@ require_once 'cutoff_helpers.php';
             </div>
 
             <div class="dropdown">
-                <button class="btn btn-sm btn-success dropdown-toggle" type="button" data-bs-toggle="dropdown" data-bs-boundary="viewport" aria-expanded="false">
+                <button class="btn btn-sm btn-neutral dropdown-toggle" type="button" data-bs-toggle="dropdown" data-bs-boundary="viewport" aria-expanded="false">
                     <i class="bi bi-funnel"></i>
-                    <span id="status-label">Select Request Type</span>
+                    <span id="status-label">All Filings</span>
                 </button>
                 <ul class="dropdown-menu" style="z-index:1055;">
                     <li><a class="dropdown-item status-opt" href="#" data-value="ALL">All Filings</a></li>
-                    <li><a class="dropdown-item status-opt" href="#" data-value="overtime">OT Request</a></li>
-                    <li><a class="dropdown-item status-opt" href="#" data-value="ob leave">OB Request</a></li>
-                    <li><a class="dropdown-item status-opt" href="#" data-value="log_edit">Log Edit Request</a></li>
-                    <li><a class="dropdown-item status-opt" href="#" data-value="schedule_edit">Schedule Edit Request</a></li>
                     <li><hr class="dropdown-divider"></li>
-                    <li><a class="dropdown-item status-opt" href="#" data-value="sick leave">Sick Leave Request</a></li>
-                    <li><a class="dropdown-item status-opt" href="#" data-value="vacation leave">Vacation Leave Request</a></li>
-                    <li><a class="dropdown-item status-opt" href="#" data-value="birthday leave">Birthday Leave</a></li>
-                    <li><a class="dropdown-item status-opt" href="#" data-value="solo parent leave">Solo Parent Leave</a></li>
+                    <li><h6 class="dropdown-header">Leave</h6></li>
+                    <li><a class="dropdown-item status-opt" href="#" data-value="leave">All Leave</a></li>
+                    <li><a class="dropdown-item status-opt ps-4" href="#" data-value="sick leave">Sick Leave</a></li>
+                    <li><a class="dropdown-item status-opt ps-4" href="#" data-value="vacation leave">Vacation Leave</a></li>
+                    <li><a class="dropdown-item status-opt ps-4" href="#" data-value="birthday leave">Birthday Leave</a></li>
+                    <li><a class="dropdown-item status-opt ps-4" href="#" data-value="solo parent leave">Solo Parent Leave</a></li>
+                    <li><a class="dropdown-item status-opt ps-4" href="#" data-value="ob leave">OB Leave</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><h6 class="dropdown-header">Request</h6></li>
+                    <li><a class="dropdown-item status-opt" href="#" data-value="request">All Requests</a></li>
+                    <li><a class="dropdown-item status-opt ps-4" href="#" data-value="overtime">OT Request</a></li>
+                    <li><a class="dropdown-item status-opt ps-4" href="#" data-value="log_edit">Log Edit Request</a></li>
+                    <li><a class="dropdown-item status-opt ps-4" href="#" data-value="schedule_edit">Schedule Edit Request</a></li>
                 </ul>
             </div>
 
@@ -80,7 +85,7 @@ require_once 'cutoff_helpers.php';
                         id="ar-cutoff-btn" data-bs-toggle="dropdown"
                         data-bs-auto-close="outside" aria-expanded="false">
                     <i class="bi bi-calendar3 me-1"></i>
-                    <span id="ar-btn-label"><?= htmlspecialchars($defaultLabel ?? '') ?></span>
+                    <span id="ar-btn-label"><?= htmlspecialchars($defaultLabel ?? 'Select Period') ?></span>
                 </button>
 
                 <ul class="dropdown-menu">
@@ -165,24 +170,30 @@ require_once 'cutoff_helpers.php';
             </div>
 
             <div id="ar-unloaded-state" class="ar-empty">
-                <i class="bi bi-funnel-fill" style="font-size: 2.5rem;"></i>
-                <div class="text-secondary mt-2">Awaiting View Criteria</div>
+                <i class="bi bi-calendar-event" style="font-size: 2.5rem;"></i>
+                <div class="text-secondary mt-2">Awaiting Period Selection</div>
                 <small class="text-tertiary text-center px-4">
-                    Please pick a <strong class="text-success">Request type</strong> and select a<strong class="text-success"> Cut-off period </strong>
+                    Please select a <strong class="text-success">Cut-off period</strong> or a <strong class="text-success">Full month</strong>
                     <br> from the options above to assemble this log summary.
                 </small>
             </div>
 
             <div class="tableScroll" id="report-table-container" style="display:none;">
                 <table class="table table-hover mb-0" id="reportTable">
-                    <thead>
+                    <thead id="report-thead">
                         <tr>
-                            <th>Employee ID</th>
-                            <th>Name</th>
-                            <th>Department</th>
-                            <th>Role</th>
-                            <th>Request Date</th>
-                            <th>Status</th>
+                            <th class="sortable" data-sort="employee_id">Employee ID <i class="bi bi-filter sortIcon" id="sort-employee_id"></i></th>
+                            <th class="sortable" data-sort="employee_name">Name <i class="bi bi-filter sortIcon" id="sort-employee_name"></i></th>
+                            <th class="sortable" data-sort="department_name">Department <i class="bi bi-filter sortIcon" id="sort-department_name"></i></th>
+                            <th class="sortable" data-sort="category">Category <i class="bi bi-filter sortIcon" id="sort-category"></i></th>
+                            <th class="sortable" data-sort="request_name">Filing Type <i class="bi bi-filter sortIcon" id="sort-request_name"></i></th>
+                            <th class="sortable" data-sort="start_date">Start Date <i class="bi bi-filter sortIcon" id="sort-start_date"></i></th>
+                            <th class="sortable" data-sort="end_date">End Date <i class="bi bi-filter sortIcon" id="sort-end_date"></i></th>
+                            <th class="sortable" data-sort="status">Status <i class="bi bi-filter sortIcon" id="sort-status"></i></th>
+                            <th class="sortable" data-sort="date_filed">Date Filed <i class="bi bi-filter sortIcon" id="sort-date_filed"></i></th>
+                            <th class="sortable" data-sort="date_approved">Date Approved <i class="bi bi-filter sortIcon" id="sort-date_approved"></i></th>
+                            <th class="sortable" data-sort="approved_by">Approved by <i class="bi bi-filter sortIcon" id="sort-approved_by"></i></th>
+                            <th>Reason</th>
                         </tr>
                     </thead>
                     <tbody id="reportTableBody"></tbody>
@@ -245,22 +256,64 @@ require_once 'cutoff_helpers.php';
 /* ── State ─────────────────────────────────────────────── */
 const _allCutoffs = <?= json_encode(array_values($cutoffs)) ?>;
 
-let _selStart  = null;
-let _selEnd    = null;
-let _selBtnLbl = "Select Period";
-let _selRngLbl = "";
+let _selStart  = localStorage.getItem('ar_sel_start') || null;
+let _selEnd    = localStorage.getItem('ar_sel_end') || null;
+let _selBtnLbl = localStorage.getItem('ar_sel_btn_lbl') || "Select Period";
+let _selRngLbl = localStorage.getItem('ar_sel_rng_lbl') || "";
 
-let activeStatus     = '';
+let activeStatus     = localStorage.getItem('ar_active_status') || 'ALL';
 let currentPageIndex = 1;
 let rowsPerPage      = parseInt(localStorage.getItem('ar_rows_per_page')) || 10;
 let searchTimeout    = null;
 
-let hasSelectedStatus = false;
-let hasSelectedPeriod = false;
+let hasSelectedPeriod = !!(_selStart && _selEnd);
+
+/* ── Sorting ────────────────────────────────────────────── */
+const AR_DEFAULT_SORT_COL = 'date_filed';
+const AR_DEFAULT_SORT_DIR = 'desc';
+let arSortColumn    = AR_DEFAULT_SORT_COL;
+let arSortDirection = AR_DEFAULT_SORT_DIR;
+
+function applyArHeaderUI() {
+    document.querySelectorAll('#report-thead .sortable').forEach(el => el.classList.remove('sorted'));
+    document.querySelectorAll('#report-thead .sortIcon').forEach(el => {
+        el.className = 'sortIcon bi bi-filter';
+    });
+
+    const activeTh = document.querySelector(`#report-thead .sortable[data-sort="${arSortColumn}"]`);
+    if (activeTh) {
+        activeTh.classList.add('sorted');
+        const icon = activeTh.querySelector('.sortIcon');
+        if (icon) icon.className = 'sortIcon bi ' + (arSortDirection === 'asc' ? 'bi-sort-up' : 'bi-sort-down');
+    }
+}
+
+document.getElementById('report-thead').addEventListener('click', e => {
+    const th = e.target.closest('.sortable');
+    if (!th) return;
+
+    const col = th.dataset.sort;
+
+    if (arSortColumn === col) {
+        if (arSortDirection === 'desc') {
+            arSortDirection = 'asc';
+        } else {
+            arSortColumn    = AR_DEFAULT_SORT_COL;
+            arSortDirection = AR_DEFAULT_SORT_DIR;
+        }
+    } else {
+        arSortColumn    = col;
+        arSortDirection = 'desc';
+    }
+
+    applyArHeaderUI();
+    currentPageIndex = 1;
+    fetchFilingReport();
+});
 
 /* ── Fetch ──────────────────────────────────────────────── */
 function fetchFilingReport() {
-    if (!hasSelectedStatus || !hasSelectedPeriod || !_selStart || !_selEnd) return;
+    if (!hasSelectedPeriod || !_selStart || !_selEnd) return;
 
     const unloadedState  = document.getElementById('ar-unloaded-state');
     const loadingState   = document.getElementById('ar-loading-state');
@@ -278,12 +331,14 @@ function fetchFilingReport() {
 
     const params = new URLSearchParams({
         action: 'reports',
-        start:  _selStart,
-        end:    _selEnd,
-        page:   currentPageIndex,
-        limit:  rowsPerPage,
+        start: _selStart,
+        end: _selEnd,
+        page: currentPageIndex,
+        limit: rowsPerPage,
         status: activeStatus,
-        search: q
+        search: q,
+        sort_column: arSortColumn,
+        sort_direction: arSortDirection
     });
 
     fetch(`reports_api.php?${params.toString()}`)
@@ -315,14 +370,23 @@ function fetchFilingReport() {
                 if (row.status === 'approved' || row.status === 'present') sc = 'status-approved';
                 if (row.status === 'rejected' || row.status === 'absent')  sc = 'status-rejected';
 
+                const category  = row.request_type === 'leave' ? 'Leave' : 'Request';
+                const typeLabel = row.request_name || '—';
+
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td>${row.employee_id     || '—'}</td>
                     <td>${row.employee_name  || '—'}</td>
                     <td>${row.department_name|| '—'}</td>
-                    <td>${row.role_name      || '—'}</td>
-                    <td>${parseDateString(row.request_date)}</td>
+                    <td>${category}</td>
+                    <td>${typeLabel}</td>
+                    <td>${parseDateString(row.start_date)}</td>
+                    <td>${parseDateString(row.end_date || row.start_date)}</td>
                     <td><span class="pill ${sc}">${row.status ? row.status.charAt(0).toUpperCase() + row.status.slice(1) : '—'}</span></td>
+                    <td>${parseDateString(row.date_filed)}</td>
+                    <td>${parseDateString(row.date_approved)}</td>
+                    <td>${row.approved_by    || '—'}</td>
+                    <td><span class="text-truncate d-inline-block" style="max-width: 150px;" title="${row.reason || ''}">${row.reason || '—'}</span></td>
                 `;
                 tbody.appendChild(tr);
             });
@@ -352,6 +416,11 @@ function _selectRange(start, end, btnLabel, rangeLabel) {
     _selEnd    = end;
     _selBtnLbl = btnLabel;
     _selRngLbl = rangeLabel;
+
+    localStorage.setItem('ar_sel_start', start);
+    localStorage.setItem('ar_sel_end', end);
+    localStorage.setItem('ar_sel_btn_lbl', btnLabel);
+    localStorage.setItem('ar_sel_rng_lbl', rangeLabel);
 
     hasSelectedPeriod = true;
     currentPageIndex  = 1;
@@ -393,8 +462,14 @@ function changeRowsPerPage(val) {
 function getExportData() {
     const q = (document.getElementById('search-input')?.value || '').trim();
     const params = new URLSearchParams({
-        action: 'reports', start: _selStart, end: _selEnd,
-        status: activeStatus, search: q, bypass_pagination: '1'
+        action: 'reports',
+        start: _selStart,
+        end: _selEnd,
+        status: activeStatus,
+        search: q,
+        bypass_pagination: '1',
+        sort: arSortColumn,
+        dir: arSortDirection
     });
     return fetch(`reports_api.php?${params.toString()}`).then(r => r.json());
 }
@@ -404,19 +479,24 @@ function exportAllCSV() {
         const dataRows = resData.data || [];
         if (!dataRows.length) { showToast('No records to export.', 'warning'); return; }
 
-        const headers = ['Employee ID', 'Name', 'Department', 'Role', 'Request Date', 'Filing Type', 'Status'];
+        const headers = ['Employee ID', 'Name', 'Department', 'Category', 'Filing Type', 'Start Date', 'End Date', 'Status', 'Date Filed', 'Date Approved', 'Approved By', 'Reason'];
         const escCSV  = v => '"' + String(v || '').replace(/"/g,'""').replace(/\n/g,' ').trim() + '"';
         const rows    = dataRows.map(r => [
             escCSV(r.employee_id),
             escCSV(r.employee_name),
             escCSV(r.department_name),
-            escCSV(r.role_name),
-            escCSV(parseDateString(r.request_date)),
-            escCSV(r.request_type ? r.request_type.toUpperCase().replace('_', ' ') : '—'),
-            escCSV(r.status ? r.status.toUpperCase() : '—')
+            escCSV(r.request_type === 'leave' ? 'Leave' : 'Request'),
+            escCSV(r.request_name),
+            escCSV(parseDateString(r.start_date)),
+            escCSV(parseDateString(r.end_date || r.start_date)),
+            escCSV(r.status ? r.status.toUpperCase() : '—'),
+            escCSV(parseDateString(r.date_filed)),
+            escCSV(parseDateString(r.date_approved)),
+            escCSV(r.approved_by),
+            escCSV(r.reason)
         ].join(','));
 
-        const blob = new Blob(["﻿" + [headers.join(','), ...rows].join('\n')], { type: 'text/csv;charset=utf-8;' });
+        const blob = new Blob(["\ufeff" + [headers.join(','), ...rows].join('\n')], { type: 'text/csv;charset=utf-8;' });
         const a    = Object.assign(document.createElement('a'), {
             href: URL.createObjectURL(blob),
             download: `filing_report_${_selStart}_to_${_selEnd}.csv`
@@ -432,7 +512,7 @@ async function exportAllPDF() {
 
     const logoBlob = await fetch('../assets/images/hsn_logo.png').then(r => r.blob());
     const logoB64  = await new Promise(res => { const fr = new FileReader(); fr.onloadend = () => res(fr.result); fr.readAsDataURL(logoBlob); });
-    const fmtD     = s => { const [y,m,d] = s.split('-').map(Number); return new Date(y,m-1,d).toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'}); };
+    const fmtD     = s => { if(!s) return '—'; const [y,m,d] = s.split('-').map(Number); return new Date(y,m-1,d).toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'}); };
 
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF('landscape');
@@ -442,17 +522,22 @@ async function exportAllPDF() {
     doc.setFontSize(14);
     doc.text(`Filing Summary Report for ${fmtD(_selStart)} to ${fmtD(_selEnd)}`, 14, 12);
 
-    const head = [['Employee ID', 'Name', 'Department', 'Role', 'Date of Request', 'Filing Type', 'Status']];
+    const head = [['Employee ID', 'Name', 'Department', 'Category', 'Filing Type', 'Start Date', 'End Date', 'Status', 'Date Filed', 'Date Approved', 'Approved By', 'Reason']];
     const body = dataRows.map(r => [
         r.employee_id || '—',
         r.employee_name || '—',
         r.department_name || '—',
-        r.role_name || '—',
-        parseDateString(r.request_date),
-        r.request_type ? r.request_type.toUpperCase().replace('_', ' ') : '—',
-        r.status ? r.status.toUpperCase() : '—'
+        r.request_type === 'leave' ? 'Leave' : 'Request',
+        r.request_name || '—',
+        parseDateString(r.start_date),
+        parseDateString(r.end_date || r.start_date),
+        r.status ? r.status.toUpperCase() : '—',
+        parseDateString(r.date_filed),
+        parseDateString(r.date_approved),
+        r.approved_by || '—',
+        r.reason || '—'
     ]);
-    doc.autoTable({ head, body, startY: 20, styles: { fontSize: 9, cellPadding: 3 }, headStyles: { fillColor: [151, 190, 65] } });
+    doc.autoTable({ head, body, startY: 20, styles: { fontSize: 7.5, cellPadding: 2 }, headStyles: { fillColor: [151, 190, 65] } });
     doc.save(`filing_report_${_selStart}_to_${_selEnd}.pdf`);
 }
 
@@ -520,8 +605,18 @@ const _monthFp = flatpickr('#ar-month-fp-anchor', {
 document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('ar-btn-label').textContent   = _selBtnLbl;
     document.getElementById('ar-range-label').textContent = _selRngLbl;
-
     document.getElementById('rowsPerPageBtn').textContent = `${rowsPerPage} rows`;
+
+    applyArHeaderUI();
+
+    const activeOpt = Array.from(document.querySelectorAll('.status-opt')).find(o => o.dataset.value === activeStatus);
+    if (activeOpt) {
+        document.getElementById('status-label').textContent = activeOpt.textContent.trim();
+    }
+
+    if (hasSelectedPeriod) {
+        fetchFilingReport();
+    }
 
     document.querySelectorAll('.row-limit-opt').forEach(opt => {
         opt.addEventListener('click', e => {
@@ -569,8 +664,8 @@ document.addEventListener('DOMContentLoaded', () => {
         item.addEventListener('click', e => {
             e.preventDefault();
             activeStatus = item.dataset.value;
+            localStorage.setItem('ar_active_status', activeStatus);
             document.getElementById('status-label').textContent = item.textContent.trim();
-            hasSelectedStatus = true;
             currentPageIndex  = 1;
             fetchFilingReport();
         });

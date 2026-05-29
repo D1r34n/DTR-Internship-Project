@@ -51,7 +51,8 @@ $titles = [
         'departments'       => 'Departments',
         'attendance_report' => 'Attendance Report',
         'filing_report'     => 'Filing Report',
-        'leave_report'      => 'Leave Balances Report'
+        'leave_report'      => 'Leave Balances Report',
+        'leave_summary'     => 'Leave Summary Report'
     ],
 ];
 

@@ -165,21 +165,21 @@ require_once 'cutoff_helpers.php';
 
             <div class="tableScroll" id="report-table-container" style="display:none;">
                 <table class="table table-hover mb-0" id="reportTable">
-                    <thead>
+                    <thead id="report-thead">
                         <tr>
                             <th>Employee ID</th>
-                            <th>Name</th>
+                            <th class="sortable" data-sort="name">Name <i class="bi bi-filter sortIcon" id="sort-name"></i></th>
                             <th>Department</th>
                             <th>Role</th>
-                            <th>Date</th>
+                            <th class="sortable" data-sort="date">Date <i class="bi bi-filter sortIcon" id="sort-date"></i></th>
                             <th>Time In</th>
                             <th>Time Out</th>
-                            <th>Regular Hours</th>
-                            <th>Tardiness</th>
+                            <th class="sortable" data-sort="regular">Regular Hours <i class="bi bi-filter sortIcon" id="sort-regular"></i></th>
+                            <th class="sortable" data-sort="late">Tardiness <i class="bi bi-filter sortIcon" id="sort-late"></i></th>
                             <th>Leave</th>
-                            <th>Undertime</th>
-                            <th>Overtime</th>
-                            <th>Status</th>
+                            <th class="sortable" data-sort="undertime">Undertime <i class="bi bi-filter sortIcon" id="sort-undertime"></i></th>
+                            <th class="sortable" data-sort="overtime">Overtime <i class="bi bi-filter sortIcon" id="sort-overtime"></i></th>
+                            <th class="sortable" data-sort="status">Status <i class="bi bi-filter sortIcon" id="sort-status"></i></th>
                         </tr>
                     </thead>
                     <tbody id="reportTableBody"></tbody>
@@ -258,6 +258,12 @@ const _panel1   = document.getElementById('ar-panel-1');
 const _panel2   = document.getElementById('ar-panel-2');
 const _periodLi = document.getElementById('ar-period-list');
 
+// SORTING
+const AR_DEFAULT_SORT_COL = 'date';
+const AR_DEFAULT_SORT_DIR = 'desc';
+let arSortColumn    = AR_DEFAULT_SORT_COL;
+let arSortDirection = AR_DEFAULT_SORT_DIR;
+
 /* ── Fetch ──────────────────────────────────────────────── */
 function fetchAttendanceReport() {
     if (!_selStart || !_selEnd) return;
@@ -283,7 +289,9 @@ function fetchAttendanceReport() {
         page:   currentPageIndex,
         limit:  rowsPerPage,
         status: activeStatus,
-        search: q
+        search: q,
+        sort:   arSortColumn,
+        dir:    arSortDirection
     });
 
     fetch(`reports_api.php?${params.toString()}`)
@@ -389,6 +397,44 @@ function formatMinutes(mins) {
 function renderPaginationControls(totalPages) {
     _renderPaginationControls(totalPages, currentPageIndex, fetchAttendanceReport, n => { currentPageIndex = n; });
 }
+
+// Add Sorting to Header
+function applyArHeaderUI() {
+    document.querySelectorAll('#report-thead .sortable').forEach(el => el.classList.remove('sorted'));
+    document.querySelectorAll('#report-thead .sortIcon').forEach(el => {
+        el.className = 'sortIcon bi bi-filter';
+    });
+
+    const activeTh = document.querySelector(`#report-thead .sortable[data-sort="${arSortColumn}"]`);
+    if (activeTh) {
+        activeTh.classList.add('sorted');
+        const icon = activeTh.querySelector('.sortIcon');
+        if (icon) icon.className = 'sortIcon bi ' + (arSortDirection === 'asc' ? 'bi-sort-up' : 'bi-sort-down');
+    }
+}
+
+document.getElementById('report-thead').addEventListener('click', e => {
+    const th = e.target.closest('.sortable');
+    if (!th) return;
+
+    const col = th.dataset.sort;
+
+    if (arSortColumn === col) {
+        if (arSortDirection === 'desc') {
+            arSortDirection = 'asc';
+        } else {
+            arSortColumn    = AR_DEFAULT_SORT_COL;
+            arSortDirection = AR_DEFAULT_SORT_DIR;
+        }
+    } else {
+        arSortColumn    = col;
+        arSortDirection = 'desc';
+    }
+
+    applyArHeaderUI();
+    currentPageIndex = 1;
+    fetchAttendanceReport();
+});
 
 /* ── Panel navigation ───────────────────────────────────── */
 function _goPanel1() {
@@ -596,6 +642,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     } catch (e) { /* corrupt storage — fall back to PHP defaults */ }
 
+    applyArHeaderUI();
+    
     const jumpInput = document.getElementById('page-jump-input');
     if (jumpInput) {
         jumpInput.addEventListener('keydown', function (e) {

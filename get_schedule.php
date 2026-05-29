@@ -8,7 +8,13 @@ if (!isset($_SESSION['user_id'])) {
 
 require_once 'db.php';
 date_default_timezone_set('Asia/Manila');
-try { $pdo->exec("ALTER TABLE schedules ADD COLUMN is_archived TINYINT(1) NOT NULL DEFAULT 0"); } catch (PDOException $e) {}
+
+// Ensure json output header is declared uniformly
+header('Content-Type: application/json');
+
+try { 
+    $pdo->exec("ALTER TABLE schedules ADD COLUMN is_archived TINYINT(1) NOT NULL DEFAULT 0"); 
+} catch (PDOException $e) {}
 
 // Admin viewing a specific employee's calendar — richer scoped format
 $userRole = $_SESSION['user_role'] ?? 'employee';
@@ -20,25 +26,21 @@ $allowedRoles = [
     'workforce'
 ];
 
-$scopedToEmployee =
-    isset($_GET['employee_id']) &&
-    in_array($userRole, $allowedRoles, true);
+$scopedToEmployee = isset($_GET['employee_id']) && in_array($userRole, $allowedRoles, true);
 
 if ($scopedToEmployee) {
-    header('Content-Type: application/json');
-
     $employeeId = intval($_GET['employee_id']);
     if (!$employeeId) { echo '[]'; exit(); }
 
     $firstDay = date('Y-m-d', strtotime($_GET['start'] ?? date('Y-m-01')));
     $lastDay  = date('Y-m-d', strtotime(($_GET['end'] ?? date('Y-m-t')) . ' -1 day'));
 
+    // Note: Removed "AND status != 'rejected'" as schedules do not have a status column natively.
     $stmt = $pdo->prepare("
-        SELECT schedule_date, scheduled_start, scheduled_end, is_rest_day, status
+        SELECT schedule_date, scheduled_start, scheduled_end, is_rest_day
         FROM schedules
         WHERE employee_id = ? AND schedule_date BETWEEN ? AND ?
           AND COALESCE(is_archived, 0) = 0
-          AND status != 'rejected'
         ORDER BY schedule_date
     ");
     $stmt->execute([$employeeId, $firstDay, $lastDay]);
@@ -148,20 +150,10 @@ if ($scopedToEmployee) {
         elseif ($obStatus === 'pending')       { $eventType = 'ob-pending';       $eventTitle = 'OB Pending'; }
         elseif ($leaveStatus === 'rejected')   { $eventType = 'leave-rejected';   $eventTitle = 'Leave Rejected'; $isRejectedLeaveOrOB = true; }
         elseif ($obStatus === 'rejected')      { $eventType = 'leave-rejected';   $eventTitle = 'OB Rejected';   $isRejectedLeaveOrOB = true; }
-        elseif ($sched && $sched['status'] === 'pending') {
-            $eventType = 'pending-schedule'; $eventTitle = 'Pending Schedule';
-            $isRestDay = (bool)$sched['is_rest_day'];
-            if (!$sched['is_rest_day']) {
-                $endTs = strtotime($sched['scheduled_end']);
-                $isOvernight = date('Y-m-d', $endTs) > $dateStr;
-                $timeInStr  = date('g:i A', strtotime($sched['scheduled_start']));
-                $timeOutStr = date('g:i A', $endTs) . ($isOvernight ? ' ↪' : '');
-                $schedInVal  = date('H:i', strtotime($sched['scheduled_start']));
-                $schedOutVal = date('H:i', $endTs);
-            }
-        } elseif ($sched && $sched['is_rest_day']) {
+        elseif ($sched && $sched['is_rest_day']) {
             $eventType = 'rest'; $eventTitle = 'Rest Day'; $isRestDay = true;
         } elseif ($sched) {
+            // Because there is no status on schedule, it falls directly to regular shifts
             $endTs = strtotime($sched['scheduled_end']);
             $isOvernight = date('Y-m-d', $endTs) > $dateStr;
             $sh = (int)date('H', strtotime($sched['scheduled_start']));
@@ -210,24 +202,23 @@ $employeeId = $_SESSION['user_id'];
 $start      = isset($_GET['start']) ? substr($_GET['start'], 0, 10) : date('Y-m-01');
 $end        = isset($_GET['end'])   ? substr($_GET['end'],   0, 10) : date('Y-m-t');
 
-// ---- GET SCHEDULES (approved only) ----
+// ---- GET SCHEDULES (Removed non-existent status structural check) ----
 $stmt = $pdo->prepare("
     SELECT * FROM schedules
     WHERE employee_id = ?
     AND schedule_date BETWEEN ? AND ?
-    AND status = 'approved'
     AND COALESCE(is_archived, 0) = 0
     ORDER BY schedule_date ASC
 ");
 $stmt->execute([$employeeId, $start, $end]);
 $schedules = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// ---- GET LEAVE REQUESTS ----
+// ---- GET LEAVE REQUESTS (Fixed to use leave_type_id reference structural block) ----
 $leaveStmt = $pdo->prepare("
     SELECT start_date, end_date, selected_dates, status
     FROM leave_requests
     WHERE employee_id = ?
-    AND leave_type != 'ob leave'
+    AND leave_type_id != (SELECT id FROM leave_types WHERE name = 'ob leave')
     AND (
         start_date BETWEEN ? AND ?
         OR end_date BETWEEN ? AND ?
@@ -237,12 +228,12 @@ $leaveStmt = $pdo->prepare("
 $leaveStmt->execute([$employeeId, $start, $end, $start, $end, $start, $end]);
 $leaveRequests = $leaveStmt->fetchAll(PDO::FETCH_ASSOC);
 
-// ---- GET OB REQUESTS ----
+// ---- GET OB REQUESTS (Fixed to use leave_type_id subquery structural block) ----
 $obStmt = $pdo->prepare("
     SELECT start_date AS ob_date, status
     FROM leave_requests
     WHERE employee_id = ?
-    AND leave_type = 'ob leave'
+    AND leave_type_id = (SELECT id FROM leave_types WHERE name = 'ob leave')
     AND start_date BETWEEN ? AND ?
 ");
 $obStmt->execute([$employeeId, $start, $end]);
@@ -251,7 +242,7 @@ foreach ($obStmt->fetchAll(PDO::FETCH_ASSOC) as $ob) {
     $obMap[$ob['ob_date']] = $ob['status'];
 }
 
-// ---- BUILD LEAVE MAP (using actual selected dates) ----
+// ---- BUILD LEAVE MAP ----
 $leaveMap = [];
 foreach ($leaveRequests as $leave) {
     $dates = json_decode($leave['selected_dates'], true);
@@ -275,13 +266,13 @@ foreach ($leaveRequests as $leave) {
         }
     }
 }
+
 $events        = [];
 $scheduleDates = array_column($schedules, 'schedule_date');
 
 // ---- LOOP THROUGH SCHEDULES ----
 foreach ($schedules as $row) {
 
-    // ---- REST DAY ----
     if ($row['is_rest_day']) {
         $events[] = [
             'title'         => 'Rest Day',
@@ -309,7 +300,6 @@ foreach ($schedules as $row) {
     $startTimeStr = date('g:i A', strtotime($startDT));
     $endTimeStr   = date('g:i A', strtotime($endDT));
 
-    // ---- CHECK LEAVE STATUS FOR THIS DATE ----
     $leaveStatus = $leaveMap[$date] ?? null;
 
     if ($leaveStatus === 'approved') {
@@ -321,7 +311,6 @@ foreach ($schedules as $row) {
             'extendedProps' => ['shift_type' => 'leave_approved'],
         ];
         continue;
-
     } elseif ($leaveStatus === 'pending') {
         $events[] = [
             'title'         => 'Leave Pending',
@@ -331,7 +320,6 @@ foreach ($schedules as $row) {
             'extendedProps' => ['shift_type' => 'leave_pending'],
         ];
         continue;
-
     } elseif ($leaveStatus === 'rejected') {
         $events[] = [
             'title'         => 'Leave Rejected',
@@ -340,10 +328,8 @@ foreach ($schedules as $row) {
             'classNames'    => ['fc-ev-leave-rejected'],
             'extendedProps' => ['shift_type' => 'leave_rejected'],
         ];
-        // Don't continue — fall through to also show the shift
     }
 
-    // ---- CHECK OB STATUS FOR THIS DATE ----
     $obStatus = $obMap[$date] ?? null;
 
     if ($obStatus === 'approved') {
@@ -355,7 +341,6 @@ foreach ($schedules as $row) {
             'extendedProps' => ['shift_type' => 'ob_approved'],
         ];
         continue;
-
     } elseif ($obStatus === 'pending') {
         $events[] = [
             'title'         => 'OB Pending',
@@ -365,7 +350,6 @@ foreach ($schedules as $row) {
             'extendedProps' => ['shift_type' => 'ob_pending'],
         ];
         continue;
-
     } elseif ($obStatus === 'rejected') {
         $events[] = [
             'title'         => 'OB Rejected',
@@ -374,10 +358,8 @@ foreach ($schedules as $row) {
             'classNames'    => ['fc-ev-leave-rejected'],
             'extendedProps' => ['shift_type' => 'ob_rejected'],
         ];
-        // Don't continue — fall through to also show the shift
     }
 
-    // ---- REGULAR SHIFT ----
     if ($isNightShift) {
         $events[] = [
             'title'         => 'Night Shift',
@@ -487,7 +469,7 @@ foreach ($obMap as $obDate => $obStatus) {
     }
 }
 
-// ---- ADMIN: all employees' leave & OB events ----
+// ---- ADMIN GLOBAL PULL (superadmin role overview) ----
 if (($_SESSION['user_role'] ?? '') === 'superadmin') {
 
     $stmt = $pdo->prepare("
@@ -523,11 +505,6 @@ if (($_SESSION['user_role'] ?? '') === 'superadmin') {
             }
         }
 
-        $leaveProps = [
-            'employee_name' => $name,
-            'leave_type'    => $leave['leave_type'],
-            'reason'        => $leave['reason'],
-        ];
         foreach ($datesToShow as $d) {
             if ($leave['status'] === 'approved') {
                 $events[] = ['title' => $name . ' – On Leave',       'start' => $d, 'allDay' => true, 'classNames' => ['fc-ev-on-leave'],      'extendedProps' => ['shift_type' => 'leave_approved']];
@@ -552,7 +529,6 @@ if (($_SESSION['user_role'] ?? '') === 'superadmin') {
     foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $ob) {
         $name   = $ob['full_name'];
         $d      = $ob['ob_date'];
-        $obProps = ['employee_name' => $name, 'leave_type' => 'OB Leave', 'reason' => $ob['reason']];
         if ($ob['status'] === 'approved') {
             $events[] = ['title' => $name . ' – On OB',       'start' => $d, 'allDay' => true, 'classNames' => ['fc-ev-on-ob'],         'extendedProps' => ['shift_type' => 'ob_approved']];
         } elseif ($ob['status'] === 'pending') {
@@ -563,5 +539,5 @@ if (($_SESSION['user_role'] ?? '') === 'superadmin') {
     }
 }
 
-header('Content-Type: application/json');
-echo json_encode(array_values($events));
+echo json_encode(array_values($events), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+exit(); 

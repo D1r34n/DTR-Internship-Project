@@ -18,16 +18,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['leave_type'])) {
     header('Content-Type: application/json');
     $employeeId = intval($_POST['employee_id'] ?? 0);
     $leaveType  = $_POST['leave_type'] ?? '';
-    $value      = intval($_POST['value'] ?? 0);
     $allowed = [
         'vacation_leave', 'sick_leave', 'birthday_leave',
         'paternity_leave', 'maternity_leave', 'solo_parent_leave', 'buffer_leave',
+        'total_vacation_leave', 'total_buffer_leave',
     ];
     if (!$employeeId || !in_array($leaveType, $allowed, true)) {
         echo json_encode(['ok' => false, 'error' => 'Invalid request']);
         exit();
     }
-    if ($value < 0) $value = 0;
+    $isDecimal = in_array($leaveType, ['vacation_leave', 'total_vacation_leave']);
+    if ($isDecimal) {
+        $value = round(max(0.0, (float)($_POST['value'] ?? 0)), 2);
+    } else {
+        $value = max(0, intval($_POST['value'] ?? 0));
+    }
     $stmt = $pdo->prepare("
         INSERT INTO employee_leave_balances (employee_id, `$leaveType`)
         VALUES (?, ?)
@@ -73,8 +78,7 @@ if ($_SESSION['user_role'] === 'workforce' && $empLookup['role_key'] === 'manage
 
 $employeeId = (int) $empLookup['id'];
 $urlEmpId   = $empLookup['employee_id'];
-$scheduleStatus = ($_SESSION['user_role'] === 'workforce') ? 'pending' : 'approved';
-$restDayStatus  = 'approved';
+$schedReqStatus = ($_SESSION['user_role'] === 'workforce') ? 'pending' : 'approved';
 
 // ---- CUTOFFS ----
 $pdo->exec("CREATE TABLE IF NOT EXISTS `cutoffs` (
@@ -272,8 +276,8 @@ if (isset($_GET['ajax_delete'])) {
             $row = $chk->fetch(PDO::FETCH_ASSOC);
             if (!$row) { echo json_encode(['error' => 'not_found']); exit(); }
             if ($row['pending_delete']) { echo json_encode(['error' => 'already_pending_delete']); exit(); }
-            $pdo->prepare("UPDATE schedules SET pending_delete = 1, requested_by = ?, request_type = 'deleted' WHERE employee_id = ? AND schedule_date = ?")
-                ->execute([$_SESSION['user_id'], $empId, $date]);
+            $pdo->prepare("UPDATE schedules SET pending_delete = 1, request_type = 'deleted' WHERE employee_id = ? AND schedule_date = ?")
+                ->execute([$empId, $date]);
             echo json_encode(['status' => 'pending']);
         } else {
             $pdo->prepare("DELETE FROM schedules WHERE employee_id = ? AND schedule_date = ?")->execute([$empId, $date]);
@@ -299,7 +303,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' &&
 
     // Workforce editing an existing schedule: block if it already has a pending edit
     if ($_SESSION['user_role'] === 'workforce' && $is_edit && !empty($dates) && $postEmpId) {
-        $chkPending = $pdo->prepare("SELECT id FROM schedules WHERE employee_id = ? AND schedule_date = ? AND status = 'pending'");
+        $chkPending = $pdo->prepare("SELECT s.id FROM schedules s JOIN schedule_edit_requests ser ON ser.batch_id = s.batch_id WHERE s.employee_id = ? AND s.schedule_date = ? AND ser.status = 'pending'");
         foreach ($dates as $date) {
             $chkPending->execute([$postEmpId, $date]);
             if ($chkPending->fetch()) {
@@ -311,25 +315,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' &&
     }
 
     if (!empty($dates) && $postEmpId) {
-        $existsStmt = $pdo->prepare("SELECT id, COALESCE(is_archived, 0) AS is_archived, status FROM schedules WHERE employee_id = ? AND schedule_date = ?");
+        $existsStmt = $pdo->prepare("SELECT s.id, COALESCE(s.is_archived, 0) AS is_archived, COALESCE(ser.status, 'approved') AS status FROM schedules s LEFT JOIN schedule_edit_requests ser ON ser.batch_id = s.batch_id WHERE s.employee_id = ? AND s.schedule_date = ?");
 
         if ($is_rest_day) {
-            $updRest = $pdo->prepare("UPDATE schedules SET orig_is_rest_day = is_rest_day, orig_scheduled_start = scheduled_start, orig_scheduled_end = scheduled_end, is_rest_day = 1, scheduled_start = NULL, scheduled_end = NULL, status = ?, requested_by = ?, request_type = ?, batch_id = ?, is_archived = 0 WHERE employee_id = ? AND schedule_date = ?");
-            $insRest = $pdo->prepare("INSERT INTO schedules (employee_id, schedule_date, scheduled_start, scheduled_end, is_rest_day, status, requested_by, request_type, batch_id) VALUES (?, ?, NULL, NULL, 1, ?, ?, 'added', ?)");
+            $updRest = $pdo->prepare("UPDATE schedules SET orig_is_rest_day = is_rest_day, orig_scheduled_start = scheduled_start, orig_scheduled_end = scheduled_end, is_rest_day = 1, scheduled_start = NULL, scheduled_end = NULL, request_type = ?, batch_id = ?, is_archived = 0 WHERE employee_id = ? AND schedule_date = ?");
+            $insRest = $pdo->prepare("INSERT INTO schedules (employee_id, schedule_date, scheduled_start, scheduled_end, is_rest_day, request_type, batch_id) VALUES (?, ?, NULL, NULL, 1, 'added', ?)");
             foreach ($dates as $date) {
                 $existsStmt->execute([$postEmpId, $date]);
                 $existing = $existsStmt->fetch(PDO::FETCH_ASSOC);
                 if ($existing) {
                     $isStale = $existing['is_archived'] || $existing['status'] === 'rejected';
                     $rtype   = $isStale ? 'added' : 'edit';
-                    $updRest->execute([$restDayStatus, $_SESSION['user_id'], $rtype, $batchId, $postEmpId, $date]);
+                    $updRest->execute([$rtype, $batchId, $postEmpId, $date]);
                 } else {
-                    $insRest->execute([$postEmpId, $date, $restDayStatus, $_SESSION['user_id'], $batchId]);
+                    $insRest->execute([$postEmpId, $date, $batchId]);
                 }
             }
         } else {
-            $updateStmt       = $pdo->prepare("UPDATE schedules SET orig_is_rest_day = is_rest_day, orig_scheduled_start = scheduled_start, orig_scheduled_end = scheduled_end, scheduled_start = ?, scheduled_end = ?, is_rest_day = 0, status = ?, requested_by = ?, request_type = ?, batch_id = ?, is_archived = 0 WHERE employee_id = ? AND schedule_date = ?");
-            $insertSchedule   = $pdo->prepare("INSERT INTO schedules (employee_id, schedule_date, scheduled_start, scheduled_end, is_rest_day, status, requested_by, request_type, batch_id) VALUES (?, ?, ?, ?, 0, ?, ?, 'added', ?)");
+            $updateStmt       = $pdo->prepare("UPDATE schedules SET orig_is_rest_day = is_rest_day, orig_scheduled_start = scheduled_start, orig_scheduled_end = scheduled_end, scheduled_start = ?, scheduled_end = ?, is_rest_day = 0, request_type = ?, batch_id = ?, is_archived = 0 WHERE employee_id = ? AND schedule_date = ?");
+            $insertSchedule   = $pdo->prepare("INSERT INTO schedules (employee_id, schedule_date, scheduled_start, scheduled_end, is_rest_day, request_type, batch_id) VALUES (?, ?, ?, ?, 0, 'added', ?)");
 
             foreach ($dates as $date) {
                 $startDT = $date . ' ' . $time_in  . ':00';
@@ -342,19 +346,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' &&
                 if ($existing) {
                     $isStale = $existing['is_archived'] || $existing['status'] === 'rejected';
                     $rtype   = $isStale ? 'added' : 'edit';
-                    $updateStmt->execute([$startDT, $endDT, $scheduleStatus, $_SESSION['user_id'], $rtype, $batchId, $postEmpId, $date]);
+                    $updateStmt->execute([$startDT, $endDT, $rtype, $batchId, $postEmpId, $date]);
                 } else {
-                    $insertSchedule->execute([$postEmpId, $date, $startDT, $endDT, $scheduleStatus, $_SESSION['user_id'], $batchId]);
+                    $insertSchedule->execute([$postEmpId, $date, $startDT, $endDT, $batchId]);
                 }
             }
         }
     }
     
-    $schedLogStatus = in_array($_SESSION['user_role'], ['superadmin', 'admin']) ? 'approved' : 'pending';
+    $pdo->prepare("INSERT INTO schedule_edit_requests (batch_id, employee_id, requested_by, status) VALUES (?, ?, ?, ?)")
+        ->execute([$batchId, $postEmpId, $_SESSION['user_id'], $is_rest_day ? 'approved' : $schedReqStatus]);
+    $schedReqId = (int)$pdo->lastInsertId();
     $pdo->prepare("
-    INSERT INTO logs (employee_id, log_type, log_time, longitude, latitude, is_within_office, edit_status, edit_requested_by, edit_reason)
+    INSERT INTO logs (employee_id, log_type, log_time, longitude, latitude, is_within_office, schedule_request_id, edit_requested_by, edit_reason)
     VALUES (?, ?, NOW(), 0, 0, 0, ?, ?, ?)
-")->execute([$postEmpId, $is_edit ? 'EDIT_SCHEDULE' : 'ADD_SCHEDULE', $schedLogStatus, $_SESSION['user_id'], $batchId]);
+")->execute([$postEmpId, $is_edit ? 'EDIT_SCHEDULE' : 'ADD_SCHEDULE', $schedReqId, $_SESSION['user_id'], $batchId]);
 
     header("Location: admin_employee_view.php?employee_id=$urlEmpId");
     exit();
@@ -375,9 +381,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save_
     $hasEdit = false;
 
     if (!empty($dates) && $postEmpId && $time_in && $time_out) {
-        $existsStmt       = $pdo->prepare("SELECT id, COALESCE(is_archived, 0) AS is_archived, status FROM schedules WHERE employee_id = ? AND schedule_date = ?");
-        $updateStmt       = $pdo->prepare("UPDATE schedules SET orig_is_rest_day = is_rest_day, orig_scheduled_start = scheduled_start, orig_scheduled_end = scheduled_end, scheduled_start = ?, scheduled_end = ?, is_rest_day = 0, status = ?, requested_by = ?, request_type = ?, batch_id = ?, is_archived = 0 WHERE employee_id = ? AND schedule_date = ?");
-        $insertSchedule   = $pdo->prepare("INSERT INTO schedules (employee_id, schedule_date, scheduled_start, scheduled_end, is_rest_day, status, requested_by, request_type, batch_id) VALUES (?, ?, ?, ?, 0, ?, ?, 'added', ?)");
+        $existsStmt       = $pdo->prepare("SELECT s.id, COALESCE(s.is_archived, 0) AS is_archived, COALESCE(ser.status, 'approved') AS status FROM schedules s LEFT JOIN schedule_edit_requests ser ON ser.batch_id = s.batch_id WHERE s.employee_id = ? AND s.schedule_date = ?");
+        $updateStmt       = $pdo->prepare("UPDATE schedules SET orig_is_rest_day = is_rest_day, orig_scheduled_start = scheduled_start, orig_scheduled_end = scheduled_end, scheduled_start = ?, scheduled_end = ?, is_rest_day = 0, request_type = ?, batch_id = ?, is_archived = 0 WHERE employee_id = ? AND schedule_date = ?");
+        $insertSchedule   = $pdo->prepare("INSERT INTO schedules (employee_id, schedule_date, scheduled_start, scheduled_end, is_rest_day, request_type, batch_id) VALUES (?, ?, ?, ?, 0, 'added', ?)");
 
         foreach ($dates as $date) {
             $startDT = $date . ' ' . $time_in  . ':00';
@@ -391,10 +397,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save_
                 $isStale = $existing['is_archived'] || $existing['status'] === 'rejected';
                 $rtype   = $isStale ? 'added' : 'edit';
                 if ($isStale) { $hasNew = true; } else { $hasEdit = true; }
-                $updateStmt->execute([$startDT, $endDT, $scheduleStatus, $_SESSION['user_id'], $rtype, $batchId, $postEmpId, $date]);
+                $updateStmt->execute([$startDT, $endDT, $rtype, $batchId, $postEmpId, $date]);
             } else {
                 $hasNew = true;
-                $insertSchedule->execute([$postEmpId, $date, $startDT, $endDT, $scheduleStatus, $_SESSION['user_id'], $batchId]);
+                $insertSchedule->execute([$postEmpId, $date, $startDT, $endDT, $batchId]);
             }
         }
     }
@@ -402,9 +408,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save_
     // ---- Single specific rest dates ----
     $singleRestDates = json_decode($_POST['single_rest_dates'] ?? '[]', true);
     if (!empty($singleRestDates) && $postEmpId && is_array($singleRestDates)) {
-        $chkStmt = $pdo->prepare("SELECT id, COALESCE(is_archived, 0) AS is_archived, status FROM schedules WHERE employee_id = ? AND schedule_date = ?");
-        $insRest = $pdo->prepare("INSERT INTO schedules (employee_id, schedule_date, scheduled_start, scheduled_end, is_rest_day, status, requested_by, request_type, batch_id) VALUES (?, ?, NULL, NULL, 1, ?, ?, 'added', ?)");
-        $updRest = $pdo->prepare("UPDATE schedules SET orig_is_rest_day = is_rest_day, orig_scheduled_start = scheduled_start, orig_scheduled_end = scheduled_end, is_rest_day = 1, scheduled_start = NULL, scheduled_end = NULL, status = ?, requested_by = ?, request_type = ?, batch_id = ?, is_archived = 0 WHERE employee_id = ? AND schedule_date = ?");
+        $chkStmt = $pdo->prepare("SELECT s.id, COALESCE(s.is_archived, 0) AS is_archived, COALESCE(ser.status, 'approved') AS status FROM schedules s LEFT JOIN schedule_edit_requests ser ON ser.batch_id = s.batch_id WHERE s.employee_id = ? AND s.schedule_date = ?");
+        $insRest = $pdo->prepare("INSERT INTO schedules (employee_id, schedule_date, scheduled_start, scheduled_end, is_rest_day, request_type, batch_id) VALUES (?, ?, NULL, NULL, 1, 'added', ?)");
+        $updRest = $pdo->prepare("UPDATE schedules SET orig_is_rest_day = is_rest_day, orig_scheduled_start = scheduled_start, orig_scheduled_end = scheduled_end, is_rest_day = 1, scheduled_start = NULL, scheduled_end = NULL, request_type = ?, batch_id = ?, is_archived = 0 WHERE employee_id = ? AND schedule_date = ?");
         foreach ($singleRestDates as $date) {
             if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) continue;
             $chkStmt->execute([$postEmpId, $date]);
@@ -412,9 +418,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save_
             if ($chkRow) {
                 $isStale = $chkRow['is_archived'] || $chkRow['status'] === 'rejected';
                 $rtype   = $isStale ? 'added' : 'edit';
-                $updRest->execute([$restDayStatus, $_SESSION['user_id'], $rtype, $batchId, $postEmpId, $date]);
+                $updRest->execute([$rtype, $batchId, $postEmpId, $date]);
             } else {
-                $insRest->execute([$postEmpId, $date, $restDayStatus, $_SESSION['user_id'], $batchId]);
+                $insRest->execute([$postEmpId, $date, $batchId]);
             }
         }
     }
@@ -454,18 +460,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save_
             }
         }
     }
-    $schedLogStatus = in_array($_SESSION['user_role'], ['superadmin', 'admin']) ? 'approved' : 'pending';
-    if ($hasNew) {
-        $pdo->prepare("
-        INSERT INTO logs (employee_id, log_type, log_time, longitude, latitude, is_within_office, edit_status, edit_requested_by, edit_reason)
-        VALUES (?, 'ADD_SCHEDULE', NOW(), 0, 0, 0, ?, ?, ?)
-        ")->execute([$postEmpId, $schedLogStatus, $_SESSION['user_id'], $batchId]);
-    }
-    if ($hasEdit) {
-        $pdo->prepare("
-        INSERT INTO logs (employee_id, log_type, log_time, longitude, latitude, is_within_office, edit_status, edit_requested_by, edit_reason)
-        VALUES (?, 'EDIT_SCHEDULE', NOW(), 0, 0, 0, ?, ?, ?)
-        ")->execute([$postEmpId, $schedLogStatus, $_SESSION['user_id'], $batchId]);
+    if ($hasNew || $hasEdit) {
+        $pdo->prepare("INSERT INTO schedule_edit_requests (batch_id, employee_id, requested_by, status) VALUES (?, ?, ?, ?)")
+            ->execute([$batchId, $postEmpId, $_SESSION['user_id'], $schedReqStatus]);
+        $schedReqId = (int)$pdo->lastInsertId();
+        if ($hasNew) {
+            $pdo->prepare("
+            INSERT INTO logs (employee_id, log_type, log_time, longitude, latitude, is_within_office, schedule_request_id, edit_requested_by, edit_reason)
+            VALUES (?, 'ADD_SCHEDULE', NOW(), 0, 0, 0, ?, ?, ?)
+            ")->execute([$postEmpId, $schedReqId, $_SESSION['user_id'], $batchId]);
+        }
+        if ($hasEdit) {
+            $pdo->prepare("
+            INSERT INTO logs (employee_id, log_type, log_time, longitude, latitude, is_within_office, schedule_request_id, edit_requested_by, edit_reason)
+            VALUES (?, 'EDIT_SCHEDULE', NOW(), 0, 0, 0, ?, ?, ?)
+            ")->execute([$postEmpId, $schedReqId, $_SESSION['user_id'], $batchId]);
+        }
     }
 
     header("Location: admin_employee_view.php?employee_id=$urlEmpId");
@@ -575,13 +585,13 @@ $balStmt->execute([$employeeId]);
 $leaveBalance = $balStmt->fetch(PDO::FETCH_ASSOC) ?: [];
 
 $leaveTypes = [
-    ['key' => 'vacation_leave',    'label' => 'Vacation Leave',    'icon' => 'bi-umbrella-fill',    'color' => '#4da3ff',              'default' => 0],
-    ['key' => 'sick_leave',        'label' => 'Sick Leave',        'icon' => 'bi-heart-pulse-fill', 'color' => '#ff6b7a',              'default' => 4],
-    ['key' => 'birthday_leave',    'label' => 'Birthday Leave',    'icon' => 'bi-gift-fill',        'color' => '#f0ad4e',              'default' => 1],
-    ['key' => 'paternity_leave',   'label' => 'Paternity Leave',   'icon' => 'bi-person-fill',      'color' => '#7dd9a8',              'default' => 7],
-    ['key' => 'maternity_leave',   'label' => 'Maternity Leave',   'icon' => 'bi-person-hearts',    'color' => '#fd7e14',              'default' => 90],
-    ['key' => 'solo_parent_leave', 'label' => 'Solo Parent Leave', 'icon' => 'bi-people-fill',      'color' => '#a07de0',              'default' => 1],
-    ['key' => 'buffer_leave',      'label' => 'Buffer Leave',      'icon' => 'bi-shield-fill',      'color' => 'var(--primary-color)', 'default' => 0],
+    ['key' => 'vacation_leave',    'label' => 'Vacation Leave',    'icon' => 'bi-umbrella-fill',    'color' => '#4da3ff',              'default' => 0,  'has_total' => false],
+    ['key' => 'sick_leave',        'label' => 'Sick Leave',        'icon' => 'bi-heart-pulse-fill', 'color' => '#ff6b7a',              'default' => 4,  'has_total' => true],
+    ['key' => 'birthday_leave',    'label' => 'Birthday Leave',    'icon' => 'bi-gift-fill',        'color' => '#f0ad4e',              'default' => 1,  'has_total' => true],
+    ['key' => 'paternity_leave',   'label' => 'Paternity Leave',   'icon' => 'bi-person-fill',      'color' => '#7dd9a8',              'default' => 7,  'has_total' => true],
+    ['key' => 'maternity_leave',   'label' => 'Maternity Leave',   'icon' => 'bi-person-hearts',    'color' => '#fd7e14',              'default' => 90, 'has_total' => true],
+    ['key' => 'solo_parent_leave', 'label' => 'Solo Parent Leave', 'icon' => 'bi-people-fill',      'color' => '#a07de0',              'default' => 1,  'has_total' => true],
+    ['key' => 'buffer_leave',      'label' => 'Buffer Leave',      'icon' => 'bi-shield-fill',      'color' => 'var(--primary-color)', 'default' => 0,  'has_total' => false],
 ];
 ?>
 <!doctype html>
@@ -784,7 +794,12 @@ $leaveTypes = [
                         </div>
                     <?php else: ?>
                         <div class="leave-cards-grid">
-                            <?php foreach ($leaveTypes as $lt): ?>
+                            <?php foreach ($leaveTypes as $lt):
+                                $isDecimal = $lt['key'] === 'vacation_leave';
+                                $rawCur    = $leaveBalance[$lt['key']] ?? 0;
+                                $current   = $isDecimal ? round((float)$rawCur, 2) : (int)$rawCur;
+                                $curDisp   = $isDecimal ? number_format((float)$current, 2) : $current;
+                            ?>
                                 <div class="leave-card"
                                      data-key="<?= $lt['key'] ?>"
                                      data-emp="<?= $employeeId ?>"
@@ -800,10 +815,24 @@ $leaveTypes = [
                                     <div class="leave-card-icon" style="color:<?= $lt['color'] ?>">
                                         <i class="bi <?= $lt['icon'] ?>"></i>
                                     </div>
-                                    <div class="leave-card-days"
-                                         style="color:<?= $lt['color'] ?>"
-                                         data-value="<?= (int)($leaveBalance[$lt['key']] ?? 0) ?>">
-                                        <?= (int)($leaveBalance[$lt['key']] ?? 0) ?>
+                                    <div class="leave-card-balance-row">
+                                        <span class="leave-card-current"
+                                              style="color:<?= $lt['color'] ?>"
+                                              data-value="<?= $current ?>"
+                                              data-decimal="<?= $isDecimal ? '1' : '0' ?>"
+                                              title="Click to edit">
+                                            <?= $curDisp ?>
+                                        </span>
+                                        <?php if ($lt['has_total']): ?>
+                                        <span class="leave-card-sep">/</span>
+                                        <span class="leave-card-total"
+                                              data-value="<?= $lt['default'] ?>"
+                                              data-editable="0"
+                                              data-decimal="0"
+                                              title="Fixed allocation">
+                                            <?= $lt['default'] ?>
+                                        </span>
+                                        <?php endif; ?>
                                     </div>
                                     <div class="leave-card-name"><?= $lt['label'] ?></div>
                                     <div class="leave-card-unit">days available</div>
@@ -1270,7 +1299,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 bootstrap.Modal.getInstance(
                     document.getElementById('editLogModal')
                 ).hide();
-                showToast('Log updated successfully');
+                showToast('Log updated successfully', 'info');
                 fetchLogs();
             } else {
                 showToast(data.message || 'Failed to update log.', 'danger');
@@ -1338,66 +1367,50 @@ document.getElementById('ale-submit-btn').addEventListener('click', () => {
 });
 
 // ---- Leave balance inline edit ----
-function saveLeaveBalance(card, val) {
-    const daysEl = card.querySelector('.leave-card-days');
-    const key    = card.dataset.key;
-    const empId  = card.dataset.emp;
-    const prev   = parseInt(daysEl.dataset.value, 10);
+function saveLeaveBalance(columnKey, el, val, empId) {
+    const isDecimal = el.dataset.decimal === '1';
+    const prev      = el.dataset.value;
 
     const fd = new FormData();
     fd.append('employee_id', empId);
-    fd.append('leave_type',  key);
+    fd.append('leave_type',  columnKey);
     fd.append('value',       val);
 
     fetch('admin_employee_view.php', { method: 'POST', body: fd })
         .then(r => r.json())
         .then(data => {
-            daysEl.textContent   = data.ok ? data.value : prev;
-            daysEl.dataset.value = data.ok ? data.value : prev;
-            showToast(data.ok ? 'Leave balance updated.' : 'Failed to update leave balance.');
+            if (data.ok) {
+                el.textContent   = isDecimal ? parseFloat(data.value).toFixed(2) : data.value;
+                el.dataset.value = data.value;
+            } else {
+                el.textContent   = isDecimal ? parseFloat(prev).toFixed(2) : prev;
+                el.dataset.value = prev;
+            }
+            showToast(data.ok ? 'Leave balance updated.' : 'Failed to update leave balance.', data.ok ? 'info' : 'danger');
         })
         .catch(() => {
-            daysEl.textContent   = prev;
-            daysEl.dataset.value = prev;
+            el.textContent   = isDecimal ? parseFloat(prev).toFixed(2) : prev;
+            el.dataset.value = prev;
             showToast('Failed to update leave balance.');
         });
 }
 
-document.addEventListener('click', e => {
-    // Reset button
-    const resetBtn = e.target.closest('.leave-reset-btn');
-    if (resetBtn) {
-        e.stopPropagation();
-        const card   = resetBtn.closest('.leave-card');
-        const def    = parseInt(card.dataset.default, 10);
-        const daysEl = card.querySelector('.leave-card-days');
-        if (daysEl.querySelector('input')) return;
-        const cur = parseInt(daysEl.dataset.value, 10);
-        if (cur === def) return;
-        daysEl.textContent   = def;
-        daysEl.dataset.value = def;
-        saveLeaveBalance(card, def);
-        return;
-    }
-
-    // Card click → inline edit
-    const card = e.target.closest('.leave-card');
-    if (!card) return;
-    const daysEl = card.querySelector('.leave-card-days');
-    if (!daysEl || daysEl.querySelector('input')) return;
-
-    const color = daysEl.style.color;
-    const prev  = parseInt(daysEl.dataset.value, 10);
+function inlineEditLeave(el, columnKey, empId) {
+    if (el.querySelector('input')) return;
+    const isDecimal = el.dataset.decimal === '1';
+    const prev      = el.dataset.value;
+    const isCurrent = el.classList.contains('leave-card-current');
 
     const input = document.createElement('input');
-    input.type        = 'number';
-    input.min         = '0';
-    input.value       = prev;
-    input.className   = 'leave-days-input';
-    input.style.color = color;
+    input.type      = 'number';
+    input.min       = '0';
+    input.step      = isDecimal ? '0.01' : '1';
+    input.value     = isDecimal ? parseFloat(prev).toFixed(2) : prev;
+    input.className = isCurrent ? 'leave-days-input' : 'leave-days-input-sm';
+    if (el.style.color) input.style.color = el.style.color;
 
-    daysEl.textContent = '';
-    daysEl.appendChild(input);
+    el.textContent = '';
+    el.appendChild(input);
     input.focus();
     input.select();
 
@@ -1405,17 +1418,57 @@ document.addEventListener('click', e => {
     function save() {
         if (saved) return;
         saved = true;
-        const val = Math.max(0, parseInt(input.value, 10) || 0);
-        daysEl.textContent   = val;
-        daysEl.dataset.value = val;
-        if (val !== prev) saveLeaveBalance(card, val);
+        let val;
+        if (isDecimal) {
+            val = Math.round(Math.max(0, parseFloat(input.value) || 0) * 100) / 100;
+        } else {
+            val = Math.max(0, parseInt(input.value, 10) || 0);
+        }
+        const displayed = isDecimal ? val.toFixed(2) : val;
+        el.textContent   = displayed;
+        el.dataset.value = val;
+        const prevNum = isDecimal ? parseFloat(prev) : parseInt(prev, 10);
+        if (val !== prevNum) saveLeaveBalance(columnKey, el, val, empId);
     }
 
     input.addEventListener('keydown', ev => {
         if (ev.key === 'Enter')  { input.blur(); }
-        if (ev.key === 'Escape') { saved = true; daysEl.textContent = prev; daysEl.dataset.value = prev; }
+        if (ev.key === 'Escape') {
+            saved = true;
+            el.textContent   = isDecimal ? parseFloat(prev).toFixed(2) : prev;
+            el.dataset.value = prev;
+        }
     });
     input.addEventListener('blur', save);
+}
+
+document.addEventListener('click', e => {
+    // Reset button → reset current to default
+    const resetBtn = e.target.closest('.leave-reset-btn');
+    if (resetBtn) {
+        e.stopPropagation();
+        const card  = resetBtn.closest('.leave-card');
+        const curEl = card.querySelector('.leave-card-current');
+        if (!curEl || curEl.querySelector('input')) return;
+        const def        = parseInt(card.dataset.default, 10);
+        const isDecimal  = curEl.dataset.decimal === '1';
+        const cur        = isDecimal ? parseFloat(curEl.dataset.value) : parseInt(curEl.dataset.value, 10);
+        if (cur === def) return;
+        curEl.textContent   = isDecimal ? def.toFixed(2) : def;
+        curEl.dataset.value = def;
+        saveLeaveBalance(card.dataset.key, curEl, def, card.dataset.emp);
+        return;
+    }
+
+    // Click on current value → edit current
+    const curEl = e.target.closest('.leave-card-current');
+    if (curEl) {
+        const card = curEl.closest('.leave-card');
+        inlineEditLeave(curEl, card.dataset.key, card.dataset.emp);
+        return;
+    }
+
+    // Total is always fixed — no inline edit for total spans
 });
 
 </script>

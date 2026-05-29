@@ -39,10 +39,16 @@ if (isset($_GET['action']) && (isset($_GET['id']) || isset($_GET['batch_id']))) 
 
     if ($action === 'approve') {
         if ($batchId) {
-            $q = $pdo->prepare("SELECT * FROM schedules WHERE batch_id = ? AND status = 'pending'");
+            $serStmt = $pdo->prepare("SELECT id FROM schedule_edit_requests WHERE batch_id = ? AND status = 'pending'");
+            $serStmt->execute([$batchId]);
+            $ser = $serStmt->fetch(PDO::FETCH_ASSOC);
+            $q = $pdo->prepare("SELECT * FROM schedules WHERE batch_id = ?");
             $q->execute([$batchId]);
         } else {
-            $q = $pdo->prepare("SELECT * FROM schedules WHERE id = ? AND status = 'pending'");
+            $serRow = $pdo->prepare("SELECT ser.id FROM schedule_edit_requests ser JOIN schedules s ON ser.batch_id = s.batch_id WHERE s.id = ? AND ser.status = 'pending' LIMIT 1");
+            $serRow->execute([$id]);
+            $ser = $serRow->fetch(PDO::FETCH_ASSOC);
+            $q = $pdo->prepare("SELECT * FROM schedules WHERE id = ?");
             $q->execute([$id]);
         }
         $schedList = $q->fetchAll(PDO::FETCH_ASSOC);
@@ -62,76 +68,67 @@ if (isset($_GET['action']) && (isset($_GET['id']) || isset($_GET['batch_id']))) 
                 scheduled_end   = VALUES(scheduled_end)
         ");
         foreach ($schedList as $sched) {
-            $pdo->prepare("UPDATE schedules SET status = 'approved', updated_at = NOW() WHERE id = ?")->execute([$sched['id']]);
+            $pdo->prepare("UPDATE schedules SET updated_at = NOW() WHERE id = ?")->execute([$sched['id']]);
             if (!$sched['is_rest_day']) {
                 $attStmt->execute([
                     $sched['employee_id'], $sched['id'], $sched['schedule_date'],
                     $sched['scheduled_start'], $sched['scheduled_end'],
                 ]);
             }
-             }
+        }
 
-        if (!empty($schedList)) {
-            $empId       = $schedList[0]['employee_id'];
-            $requestedBy = $schedList[0]['requested_by'] ?? null;
+        if (!empty($ser)) {
+            $pdo->prepare("UPDATE schedule_edit_requests SET status = 'approved', approved_by = ? WHERE id = ?")->execute([$_SESSION['user_id'], $ser['id']]);
+            // Approve the linked ADD/EDIT_SCHEDULE log entry
             $pdo->prepare("
                 UPDATE logs
-                SET edit_status = 'approved'
-                WHERE employee_id = ?
-                AND edit_requested_by = ?
+                SET schedule_request_id = schedule_request_id
+                WHERE schedule_request_id = ?
                 AND log_type IN ('ADD_SCHEDULE', 'EDIT_SCHEDULE')
-                AND edit_status = 'pending'
-            ")->execute([$empId, $requestedBy]);
+            ")->execute([$ser['id']]);
         }
 
         if (!empty($schedList)) $success = "Schedule approved successfully!";
 
     } elseif ($action === 'reject') {
         if ($batchId) {
-            $q = $pdo->prepare("SELECT id, employee_id, schedule_date, request_type, orig_is_rest_day, requested_by FROM schedules WHERE batch_id = ? AND status = 'pending'");
+            $serStmt = $pdo->prepare("SELECT id FROM schedule_edit_requests WHERE batch_id = ? AND status = 'pending'");
+            $serStmt->execute([$batchId]);
+            $ser = $serStmt->fetch(PDO::FETCH_ASSOC);
+            $q = $pdo->prepare("SELECT id, employee_id, schedule_date, request_type, orig_is_rest_day FROM schedules WHERE batch_id = ?");
             $q->execute([$batchId]);
         } else {
-            $q = $pdo->prepare("SELECT id, employee_id, schedule_date, request_type, orig_is_rest_day, requested_by FROM schedules WHERE id = ? AND status = 'pending'");
+            $serRow = $pdo->prepare("SELECT ser.id FROM schedule_edit_requests ser JOIN schedules s ON ser.batch_id = s.batch_id WHERE s.id = ? AND ser.status = 'pending' LIMIT 1");
+            $serRow->execute([$id]);
+            $ser = $serRow->fetch(PDO::FETCH_ASSOC);
+            $q = $pdo->prepare("SELECT id, employee_id, schedule_date, request_type, orig_is_rest_day FROM schedules WHERE id = ?");
             $q->execute([$id]);
         }
         $rows = $q->fetchAll(PDO::FETCH_ASSOC);
 
         $restoreStmt = $pdo->prepare("
             UPDATE schedules SET
-                status             = 'approved',
-                is_rest_day        = orig_is_rest_day,
-                scheduled_start    = orig_scheduled_start,
-                scheduled_end      = orig_scheduled_end,
-                orig_is_rest_day   = NULL,
+                is_rest_day          = orig_is_rest_day,
+                scheduled_start      = orig_scheduled_start,
+                scheduled_end        = orig_scheduled_end,
+                orig_is_rest_day     = NULL,
                 orig_scheduled_start = NULL,
                 orig_scheduled_end   = NULL,
-                request_type       = NULL,
-                batch_id           = NULL,
-                updated_at         = NOW()
+                request_type         = NULL,
+                batch_id             = NULL,
+                updated_at           = NOW()
             WHERE id = ?
         ");
-        $rejectStmt = $pdo->prepare("UPDATE schedules SET status = 'rejected', updated_at = NOW() WHERE id = ?");
-        $delAtt     = $pdo->prepare("DELETE FROM attendances WHERE employee_id = ? AND work_date = ? AND actual_time_in IS NULL");
+        $delAtt = $pdo->prepare("DELETE FROM attendances WHERE employee_id = ? AND work_date = ? AND actual_time_in IS NULL");
 
         foreach ($rows as $row) {
             if ($row['request_type'] === 'edit' && $row['orig_is_rest_day'] !== null) {
                 $restoreStmt->execute([$row['id']]);
-            } else {
-                $rejectStmt->execute([$row['id']]);
             }
             $delAtt->execute([$row['employee_id'], $row['schedule_date']]);
         }
-        if (!empty($rows)) {
-            $empId       = $rows[0]['employee_id'];
-            $requestedBy = $rows[0]['requested_by'] ?? null;
-            $pdo->prepare("
-                UPDATE logs
-                SET edit_status = 'rejected'
-                WHERE employee_id = ?
-                AND edit_requested_by = ?
-                AND log_type IN ('ADD_SCHEDULE', 'EDIT_SCHEDULE')
-                AND edit_status = 'pending'
-            ")->execute([$empId, $requestedBy]);
+        if (!empty($ser)) {
+            $pdo->prepare("UPDATE schedule_edit_requests SET status = 'rejected', approved_by = ? WHERE id = ?")->execute([$_SESSION['user_id'], $ser['id']]);
         }
         $success = "Schedule request rejected.";
 
@@ -166,14 +163,14 @@ skip_action_sr:
 
 // ---- COUNTS ----
 if ($deptScoped) {
-    $cStmt = $pdo->prepare("SELECT COUNT(*) FROM schedules s JOIN employees e ON s.employee_id = e.id WHERE s.status = ? AND s.is_rest_day = 0 AND e.department_id = ?");
+    $cStmt = $pdo->prepare("SELECT COUNT(DISTINCT ser.id) FROM schedule_edit_requests ser JOIN schedules s ON ser.batch_id = s.batch_id JOIN employees e ON s.employee_id = e.id WHERE ser.status = ? AND e.department_id = ?");
     $cStmt->execute(['pending',  $myDeptId]); $pendingCount  = (int)$cStmt->fetchColumn();
     $cStmt->execute(['approved', $myDeptId]); $approvedCount = (int)$cStmt->fetchColumn();
     $cStmt->execute(['rejected', $myDeptId]); $rejectedCount = (int)$cStmt->fetchColumn();
 } else {
-    $pendingCount  = (int)$pdo->query("SELECT COUNT(*) FROM schedules WHERE status = 'pending'  AND is_rest_day = 0")->fetchColumn();
-    $approvedCount = (int)$pdo->query("SELECT COUNT(*) FROM schedules WHERE status = 'approved' AND is_rest_day = 0")->fetchColumn();
-    $rejectedCount = (int)$pdo->query("SELECT COUNT(*) FROM schedules WHERE status = 'rejected' AND is_rest_day = 0")->fetchColumn();
+    $pendingCount  = (int)$pdo->query("SELECT COUNT(*) FROM schedule_edit_requests WHERE status = 'pending'")->fetchColumn();
+    $approvedCount = (int)$pdo->query("SELECT COUNT(*) FROM schedule_edit_requests WHERE status = 'approved'")->fetchColumn();
+    $rejectedCount = (int)$pdo->query("SELECT COUNT(*) FROM schedule_edit_requests WHERE status = 'rejected'")->fetchColumn();
 }
 
 // ---- GET SCHEDULE REQUESTS (grouped by batch) ----
@@ -194,16 +191,17 @@ $batchSql = "
             MIN(s.scheduled_start) AS scheduled_start,
             MIN(s.scheduled_end)   AS scheduled_end,
             MIN(s.is_rest_day)     AS is_rest_day,
-            MIN(s.status)          AS status,
+            COALESCE(MIN(ser.status), 'approved')        AS status,
             MAX(s.pending_delete)  AS pending_delete,
             MAX(COALESCE(s.is_archived, 0)) AS is_archived,
             MIN(s.request_type)    AS request_type,
-            MIN(s.requested_by)    AS requested_by,
+            COALESCE(MIN(ser.requested_by), MIN(s.employee_id)) AS requested_by,
             MAX(s.updated_at)      AS updated_at,
             COUNT(*)               AS date_count
         FROM schedules s
         JOIN employees e ON s.employee_id = e.id
         LEFT JOIN departments d ON e.department_id = d.id
+        LEFT JOIN schedule_edit_requests ser ON ser.batch_id = s.batch_id
         WHERE (s.is_rest_day = 0 OR s.pending_delete = 1 OR COALESCE(s.is_archived, 0) = 1)
         %%DEPT%%
         GROUP BY COALESCE(s.batch_id, CONCAT('solo_', s.id))

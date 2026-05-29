@@ -25,7 +25,7 @@ if (!empty($_SESSION['must_change_password'])) {
 
 $requestsOpen  = in_array($currentPage, ['employee_requests', 'schedule_requests']);
 $schedulesOpen = in_array($currentPage, ['schedule', 'cutoffs']);
-$reportsOpen = in_array($currentPage, ['attendance_report', 'filing_report', 'leave_report']);
+$reportsOpen = in_array($currentPage, ['attendance_report', 'filing_report', 'leave_report', 'leave_summary']);
 ?>
 
 <div id="sidebar" class="d-flex flex-column flex-shrink-0">
@@ -154,7 +154,11 @@ $reportsOpen = in_array($currentPage, ['attendance_report', 'filing_report', 'le
             <?php if ($role === 'superadmin'): ?>
                 <?php navLink('../management_pages/admin_departments.php', 'bi-building-gear', 'Departments', $currentPage === 'departments'); ?>
                 
-                <!-- REPORTS DROPDOWN -->
+                <?php 
+                // Determine if the inner leave submenu group should be auto-expanded
+                $leaveMenuOpen = in_array($currentPage, ['leave_report', 'leave_summary']); 
+                ?>
+
                 <div class="sidebar-dropdown">
                     <button
                         class="sidebar-link sidebar-dropdown-toggle <?= $reportsOpen ? 'active' : '' ?>"
@@ -170,26 +174,47 @@ $reportsOpen = in_array($currentPage, ['attendance_report', 'filing_report', 'le
 
                     <div id="reports-submenu" class="collapse <?= $reportsOpen ? 'show' : '' ?>">
 
-                        <!-- Attendance Reports -->
                         <a href="../reports_pages/attendance_report_page.php"
                         class="sidebar-sub-link <?= ($currentPage === 'attendance_report') ? 'active' : '' ?>">
                             <i class="bi bi-file-earmark-text"></i>
                             <span>Attendance Report</span>
                         </a>
 
-                        <!-- Filing Report -->
                         <a href="../reports_pages/filing_report_page.php"
                         class="sidebar-sub-link <?= ($currentPage === 'filing_report') ? 'active' : '' ?>">
                             <i class="bi bi-file-earmark-check"></i>
                             <span>Filing Report</span>
                         </a>
 
-                        <!-- Leave Balances Report -->
-                        <a href="../reports_pages/leave_report_page.php"
-                        class="sidebar-sub-link <?= ($currentPage === 'leave_report') ? 'active' : '' ?>">
-                            <i class="bi bi-file-earmark-easel"></i>
-                            <span>Leave Report</span>
-                        </a>
+                        <div class="sidebar-nested-group">
+                            <button
+                                class="sidebar-sub-link sidebar-dropdown-toggle border-0 bg-transparent text-start w-100 d-flex align-items-center <?= $leaveMenuOpen ? 'active' : '' ?>"
+                                data-bs-toggle="collapse"
+                                data-bs-target="#leave-reports-submenu"
+                                aria-expanded="<?= $leaveMenuOpen ? 'true' : 'false' ?>"
+                                style="box-shadow: none;"
+                            >
+                                <i class="bi bi-file-earmark-easel"></i>
+                                <span>Leave Reports</span>
+                                <i class="bi bi-chevron-down transition-chevron ms-4" style="font-size: 0.8rem;"></i>
+                            </button>
+
+                            <div id="leave-reports-submenu" class="collapse <?= $leaveMenuOpen ? 'show' : '' ?>" style="padding-left: 15px;">
+                                
+                                <a href="../reports_pages/leave_report_page.php"
+                                class="sidebar-sub-link <?= ($currentPage === 'leave_report') ? 'active' : '' ?>" style="font-size: 0.85rem;">
+                                    <i class="bi bi-calendar-range"></i>
+                                    <span>Leaves Taken</span>
+                                </a>
+
+                                <a href="../reports_pages/leave_summary_page.php" 
+                                class="sidebar-sub-link <?= ($currentPage === 'leave_summary') ? 'active' : '' ?>" style="font-size: 0.85rem;">
+                                    <i class="bi bi-calculator"></i>
+                                    <span>Balance Summary</span>
+                                </a>
+                            </div>
+                        </div>
+
                     </div>
                 </div>
 

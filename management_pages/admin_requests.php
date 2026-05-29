@@ -35,7 +35,7 @@ if (isset($_GET['action'], $_GET['type'], $_GET['id'])) {
         $tblName = match($type) {
             'leave'    => 'leave_requests',
             'overtime' => 'overtime_requests',
-            'log_edit' => 'logs',
+            'log_edit' => 'log_edit_requests',
             default    => null,
         };
         if ($tblName) {
@@ -49,12 +49,47 @@ if (isset($_GET['action'], $_GET['type'], $_GET['id'])) {
     }
 
     if ($type === 'leave') {
-        $pdo->prepare("UPDATE leave_requests SET status = ? WHERE id = ?")
-            ->execute([$status, $id]);
+        $pdo->prepare("UPDATE leave_requests SET status = ?, updated_at = NOW(), approved_by = ? WHERE id = ?")
+            ->execute([$status, $_SESSION['user_id'], $id]);
+
+        if ($status === 'approved') {
+            $lrRow = $pdo->prepare("
+                SELECT lr.employee_id, lr.selected_dates, lt.name AS leave_type_name
+                FROM leave_requests lr
+                JOIN leave_types lt ON lt.id = lr.leave_type_id
+                WHERE lr.id = ?
+            ");
+            $lrRow->execute([$id]);
+            $lr = $lrRow->fetch(PDO::FETCH_ASSOC);
+
+            if ($lr) {
+                $balColMap = [
+                    'sick leave'        => 'sick_leave',
+                    'vacation leave'    => 'vacation_leave',
+                    'birthday leave'    => 'birthday_leave',
+                    'paternity leave'   => 'paternity_leave',
+                    'maternity leave'   => 'maternity_leave',
+                    'solo parent leave' => 'solo_parent_leave',
+                    'buffer leave'      => 'buffer_leave',
+                ];
+                $balCol = $balColMap[strtolower($lr['leave_type_name'])] ?? null;
+
+                if ($balCol) {
+                    $days = count(json_decode($lr['selected_dates'] ?? '[]', true));
+                    if ($days > 0) {
+                        $pdo->prepare("
+                            UPDATE employee_leave_balances
+                            SET `{$balCol}` = GREATEST(0, `{$balCol}` - ?)
+                            WHERE employee_id = ?
+                        ")->execute([$days, $lr['employee_id']]);
+                    }
+                }
+            }
+        }
 
     } elseif ($type === 'overtime') {
-        $pdo->prepare("UPDATE overtime_requests SET status = ? WHERE id = ?")
-            ->execute([$status, $id]);
+        $pdo->prepare("UPDATE overtime_requests SET status = ?, updated_at = NOW(), approved_by = ? WHERE id = ?")
+            ->execute([$status, $_SESSION['user_id'], $id]);
 
         $pdo->prepare("
             UPDATE attendances a
@@ -64,46 +99,43 @@ if (isset($_GET['action'], $_GET['type'], $_GET['id'])) {
         ")->execute([$status, $id]);
 
     } elseif ($type === 'log_edit') {
-        $leStmt = $pdo->prepare("SELECT id, employee_id, log_time, proposed_log_time FROM logs WHERE id = ?");
+        $leStmt = $pdo->prepare("SELECT id, log_id, employee_id, proposed_log_time FROM log_edit_requests WHERE id = ?");
         $leStmt->execute([$id]);
         $le = $leStmt->fetch(PDO::FETCH_ASSOC);
 
         if ($status === 'approved' && $le && $le['proposed_log_time']) {
-            // Apply proposed time, preserve original for audit
-            $pdo->prepare("
-                UPDATE logs
-                SET log_time          = proposed_log_time,
-                    edit_status       = 'approved'
-                WHERE id = ?
-            ")->execute([$id]);
+            $logRow = $pdo->prepare("SELECT log_time FROM logs WHERE id = ?");
+            $logRow->execute([$le['log_id']]);
+            $logData  = $logRow->fetch(PDO::FETCH_ASSOC);
+            $workDate = $logData ? date('Y-m-d', strtotime($logData['log_time'])) : null;
 
-            $workDate = date('Y-m-d', strtotime($le['log_time']));
+            $pdo->prepare("UPDATE logs SET log_time = ? WHERE id = ?")
+                ->execute([$le['proposed_log_time'], $le['log_id']]);
 
-            // Reset attendance so finalizer can recalculate
-            $pdo->prepare("
-                UPDATE attendances SET status = 'incomplete'
-                WHERE employee_id = ? AND work_date = ?
-            ")->execute([$le['employee_id'], $workDate]);
+            $pdo->prepare("UPDATE log_edit_requests SET status = 'approved', approved_by = ? WHERE id = ?")
+                ->execute([$_SESSION['user_id'], $id]);
 
-            // Re-finalize attendance
-            $schedStmt = $pdo->prepare("
-                SELECT schedule_date, scheduled_start, scheduled_end
-                FROM schedules
-                WHERE employee_id = ? AND schedule_date = ?
-            ");
-            $schedStmt->execute([$le['employee_id'], $workDate]);
-            $schedule = $schedStmt->fetch(PDO::FETCH_ASSOC);
+            if ($workDate) {
+                $pdo->prepare("UPDATE attendances SET status = 'incomplete' WHERE employee_id = ? AND work_date = ?")
+                    ->execute([$le['employee_id'], $workDate]);
 
-            if ($schedule) {
-                require_once __DIR__ . '/../system_functions/system_service.php';
-                $effectiveNow = max(array_filter([$le['proposed_log_time'], date('Y-m-d H:i:s')]));
-                finalizeEmployeeAttendance($pdo, (int)$le['employee_id'], $schedule, $effectiveNow);
+                $schedStmt = $pdo->prepare("
+                    SELECT schedule_date, scheduled_start, scheduled_end
+                    FROM schedules
+                    WHERE employee_id = ? AND schedule_date = ?
+                ");
+                $schedStmt->execute([$le['employee_id'], $workDate]);
+                $schedule = $schedStmt->fetch(PDO::FETCH_ASSOC);
+
+                if ($schedule) {
+                    require_once __DIR__ . '/../system_functions/system_service.php';
+                    $effectiveNow = max(array_filter([$le['proposed_log_time'], date('Y-m-d H:i:s')]));
+                    finalizeEmployeeAttendance($pdo, (int)$le['employee_id'], $schedule, $effectiveNow);
+                }
             }
         } else {
-            // rejected — clear proposed time
-            $pdo->prepare("
-                UPDATE logs SET edit_status = 'rejected', proposed_log_time = NULL WHERE id = ?
-            ")->execute([$id]);
+            $pdo->prepare("UPDATE log_edit_requests SET status = 'rejected', approved_by = ? WHERE id = ?")
+                ->execute([$_SESSION['user_id'], $id]);
         }
 
     }
@@ -117,7 +149,7 @@ if ($deptScoped) {
     $lrC  = $pdo->prepare("SELECT COUNT(*) FROM leave_requests lr JOIN employees e ON lr.employee_id = e.id WHERE lr.status = ? AND e.department_id = ?");
     $otC  = $pdo->prepare("SELECT COUNT(*) FROM overtime_requests o JOIN employees e ON o.employee_id = e.id WHERE o.status = ? AND e.department_id = ?");
     $obC  = $pdo->prepare("SELECT COUNT(*) FROM leave_requests lr JOIN employees e ON lr.employee_id = e.id WHERE lr.leave_type_id = (SELECT id FROM leave_types WHERE name = 'ob leave') AND lr.status = ? AND e.department_id = ?");
-    $leC  = $pdo->prepare("SELECT COUNT(*) FROM logs l JOIN employees e ON l.employee_id = e.id WHERE l.edit_status = ? AND e.department_id = ?");
+    $leC  = $pdo->prepare("SELECT COUNT(*) FROM log_edit_requests l JOIN employees e ON l.employee_id = e.id WHERE l.status = ? AND e.department_id = ?");
 
     $lrC->execute(['pending',  $myDeptId]); $pendingLeave     = (int)$lrC->fetchColumn();
     $lrC->execute(['approved', $myDeptId]); $approvedLeave    = (int)$lrC->fetchColumn();
@@ -141,9 +173,9 @@ if ($deptScoped) {
     $pendingOB        = $pdo->query("SELECT COUNT(*) FROM leave_requests WHERE leave_type_id = (SELECT id FROM leave_types WHERE name = 'ob leave') AND status = 'pending'")->fetchColumn();
     $approvedOB       = $pdo->query("SELECT COUNT(*) FROM leave_requests WHERE leave_type_id = (SELECT id FROM leave_types WHERE name = 'ob leave') AND status = 'approved'")->fetchColumn();
     $rejectedOB       = $pdo->query("SELECT COUNT(*) FROM leave_requests WHERE leave_type_id = (SELECT id FROM leave_types WHERE name = 'ob leave') AND status = 'rejected'")->fetchColumn();
-    $pendingLogEdit   = $pdo->query("SELECT COUNT(*) FROM logs WHERE edit_status = 'pending'")->fetchColumn();
-    $approvedLogEdit  = $pdo->query("SELECT COUNT(*) FROM logs WHERE edit_status = 'approved'")->fetchColumn();
-    $rejectedLogEdit  = $pdo->query("SELECT COUNT(*) FROM logs WHERE edit_status = 'rejected'")->fetchColumn();
+    $pendingLogEdit   = $pdo->query("SELECT COUNT(*) FROM log_edit_requests WHERE status = 'pending'")->fetchColumn();
+    $approvedLogEdit  = $pdo->query("SELECT COUNT(*) FROM log_edit_requests WHERE status = 'approved'")->fetchColumn();
+    $rejectedLogEdit  = $pdo->query("SELECT COUNT(*) FROM log_edit_requests WHERE status = 'rejected'")->fetchColumn();
 }
 
 $totalPending  = $pendingLeave  + $pendingOvertime  + $pendingOB  + $pendingLogEdit;
@@ -182,24 +214,24 @@ if ($deptScoped) {
 
 // ---- GET LOG EDIT REQUESTS ----
 $leBaseSql = "
-    SELECT l.id, l.employee_id, l.log_type, l.edit_status AS status,
-           l.edit_reason AS reason, l.original_log_time, l.proposed_log_time,
-           l.edit_requested_by AS requested_by_id,
-           DATE(l.log_time) AS work_date, l.created_at,
+    SELECT ler.id, ler.employee_id, lg.log_type, ler.status,
+           ler.reason, ler.original_log_time, ler.proposed_log_time,
+           ler.requested_by AS requested_by_id,
+           DATE(lg.log_time) AS work_date, ler.created_at,
            CONCAT(e.first_name, ' ', e.last_name) AS employee_name,
            CONCAT(r.first_name, ' ', r.last_name) AS requested_by_name,
            rr.role_key AS requested_by_role
-    FROM logs l
-    JOIN employees e ON l.employee_id = e.id
-    LEFT JOIN employees r ON l.edit_requested_by = r.id
-    LEFT JOIN roles rr ON r.role_id = rr.id
-    WHERE l.edit_status IS NOT NULL";
+    FROM log_edit_requests ler
+    JOIN logs lg ON ler.log_id = lg.id
+    JOIN employees e ON ler.employee_id = e.id
+    LEFT JOIN employees r ON ler.requested_by = r.id
+    LEFT JOIN roles rr ON r.role_id = rr.id";
 if ($deptScoped) {
-    $s = $pdo->prepare($leBaseSql . " AND e.department_id = ? ORDER BY l.created_at DESC");
+    $s = $pdo->prepare($leBaseSql . " WHERE e.department_id = ? ORDER BY ler.created_at DESC");
     $s->execute([$myDeptId]);
     $logEditRequests = $s->fetchAll(PDO::FETCH_ASSOC);
 } else {
-    $logEditRequests = $pdo->query($leBaseSql . " ORDER BY l.created_at DESC")->fetchAll(PDO::FETCH_ASSOC);
+    $logEditRequests = $pdo->query($leBaseSql . " ORDER BY ler.created_at DESC")->fetchAll(PDO::FETCH_ASSOC);
 }
 
 // ---- HELPER FUNCTIONS ----
@@ -463,7 +495,7 @@ function getActionButtons($type, $id, $status) {
                                     <tr>
                                         <td><?= htmlspecialchars($row['employee_name']) ?></td>
                                         <td><span class="badge request-official-business">Official Business</span></td>
-                                        <td><?= date('M d, Y', strtotime($row['start_date'])) ?> | <?= htmlspecialchars($row['client_name']) ?></td>
+                                        <td><?= date('M d, Y', strtotime($row['start_date'])) ?> | <?= htmlspecialchars($row['client_name'] ?? '') ?></td>
                                         <td class="reasonCol"><?= htmlspecialchars($row['reason']) ?></td>
                                         <td><?= getStatusBadge($row['status']) ?></td>
                                         <td class="actionsCol"><?= getActionButtons('leave', $row['id'], $row['status']) ?></td>
