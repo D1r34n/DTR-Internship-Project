@@ -424,6 +424,36 @@ $isScoped = $schedEmployeeId !== null;
 </div>
 <?php endif; ?>
 
+<!-- ═══════════════════════════════════════════════════
+     DELETE SCHEDULE CONFIRM MODAL  (admin scoped only)
+════════════════════════════════════════════════════ -->
+<?php if ($isScoped): ?>
+<div class="modal fade" id="swDeleteSchedModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content glass-modal">
+
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-trash me-2"></i>Delete Schedule
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body">
+                <p class="mb-0">Are you sure you want to delete this schedule? This action cannot be undone.</p>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" onclick="swDoDeleteConfirm()">
+                    <i class="bi bi-trash me-1"></i>Delete
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>
+<?php endif; ?>
 
 <script>
 /* ================================================================
@@ -465,7 +495,7 @@ window.swGotoMonth  = function (ym) {
 document.addEventListener('DOMContentLoaded', function () {
     /* Move modals to <body> so backdrop-filter on ancestor cards
        doesn't create a stacking context that buries them behind .modal-backdrop */
-    ['swManageScheduleModal','swEditSchedModal','swAddEventModal','swViewEventModal'].forEach(function(id) {
+    ['swManageScheduleModal','swEditSchedModal','swAddEventModal','swViewEventModal','swDeleteSchedModal'].forEach(function(id) {
         const el = document.getElementById(id);
         if (el) document.body.appendChild(el);
     });
@@ -877,28 +907,52 @@ function swPrepareEditSubmit() {
     return true;
 }
 
+let _swDeleteInProgress = false;
+let _swPendingDeleteDate = null;
+
 function swDeleteSchedule(date) {
-    if (!confirm('Delete schedule for ' + date + '?')) return;
+    if (_swDeleteInProgress) return;
+    _swPendingDeleteDate = date;
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('swDeleteSchedModal')).show();
+}
+
+window.swDoDeleteConfirm = function () {
+    const date = _swPendingDeleteDate;
+    if (!date) return;
+
+    bootstrap.Modal.getInstance(document.getElementById('swDeleteSchedModal'))?.hide();
+    _swDeleteInProgress = true;
+
     const base = SW_SAVE_API.replace(/\?.*$/, '');
     fetch(`${base}?employee_id=${SW_EMP_URL_ID}&ajax_delete=1&emp=${SW_EMP_ID}&date=${date}`)
         .then(r => r.text())
         .then(text => {
-            try {
-                const data = JSON.parse(text);
-                if (data.error === 'already_pending_delete') {
-                    if (typeof showToast === 'function') showToast('Delete Schedule Already Pending', 'warning');
-                    return;
-                }
-                if (data.status === 'pending') {
-                    if (typeof showToast === 'function') showToast('Delete request submitted for approval.', 'success');
-                    if (swCalendar) swCalendar.refetchEvents();
-                    return;
-                }
-            } catch(e) {}
+            let data;
+            try { data = JSON.parse(text); } catch (e) {
+                if (typeof showToast === 'function') showToast('Something went wrong. Please try again.', 'danger');
+                return;
+            }
+            if (data.error === 'already_pending_delete') {
+                if (typeof showToast === 'function') showToast('Delete request already pending.', 'warning');
+                return;
+            }
+            if (data.status === 'pending') {
+                if (typeof showToast === 'function') showToast('Delete request submitted for approval.', 'success');
+                if (swCalendar) swCalendar.refetchEvents();
+                return;
+            }
+            if (typeof showToast === 'function') showToast('Schedule deleted successfully.', 'success');
             if (swCalendar) swCalendar.refetchEvents();
             document.dispatchEvent(new CustomEvent('scheduleDeleted', { detail: { date } }));
+        })
+        .catch(() => {
+            if (typeof showToast === 'function') showToast('Something went wrong. Please try again.', 'danger');
+        })
+        .finally(() => {
+            _swDeleteInProgress = false;
+            _swPendingDeleteDate = null;
         });
-}
+};
 
 window.swPrev  = function () { if (swCalendar) swCalendar.prev(); };
 window.swNext  = function () { if (swCalendar) swCalendar.next(); };

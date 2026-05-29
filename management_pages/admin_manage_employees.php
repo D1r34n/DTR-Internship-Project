@@ -132,7 +132,7 @@ if ($workforceDeptId) {
         FROM employees e
         LEFT JOIN roles r ON r.id = e.role_id
         LEFT JOIN departments d ON e.department_id = d.id
-        WHERE e.department_id = ? {$hideManager}
+        WHERE e.department_id = ? {$hideManager} AND e.is_archived = 0
         ORDER BY e.first_name, e.last_name
     ");
     $empStmt->execute([$workforceDeptId]);
@@ -145,6 +145,7 @@ if ($workforceDeptId) {
         FROM employees e
         LEFT JOIN roles r ON r.id = e.role_id
         LEFT JOIN departments d ON e.department_id = d.id
+        WHERE e.is_archived = 0
         ORDER BY e.first_name, e.last_name
     ")->fetchAll(PDO::FETCH_ASSOC);
 }

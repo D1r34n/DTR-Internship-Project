@@ -44,14 +44,14 @@ if (!isset($_GET['employee_id'])) {
 }
 
 $refStmt = $pdo->prepare("
-    SELECT e.id, e.employee_id, e.department_id, r.role_key
+    SELECT e.id, e.employee_id, e.department_id, e.is_archived, r.role_key
     FROM employees e
     LEFT JOIN roles r ON r.id = e.role_id
     WHERE e.employee_id = ? LIMIT 1
 ");
 $refStmt->execute([trim($_GET['employee_id'])]);
 $empLookup = $refStmt->fetch(PDO::FETCH_ASSOC);
-if (!$empLookup) {
+if (!$empLookup || !empty($empLookup['is_archived'])) {
     header("Location: admin_manage_employees.php");
     exit();
 }
@@ -276,6 +276,38 @@ if (isset($_GET['ajax_delete'])) {
                 ->execute([$_SESSION['user_id'], $empId, $date]);
             echo json_encode(['status' => 'pending']);
         } else {
+            $schedStmt = $pdo->prepare("
+                SELECT s.scheduled_start, s.scheduled_end, s.is_rest_day,
+                       CONCAT(e.first_name, ' ', e.last_name) AS employee_name
+                FROM schedules s
+                LEFT JOIN employees e ON s.employee_id = e.id
+                WHERE s.employee_id = ? AND s.schedule_date = ?
+                LIMIT 1
+            ");
+            $schedStmt->execute([$empId, $date]);
+            $schedData = $schedStmt->fetch(PDO::FETCH_ASSOC);
+
+            if ($schedData) {
+                $timeStr = ($schedData['scheduled_start'] && $schedData['scheduled_end'])
+                    ? date('g:i A', strtotime($schedData['scheduled_start'])) . ' - ' . date('g:i A', strtotime($schedData['scheduled_end']))
+                    : ($schedData['is_rest_day'] ? 'Rest Day' : '—');
+                $initStmt = $pdo->prepare("SELECT CONCAT(first_name, ' ', last_name) AS name FROM employees WHERE id = ?");
+                $initStmt->execute([$_SESSION['user_id']]);
+                $initRow  = $initStmt->fetch(PDO::FETCH_ASSOC);
+                $deletedSchedInfo = json_encode([
+                    'employee_name' => $schedData['employee_name'] ?? '—',
+                    'schedule_date' => date('F j, Y', strtotime($date)),
+                    'time'          => $timeStr,
+                    'deleted_by'    => $initRow['name'] ?? '—',
+                ]);
+                try {
+                    $pdo->prepare("
+                        INSERT INTO logs (employee_id, log_type, log_time, longitude, latitude, is_within_office, edit_requested_by, edit_reason)
+                        VALUES (?, 'DELETE_SCHEDULE', NOW(), 0, 0, 0, ?, ?)
+                    ")->execute([$empId, $_SESSION['user_id'], $deletedSchedInfo]);
+                } catch (Exception $e) {}
+            }
+
             $pdo->prepare("DELETE FROM schedules WHERE employee_id = ? AND schedule_date = ?")->execute([$empId, $date]);
             echo json_encode(['status' => 'ok']);
         }
@@ -521,8 +553,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save_
 // ---- HANDLE EMPLOYEE DELETE ----
 if (isset($_GET['action']) && $_GET['action'] === 'delete_employee') {
 
-    $pdo->prepare("DELETE FROM schedules WHERE employee_id = ?")->execute([$employeeId]);
-    $pdo->prepare("DELETE FROM employees WHERE id = ?")->execute([$employeeId]);
+    $empDataStmt = $pdo->prepare("
+        SELECT e.employee_id AS emp_ref_id,
+               CONCAT(e.first_name, ' ', e.last_name) AS employee_name,
+               r.role_key AS employee_role,
+               d.department_name
+        FROM employees e
+        LEFT JOIN roles r ON r.id = e.role_id
+        LEFT JOIN departments d ON e.department_id = d.id
+        WHERE e.id = ?
+    ");
+    $empDataStmt->execute([$employeeId]);
+    $empData = $empDataStmt->fetch(PDO::FETCH_ASSOC);
+
+    if ($empData) {
+        $deletedInfo = json_encode([
+            'emp_ref_id'      => $empData['emp_ref_id']      ?? '—',
+            'employee_name'   => $empData['employee_name']   ?? '—',
+            'employee_role'   => $empData['employee_role']   ?? '—',
+            'department_name' => $empData['department_name'] ?? '—',
+        ]);
+        $pdo->prepare("
+            INSERT INTO logs (employee_id, log_type, log_time, edit_requested_by, edit_reason)
+            VALUES (?, 'DELETE_EMPLOYEE', NOW(), ?, ?)
+        ")->execute([$employeeId, $_SESSION['user_id'], $deletedInfo]);
+    }
+
+    $pdo->prepare("UPDATE employees SET is_archived = 1 WHERE id = ?")->execute([$employeeId]);
 
     header("Location: admin_manage_employees.php");
     exit();

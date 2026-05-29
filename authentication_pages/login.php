@@ -47,7 +47,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     }
 
     $stmt = $pdo->prepare("
-        SELECT e.id, CONCAT(e.first_name, ' ', e.last_name) AS name, e.profile_image, e.email, e.password, r.role_key AS role, e.department_id
+        SELECT e.id, CONCAT(e.first_name, ' ', e.last_name) AS name, e.profile_image, e.email, e.password,
+               r.role_key AS role, e.department_id, e.is_archived
         FROM employees e
         LEFT JOIN roles r ON r.id = e.role_id
         WHERE e.email = ?
@@ -55,7 +56,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $stmt->execute([$email]);
     $employee = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    if (!$employee) {
+    if (!$employee || !empty($employee['is_archived'])) {
         $_SESSION['error_email'] = "Invalid email or password.";
         header("Location: login.php");
         exit();

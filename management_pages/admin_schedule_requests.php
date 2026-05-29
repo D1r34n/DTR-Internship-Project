@@ -141,7 +141,13 @@ if (isset($_GET['action']) && (isset($_GET['id']) || isset($_GET['batch_id']))) 
             $chkStmt->execute([$id, $myDeptId]);
             if (!$chkStmt->fetch()) { $error = "Unauthorized action."; goto skip_action_sr; }
         }
-        $siStmt = $pdo->prepare("SELECT employee_id, schedule_date FROM schedules WHERE id = ? AND pending_delete = 1");
+        $siStmt = $pdo->prepare("
+            SELECT s.employee_id, s.schedule_date, s.scheduled_start, s.scheduled_end, s.is_rest_day,
+                   CONCAT(e.first_name, ' ', e.last_name) AS employee_name
+            FROM schedules s
+            LEFT JOIN employees e ON s.employee_id = e.id
+            WHERE s.id = ? AND s.pending_delete = 1
+        ");
         $siStmt->execute([$id]);
         $si = $siStmt->fetch(PDO::FETCH_ASSOC);
         if ($si) {
@@ -149,6 +155,25 @@ if (isset($_GET['action']) && (isset($_GET['id']) || isset($_GET['batch_id']))) 
                 ->execute([$si['employee_id'], $si['schedule_date']]);
             $pdo->prepare("UPDATE schedules SET is_archived = 1, pending_delete = 0, updated_at = NOW() WHERE id = ?")
                 ->execute([$id]);
+
+            $timeStr = ($si['scheduled_start'] && $si['scheduled_end'])
+                ? date('g:i A', strtotime($si['scheduled_start'])) . ' - ' . date('g:i A', strtotime($si['scheduled_end']))
+                : ($si['is_rest_day'] ? 'Rest Day' : '—');
+            $initStmt = $pdo->prepare("SELECT CONCAT(first_name, ' ', last_name) AS name FROM employees WHERE id = ?");
+            $initStmt->execute([$_SESSION['user_id']]);
+            $initRow  = $initStmt->fetch(PDO::FETCH_ASSOC);
+            try {
+                $pdo->prepare("
+                    INSERT INTO logs (employee_id, log_type, log_time, longitude, latitude, is_within_office, edit_requested_by, edit_reason)
+                    VALUES (?, 'DELETE_SCHEDULE', NOW(), 0, 0, 0, ?, ?)
+                ")->execute([$si['employee_id'], $_SESSION['user_id'], json_encode([
+                    'employee_name' => $si['employee_name'] ?? '—',
+                    'schedule_date' => date('F j, Y', strtotime($si['schedule_date'])),
+                    'time'          => $timeStr,
+                    'deleted_by'    => $initRow['name'] ?? '—',
+                ])]);
+            } catch (Exception $e) {}
+
             $success = "Schedule deleted successfully!";
         }
 
