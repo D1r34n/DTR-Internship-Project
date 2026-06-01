@@ -38,11 +38,12 @@ function processAttendanceTap($pdo, $employee_id, $lat, $lng, $accuracy, $now = 
     $isWithin = $distance <= $radius ? 1 : 0;
     $debug[] = "Distance from office: {$distance}m, within radius: " . ($isWithin ? 'yes' : 'no');
 
-    // Get the employee's most recent log entry
+    // Get the employee's most recent attendance log entry (exclude management action logs)
     $stmt = $pdo->prepare("
         SELECT log_type, log_time, schedule_id
         FROM logs
         WHERE employee_id = ?
+          AND log_type IN ('IN', 'OUT', 'BREAK_IN', 'BREAK_OUT')
         ORDER BY log_time DESC
         LIMIT 1
     ");
@@ -199,7 +200,8 @@ function processAttendanceTapTest(PDO $pdo, int $employeeId, string $now): array
         SELECT log_type, log_time, schedule_id
         FROM logs
         WHERE employee_id = ?
-        AND log_time <= ?
+          AND log_type IN ('IN', 'OUT', 'BREAK_IN', 'BREAK_OUT')
+          AND log_time <= ?
         ORDER BY log_time DESC
         LIMIT 1
     ");
@@ -303,6 +305,7 @@ function processBreakTap(PDO $pdo, int $employeeId, ?float $lat, ?float $lng, ?f
         SELECT log_type, log_time, schedule_id
         FROM logs
         WHERE employee_id = ?
+          AND log_type IN ('IN', 'OUT', 'BREAK_IN', 'BREAK_OUT')
         ORDER BY log_time DESC
         LIMIT 1
     ");

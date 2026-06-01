@@ -81,14 +81,14 @@ $curYear = (int) date('Y');
 
 $userRole = $_SESSION['user_role'] ?? '';
 if ($isAdmin || $userRole === 'admin') {
-    $bdayRows = $pdo->query("SELECT CONCAT(first_name,' ',last_name) AS full_name, birthdate FROM employees WHERE birthdate IS NOT NULL")->fetchAll(PDO::FETCH_ASSOC);
+    $bdayRows = $pdo->query("SELECT CONCAT(first_name,' ',last_name) AS full_name, birthdate FROM employees WHERE birthdate IS NOT NULL AND is_archived = 0")->fetchAll(PDO::FETCH_ASSOC);
 } else {
     $deptStmt = $pdo->prepare("SELECT department_id FROM employees WHERE id = ?");
     $deptStmt->execute([$_SESSION['user_id']]);
     $userDeptId = $deptStmt->fetchColumn();
 
     if ($userDeptId) {
-        $bdayStmt = $pdo->prepare("SELECT CONCAT(first_name,' ',last_name) AS full_name, birthdate FROM employees WHERE birthdate IS NOT NULL AND department_id = ?");
+        $bdayStmt = $pdo->prepare("SELECT CONCAT(first_name,' ',last_name) AS full_name, birthdate FROM employees WHERE birthdate IS NOT NULL AND department_id = ? AND is_archived = 0");
         $bdayStmt->execute([$userDeptId]);
         $bdayRows = $bdayStmt->fetchAll(PDO::FETCH_ASSOC);
     } else {

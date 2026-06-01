@@ -118,7 +118,7 @@ if ($showLogs) {
             AND ler.id = (SELECT MAX(id) FROM log_edit_requests WHERE log_id = l.id)
         LEFT JOIN employees e_init ON ler.requested_by = e_init.id
         LEFT JOIN roles r_init ON r_init.id = e_init.role_id
-        WHERE 1=1 AND l.log_type NOT IN ('ADD_EMPLOYEE', 'EDIT_EMPLOYEE', 'ADD_SCHEDULE', 'EDIT_SCHEDULE')
+        WHERE 1=1 AND l.log_type NOT IN ('ADD_EMPLOYEE', 'EDIT_EMPLOYEE', 'DELETE_EMPLOYEE', 'ADD_SCHEDULE', 'EDIT_SCHEDULE', 'DELETE_SCHEDULE')
     ";
 
     $params = [];
@@ -143,7 +143,9 @@ if ($showLogs) {
     $stmt->execute($params);
     $logRecords = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+    $mgmtTypes = ['ADD_EMPLOYEE','EDIT_EMPLOYEE','DELETE_EMPLOYEE','ADD_SCHEDULE','EDIT_SCHEDULE','DELETE_SCHEDULE'];
     foreach ($logRecords as $row) {
+        if (in_array($row['log_type'], $mgmtTypes)) continue;
         $editStatus    = $row['edit_status']      ?? null;
         $initiatedById = $row['edit_requested_by'] ?? null;
         $initiatorRole = $row['initiator_role']   ?? null;
@@ -402,7 +404,7 @@ if ($showLogEdit) {
         LEFT JOIN departments d ON e.department_id = d.id
         LEFT JOIN employees e_init ON ler.requested_by = e_init.id
         LEFT JOIN roles r_init ON r_init.id = e_init.role_id
-        WHERE 1=1
+        WHERE l.edit_status IS NOT NULL AND l.log_type NOT IN ('ADD_EMPLOYEE', 'EDIT_EMPLOYEE', 'DELETE_EMPLOYEE', 'ADD_SCHEDULE', 'EDIT_SCHEDULE', 'DELETE_SCHEDULE')
     ";
     $params = [];
     applyLogsFilter($sql, $params, 'ler.employee_id', $scopedToEmployee, $deptScopeRoles, $deptScopeId, (int)$employeeId, $userRole);
@@ -500,19 +502,21 @@ if ($showAddEmployee) {
         $ts            = strtotime($row['log_time']);
         $reqDate       = strtotime(date('Y-m-d', $ts));
         $initiatedById = (int)($row['initiated_by_id'] ?? 0);
-        $empDetails  = "Employee ID:\n" . ($row['emp_ref_id'] ?? '—');
-        $empDetails .= "\nName:\n" . ($row['employee_name'] ?? '—');
-        $empDetails .= "\nEmail:\n" . ($row['email'] ?? '—');
-        $empDetails .= "\nBirthdate:\n" . ($row['birthdate'] ? date('F j, Y', strtotime($row['birthdate'])) : '—');
-        $empDetails .= "\nRole:\n" . ($row['employee_role'] ?? '—');
-        $empDetails .= "\nDepartment:\n" . ($row['department_name'] ?? '—');
         $allRows[] = [
             'log_id'           => $row['log_id'],
             'date'             => date('F d, Y', $ts),
             'time'             => date('h:i A', $ts),
             'log_datetime'     => date('Y-m-d\TH:i', $ts),
             'log_type'         => 'ADD_EMPLOYEE',
-            'details'          => $empDetails,
+            'details'          => 'Employee added',
+            'emp_data'         => [
+                ['Employee ID', $row['emp_ref_id']    ?? '—'],
+                ['Name',        $row['employee_name'] ?? '—'],
+                ['Email',       $row['email']         ?? '—'],
+                ['Birthdate',   $row['birthdate'] ? date('F j, Y', strtotime($row['birthdate'])) : '—'],
+                ['Role',        $row['employee_role'] ?? '—'],
+                ['Department',  $row['department_name'] ?? '—'],
+            ],
             'is_within_office' => null,
             'latitude'         => null,
             'longitude'        => null,
@@ -574,25 +578,15 @@ if ($showEditEmployee) {
         $ts            = strtotime($row['log_time']);
         $reqDate       = strtotime(date('Y-m-d', $ts));
         $initiatedById = (int)($row['initiated_by_id'] ?? 0);
-        $diff          = $row['edit_reason'] ? json_decode($row['edit_reason'], true) : null;
-        if ($diff && is_array($diff)) {
-            $editDetails = '';
-            foreach ($diff as $label => $change) {
-                $before = $change['before'] ?? '—';
-                $after  = $change['after']  ?? '—';
-                if ($editDetails !== '') $editDetails .= "\n";
-                $editDetails .= "$label:\nBefore:\n$before\nAfter:\n$after";
-            }
-        } else {
-            $editDetails = 'Employee information updated';
-        }
+        $diffData = $row['edit_reason'] ? json_decode($row['edit_reason'], true) : null;
         $allRows[] = [
             'log_id'           => $row['log_id'],
             'date'             => date('F d, Y', $ts),
             'time'             => date('h:i A', $ts),
             'log_datetime'     => date('Y-m-d\TH:i', $ts),
             'log_type'         => 'EDIT_EMPLOYEE',
-            'details'          => $editDetails,
+            'details'          => 'Employee information updated',
+            'diff_data'        => ($diffData && is_array($diffData)) ? $diffData : null,
             'is_within_office' => null,
             'latitude'         => null,
             'longitude'        => null,
@@ -608,6 +602,144 @@ if ($showEditEmployee) {
             'photo_path'       => null,
             '_ts'              => $ts,
             '_date_ts'         => $reqDate,
+        ];
+    }
+}
+
+/* =========================
+   9. DELETE EMPLOYEE
+========================= */
+$showDeleteEmployee = $type === 'ALL' || $type === 'DELETE_EMPLOYEE';
+if ($showDeleteEmployee) {
+    $sql = "
+        SELECT
+            CONCAT('delemp_', l.id) AS log_id,
+            l.employee_id,
+            l.log_time,
+            l.created_at,
+            l.edit_reason,
+            l.edit_requested_by AS initiated_by_id,
+            CONCAT(e_init.first_name, ' ', e_init.last_name) AS initiator_name,
+            r_init.role_key AS initiator_role,
+            e.department_id,
+            r.role_key AS employee_role_join
+        FROM logs l
+        LEFT JOIN employees e ON l.employee_id = e.id
+        LEFT JOIN roles r ON r.id = e.role_id
+        LEFT JOIN departments d ON e.department_id = d.id
+        LEFT JOIN employees e_init ON l.edit_requested_by = e_init.id
+        LEFT JOIN roles r_init ON r_init.id = e_init.role_id
+        WHERE l.log_type = 'ADD_SCHEDULE'
+    ";
+    $params = [];
+    applyLogsFilter($sql, $params, 'l.employee_id', $scopedToEmployee, $deptScopeRoles, $deptScopeId, (int)$employeeId, $userRole);
+    if ($startDate !== '') {
+        $sql .= " AND DATE(l.log_time) >= ?";
+        $params[] = $startDate;
+    }
+    if ($endDate !== '') {
+        $sql .= " AND DATE(l.log_time) <= ?";
+        $params[] = $endDate;
+    }
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute($params);
+    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $ts            = strtotime($row['log_time']);
+        $initiatedById = (int)($row['initiated_by_id'] ?? 0);
+        $info = $row['edit_reason'] ? json_decode($row['edit_reason'], true) : [];
+        $allRows[] = [
+            'log_id'           => $row['log_id'],
+            'date'             => date('F d, Y', $ts),
+            'time'             => date('h:i A', $ts),
+            'log_datetime'     => date('Y-m-d\TH:i', $ts),
+            'log_type'         => 'DELETE_EMPLOYEE',
+            'details'          => 'Employee deleted',
+            'emp_data'         => [
+                ['Employee ID', $info['emp_ref_id']      ?? '—'],
+                ['Name',        $info['employee_name']   ?? '—'],
+                ['Role',        $info['employee_role']   ?? '—'],
+                ['Department',  $info['department_name'] ?? '—'],
+            ],
+            'is_within_office' => null,
+            'latitude'         => null,
+            'longitude'        => null,
+            'accuracy'         => null,
+            'distance_meters'  => null,
+            'employee_id'      => (int)$row['employee_id'],
+            'employee_name'    => $info['employee_name'] ?? '—',
+            'employee_role'    => $info['employee_role'] ?? '—',
+            'department_name'  => $info['department_name'] ?? '—',
+            'edit_role'        => ($initiatedById === $currentUserId) ? 'self' : $row['initiator_role'],
+            'edit_status'      => in_array($row['initiator_role'], ['superadmin', 'admin']) ? 'approved' : 'pending',
+            'initiator_name'   => $row['initiator_name'],
+            'photo_path'       => null,
+            '_ts'              => $ts,
+        ];
+    }
+}
+
+/* =========================
+   9. DELETE EMPLOYEE
+========================= */
+$showDeleteEmployee = $type === 'ALL' || $type === 'DELETE_EMPLOYEE';
+if ($showDeleteEmployee) {
+    $sql = "
+        SELECT
+            CONCAT('delemp_', l.id) AS log_id,
+            l.employee_id,
+            l.log_time,
+            l.created_at,
+            l.edit_status,
+            l.edit_requested_by AS initiated_by_id,
+            CONCAT(e_init.first_name, ' ', e_init.last_name) AS initiator_name,
+            r_init.role_key AS initiator_role,
+            e.department_id,
+            r.role_key AS employee_role_join
+        FROM logs l
+        LEFT JOIN employees e ON l.employee_id = e.id
+        LEFT JOIN roles r ON r.id = e.role_id
+        LEFT JOIN departments d ON e.department_id = d.id
+        LEFT JOIN employees e_init ON l.edit_requested_by = e_init.id
+        LEFT JOIN roles r_init ON r_init.id = e_init.role_id
+        WHERE l.log_type = 'DELETE_EMPLOYEE'
+    ";
+    $params = [];
+    applyLogsFilter($sql, $params, 'l.employee_id', $scopedToEmployee, $deptScopeRoles, $deptScopeId, (int)$employeeId, $userRole);
+    // Date filter intentionally omitted: all schedule submission history must always be visible
+    // so that both rejected and approved submissions for the same date are never hidden.
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute($params);
+    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $ts            = strtotime($row['log_time']);
+        $initiatedById = (int)($row['initiated_by_id'] ?? 0);
+        $info = $row['edit_reason'] ? json_decode($row['edit_reason'], true) : [];
+        $allRows[] = [
+            'log_id'           => $row['log_id'],
+            'date'             => date('F d, Y', $ts),
+            'time'             => date('h:i A', $ts),
+            'log_datetime'     => date('Y-m-d\TH:i', $ts),
+            'log_type'         => 'DELETE_EMPLOYEE',
+            'details'          => 'Employee deleted',
+            'emp_data'         => [
+                ['Employee ID', $info['emp_ref_id']      ?? '—'],
+                ['Name',        $info['employee_name']   ?? '—'],
+                ['Role',        $info['employee_role']   ?? '—'],
+                ['Department',  $info['department_name'] ?? '—'],
+            ],
+            'is_within_office' => null,
+            'latitude'         => null,
+            'longitude'        => null,
+            'accuracy'         => null,
+            'distance_meters'  => null,
+            'employee_id'      => (int)$row['employee_id'],
+            'employee_name'    => $info['employee_name'] ?? '—',
+            'employee_role'    => $info['employee_role'] ?? '—',
+            'department_name'  => $info['department_name'] ?? '—',
+            'edit_role'        => ($initiatedById === $currentUserId) ? 'self' : $row['initiator_role'],
+            'edit_status'      => in_array($row['initiator_role'], ['superadmin', 'admin']) ? 'approved' : 'pending',
+            'initiator_name'   => $row['initiator_name'],
+            'photo_path'       => null,
+            '_ts'              => $ts,
         ];
     }
 }
@@ -645,14 +777,8 @@ if ($showAddSchedule) {
     ";
     $params = [];
     applyLogsFilter($sql, $params, 'l.employee_id', $scopedToEmployee, $deptScopeRoles, $deptScopeId, (int)$employeeId, $userRole);
-    if ($startDate !== '') {
-        $sql .= " AND DATE(l.log_time) >= ?";
-        $params[] = $startDate;
-    }
-    if ($endDate !== '') {
-        $sql .= " AND DATE(l.log_time) <= ?";
-        $params[] = $endDate;
-    }
+    // Date filter intentionally omitted: all schedule submission history must always be visible
+    // so that both rejected and approved submissions for the same date are never hidden.
     $stmt = $pdo->prepare($sql);
     $stmt->execute($params);
     foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
@@ -735,14 +861,7 @@ if ($showEditSchedule) {
     ";
     $params = [];
     applyLogsFilter($sql, $params, 'l.employee_id', $scopedToEmployee, $deptScopeRoles, $deptScopeId, (int)$employeeId, $userRole);
-    if ($startDate !== '') {
-        $sql .= " AND DATE(l.log_time) >= ?";
-        $params[] = $startDate;
-    }
-    if ($endDate !== '') {
-        $sql .= " AND DATE(l.log_time) <= ?";
-        $params[] = $endDate;
-    }
+    // Date filter intentionally omitted: same reason as ADD_SCHEDULE above.
     $stmt = $pdo->prepare($sql);
     $stmt->execute($params);
     foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
@@ -796,6 +915,79 @@ if ($showEditSchedule) {
         ];
     }
 }
+/* =========================
+   12. DELETE SCHEDULE
+========================= */
+$showDeleteSchedule = $type === 'ALL' || $type === 'DELETE_SCHEDULE';
+if ($showDeleteSchedule) {
+    $sql = "
+        SELECT
+            CONCAT('delsched_', l.id) AS log_id,
+            l.employee_id,
+            l.log_time,
+            l.created_at,
+            l.edit_reason,
+            l.edit_status,
+            l.edit_requested_by AS initiated_by_id,
+            CONCAT(e_init.first_name, ' ', e_init.last_name) AS initiator_name,
+            r_init.role_key AS initiator_role,
+            CONCAT(e.first_name, ' ', e.last_name) AS employee_name,
+            r.role_key AS employee_role,
+            d.department_name
+        FROM logs l
+        LEFT JOIN employees e ON l.employee_id = e.id
+        LEFT JOIN roles r ON r.id = e.role_id
+        LEFT JOIN departments d ON e.department_id = d.id
+        LEFT JOIN employees e_init ON l.edit_requested_by = e_init.id
+        LEFT JOIN roles r_init ON r_init.id = e_init.role_id
+        WHERE l.log_type = 'DELETE_SCHEDULE'
+    ";
+    $params = [];
+    applyLogsFilter($sql, $params, 'l.employee_id', $scopedToEmployee, $deptScopeRoles, $deptScopeId, (int)$employeeId, $userRole);
+    if ($startDate !== '') {
+        $sql .= " AND DATE(l.log_time) >= ?";
+        $params[] = $startDate;
+    }
+    if ($endDate !== '') {
+        $sql .= " AND DATE(l.log_time) <= ?";
+        $params[] = $endDate;
+    }
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute($params);
+    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $ts            = strtotime($row['log_time']);
+        $initiatedById = (int)($row['initiated_by_id'] ?? 0);
+        $info = $row['edit_reason'] ? json_decode($row['edit_reason'], true) : [];
+        $allRows[] = [
+            'log_id'           => $row['log_id'],
+            'date'             => date('F d, Y', $ts),
+            'time'             => date('h:i A', $ts),
+            'log_datetime'     => date('Y-m-d\TH:i', $ts),
+            'log_type'         => 'DELETE_SCHEDULE',
+            'details'          => 'Schedule deleted',
+            'emp_data'         => [
+                ['Employee',     $info['employee_name'] ?? '—'],
+                ['Deleted Date', $info['schedule_date'] ?? '—'],
+                ['Time',         $info['time']          ?? '—'],
+            ],
+            'is_within_office' => null,
+            'latitude'         => null,
+            'longitude'        => null,
+            'accuracy'         => null,
+            'distance_meters'  => null,
+            'employee_id'      => (int)$row['employee_id'],
+            'employee_name'    => $info['employee_name'] ?? ($row['employee_name'] ?? '—'),
+            'employee_role'    => $row['employee_role'] ?? '—',
+            'department_name'  => $row['department_name'] ?? '—',
+            'edit_role'        => ($initiatedById === $currentUserId) ? 'self' : $row['initiator_role'],
+            'edit_status'      => $row['edit_status'] ?? (in_array($row['initiator_role'], ['superadmin', 'admin']) ? 'approved' : 'pending'),
+            'initiator_name'   => $row['initiator_name'],
+            'photo_path'       => null,
+            '_ts'              => $ts,
+        ];
+    }
+}
+
 /* =========================
    PHP SORT
 ========================= */

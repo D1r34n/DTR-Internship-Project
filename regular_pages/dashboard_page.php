@@ -41,7 +41,7 @@ $today        = date('Y-m-d');
 $daysInMonth  = (int)date('t');
 
 // ── Total employees ───────────────────────────────────────
-$count = (int) $pdo->query("SELECT COUNT(*) FROM employees")->fetchColumn();
+$count = (int) $pdo->query("SELECT COUNT(*) FROM employees WHERE is_archived = 0")->fetchColumn();
 
 // ── Present today ─────────────────────────────────────────
 $stmt = $pdo->prepare("
@@ -94,6 +94,7 @@ if ($dashIsPrivileged) {
         FROM employees
         WHERE birthdate IS NOT NULL
           AND MONTH(birthdate) = MONTH(CURDATE())
+          AND is_archived = 0
         ORDER BY
             CASE WHEN DAY(birthdate) >= DAY(CURDATE()) THEN 0 ELSE 1 END ASC,
             DAY(birthdate) ASC
@@ -113,6 +114,7 @@ if ($dashIsPrivileged) {
             WHERE birthdate IS NOT NULL
               AND MONTH(birthdate) = MONTH(CURDATE())
               AND department_id = ?
+              AND is_archived = 0
             ORDER BY
                 CASE WHEN DAY(birthdate) >= DAY(CURDATE()) THEN 0 ELSE 1 END ASC,
                 DAY(birthdate) ASC
@@ -178,7 +180,7 @@ $myDeptId       = (int)($_SESSION['department_id'] ?? 0);
 // ── Department-scoped stats (manager only) ────────────────
 $deptCount = $deptPresent = $deptAbsent = $deptTotalPending = 0;
 if ($isManager && $myDeptId) {
-    $s = $pdo->prepare("SELECT COUNT(*) FROM employees WHERE department_id = ?");
+    $s = $pdo->prepare("SELECT COUNT(*) FROM employees WHERE department_id = ? AND is_archived = 0");
     $s->execute([$myDeptId]);
     $deptCount = (int)$s->fetchColumn();
 

@@ -133,3 +133,34 @@
 .logs-widget .log-detail-pill {
     cursor: pointer;
 }
+
+.edit-diff-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px 20px;
+    margin-top: 6px;
+}
+
+.edit-diff-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.edit-diff-field-label {
+    font-weight: 600;
+    margin-bottom: 2px;
+}
+
+.emp-info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px 20px;
+    margin-top: 6px;
+}
+
+.emp-info-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}

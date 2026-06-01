@@ -15,32 +15,33 @@ $logsEmployeeId ??= null;
             </button>
         </div>
 
-        <div class="dropdown">
-            <button class="btn dropdown-toggle" type="button" id="logTypeToggle"
-                    data-bs-toggle="dropdown" aria-expanded="false">
-                <i class="bi bi-funnel"></i>
-                <span id="logTypeLabel">All Types</span>
-            </button>
-            <ul class="dropdown-menu" id="logTypeMenu" style="max-height:340px;overflow-y:auto!important;overflow-x:hidden!important;">
-                <li><a class="dropdown-item" href="#" data-value="ALL">All Types</a></li>
-                <li><hr class="dropdown-divider"></li>
-                <li><a class="dropdown-item" href="#" data-value="IN">Time In</a></li>
-                <li><a class="dropdown-item" href="#" data-value="OUT">Time Out</a></li>
-                <li><a class="dropdown-item" href="#" data-value="BREAK_IN">Break In</a></li>
-                <li><a class="dropdown-item" href="#" data-value="BREAK_OUT">Break Out</a></li>
-                <li><hr class="dropdown-divider"></li>
-                <li><a class="dropdown-item" href="#" data-value="REQUEST_OT">Request OT</a></li>
-                <li><a class="dropdown-item" href="#" data-value="REQUEST_LEAVE">Request Leave</a></li>
-                <li><a class="dropdown-item" href="#" data-value="REQUEST_OB">Request OB</a></li>
-                <li><a class="dropdown-item" href="#" data-value="REQUEST_LOG_EDIT">Request Log Edit</a></li>
-                <li><a class="dropdown-item" href="#" data-value="REQUEST_CHANGE_SCHEDULE">Request Change Schedule</a></li>
-                <li><hr class="dropdown-divider"></li>
-                <li><a class="dropdown-item" href="#" data-value="ADD_EMPLOYEE">Added Employee</a></li>
-                <li><a class="dropdown-item" href="#" data-value="EDIT_EMPLOYEE">Edited Employee</a></li>
-                <li><a class="dropdown-item" href="#" data-value="ADD_SCHEDULE">Added Schedule</a></li>
-                <li><a class="dropdown-item" href="#" data-value="EDIT_SCHEDULE">Edited Schedule</a></li>
-            </ul>
-        </div>
+            <div class="dropdown">
+                <button class="btn btn-sm dropdown-toggle" type="button" id="logTypeToggle"
+                        data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="bi bi-funnel"></i>
+                    <span id="logTypeLabel">All Types</span>
+                </button>
+                <ul class="dropdown-menu" id="logTypeMenu" style="max-height:340px;overflow-y:auto!important;overflow-x:hidden!important;">
+                    <li><a class="dropdown-item" href="#" data-value="ALL">All Types</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item" href="#" data-value="IN">Time In</a></li>
+                    <li><a class="dropdown-item" href="#" data-value="OUT">Time Out</a></li>
+                    <li><a class="dropdown-item" href="#" data-value="BREAK_IN">Break In</a></li>
+                    <li><a class="dropdown-item" href="#" data-value="BREAK_OUT">Break Out</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item" href="#" data-value="REQUEST_OT">Request OT</a></li>
+                    <li><a class="dropdown-item" href="#" data-value="REQUEST_LEAVE">Request Leave</a></li>
+                    <li><a class="dropdown-item" href="#" data-value="REQUEST_OB">Request OB</a></li>
+                    <li><a class="dropdown-item" href="#" data-value="REQUEST_LOG_EDIT">Request Log Edit</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item" href="#" data-value="ADD_EMPLOYEE">Added Employee</a></li>
+                    <li><a class="dropdown-item" href="#" data-value="EDIT_EMPLOYEE">Edited Employee</a></li>
+                    <li><a class="dropdown-item" href="#" data-value="DELETE_EMPLOYEE">Deleted Employee</a></li>
+                    <li><a class="dropdown-item" href="#" data-value="ADD_SCHEDULE">Added Schedule</a></li>
+                    <li><a class="dropdown-item" href="#" data-value="EDIT_SCHEDULE">Edited Schedule</a></li>
+                    <li><a class="dropdown-item" href="#" data-value="DELETE_SCHEDULE">Deleted Schedule</a></li>
+                </ul>
+            </div>
 
         <input type="hidden" id="logTypeFilter" value="ALL">
         <input type="hidden" id="startDate" value="<?= $startDate ?? date('Y-m-d') ?>">
@@ -221,9 +222,11 @@ const LOG_TYPE_CLASS = {
     REQUEST_CHANGE_SCHEDULE: 'status-info',
     ADD_EMPLOYEE:            'status-approved',
     EDIT_EMPLOYEE:           'status-info',
+    DELETE_EMPLOYEE:         'btn-danger',
     ADD_SCHEDULE:            'status-info',
     EDIT_SCHEDULE:           'status-info',
-};
+    DELETE_SCHEDULE:         'btn-danger',
+}; /* v2 */
 const LOG_TYPE_LABEL = {
     IN: 'Time In', OUT: 'Time Out', BREAK_IN: 'Break In', BREAK_OUT: 'Break Out',
     REQUEST_OT:              'Request OT',
@@ -233,8 +236,10 @@ const LOG_TYPE_LABEL = {
     REQUEST_CHANGE_SCHEDULE: 'Request Change Schedule',
     ADD_EMPLOYEE:            'Added Employee',
     EDIT_EMPLOYEE:           'Edited Employee',
+    DELETE_EMPLOYEE:         'Deleted Employee',
     ADD_SCHEDULE:            'Added Schedule',
     EDIT_SCHEDULE:           'Edited Schedule',
+    DELETE_SCHEDULE:         'Deleted Schedule',
 };
 
 /* =========================
@@ -319,23 +324,29 @@ function renderLogRows({ meta, rows, total = 0 }) {
             editBtnCol = `<td>${editBtn}</td>`;
         }
 
-        const hasPhoto = row.photo_path && (row.log_type === 'IN' || row.log_type === 'OUT');
+        const hasPhoto  = row.photo_path && (row.log_type === 'IN' || row.log_type === 'OUT');
+        const diffAttr  = row.diff_data ? `data-diff="${esc(JSON.stringify(row.diff_data))}"` : '';
+        const empAttr   = row.emp_data  ? `data-emp="${esc(JSON.stringify(row.emp_data))}"` : '';
+        const showLogIcon = !['IN', 'OUT', 'BREAK_IN', 'BREAK_OUT'].includes(row.log_type);
         const typePill = hasPhoto
             ? `<span class="pill ${typeClass} log-detail-pill" role="button"
                      data-type-label="${esc(typeLabel)}"
                      data-type-class="${esc(typeClass)}"
                      data-details="${esc(row.details ?? '')}"
-                     data-photo="${esc(row.photo_path)}">
+                     data-photo="${esc(row.photo_path)}"
+                     ${diffAttr} ${empAttr}>
                      <i class="bi bi-camera-fill" style="font-size:0.65rem;opacity:0.8;"></i> ${typeLabel}
                </span>`
             : `<span class="pill ${typeClass} log-detail-pill" role="button"
                      data-type-label="${esc(typeLabel)}"
                      data-type-class="${esc(typeClass)}"
-                     data-details="${esc(row.details ?? '')}">
-                     ${typeLabel}
+                     data-details="${esc(row.details ?? '')}"
+                     ${diffAttr} ${empAttr}>
+                     ${showLogIcon ? '<i class="bi bi-file-earmark-bar-graph-fill" style="font-size:0.65rem;opacity:0.8;"></i> ' : ''}${typeLabel}
                </span>`;
 
-        const locCell = row.is_within_office === null
+        const MGMT_TYPES = ['ADD_EMPLOYEE','EDIT_EMPLOYEE','DELETE_EMPLOYEE','ADD_SCHEDULE','EDIT_SCHEDULE','DELETE_SCHEDULE'];
+        const locCell = (row.is_within_office === null || row.is_within_office === false || MGMT_TYPES.includes(row.log_type))
             ? `<span style="color:rgba(255,255,255,0.2);font-size:0.75rem;">—</span>`
             : `<span role="button" tabindex="0"
                     class="pill ${locClass} loc-trigger"
@@ -649,14 +660,42 @@ document.addEventListener('click', e => {
     const typeClass = pill.dataset.typeClass;
     const details   = pill.dataset.details;
     const photo     = pill.dataset.photo;
+    let   diffData  = null;
+    let   empData   = null;
+    try { if (pill.dataset.diff) diffData = JSON.parse(pill.dataset.diff); } catch (_) {}
+    try { if (pill.dataset.emp)  empData  = JSON.parse(pill.dataset.emp);  } catch (_) {}
 
     document.getElementById('ldm-type-pill-container').innerHTML =
         `<span class="pill ${typeClass}">${typeLabel}</span>`;
-    document.getElementById('ldm-details').innerHTML = details
-        ? details.split('\n').map(line =>
-            /:\s*$/.test(line) ? `<span class="text-meta">${esc(line)}</span>` : esc(line)
-          ).join('<br>')
-        : '—';
+
+    if (empData && Array.isArray(empData)) {
+        const cells = empData.map(([label, value]) => `
+            <div class="emp-info-cell">
+                <span class="text-meta">${esc(label)}:</span>
+                <div>${esc(value)}</div>
+            </div>`).join('');
+        document.getElementById('ldm-details').innerHTML =
+            `<div class="emp-info-grid">${cells}</div>`;
+    } else if (diffData && typeof diffData === 'object') {
+        const entries = Object.entries(diffData);
+        const items = entries.map(([label, change]) => `
+            <div class="edit-diff-item">
+                <div class="edit-diff-field-label">${esc(label)}</div>
+                <span class="text-meta">Before:</span>
+                <div>${esc(change.before ?? '—')}</div>
+                <span class="text-meta">After:</span>
+                <div>${esc(change.after ?? '—')}</div>
+            </div>`).join('');
+        document.getElementById('ldm-details').innerHTML =
+            `<div class="edit-diff-grid">${items}</div>`;
+    } else {
+        const content = details || typeLabel || '';
+        document.getElementById('ldm-details').innerHTML = content
+            ? content.split('\n').map(line =>
+                /:\s*$/.test(line) ? `<span class="text-meta">${esc(line)}</span>` : esc(line)
+              ).join('<br>')
+            : '—';
+    }
 
     const photoContainer = document.getElementById('ldm-photo-container');
     const photoImg       = document.getElementById('ldm-photo');
