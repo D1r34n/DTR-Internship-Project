@@ -78,7 +78,8 @@ if ($_SESSION['user_role'] === 'workforce' && $empLookup['role_key'] === 'manage
 
 $employeeId = (int) $empLookup['id'];
 $urlEmpId   = $empLookup['employee_id'];
-$schedReqStatus = ($_SESSION['user_role'] === 'workforce') ? 'pending' : 'approved';
+$scheduleStatus = ($_SESSION['user_role'] === 'workforce') ? 'pending' : 'approved';
+$restDayStatus = 'approved';
 
 // ---- CUTOFFS ----
 $pdo->exec("CREATE TABLE IF NOT EXISTS `cutoffs` (
@@ -398,7 +399,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' &&
     $pdo->prepare("
     INSERT INTO logs (employee_id, log_type, log_time, longitude, latitude, is_within_office, schedule_request_id, edit_requested_by, edit_reason)
     VALUES (?, ?, NOW(), 0, 0, 0, ?, ?, ?)
-")->execute([$postEmpId, $is_edit ? 'EDIT_SCHEDULE' : 'ADD_SCHEDULE', $schedReqId, $_SESSION['user_id'], $batchId]);
+")->execute([$postEmpId, $is_edit ? 'EDIT_SCHEDULE' : 'ADD_SCHEDULE', $schedLogStatus, $_SESSION['user_id'], $batchId]);
 
     header("Location: admin_employee_view.php?employee_id=$urlEmpId");
     exit();
