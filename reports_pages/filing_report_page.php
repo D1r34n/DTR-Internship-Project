@@ -51,37 +51,8 @@ require_once 'cutoff_helpers.php';
     <div class="card card-neutral requests-card">
         <div class="card-header d-flex align-items-center gap-2 flex-wrap">
 
-            <div class="input-group input-group-sm" style="max-width:220px;">
-                <span class="input-group-text"><i class="bi bi-search"></i></span>
-                <input type="text" id="search-input" class="form-control" placeholder="Search employee…" oninput="handleSearchInput()">
-            </div>
-
             <div class="dropdown">
-                <button class="btn btn-sm btn-neutral dropdown-toggle" type="button" data-bs-toggle="dropdown" data-bs-boundary="viewport" aria-expanded="false">
-                    <i class="bi bi-funnel"></i>
-                    <span id="status-label">All Filings</span>
-                </button>
-                <ul class="dropdown-menu" style="z-index:1055;">
-                    <li><a class="dropdown-item status-opt" href="#" data-value="ALL">All Filings</a></li>
-                    <li><hr class="dropdown-divider"></li>
-                    <li><h6 class="dropdown-header">Leave</h6></li>
-                    <li><a class="dropdown-item status-opt" href="#" data-value="leave">All Leave</a></li>
-                    <li><a class="dropdown-item status-opt ps-4" href="#" data-value="sick leave">Sick Leave</a></li>
-                    <li><a class="dropdown-item status-opt ps-4" href="#" data-value="vacation leave">Vacation Leave</a></li>
-                    <li><a class="dropdown-item status-opt ps-4" href="#" data-value="birthday leave">Birthday Leave</a></li>
-                    <li><a class="dropdown-item status-opt ps-4" href="#" data-value="solo parent leave">Solo Parent Leave</a></li>
-                    <li><a class="dropdown-item status-opt ps-4" href="#" data-value="ob leave">OB Leave</a></li>
-                    <li><hr class="dropdown-divider"></li>
-                    <li><h6 class="dropdown-header">Request</h6></li>
-                    <li><a class="dropdown-item status-opt" href="#" data-value="request">All Requests</a></li>
-                    <li><a class="dropdown-item status-opt ps-4" href="#" data-value="overtime">OT Request</a></li>
-                    <li><a class="dropdown-item status-opt ps-4" href="#" data-value="log_edit">Log Edit Request</a></li>
-                    <li><a class="dropdown-item status-opt ps-4" href="#" data-value="schedule_edit">Schedule Edit Request</a></li>
-                </ul>
-            </div>
-
-            <div class="dropdown">
-                <button class="btn btn-success btn-sm dropdown-toggle" type="button"
+                <button class="btn btn-success dropdown-toggle" type="button"
                         id="ar-cutoff-btn" data-bs-toggle="dropdown"
                         data-bs-auto-close="outside" aria-expanded="false">
                     <i class="bi bi-calendar3 me-1"></i>
@@ -110,7 +81,7 @@ require_once 'cutoff_helpers.php';
 
                     <div id="ar-panel-2" style="display:none;">
                         <li>
-                            <a class="dropdown-item d-flex align-items-center gap-1 text-muted"
+                            <a class="dropdown-item d-flex align-items-center gap-1 text-meta"
                                href="#" id="ar-back-btn">
                                 <i class="bi bi-arrow-left"></i> Back
                             </a>
@@ -134,7 +105,7 @@ require_once 'cutoff_helpers.php';
                 </ul>
             </div>
 
-            <span id="ar-range-label" class="text-tertiary small">
+            <span id="ar-range-label" class="text-secondary">
                 <?= htmlspecialchars($defaultRange ?? '') ?>
             </span>
 
@@ -142,8 +113,38 @@ require_once 'cutoff_helpers.php';
                    style="position:absolute;width:0;height:0;opacity:0;pointer-events:none;">
 
             <div class="ms-auto d-flex gap-2">
+
+                <div class="input-group" style="max-width:220px;">
+                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                    <input type="text" id="search-input" class="form-control" placeholder="Search employee…" oninput="handleSearchInput()">
+                </div>
+
                 <div class="dropdown">
-                    <button class="btn btn-outline-light btn-sm dropdown-toggle" type="button"
+                    <button class="btn btn-neutral dropdown-toggle" type="button" data-bs-toggle="dropdown" data-bs-boundary="viewport" aria-expanded="false">
+                        <i class="bi bi-funnel"></i>
+                        <span id="status-label">All Filings</span>
+                    </button>
+                    <ul class="dropdown-menu" style="z-index:1055;">
+                        <li><a class="dropdown-item status-opt" href="#" data-value="ALL">All Filings</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><h6 class="dropdown-header">Leave</h6></li>
+                        <li><a class="dropdown-item status-opt" href="#" data-value="leave">All Leave</a></li>
+                        <li><a class="dropdown-item status-opt ps-4" href="#" data-value="sick leave">Sick Leave</a></li>
+                        <li><a class="dropdown-item status-opt ps-4" href="#" data-value="vacation leave">Vacation Leave</a></li>
+                        <li><a class="dropdown-item status-opt ps-4" href="#" data-value="birthday leave">Birthday Leave</a></li>
+                        <li><a class="dropdown-item status-opt ps-4" href="#" data-value="solo parent leave">Solo Parent Leave</a></li>
+                        <li><a class="dropdown-item status-opt ps-4" href="#" data-value="ob leave">OB Leave</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><h6 class="dropdown-header">Request</h6></li>
+                        <li><a class="dropdown-item status-opt" href="#" data-value="request">All Requests</a></li>
+                        <li><a class="dropdown-item status-opt ps-4" href="#" data-value="overtime">OT Request</a></li>
+                        <li><a class="dropdown-item status-opt ps-4" href="#" data-value="log_edit">Log Edit Request</a></li>
+                        <li><a class="dropdown-item status-opt ps-4" href="#" data-value="schedule_edit">Schedule Edit Request</a></li>
+                    </ul>
+                </div>
+                
+                <div class="dropdown">
+                    <button class="btn btn-outline-light dropdown-toggle" type="button"
                             id="export-btn" data-bs-toggle="dropdown" aria-expanded="false" disabled>
                         <i class="bi bi-download"></i> Export
                     </button>
@@ -237,7 +238,6 @@ require_once 'cutoff_helpers.php';
                             10 rows
                         </button>
                         <ul class="dropdown-menu dropdown-menu-end" style="z-index:1055;">
-                            <li><a class="dropdown-item row-limit-opt" href="#" data-value="5">5 rows</a></li>
                             <li><a class="dropdown-item row-limit-opt" href="#" data-value="10">10 rows</a></li>
                             <li><a class="dropdown-item row-limit-opt" href="#" data-value="25">25 rows</a></li>
                             <li><a class="dropdown-item row-limit-opt" href="#" data-value="50">50 rows</a></li>
@@ -375,9 +375,9 @@ function fetchFilingReport() {
 
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
-                    <td>${row.employee_id     || '—'}</td>
-                    <td>${row.employee_name  || '—'}</td>
-                    <td>${row.department_name|| '—'}</td>
+                    <td>${row.employee_id     || '<span class="text-meta">-</span>'}</td>
+                    <td>${row.employee_name  || '<span class="text-meta">-</span>'}</td>
+                    <td>${row.department_name|| '<span class="text-meta">-</span>'}</td>
                     <td>${category}</td>
                     <td>${typeLabel}</td>
                     <td>${parseDateString(row.start_date)}</td>
@@ -385,8 +385,8 @@ function fetchFilingReport() {
                     <td><span class="pill ${sc}">${row.status ? row.status.charAt(0).toUpperCase() + row.status.slice(1) : '—'}</span></td>
                     <td>${parseDateString(row.date_filed)}</td>
                     <td>${parseDateString(row.date_approved)}</td>
-                    <td>${row.approved_by    || '—'}</td>
-                    <td><span class="text-truncate d-inline-block" style="max-width: 150px;" title="${row.reason || ''}">${row.reason || '—'}</span></td>
+                    <td>${row.approved_by    || '<span class="text-meta">-</span>'}</td>
+                    <td><span class="text-truncate d-inline-block" style="max-width: 150px;" title="${row.reason || ''}">${row.reason || '<span class="text-meta">-</span>'}</span></td>
                 `;
                 tbody.appendChild(tr);
             });

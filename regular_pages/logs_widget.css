@@ -6,6 +6,20 @@
    Depends on: root.css, components.css
    ================================================ */
 
+.logs-card {
+    flex: 1;
+    min-height: 0;
+    overflow: visible !important;
+}
+
+.logs-card-body {
+    padding: 1rem 0 0 1rem;
+    height: 100%;
+    overflow: visible;
+    display: flex;
+    flex-direction: column;
+}
+
 .logs-widget-wrapper {
     flex: 1;
     min-height: 0;

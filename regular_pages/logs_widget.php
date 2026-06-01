@@ -2,56 +2,52 @@
 // Expects $startDate and $endDate to be set by the including page.
 // Optionally set $logsApiPath to override the default fetch URL.
 // Optionally set $logsEmployeeId (int) to scope the widget to one employee (admin use).
-$logsApiPath      ??= '../get_logs.php';
-$logsEmployeeId   ??= null;
-$logsInlineHeader ??= false;
+$logsApiPath    ??= '../get_logs.php';
+$logsEmployeeId ??= null;
 ?>
-<div class="logs-widget-wrapper">
-    <div class="logs-widget">
+<div class="card card-neutral logs-card">
 
-        <?php if (!$logsInlineHeader): ?>
-        <!-- Filter Section -->
-        <div class="logs-header">
-            <div class="dropdown">
-                <button class="btn btn-sm dropdown-toggle" id="datePickerBtn" type="button">
-                    <i class="bi bi-calendar3"></i>
-                    <span id="dateRangeLabel">Today</span>
-                </button>
-            </div>
-
-            <div class="dropdown">
-                <button class="btn btn-sm dropdown-toggle" type="button" id="logTypeToggle"
-                        data-bs-toggle="dropdown" aria-expanded="false">
-                    <i class="bi bi-funnel"></i>
-                    <span id="logTypeLabel">All Types</span>
-                </button>
-                <ul class="dropdown-menu" id="logTypeMenu" style="max-height:340px;overflow-y:auto!important;overflow-x:hidden!important;">
-                    <li><a class="dropdown-item" href="#" data-value="ALL">All Types</a></li>
-                    <li><hr class="dropdown-divider"></li>
-                    <li><a class="dropdown-item" href="#" data-value="IN">Time In</a></li>
-                    <li><a class="dropdown-item" href="#" data-value="OUT">Time Out</a></li>
-                    <li><a class="dropdown-item" href="#" data-value="BREAK_IN">Break In</a></li>
-                    <li><a class="dropdown-item" href="#" data-value="BREAK_OUT">Break Out</a></li>
-                    <li><hr class="dropdown-divider"></li>
-                    <li><a class="dropdown-item" href="#" data-value="REQUEST_OT">Request OT</a></li>
-                    <li><a class="dropdown-item" href="#" data-value="REQUEST_LEAVE">Request Leave</a></li>
-                    <li><a class="dropdown-item" href="#" data-value="REQUEST_OB">Request OB</a></li>
-                    <li><a class="dropdown-item" href="#" data-value="REQUEST_LOG_EDIT">Request Log Edit</a></li>
-                    <li><a class="dropdown-item" href="#" data-value="REQUEST_CHANGE_SCHEDULE">Request Change Schedule</a></li>
-                    <li><hr class="dropdown-divider"></li>
-                    <li><a class="dropdown-item" href="#" data-value="ADD_EMPLOYEE">Added Employee</a></li>
-                    <li><a class="dropdown-item" href="#" data-value="EDIT_EMPLOYEE">Edited Employee</a></li>
-                    <li><a class="dropdown-item" href="#" data-value="ADD_SCHEDULE">Added Schedule</a></li>
-                    <li><a class="dropdown-item" href="#" data-value="EDIT_SCHEDULE">Edited Schedule</a></li>
-                </ul>
-            </div>
-
-            <input type="hidden" id="logTypeFilter" value="ALL">
-            <input type="hidden" id="startDate" value="<?= $startDate ?? date('Y-m-d') ?>">
-            <input type="hidden" id="endDate"   value="<?= $endDate   ?? date('Y-m-d') ?>">
+    <div class="card-header logs-header">
+        <div class="dropdown">
+            <button class="btn dropdown-toggle" id="datePickerBtn" type="button">
+                <i class="bi bi-calendar3"></i>
+                <span id="dateRangeLabel">Today</span>
+            </button>
         </div>
-        <?php endif; ?>
 
+        <div class="dropdown">
+            <button class="btn dropdown-toggle" type="button" id="logTypeToggle"
+                    data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="bi bi-funnel"></i>
+                <span id="logTypeLabel">All Types</span>
+            </button>
+            <ul class="dropdown-menu" id="logTypeMenu" style="max-height:340px;overflow-y:auto!important;overflow-x:hidden!important;">
+                <li><a class="dropdown-item" href="#" data-value="ALL">All Types</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item" href="#" data-value="IN">Time In</a></li>
+                <li><a class="dropdown-item" href="#" data-value="OUT">Time Out</a></li>
+                <li><a class="dropdown-item" href="#" data-value="BREAK_IN">Break In</a></li>
+                <li><a class="dropdown-item" href="#" data-value="BREAK_OUT">Break Out</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item" href="#" data-value="REQUEST_OT">Request OT</a></li>
+                <li><a class="dropdown-item" href="#" data-value="REQUEST_LEAVE">Request Leave</a></li>
+                <li><a class="dropdown-item" href="#" data-value="REQUEST_OB">Request OB</a></li>
+                <li><a class="dropdown-item" href="#" data-value="REQUEST_LOG_EDIT">Request Log Edit</a></li>
+                <li><a class="dropdown-item" href="#" data-value="REQUEST_CHANGE_SCHEDULE">Request Change Schedule</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item" href="#" data-value="ADD_EMPLOYEE">Added Employee</a></li>
+                <li><a class="dropdown-item" href="#" data-value="EDIT_EMPLOYEE">Edited Employee</a></li>
+                <li><a class="dropdown-item" href="#" data-value="ADD_SCHEDULE">Added Schedule</a></li>
+                <li><a class="dropdown-item" href="#" data-value="EDIT_SCHEDULE">Edited Schedule</a></li>
+            </ul>
+        </div>
+
+        <input type="hidden" id="logTypeFilter" value="ALL">
+        <input type="hidden" id="startDate" value="<?= $startDate ?? date('Y-m-d') ?>">
+        <input type="hidden" id="endDate"   value="<?= $endDate   ?? date('Y-m-d') ?>">
+    </div>
+
+    <div class="card-body logs-card-body">
         <div class="table-scroll-wrapper">
             <table class="table table-hover mb-0">
                 <colgroup id="logs_colgroup"></colgroup>
@@ -64,49 +60,47 @@ $logsInlineHeader ??= false;
                 <i class="bi bi-calendar2-x-fill"></i>
                 <div class="text-meta">No logs found for this period.</div>
             </div>
+        </div>
+    </div>
 
+    <div class="card-footer d-flex align-items-center justify-content-between flex-wrap gap-2 logs-pagination-footer"
+         id="logsPagContainer" style="display:none !important;">
+
+        <div id="logsPaginationInfo"
+             class="small text-meta text-nowrap flex-sm-fill w-sm-100 text-sm-start text-center order-1">
+            Showing 0 to 0 of 0 entries
         </div>
 
-        <!-- Pagination Footer -->
-        <div class="pagination-footer d-flex flex-sm-nowrap flex-wrap align-items-center justify-content-between gap-3 w-100"
-             id="logsPagContainer" style="display:none !important;">
-
-            <div id="logsPaginationInfo"
-                 class="small text-meta text-nowrap flex-sm-fill w-sm-100 text-sm-start text-center order-1">
-                Showing 0 to 0 of 0 entries
+        <div class="d-flex align-items-center justify-content-center flex-wrap gap-3 flex-sm-fill w-sm-100 order-2">
+            <nav aria-label="Logs Navigation">
+                <ul class="pagination pagination-sm mb-0" id="logsPaginationList"></ul>
+            </nav>
+            <div class="d-flex align-items-center gap-1 pag-jump-wrapper" id="logsPageJumpWrapper" style="display:none !important;">
+                <small class="text-meta text-nowrap">Go to:</small>
+                <input type="number" id="logsPageJumpInput"
+                       class="form-control form-control-sm text-center px-1 pag-jump-input"
+                       min="1" style="width:45px;height:28px;" placeholder="Go">
             </div>
+        </div>
 
-            <div class="d-flex align-items-center justify-content-center flex-wrap gap-3 flex-sm-fill w-sm-100 order-2">
-                <nav aria-label="Logs Navigation">
-                    <ul class="pagination pagination-sm mb-0" id="logsPaginationList"></ul>
-                </nav>
-                <div class="d-flex align-items-center gap-1 pag-jump-wrapper" id="logsPageJumpWrapper" style="display:none !important;">
-                    <small class="text-meta text-nowrap">Go to:</small>
-                    <input type="number" id="logsPageJumpInput"
-                           class="form-control form-control-sm text-center px-1 pag-jump-input"
-                           min="1" style="width:45px;height:28px;" placeholder="Go">
-                </div>
+        <div class="d-flex align-items-center justify-content-sm-end justify-content-center gap-2 flex-sm-fill w-sm-100 order-3">
+            <small class="text-meta text-nowrap">Rows Per Page:</small>
+            <div class="dropdown">
+                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button"
+                        id="logsRowsPerPageBtn" data-bs-toggle="dropdown" aria-expanded="false">
+                    25 rows
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end" style="z-index:1056;">
+                    <li><a class="dropdown-item logs-row-limit-opt" href="#" data-value="10">10 rows</a></li>
+                    <li><a class="dropdown-item logs-row-limit-opt" href="#" data-value="25">25 rows</a></li>
+                    <li><a class="dropdown-item logs-row-limit-opt" href="#" data-value="50">50 rows</a></li>
+                    <li><a class="dropdown-item logs-row-limit-opt" href="#" data-value="100">100 rows</a></li>
+                </ul>
             </div>
-
-            <div class="d-flex align-items-center justify-content-sm-end justify-content-center gap-2 flex-sm-fill w-sm-100 order-3">
-                <small class="text-meta text-nowrap">Rows Per Page:</small>
-                <div class="dropdown">
-                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button"
-                            id="logsRowsPerPageBtn" data-bs-toggle="dropdown" aria-expanded="false">
-                        25 rows
-                    </button>
-                    <ul class="dropdown-menu dropdown-menu-end" style="z-index:1056;">
-                        <li><a class="dropdown-item logs-row-limit-opt" href="#" data-value="10">10 rows</a></li>
-                        <li><a class="dropdown-item logs-row-limit-opt" href="#" data-value="25">25 rows</a></li>
-                        <li><a class="dropdown-item logs-row-limit-opt" href="#" data-value="50">50 rows</a></li>
-                        <li><a class="dropdown-item logs-row-limit-opt" href="#" data-value="100">100 rows</a></li>
-                    </ul>
-                </div>
-            </div>
-
         </div>
 
     </div>
+
 </div>
 
 <!-- Map Hover Popup -->
@@ -228,7 +222,7 @@ const LOG_TYPE_CLASS = {
     ADD_EMPLOYEE:            'status-approved',
     EDIT_EMPLOYEE:           'status-info',
     ADD_SCHEDULE:            'status-info',
-    EDIT_SCHEDULE:           'status-info', 
+    EDIT_SCHEDULE:           'status-info',
 };
 const LOG_TYPE_LABEL = {
     IN: 'Time In', OUT: 'Time Out', BREAK_IN: 'Break In', BREAK_OUT: 'Break Out',
@@ -276,7 +270,6 @@ function renderLogRows({ meta, rows, total = 0 }) {
         const locClass = isInside ? 'btn-success' : 'btn-danger';
         const acc      = row.accuracy        != null ? row.accuracy        : 'N/A';
         const dist     = row.distance_meters != null ? row.distance_meters : 'N/A';
-        const mapUrl   = `https://www.google.com/maps?q=${row.latitude},${row.longitude}`;
         const typeClass = LOG_TYPE_CLASS[row.log_type] ?? '';
         const typeLabel = LOG_TYPE_LABEL[row.log_type] ?? row.log_type;
 
@@ -366,7 +359,6 @@ function renderLogRows({ meta, rows, total = 0 }) {
             ${editBtnCol}
         </tr>`;
     }).join('');
-
 }
 
 /* =========================
@@ -620,9 +612,6 @@ document.addEventListener('click', e => {
 
 /* =========================
    MOUSE WHEEL SCROLL
-   If cursor is over the horizontal scrollbar strip (bottom ~16 px),
-   redirect wheel deltaY to horizontal scroll.
-   Everywhere else, leave vertical scroll to the browser.
 ========================= */
 (function () {
     const wrapper = tbody.closest('.table-scroll-wrapper');

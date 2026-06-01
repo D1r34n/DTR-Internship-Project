@@ -148,7 +148,7 @@ $schedInitialDate   = date('Y-m-01');
         <?php include '../topbar_revised.php'; ?>
 
         <!-- SUMMARY CARDS -->
-        <div class="container-fluid flex-shrink-0 px-3 pt-2">
+        <div class="container-fluid flex-shrink-0 px-3">
             <div class="d-flex flex-nowrap gap-2 overflow-auto pb-2">
 
                 <!-- Day Shifts -->

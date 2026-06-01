@@ -49,22 +49,20 @@ $defaultEnd   = $today;
 
     <div class="card card-neutral requests-card">
         <div class="card-header d-flex align-items-center gap-2 flex-wrap">
-
-            <div class="input-group input-group-sm" style="max-width:220px;">
-                <span class="input-group-text"><i class="bi bi-search"></i></span>
-                <input type="text" id="search-input" class="form-control" placeholder="Search employee…" oninput="handleSearchInput()">
-            </div>
-
-            <button class="btn btn-sm btn-success" id="datePickerBtn" type="button">
+            <button class="btn btn-success" id="datePickerBtn" type="button">
                 <i class="bi bi-calendar3 me-1"></i>
                 <span id="dateRangeLabel">Loading…</span>
             </button>
 
-            <span id="ar-range-label" class="text-tertiary small"></span>
-
             <div class="ms-auto d-flex gap-2">
+
+                <div class="input-group" style="max-width:220px;">
+                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                    <input type="text" id="search-input" class="form-control" placeholder="Search employee…" oninput="handleSearchInput()">
+                </div>
+
                 <div class="dropdown">
-                    <button class="btn btn-outline-light btn-sm dropdown-toggle" type="button"
+                    <button class="btn btn-outline-light dropdown-toggle" type="button"
                             id="export-btn" data-bs-toggle="dropdown" aria-expanded="false" disabled>
                         <i class="bi bi-download"></i> Export
                     </button>
@@ -146,7 +144,6 @@ $defaultEnd   = $today;
                             10 rows
                         </button>
                         <ul class="dropdown-menu dropdown-menu-end" style="z-index:1055;">
-                            <li><a class="dropdown-item row-limit-opt" href="#" data-value="5">5 rows</a></li>
                             <li><a class="dropdown-item row-limit-opt" href="#" data-value="10">10 rows</a></li>
                             <li><a class="dropdown-item row-limit-opt" href="#" data-value="25">25 rows</a></li>
                             <li><a class="dropdown-item row-limit-opt" href="#" data-value="50">50 rows</a></li>
@@ -188,11 +185,22 @@ function fmtDate(d) {
 
 function updateDateLabel(dates) {
     const label = document.getElementById('dateRangeLabel');
-    if (!dates || !dates.length) { label.textContent = 'Select range'; return; }
+    
+    // Fallback if no dates are provided
+    if (!dates || !dates.length) { 
+        label.textContent = 'Selected Date: None'; 
+        return; 
+    }
+    
     const isSameDay = dates.length > 1 && dates[0].toDateString() === dates[1].toDateString();
-    label.textContent = (dates.length === 1 || isSameDay)
+    
+    // Construct the date range string
+    const dateText = (dates.length === 1 || isSameDay)
         ? fmtDate(dates[0])
         : fmtDate(dates[0]) + ' – ' + fmtDate(dates[1]);
+
+    // Apply the prefix with your dynamic text
+    label.textContent = 'Selected Date: ' + dateText;
 }
 
 function typeToColKey(name) {
@@ -311,7 +319,7 @@ function fetchLeaveReport() {
                 const typeCells = types.map(t => {
                     const key = typeToColKey(t.name);
                     const val = parseInt(row[key] ?? 0, 10);
-                    return `<td>${val > 0 ? val : '<span class="text-tertiary">-</span>'}</td>`;
+                    return `<td>${val > 0 ? val : '<span class="text-meta">-</span>'}</td>`;
                 }).join('');
 
                 const bufferBal  = parseInt(row.balance_buffer_leave   ?? 0, 10);
@@ -321,11 +329,11 @@ function fetchLeaveReport() {
 
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
-                    <td>${row.employee_id    || '-'}</td>
-                    <td>${row.employee_name  || '—'}</td>
-                    <td>${row.department_name || '—'}</td>
-                    <td>${row.role_name       || '—'}</td>
-                    <td>${bufferBal > 0 ? bufferBal : '<span class="text-tertiary">-</span>'}</td>
+                    <td>${row.employee_id    || '<span class="text-meta">-</span>'}</td>
+                    <td>${row.employee_name  || '<span class="text-meta">-</span>'}</td>
+                    <td>${row.department_name || '<span class="text-meta">-</span>'}</td>
+                    <td>${row.role_name       || '<span class="text-meta">-</span>'}</td>
+                    <td>${bufferBal > 0 ? bufferBal : '<span class="text-meta">-</span>'}</td>
                     ${typeCells}
                     <td>${leaveBalance}</td>
                 `;

@@ -74,7 +74,7 @@ $recordsMonth = sprintf('%04d-%02d', $yr, $mn);
         <?php include '../topbar_revised.php'; ?>
 
         <!-- SUMMARY CARDS -->
-        <div class="container-fluid flex-shrink-0 px-3 pt-2">
+        <div class="container-fluid flex-shrink-0 px-3">
             <div class="row g-3">
 
                 <!-- PENDING -->
@@ -125,11 +125,7 @@ $recordsMonth = sprintf('%04d-%02d', $yr, $mn);
             </div>
         </div>
 
-        <div class="card card-neutral records-card">
-            <div class="card-body records-card-body">
-                <?php include 'records_widget.php'; ?>
-            </div>
-        </div>
+        <?php include 'records_widget.php'; ?>
 
     </div><!-- #main-wrapper -->
     <script src="../system_functions/gantt.js"></script>

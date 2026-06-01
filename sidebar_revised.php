@@ -210,7 +210,7 @@ $reportsOpen = in_array($currentPage, ['attendance_report', 'filing_report', 'le
                                 <a href="../reports_pages/leave_summary_page.php" 
                                 class="sidebar-sub-link <?= ($currentPage === 'leave_summary') ? 'active' : '' ?>" style="font-size: 0.85rem;">
                                     <i class="bi bi-calculator"></i>
-                                    <span>Balance Summary</span>
+                                    <span>Leaves Summary</span>
                                 </a>
                             </div>
                         </div>

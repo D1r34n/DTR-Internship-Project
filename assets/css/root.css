@@ -239,3 +239,111 @@
     --flatpickr-month-bg:      rgba(0, 0, 0, 0.6);
     --flatpickr-option-bg:     #1a1a1a;
 }
+
+/* ================================================
+   LIGHT THEME OVERRIDES
+   Applied when <html data-theme="light">
+   All accent / role / status colors stay the same.
+   Only surface, text, border, and shadow tokens flip.
+   ================================================ */
+
+[data-theme="light"] {
+    color-scheme: light;
+
+    /* TEXT — body text uses explicit dark counterparts in components */
+
+    /* BREADCRUMB */
+    --breadcrumb-divider-color:   rgba(0, 0, 0, 0.30);
+
+    /* NEUTRAL — white-tinted glass sitting on silver backgrounds */
+    --neutral-color:              #5c606e;
+    --neutral-hover:              #3c4050;
+    --neutral-glass:              rgba(255, 255, 255, 0.24);
+    --neutral-glass-hover:        rgba(255, 255, 255, 0.38);
+    --neutral-border:             rgba(255, 255, 255, 0.52);
+    --neutral-range:              rgba(255, 255, 255, 0.30);
+    --neutral-soft:               rgba(255, 255, 255, 0.18);
+    --neutral-glow:               rgba(0, 0, 0, 0.14);
+
+    /* SHADOW */
+    --shadow:                     rgba(0, 0, 0, 0.14);
+    --box-shadow-heavy:           rgba(0, 0, 0, 0.22);
+
+    /* OVERLAY */
+    --overlay-hover-light:        rgba(151, 190, 65, 0.08);
+    --overlay-hover:              rgba(151, 190, 65, 0.14);
+    --overlay-soft:               rgba(151, 190, 65, 0.06);
+    --overlay-muted:              rgba(0, 0, 0, 0.32);
+    --danger-overlay:             rgba(255, 80, 80, 0.08);
+
+    /* MAP */
+    --map-bg:                     rgba(255, 255, 255, 0.22);
+    --map-border:                 rgba(255, 255, 255, 0.45);
+    --map-shadow:                 rgba(0, 0, 0, 0.14);
+
+    /* GLASS — silver-tinted panels */
+    --glass-bg:                   rgba(196, 200, 212, 0.58);
+    --glass-border:               rgba(255, 255, 255, 0.54);
+    --glass-top:                  rgba(255, 255, 255, 0.88);
+    --glass-hover:                rgba(255, 255, 255, 0.18);
+    --glass-inset:                inset 0 1px 0 rgba(255, 255, 255, 0.72);
+    --glass-shadow:               0 8px 24px rgba(0, 0, 0, 0.14);
+    --sidebar-glow:               0 0 0 1px rgba(255, 255, 255, 0.10),
+                                  6px 0 48px rgba(0, 0, 0, 0.28),
+                                  inset -1px 0 0 rgba(255, 255, 255, 0.05);
+
+    /* FROSTED GLASS — silver panels (Vision Pro / macOS style) */
+    --frosted-bg:                 rgba(184, 188, 202, 0.84);
+    --frosted-border:             rgba(255, 255, 255, 0.56);
+    --frosted-blur:               blur(40px) saturate(140%) brightness(1.02);
+    --frosted-shadow:             0 16px 56px rgba(0, 0, 0, 0.18),
+                                  inset 0 1px 0 rgba(255, 255, 255, 0.65);
+    --frosted-highlight:          linear-gradient(
+                                      to bottom,
+                                      rgba(255, 255, 255, 0.62),
+                                      transparent 60%
+                                  );
+
+    /* CALENDAR */
+    --calendar-btn-bg:            rgba(255, 255, 255, 0.22);
+    --calendar-btn-hover-bg:      rgba(255, 255, 255, 0.36);
+    --calendar-btn-hover-border:  rgba(255, 255, 255, 0.55);
+    --calendar-day-hover:         rgba(255, 255, 255, 0.20);
+
+    /* GANTT */
+    --gantt-bar-bg:               rgba(255, 255, 255, 0.14);
+    --gantt-grid-line:            rgba(0, 0, 0, 0.10);
+    --gantt-cursor-line:          rgba(0, 0, 0, 0.58);
+    --gantt-cursor-bg:            rgba(255, 255, 255, 0.82);
+    --gantt-scale-color:          rgba(0, 0, 0, 0.48);
+    --gantt-scheduled:            rgba(255, 255, 255, 0.18);
+    --gantt-scheduled-border:     rgba(0, 0, 0, 0.20);
+    --gantt-pending:              rgba(100, 102, 114, 0.38);
+    --gantt-pending-border:       rgba(0, 0, 0, 0.16);
+
+    /* DATEPICKER */
+    --datepicker-input-border:    rgba(255, 255, 255, 0.42);
+    --datepicker-input-bg:        rgba(255, 255, 255, 0.28);
+    --flatpickr-month-bg:         rgba(190, 194, 208, 0.95);
+    --flatpickr-option-bg:        #d4d7e6;
+}
+
+/* Bootstrap hardcodes .text-light as white — override for silver mode */
+[data-theme="light"] .text-light {
+    color: rgba(14, 16, 26, 0.90) !important;
+}
+
+/* Sidebar stays dark in light mode — restore dark-mode text tokens locally */
+[data-theme="light"] #sidebar {
+    --text-lightest:       #ffffff;
+    --text-light:          rgba(255, 255, 255, 0.85);
+    --text-muted:          rgba(255, 255, 255, 0.55);
+    --neutral-border:      rgba(255, 255, 255, 0.12);
+    --neutral-glass:       rgba(255, 255, 255, 0.06);
+    --neutral-glass-hover: rgba(255, 255, 255, 0.10);
+}
+
+/* Native form controls (date inputs etc.) adopt light styling */
+[data-theme="light"] .modal-body .form-control {
+    color-scheme: light;
+}

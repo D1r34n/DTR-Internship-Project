@@ -51,7 +51,7 @@ $titles = [
         'departments'       => 'Departments',
         'attendance_report' => 'Attendance Report',
         'filing_report'     => 'Filing Report',
-        'leave_report'      => 'Leave Balances Report',
+        'leave_report'      => 'Leave Taken Report',
         'leave_summary'     => 'Leave Summary Report'
     ],
 ];
@@ -195,15 +195,13 @@ $breakDisabled = !$timedIn || $isBreakOut;
                     class="btn dropdown-toggle d-flex align-items-center gap-2"
                     type="button"
                     data-bs-toggle="dropdown"
+                    data-bs-auto-close="outside"
                     aria-expanded="false">
 
                     <!-- PROFILE IMAGE -->
                     <img 
                         src="../assets/user_profiles/<?= htmlspecialchars($_SESSION['profile_image'] ?? 'default_profile.png') ?>"
                         class="topbar-profile-image"
-                        data-bs-toggle="modal"
-                        data-bs-target="#editProfileImageModal"
-                        style="cursor:pointer;"
                     >
 
                     <!-- USER NAME -->
@@ -266,22 +264,47 @@ $breakDisabled = !$timedIn || $isBreakOut;
                         <a class="dropdown-item"
                         href="#"
                         onclick="openLogEditModal(); return false;">
-
                             <i class="bi bi-pencil-square"></i>
                             Request Log Edit
-
                         </a>
                     </li>
 
                     <li><hr class="dropdown-divider"></li>
 
                     <li>
-                        <a class="dropdown-item logout-item"
-                        href="../authentication_pages/logout.php">
+                        <button class="dropdown-item"
+                        href="#"
+                        data-bs-toggle="modal"
+                        data-bs-target="#editProfileImageModal">
+                            <i class="bi bi-person"></i>
+                            View Profile
+                        </button>
+                    </li>
 
+                    <li>
+                        <div class="dropdown-item d-flex align-items-center justify-content-between w-100 gap-3" id="theme-toggle-container">
+                            <div class="d-flex align-items-center gap-2">
+                                <i id="theme-icon" class="bi bi-moon-stars-fill" style="font-size:0.85rem;color:var(--text-light)"></i>
+                                <span id="theme-label" class="text-secondary">Dark Mode</span>
+                            </div>
+                            <div class="theme-pill-wrapper">
+                                <input type="checkbox" id="themeCheckbox" hidden onchange="toggleTheme(this.checked)">
+                                <label class="theme-pill-track" for="themeCheckbox">
+                                    <span class="theme-pill-knob"></span>
+                                    <i class="bi bi-sun-fill theme-icon-sun"></i>
+                                    <i class="bi bi-moon-fill theme-icon-moon"></i>
+                                </label>
+                            </div>
+                        </div>
+                    </li>
+
+                    <li><hr class="dropdown-divider"></li>
+
+                    <li>
+                        <a class="dropdown-item text-danger logout-item"
+                        href="../authentication_pages/logout.php">
                             <i class="bi bi-box-arrow-right"></i>
                             Logout
-
                         </a>
                     </li>
 
@@ -956,6 +979,39 @@ function updateProfileImageUI(src) {
         .forEach(img => img.src = cacheBusted);
     currentProfileImgSrc = src;
 }
+
+/* -------------------------------------------------------
+   THEME TOGGLE
+------------------------------------------------------- */
+function toggleTheme(isDark) {
+    document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+    localStorage.setItem('theme', isDark ? 'dark' : 'light');
+
+    const icon  = document.getElementById('theme-icon');
+    const label = document.getElementById('theme-label');
+
+    if (isDark) {
+        icon.className  = 'bi bi-moon-stars-fill';
+        label.textContent = 'Dark Mode';
+    } else {
+        icon.className  = 'bi bi-sun-fill';
+        label.textContent = 'Light Mode';
+    }
+}
+
+(function initTheme() {
+    const saved       = localStorage.getItem('theme');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const isDark      = saved ? (saved === 'dark') : prefersDark;
+
+    document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const cb = document.getElementById('themeCheckbox');
+        if (cb) cb.checked = isDark;
+        toggleTheme(isDark);
+    });
+})();
 
 function saveProfileImage() {
     const input      = document.getElementById('profileImageInput');

@@ -6,12 +6,22 @@
    Depends on: root.css, components.css
    ================================================ */
 
-.records-widget {
+.records-card {
     display: flex;
-    flex-direction: column;
     flex: 1;
+    flex-direction: column;
     min-height: 0;
     overflow: visible;
+    margin: 0.5rem 1rem 1rem;
+}
+
+.records-card-body {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: visible;
+    padding: 1rem 0 1.5rem 1.5rem;
 }
 
 .records-header {
@@ -19,7 +29,6 @@
     align-items: center;
     gap: 1rem;
     flex-wrap: wrap;
-    margin-bottom: 0.75rem;
 }
 
 .sched-nav-btn {
@@ -170,11 +179,13 @@
     display: flex;
     flex-direction: column;
     gap: 3rem;
-    min-height: 100%;
+    flex: 1;
+    min-height: 0;
     overflow-y: auto;
     overflow-x: hidden;
     scrollbar-gutter: stable;
     padding-right: 1.5rem;
+    z-index: 2;
 }
 
 .gantt-container::-webkit-scrollbar {
@@ -191,6 +202,7 @@
     align-items: center;
     gap: 10px;
     overflow: visible;
+    margin-top: 1rem;
 }
 
 .gantt-empty {

@@ -205,7 +205,7 @@ $initialDeptFilter = isset($_GET['dept']) ? (int)$_GET['dept'] : 0;
 
         <?php include '../topbar_revised.php'; ?>
         <!-- Summary Card -->
-        <div class="container-fluid flex-shrink-0 px-3 pt-2">
+        <div class="container-fluid flex-shrink-0 px-3">
             <div class="row">
 
                 <!-- Total Employees -->

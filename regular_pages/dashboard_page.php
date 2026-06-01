@@ -1048,53 +1048,12 @@ for ($i = 0; $i < 7; $i++) {
                 <?php endif; ?>
 
                 <!-- Activity Logs Card -->
-                <div class="card card-info mb-2 d-flex flex-column" style="flex:1.2 1 0;min-height:0;overflow:hidden;">
-                    <div class="card-body d-flex flex-column overflow-hidden" style="flex:1 1 0;min-height:0;padding-right:0;padding-bottom:0;">
-                        <div class="hstack gap-2 align-items-center mb-2 pe-3">
-                            <div class="icon-box icon-box-sm icon-box-info">
-                                <i class="bi bi-journal-text"></i>
-                            </div>
-                            <h5 class="text-primary mb-0">Activity Logs</h5>
-                            <div class="ms-auto hstack gap-1">
-                                <button class="btn btn-sm dropdown-toggle" id="datePickerBtn" type="button">
-                                    <i class="bi bi-calendar3"></i>
-                                    <span id="dateRangeLabel">Today</span>
-                                </button>
-                                <div class="dropdown">
-                                    <button class="btn btn-sm dropdown-toggle" type="button" id="logTypeToggle"
-                                            data-bs-toggle="dropdown" aria-expanded="false">
-                                        <i class="bi bi-funnel"></i>
-                                        <span id="logTypeLabel">All Types</span>
-                                    </button>
-                                    <ul class="dropdown-menu" id="logTypeMenu" style="max-height:340px;overflow-y:auto!important;overflow-x:hidden!important;">
-                                        <li><a class="dropdown-item" href="#" data-value="ALL">All Types</a></li>
-                                        <li><hr class="dropdown-divider"></li>
-                                        <li><a class="dropdown-item" href="#" data-value="IN">Time In</a></li>
-                                        <li><a class="dropdown-item" href="#" data-value="OUT">Time Out</a></li>
-                                        <li><a class="dropdown-item" href="#" data-value="BREAK_IN">Break In</a></li>
-                                        <li><a class="dropdown-item" href="#" data-value="BREAK_OUT">Break Out</a></li>
-                                        <li><hr class="dropdown-divider"></li>
-                                        <li><a class="dropdown-item" href="#" data-value="REQUEST_OT">Request OT</a></li>
-                                        <li><a class="dropdown-item" href="#" data-value="REQUEST_LEAVE">Request Leave</a></li>
-                                        <li><a class="dropdown-item" href="#" data-value="REQUEST_OB">Request OB</a></li>
-                                        <li><a class="dropdown-item" href="#" data-value="REQUEST_LOG_EDIT">Request Log Edit</a></li>
-                                        <li><a class="dropdown-item" href="#" data-value="REQUEST_CHANGE_SCHEDULE">Request Change Schedule</a></li>
-                                    </ul>
-                                </div>
-                                <input type="hidden" id="logTypeFilter" value="ALL">
-                                <input type="hidden" id="startDate" value="<?= $today ?>">
-                                <input type="hidden" id="endDate" value="<?= $today ?>">
-                            </div>
-                        </div>
-                        <?php
-                            $startDate = $today;
-                            $endDate   = $today;
-                            $logsApiPath = '../get_logs.php';
-                            $logsInlineHeader = true;
-                            include '../regular_pages/logs_widget.php';
-                        ?>
-                    </div>
-                </div>
+                <?php
+                    $startDate   = $today;
+                    $endDate     = $today;
+                    $logsApiPath = '../get_logs.php';
+                    include '../regular_pages/logs_widget.php';
+                ?>
 
                 <!-- Attendance Overview (admin) -->
                 <?php if ($isAdmin): ?>

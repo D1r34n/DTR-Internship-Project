@@ -51,26 +51,8 @@ require_once 'cutoff_helpers.php';
     <div class="card card-neutral requests-card">
         <div class="card-header d-flex align-items-center gap-2 flex-wrap">
 
-            <div class="input-group input-group-sm" style="max-width:220px;">
-                <span class="input-group-text"><i class="bi bi-search"></i></span>
-                <input type="text" id="search-input" class="form-control" placeholder="Search employee…" oninput="handleSearchInput()">
-            </div>
-
             <div class="dropdown">
-                <button class="btn btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                    <i class="bi bi-funnel"></i>
-                    <span id="status-label">All Status</span>
-                </button>
-                <ul class="dropdown-menu" style="z-index:1055;">
-                    <li><a class="dropdown-item status-opt" href="#" data-value="ALL">All Status</a></li>
-                    <li><a class="dropdown-item status-opt" href="#" data-value="present">Present</a></li>
-                    <li><a class="dropdown-item status-opt" href="#" data-value="absent">Absent</a></li>
-                    <li><a class="dropdown-item status-opt" href="#" data-value="incomplete">Incomplete</a></li>
-                </ul>
-            </div>
-
-            <div class="dropdown">
-                <button class="btn btn-success btn-sm dropdown-toggle" type="button"
+                <button class="btn btn-success dropdown-toggle" type="button"
                         id="ar-cutoff-btn" data-bs-toggle="dropdown"
                         data-bs-auto-close="outside" aria-expanded="false">
                     <i class="bi bi-calendar3 me-1"></i>
@@ -83,7 +65,7 @@ require_once 'cutoff_helpers.php';
 
                         <li>
                             <a class="dropdown-item d-flex align-items-center justify-content-between"
-                               href="#" id="ar-open-period-panel">
+                                href="#" id="ar-open-period-panel">
                                 Select Cut-Off Period
                                 <i class="bi bi-chevron-right small ms-3"></i>
                             </a>
@@ -91,7 +73,7 @@ require_once 'cutoff_helpers.php';
                         <li><hr class="dropdown-divider"></li>
                         <li>
                             <a class="dropdown-item d-flex align-items-center gap-2"
-                               href="#" id="ar-open-month-picker">
+                                href="#" id="ar-open-month-picker">
                                 <i class="bi bi-calendar3"></i> Select Full Month
                             </a>
                         </li>
@@ -100,7 +82,7 @@ require_once 'cutoff_helpers.php';
                     <div id="ar-panel-2" style="display:none;">
                         <li>
                             <a class="dropdown-item d-flex align-items-center gap-1 text-muted"
-                               href="#" id="ar-back-btn">
+                                href="#" id="ar-back-btn">
                                 <i class="bi bi-arrow-left"></i> Back
                             </a>
                         </li>
@@ -110,7 +92,7 @@ require_once 'cutoff_helpers.php';
                             <div class="input-group px-2">
                                 <span class="input-group-text"><i class="bi bi-calendar3"></i></span>
                                 <input type="text" id="ar-period-fp" class="form-control"
-                                       placeholder="Pick a month…" readonly>
+                                        placeholder="Pick a month…" readonly>
                             </div>
                             <hr class="dropdown-divider my-3">
                         </li>
@@ -123,16 +105,36 @@ require_once 'cutoff_helpers.php';
                 </ul>
             </div>
 
-            <span id="ar-range-label" class="text-tertiary small">
+            <span id="ar-range-label" class="text-secondary">
                 <?= htmlspecialchars($defaultRange ?? '') ?>
             </span>
-
+        
             <input type="text" id="ar-month-fp-anchor"
                    style="position:absolute;width:0;height:0;opacity:0;pointer-events:none;">
 
             <div class="ms-auto d-flex gap-2">
+                
+                <div class="input-group style="max-width:220px;">
+                                <span class="input-group-text"><i class="bi bi-search"></i></span>
+                                <input type="text" id="search-input" class="form-control" placeholder="Search employee…" oninput="handleSearchInput()">
+                </div>
+
                 <div class="dropdown">
-                    <button class="btn btn-outline-light btn-sm dropdown-toggle" type="button"
+                    <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="bi bi-funnel"></i>
+                        <span id="status-label">All Status</span>
+                    </button>
+                    <ul class="dropdown-menu" style="z-index:1055;">
+                        <li><a class="dropdown-item status-opt" href="#" data-value="ALL">All Status</a></li>
+                        <li><a class="dropdown-item status-opt" href="#" data-value="present">Present</a></li>
+                        <li><a class="dropdown-item status-opt" href="#" data-value="absent">Absent</a></li>
+                        <li><a class="dropdown-item status-opt" href="#" data-value="incomplete">Incomplete</a></li>
+                    </ul>
+                </div>
+
+
+                <div class="dropdown">
+                    <button class="btn btn-outline-light dropdown-toggle" type="button"
                             id="export-btn" data-bs-toggle="dropdown" aria-expanded="false" disabled>
                         <i class="bi bi-download"></i> Export
                     </button>
@@ -223,7 +225,6 @@ require_once 'cutoff_helpers.php';
                             10 rows
                         </button>
                         <ul class="dropdown-menu dropdown-menu-end" style="z-index:1055;">
-                            <li><a class="dropdown-item row-limit-opt" href="#" data-value="5">5 rows</a></li>
                             <li><a class="dropdown-item row-limit-opt" href="#" data-value="10">10 rows</a></li>
                             <li><a class="dropdown-item row-limit-opt" href="#" data-value="25">25 rows</a></li>
                             <li><a class="dropdown-item row-limit-opt" href="#" data-value="50">50 rows</a></li>
@@ -325,16 +326,16 @@ function fetchAttendanceReport() {
 
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
-                    <td>${row.employee_id     || '—'}</td>
-                    <td>${row.employee_name  || '—'}</td>
-                    <td>${row.department_name|| '—'}</td>
-                    <td>${row.role_name      || '—'}</td>
+                    <td>${row.employee_id     || '<span class="text-muted">-</span>'}</td>
+                    <td>${row.employee_name  || '<span class="text-muted">-</span>'}</td>
+                    <td>${row.department_name|| '<span class="text-muted">-</span>'}</td>
+                    <td>${row.role_name      || '<span class="text-muted">-</span>'}</td>
                     <td>${parseDateString(row.work_date)}</td>
                     <td>${parseTimeString(row.actual_time_in)}</td>
                     <td>${parseTimeString(row.actual_time_out)}</td>
                     <td>${formatMinutes(row.total_work_minutes)}</td>
                     <td>${formatMinutes(row.late_minutes)}</td>
-                    <td>—</td>
+                    <td><span class="text-muted">-</span></td>
                     <td>${formatMinutes(row.undertime_minutes)}</td>
                     <td>${formatMinutes(row.overtime_minutes)}</td>
                     <td><span class="pill ${sc}">${row.status ? row.status.charAt(0).toUpperCase() + row.status.slice(1) : '—'}</span></td>
@@ -383,9 +384,9 @@ function _selectRange(start, end, btnLabel, rangeLabel) {
 }
 
 function formatMinutes(mins) {
-    if (mins === null || mins === undefined) return '—';
+    if (mins === null || mins === undefined) return '<span class="text-muted">-</span>';
     mins = parseInt(mins, 10);
-    if (isNaN(mins)) return '—';
+    if (isNaN(mins)) return '<span class="text-muted">-</span>';
     if (mins === 0)  return '0m';
     const h = Math.floor(mins / 60);
     const m = mins % 60;

@@ -142,7 +142,6 @@ body {
     flex-direction: column;
     height: 100%;
     overflow: hidden;
-    padding: 1rem;
 }
 
 /* Tab1: no top padding — sw-header sits flush at the top of the content area */
@@ -150,25 +149,46 @@ body {
     padding: 1rem;
 }
 
-/* Tab2 (Records) — scrollbar at card edge */
+/* Tab2 (Records) */
 .ev-tabs #tab2.tab-pane.show.active {
     padding-right: 0;
+    padding-bottom: 0;
+}
+#tab2 .records-card {
+    flex: 1;
+    min-height: 0;
+    margin: 1rem;
+    margin-right: 0;
+    margin-bottom: 0;
 }
 #tab2 .records-card-body {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    overflow: visible;
     padding-right: 0;
 }
 
-/* Tab3 (Logs) — scrollbar at card edge */
+/* Tab3 (Logs) */
 .ev-tabs #tab3.tab-pane.show.active {
     padding-right: 0;
     padding-bottom: 0;
 }
+#tab3 .logs-card {
+    flex: 1;
+    min-height: 0;
+}
+
+#tab3 .logs-card-body {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    overflow: visible;
+}
 #tab3 .table-scroll-wrapper {
     scrollbar-gutter: stable;
-    padding-right: 1rem;
-}
-#tab3 .logs-header {
-    padding-right: 1rem;
 }
 
 #tab1 #sw-cal-wrapper {

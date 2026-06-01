@@ -13,10 +13,10 @@ $loadCutoff    = null;
 <?php if (!defined('TOAST_INCLUDED')): define('TOAST_INCLUDED', true); include __DIR__ . '/../toast.php'; endif; ?>
 
 <!-- MAIN CARD -->
-<div class="records-widget">
+<div class="card card-neutral records-card">
 
     <!-- HEADER -->
-    <div class="records-header">
+    <div class="card-header records-header">
         <div class="d-flex align-items-center gap-2">
     <?php if ($useCutoffMode):
 
@@ -85,7 +85,7 @@ $loadCutoff    = null;
 
     ?>
             <div class="dropdown">
-                <button class="btn btn-sm dropdown-toggle" type="button"
+                <button class="btn dropdown-toggle" type="button"
                         id="cutoff-dropdown-btn" data-bs-toggle="dropdown"
                         data-bs-auto-close="outside" aria-expanded="false">
                     <i class="bi bi-calendar3 me-1"></i>
@@ -196,7 +196,7 @@ $loadCutoff    = null;
             </div>
 
             <!-- Secondary range label to the right of the dropdown -->
-            <span id="cutoff-range-label" class="text-tertiary">
+            <span id="cutoff-range-label" class="text-secondary">
                 <?= htmlspecialchars($activeRangeLabel) ?>
             </span>
 

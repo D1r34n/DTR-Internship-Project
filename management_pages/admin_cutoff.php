@@ -39,7 +39,7 @@ $currentPage = 'cutoffs';
 
     <?php include '../topbar_revised.php'; ?>
 
-    <div class="container-fluid h-100 px-3 pb-3 pt-2 d-flex flex-column">
+    <div class="container-fluid h-100 px-3 pb-3 d-flex flex-column">
         <div class="row flex-grow-1 g-2 row-min-h">
 
             <!-- LEFT: CUT-OFF LIST -->

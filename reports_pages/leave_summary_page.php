@@ -45,14 +45,9 @@ $currentYear = (int)date('Y');
     <div class="card card-neutral requests-card">
         <div class="card-header d-flex align-items-center gap-2 flex-wrap">
 
-            <div class="input-group input-group-sm" style="max-width: 220px;">
-                <span class="input-group-text"><i class="bi bi-search"></i></span>
-                <input type="text" id="search-input" class="form-control" placeholder="Search employee…" oninput="handleSearchInput()">
-            </div>
-
             <div class="dropdown">
-                <button class="btn btn-sm btn-success dropdown-toggle" type="button" id="yearSelectBtn" data-bs-toggle="dropdown" aria-expanded="false">
-                    <i class="bi bi-calendar-event me-1"></i> <span id="selectedYearLabel"><?= $currentYear ?></span>
+                <button class="btn btn-success dropdown-toggle" type="button" id="yearSelectBtn" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="bi bi-calendar-event me-1"></i> <span id="selectedYearLabel">Selected Year: <?= $currentYear ?></span>
                 </button>
                 <ul class="dropdown-menu" aria-labelledby="yearSelectBtn" style="z-index: 1055;">
                     <?php for($y = $currentYear; $y >= $currentYear - 4; $y--): ?>
@@ -62,8 +57,14 @@ $currentYear = (int)date('Y');
             </div>
 
             <div class="ms-auto d-flex gap-2">
+                <div class="input-group" style="max-width: 220px;">
+                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                    <input type="text" id="search-input" class="form-control" placeholder="Search employee…" oninput="handleSearchInput()">
+                </div>
+
+
                 <div class="dropdown">
-                    <button class="btn btn-outline-light btn-sm dropdown-toggle" type="button" id="export-btn" data-bs-toggle="dropdown" aria-expanded="false" disabled>
+                    <button class="btn btn-outline-light dropdown-toggle" type="button" id="export-btn" data-bs-toggle="dropdown" aria-expanded="false" disabled>
                         <i class="bi bi-download"></i> Export
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end" style="z-index: 1055;">
@@ -137,7 +138,6 @@ $currentYear = (int)date('Y');
                             25 rows
                         </button>
                         <ul class="dropdown-menu dropdown-menu-end" style="z-index: 1055;">
-                            <li><a class="dropdown-item row-limit-opt" href="#" data-value="5">5 rows</a></li>
                             <li><a class="dropdown-item row-limit-opt" href="#" data-value="10">10 rows</a></li>
                             <li><a class="dropdown-item row-limit-opt" href="#" data-value="25">25 rows</a></li>
                             <li><a class="dropdown-item row-limit-opt" href="#" data-value="50">50 rows</a></li>
@@ -250,19 +250,19 @@ function fetchLeaveSummary() {
             dataRows.forEach(row => {
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
-                    <td>${row.employee_id      || '-'}</td>
-                    <td><strong>${row.employee_name || '—'}</strong></td>
-                    <td>${row.department_name   || '—'}</td>
-                    <td>${row.role_name         || '—'}</td>
-                    <td>${row.entitled_vacation_leave}</td>
-                    <td>${row.carry_over_vacation}</td>
-                    <td>${row.vacation_leave_taken}</td>
-                    <td>${row.remaining_vacation_leave}</td>
-                    <td>${row.entitled_sick_leave}</td>
-                    <td>${row.sick_leave_taken}</td>
-                    <td>${row.remaining_sick_leave}</td>
-                    <td>${row.total_entitled}</td>
-                    <td>${row.total_taken}</td>
+                    <td>${row.employee_id      || '<span class="text-meta">-</span>'}</td>
+                    <td><strong>${row.employee_name || '<span class="text-meta">-</span>'}</strong></td>
+                    <td>${row.department_name   || '<span class="text-meta">-</span>'}</td>
+                    <td>${row.role_name         || '<span class="text-meta">-</span>'}</td>
+                    <td>${parseInt(row.entitled_vacation_leave,  10) || '<span class="text-meta">-</span>'}</td>
+                    <td>${parseInt(row.carry_over_vacation,      10) || '<span class="text-meta">-</span>'}</td>
+                    <td>${parseInt(row.vacation_leave_taken,     10) || '<span class="text-meta">-</span>'}</td>
+                    <td>${parseInt(row.remaining_vacation_leave, 10) || '<span class="text-meta">-</span>'}</td>
+                    <td>${parseInt(row.entitled_sick_leave,      10) || '<span class="text-meta">-</span>'}</td>
+                    <td>${parseInt(row.sick_leave_taken,         10) || '<span class="text-meta">-</span>'}</td>
+                    <td>${parseInt(row.remaining_sick_leave,     10) || '<span class="text-meta">-</span>'}</td>
+                    <td>${parseInt(row.total_entitled,           10) || '<span class="text-meta">-</span>'}</td>
+                    <td>${parseInt(row.total_taken,              10) || '<span class="text-meta">-</span>'}</td>
                 `;
                 tbody.appendChild(tr);
             });

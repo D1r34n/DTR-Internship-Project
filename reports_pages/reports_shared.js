@@ -1,15 +1,15 @@
 /* Shared utilities for all report pages */
 
 function parseDateString(dateStr) {
-    if (!dateStr) return '—';
+    if (!dateStr) return '<span class="text-meta">-</span>';
     return new Date(dateStr + 'T00:00:00')
         .toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
 function parseTimeString(timeStr) {
-    if (!timeStr) return '—';
+    if (!timeStr) return '<span class="text-meta">-</span>';
     const parts = timeStr.split(':');
-    if (parts.length < 2) return '—';
+    if (parts.length < 2) return '<span class="text-meta">-</span>';
     let hrs = parseInt(parts[0], 10);
     const mins = parts[1];
     const ampm = hrs >= 12 ? 'PM' : 'AM';
