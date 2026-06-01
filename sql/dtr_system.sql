@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: May 29, 2026 at 08:04 AM
+-- Generation Time: Jun 01, 2026 at 10:02 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -53,7 +53,7 @@ CREATE TABLE `attendances` (
 --
 
 INSERT INTO `attendances` (`id`, `employee_id`, `schedule_id`, `work_date`, `scheduled_start`, `scheduled_end`, `actual_time_in`, `actual_time_out`, `total_work_minutes`, `late_minutes`, `undertime_minutes`, `overtime_minutes`, `break_minutes`, `status`, `overtime_status`, `missed_time_out`, `created_at`, `updated_at`) VALUES
-(0, 22, 610, '2026-05-29', '2026-05-29 08:30:00', '2026-05-29 17:30:00', '2026-05-29 11:48:13', '2026-05-29 11:50:22', 2, 0, 550, 0, 0, 'incomplete', 'none', 0, '2026-05-29 03:48:13', '2026-05-29 03:50:53');
+(0, 22, 610, '2026-05-29', '2026-05-29 08:30:00', '2026-05-29 17:30:00', '2026-05-29 11:48:13', '2026-05-29 22:50:00', 662, 0, 0, 110, 0, 'present', 'none', 0, '2026-05-29 03:48:13', '2026-06-01 02:13:18');
 
 -- --------------------------------------------------------
 
@@ -131,29 +131,30 @@ CREATE TABLE `employees` (
   `hired_date` date NOT NULL,
   `tenure` int(11) DEFAULT 0,
   `birthdate` date DEFAULT NULL,
-  `employement_status` enum('active','resigned') NOT NULL DEFAULT 'active'
+  `employement_status` enum('active','resigned') NOT NULL DEFAULT 'active',
+  `is_archived` tinyint(1) NOT NULL DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `employees`
 --
 
-INSERT INTO `employees` (`id`, `employee_id`, `profile_image`, `first_name`, `last_name`, `email`, `password`, `role_id`, `department_id`, `hired_date`, `tenure`, `birthdate`, `employement_status`) VALUES
-(2, '000002', 'avatar_user_2.png', 'User', 'Employee', 'user@gmail.com', 'user123', 5, 2, '2026-05-11', 0, '2000-01-01', 'active'),
-(3, '000001', 'avatar_user_3.png', 'User', 'Admin', 'admin@gmail.com', 'admin123', 3, 7, '2026-05-11', 0, '2000-01-01', 'active'),
-(4, '000003', NULL, 'User', 'Workforce', 'user1@gmail.com', 'user123', 4, 14, '2026-05-11', 0, '2000-01-01', 'active'),
-(7, '000004', 'avatar_user_7.png', 'Jignesh', 'Nate', 'jigs@gmail.com', 'jigs123', 5, 13, '2026-05-11', 0, '2000-05-25', 'active'),
-(8, '000005', 'avatar_user_8.png', 'Justine', 'Tandoc', 'justine@gmail.com', '123', 5, 13, '2026-05-11', 0, '2000-05-11', 'active'),
-(12, '000007', 'avatar_user_12.png', 'Dirk', 'Adolf Del Mundo', 'dirk@gmail.com', '123', 5, 13, '2026-05-11', 0, '2000-05-10', 'active'),
-(15, '000010', NULL, 'Thonie', 'Revil', 'thonie.revil@hsnservice.com', '123', 2, 10, '2026-05-11', 0, '2000-01-01', 'active'),
-(19, '000009', 'avatar_user_19.png', 'Edrian', 'Evangelista', 'edrian.evangelista@gmail.com', '123', 4, 10, '2026-05-11', 0, '2000-05-02', 'active'),
-(20, '000006', 'avatar_user_20.png', 'Dharmveer', 'Sandhu', 'dharm@gmail.com', 'dharm123', 5, 10, '2026-05-11', 0, '2000-05-03', 'active'),
-(22, '000008', 'avatar_user_22.png', 'Earl', 'David Jordan', 'earl3jordan@gmail.com', '123', 5, 10, '2026-05-11', 0, '2000-05-01', 'active'),
-(23, '000014', NULL, 'Ranica', 'Jalotjot', 'ranica.jalotjot@hsnervice.com', '123', 2, 13, '2026-05-11', 0, '2000-01-01', 'active'),
-(25, '000011', NULL, 'Erlyn', 'Dionisio', 'erlyn.dionisio@hsnervice.com', '123', 5, 13, '2026-05-11', 0, '2000-01-01', 'active'),
-(37, '000013', 'default_profile.png', 'Gerome', 'Dy', 'gerome.dy@hsnservice.com', 'HSN.123', 5, 15, '2026-05-14', 0, '1998-05-01', 'active'),
-(39, '000000', 'avatar_user_39.png', 'Super', 'Admin', 'superadmin@gmail.com', 'superadmin123', 1, NULL, '2026-05-21', 0, '2026-05-21', 'active'),
-(40, '000067', 'default_profile.png', 'Ken', 'Jervic Dusaran', 'ken@gmail.com', 'HSN.123', 4, 12, '2026-05-28', 0, '2026-05-28', 'active');
+INSERT INTO `employees` (`id`, `employee_id`, `profile_image`, `first_name`, `last_name`, `email`, `password`, `role_id`, `department_id`, `hired_date`, `tenure`, `birthdate`, `employement_status`, `is_archived`) VALUES
+(2, '000002', 'avatar_user_2.png', 'User', 'Employee', 'user@gmail.com', 'user123', 5, 2, '2026-05-11', 0, '2000-01-01', 'active', 0),
+(3, '000001', 'avatar_user_3.png', 'User', 'Admin', 'admin@gmail.com', 'admin123', 3, 7, '2026-05-11', 0, '2000-01-01', 'active', 0),
+(4, '000003', NULL, 'User', 'Workforce', 'user1@gmail.com', 'user123', 4, 14, '2026-05-11', 0, '2000-01-01', 'active', 0),
+(7, '000004', 'avatar_user_7.png', 'Jignesh', 'Nate', 'jigs@gmail.com', 'jigs123', 5, 13, '2026-05-11', 0, '2000-05-25', 'active', 0),
+(8, '000005', 'avatar_user_8.png', 'Justine', 'Tandoc', 'justine@gmail.com', '123', 5, 13, '2026-05-11', 0, '2000-05-11', 'active', 0),
+(12, '000007', 'avatar_user_12.png', 'Dirk', 'Adolf Del Mundo', 'dirk@gmail.com', '123', 5, 13, '2026-05-11', 0, '2000-05-10', 'active', 0),
+(15, '000010', NULL, 'Thonie', 'Revil', 'thonie.revil@hsnservice.com', '123', 2, 10, '2026-05-11', 0, '2000-01-01', 'active', 0),
+(19, '000009', 'avatar_user_19.png', 'Edrian', 'Evangelista', 'edrian.evangelista@gmail.com', '123', 4, 10, '2026-05-11', 0, '2000-05-02', 'active', 0),
+(20, '000006', 'avatar_user_20.png', 'Dharmveer', 'Sandhu', 'dharm@gmail.com', 'dharm123', 5, 10, '2026-05-11', 0, '2000-05-03', 'active', 0),
+(22, '000008', 'avatar_user_22.png', 'Earl', 'David Jordan', 'earl3jordan@gmail.com', '123', 5, 10, '2026-05-11', 0, '2000-05-01', 'active', 0),
+(23, '000014', NULL, 'Ranica', 'Jalotjot', 'ranica.jalotjot@hsnervice.com', '123', 2, 13, '2026-05-11', 0, '2000-01-01', 'active', 0),
+(25, '000011', NULL, 'Erlyn', 'Dionisio', 'erlyn.dionisio@hsnervice.com', '123', 5, 13, '2026-05-11', 0, '2000-01-01', 'active', 0),
+(37, '000013', 'default_profile.png', 'Gerome', 'Dy', 'gerome.dy@hsnservice.com', 'HSN.123', 5, 15, '2026-05-14', 0, '1998-05-01', 'active', 0),
+(39, '000000', 'avatar_user_39.png', 'Super', 'Admin', 'superadmin@gmail.com', 'superadmin123', 1, NULL, '2026-05-21', 0, '2026-05-21', 'active', 0),
+(40, '000067', 'default_profile.png', 'Ken', 'Jervic Dusaran', 'ken@gmail.com', 'HSN.123', 4, 12, '2026-05-28', 0, '2026-05-28', 'active', 0);
 
 -- --------------------------------------------------------
 
@@ -164,9 +165,9 @@ INSERT INTO `employees` (`id`, `employee_id`, `profile_image`, `first_name`, `la
 CREATE TABLE `employee_leave_balances` (
   `employee_id` int(11) NOT NULL,
   `buffer_leave` int(11) DEFAULT 0,
-  `total_buffer_leave` int(11) DEFAULT 0,
-  `vacation_leave` decimal(5,2) DEFAULT 0.00,
-  `total_vacation_leave` decimal(5,2) DEFAULT 0.00,
+  `total_buffer_leave` int(11) NOT NULL DEFAULT 0,
+  `vacation_leave` decimal(5,2) NOT NULL DEFAULT 0.00,
+  `total_vacation_leave` decimal(5,2) NOT NULL DEFAULT 0.00,
   `sick_leave` int(11) DEFAULT 4,
   `paternity_leave` int(11) DEFAULT 7,
   `maternity_leave` int(11) DEFAULT 90,
@@ -182,21 +183,21 @@ CREATE TABLE `employee_leave_balances` (
 --
 
 INSERT INTO `employee_leave_balances` (`employee_id`, `buffer_leave`, `total_buffer_leave`, `vacation_leave`, `total_vacation_leave`, `sick_leave`, `paternity_leave`, `maternity_leave`, `solo_parent_leave`, `birthday_leave`, `last_vacation_accrual`, `created_at`, `updated_at`) VALUES
-(2, 0, 0, 0, 0, 4, 7, 90, 1, 1, '2026-05-11', '2026-05-11 07:41:20', '2026-05-11 07:41:20'),
-(3, 0, 0, 0, 0, 4, 7, 90, 1, 1, '2026-05-11', '2026-05-11 07:41:20', '2026-05-11 07:41:20'),
-(4, 0, 0, 0, 0, 4, 7, 90, 1, 1, '2026-05-11', '2026-05-11 07:41:20', '2026-05-11 07:41:20'),
-(7, 0, 0, 0, 0, 4, 7, 90, 1, 1, '2026-05-11', '2026-05-11 07:41:20', '2026-05-11 07:41:20'),
-(8, 0, 0, 0, 0, 4, 7, 90, 1, 1, '2026-05-11', '2026-05-11 07:41:20', '2026-05-11 07:41:20'),
-(12, 0, 0, 0, 0, 4, 7, 90, 1, 1, '2026-05-11', '2026-05-11 07:41:20', '2026-05-11 07:41:20'),
-(15, 5, 5, 10, 10, 4, 7, 0, 1, 1, '2026-05-11', '2026-05-11 07:41:20', '2026-05-11 09:22:01'),
-(19, 0, 0, 0, 0, 4, 7, 90, 1, 1, '2026-05-11', '2026-05-11 07:41:20', '2026-05-11 09:05:02'),
-(20, 5, 5, 0, 0, 4, 7, 90, 1, 1, '2026-05-11', '2026-05-11 07:41:20', '2026-05-28 09:01:39'),
-(22, 0, 0, 0, 0, 4, 7, 90, 1, 1, '2026-05-11', '2026-05-11 07:41:20', '2026-05-11 07:41:20'),
-(23, 0, 0, 0, 0, 4, 7, 90, 1, 1, '2026-05-15', '2026-05-15 01:15:26', '2026-05-15 01:15:26'),
-(25, 0, 0, 0, 0, 4, 7, 90, 1, 1, '2026-05-15', '2026-05-15 01:15:26', '2026-05-15 01:15:26'),
-(37, 0, 0, 0, 0, 4, 7, 90, 1, 1, '2026-05-15', '2026-05-15 01:15:26', '2026-05-15 01:15:26'),
-(39, 0, 0, 0, 0, 4, 7, 90, 1, 1, '0000-00-00', '2026-05-21 07:32:23', '2026-05-21 07:32:23'),
-(40, 0, 0, 0, 0, 4, 7, 90, 1, 1, '2026-05-28', '2026-05-28 08:23:39', '2026-05-28 08:23:39');
+(2, 0, 0, 0.00, 0.00, 4, 7, 90, 1, 1, '2026-05-11', '2026-05-11 07:41:20', '2026-05-11 07:41:20'),
+(3, 0, 0, 0.00, 0.00, 4, 7, 90, 1, 1, '2026-05-11', '2026-05-11 07:41:20', '2026-05-11 07:41:20'),
+(4, 0, 0, 0.00, 0.00, 4, 7, 90, 1, 1, '2026-05-11', '2026-05-11 07:41:20', '2026-05-11 07:41:20'),
+(7, 0, 0, 0.00, 0.00, 4, 7, 90, 1, 1, '2026-05-11', '2026-05-11 07:41:20', '2026-05-11 07:41:20'),
+(8, 0, 0, 0.00, 0.00, 4, 7, 90, 1, 1, '2026-05-11', '2026-05-11 07:41:20', '2026-05-11 07:41:20'),
+(12, 0, 0, 0.00, 0.00, 4, 7, 90, 1, 1, '2026-05-11', '2026-05-11 07:41:20', '2026-05-11 07:41:20'),
+(15, 5, 0, 10.00, 0.00, 4, 7, 0, 1, 1, '2026-05-11', '2026-05-11 07:41:20', '2026-05-11 09:22:01'),
+(19, 0, 0, 0.00, 0.00, 4, 7, 90, 1, 1, '2026-05-11', '2026-05-11 07:41:20', '2026-05-11 09:05:02'),
+(20, 5, 0, 0.00, 0.00, 4, 7, 90, 1, 1, '2026-05-11', '2026-05-11 07:41:20', '2026-05-28 09:01:39'),
+(22, 0, 0, 1.00, 0.00, 0, 7, 90, 1, 1, '2026-05-11', '2026-05-11 07:41:20', '2026-05-29 07:48:29'),
+(23, 0, 0, 0.00, 0.00, 4, 7, 90, 1, 1, '2026-05-15', '2026-05-15 01:15:26', '2026-05-15 01:15:26'),
+(25, 0, 0, 0.00, 0.00, 4, 7, 90, 1, 1, '2026-05-15', '2026-05-15 01:15:26', '2026-05-15 01:15:26'),
+(37, 0, 0, 0.00, 0.00, 4, 7, 90, 1, 1, '2026-05-15', '2026-05-15 01:15:26', '2026-05-15 01:15:26'),
+(39, 0, 0, 0.00, 0.00, 4, 7, 90, 1, 1, '0000-00-00', '2026-05-21 07:32:23', '2026-05-21 07:32:23'),
+(40, 0, 0, 0.00, 0.00, 4, 7, 90, 1, 1, '2026-05-28', '2026-05-28 08:23:39', '2026-05-28 08:23:39');
 
 -- --------------------------------------------------------
 
@@ -250,21 +251,6 @@ CREATE TABLE `leave_requests` (
   `approved_by` int(11) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
---
--- Dumping data for table `leave_requests`
---
-
-INSERT INTO `leave_requests` (`id`, `employee_id`, `leave_type_id`, `start_date`, `end_date`, `selected_dates`, `reason`, `status`, `created_at`) VALUES
-(17, 15, 2, '2026-05-18', '2026-05-18', '[\"2026-05-18\"]', 'vacation', 'approved', '2026-05-07 09:14:43'),
-(18, 25, 3, '2026-05-11', '2026-05-11', '[\"2026-05-11\"]', 'Birthday', 'approved', '2026-05-11 09:51:41'),
-(19, 25, 5, '2026-05-11', '2026-05-11', '[\"2026-05-11\"]', ' [Client: Acer Ortigas] Meeting', 'approved', '2026-05-12 02:57:58'),
-(20, 19, 5, '2026-05-12', '2026-05-12', '[\"2026-05-12\"]', 'Meeting', 'approved', '2026-05-12 03:09:35'),
-(21, 22, 2, '2026-05-15', '2026-05-15', '[\"2026-05-15\"]', 'bounce nko', 'approved', '2026-05-14 09:05:11'),
-(22, 15, 5, '2026-05-14', '2026-05-14', '[\"2026-05-14\"]', 'meeting', 'approved', '2026-05-14 09:21:56'),
-(23, 22, 5, '2026-05-21', '2026-05-21', '[\"2026-05-21\"]', 'Meteng', 'approved', '2026-05-20 01:51:08'),
-(24, 22, 3, '2026-05-20', '2026-05-20', '[\"2026-05-20\"]', 'bday', 'approved', '2026-05-20 02:55:35'),
-(25, 15, 5, '2026-05-20', '2026-05-20', '[\"2026-05-20\"]', 'Meeting', 'approved', '2026-05-21 08:28:43');
-
 -- --------------------------------------------------------
 
 --
@@ -303,7 +289,7 @@ CREATE TABLE `logs` (
   `id` bigint(20) NOT NULL,
   `employee_id` bigint(20) NOT NULL,
   `schedule_id` bigint(20) UNSIGNED DEFAULT NULL,
-  `log_type` enum('IN','OUT','BREAK_IN','BREAK_OUT','ADD_EMPLOYEE','EDIT_EMPLOYEE','DELETE_EMPLOYEE','ADD_SCHEDULE','EDIT_SCHEDULE','DELETE_SCHEDULE') DEFAULT NULL,
+  `log_type` enum('IN','OUT','BREAK_IN','BREAK_OUT','ADD_EMPLOYEE','EDIT_EMPLOYEE','DELETE_EMPLOYEE','ADD_SCHEDULE','EDIT_SCHEDULE') DEFAULT NULL,
   `log_time` datetime NOT NULL,
   `longitude` decimal(10,7) NOT NULL,
   `latitude` decimal(10,7) NOT NULL,
@@ -325,7 +311,22 @@ CREATE TABLE `logs` (
 INSERT INTO `logs` (`id`, `employee_id`, `schedule_id`, `log_type`, `log_time`, `longitude`, `latitude`, `accuracy`, `is_within_office`, `distance_meters`, `photo_path`, `created_at`, `original_log_time`, `schedule_request_id`, `edit_reason`, `edit_requested_by`) VALUES
 (904, 22, 610, 'IN', '2026-05-29 11:48:13', 120.9954910, 14.5842560, 55, 1, 22.966, 'cap_22_20260529_114813.jpg', '2026-05-29 03:48:13', NULL, NULL, NULL, NULL),
 (905, 22, NULL, 'EDIT_SCHEDULE', '2026-05-29 11:49:28', 0.0000000, 0.0000000, NULL, 0, NULL, NULL, '2026-05-29 03:49:28', NULL, 11, '2c25269e9c3e1845', 39),
-(906, 22, 610, 'OUT', '2026-05-29 22:50:00', 120.9954929, 14.5842550, 55, 1, 22.9184, 'cap_22_20260529_115022.jpg', '2026-05-29 03:50:22', '2026-05-29 11:50:22', NULL, NULL, NULL);
+(906, 22, 610, 'OUT', '2026-05-29 22:50:00', 120.9954929, 14.5842550, 55, 1, 22.9184, 'cap_22_20260529_115022.jpg', '2026-05-29 03:50:22', '2026-05-29 11:50:22', NULL, NULL, NULL),
+(907, 39, NULL, 'IN', '2026-06-01 09:25:13', 120.9955111, 14.5842413, 55, 1, 23.013, 'cap_39_20260601_092513.jpg', '2026-06-01 01:25:13', NULL, NULL, NULL, NULL),
+(908, 39, NULL, 'OUT', '2026-06-01 09:25:43', 120.9956000, 14.5846000, 8886, 1, 20.6888, 'cap_39_20260601_092543.jpg', '2026-06-01 01:25:43', NULL, NULL, NULL, NULL),
+(909, 39, NULL, 'IN', '2026-06-01 09:26:10', 120.9956000, 14.5846000, 8886, 1, 20.6888, 'cap_39_20260601_092610.jpg', '2026-06-01 01:26:10', NULL, NULL, NULL, NULL),
+(910, 39, NULL, 'OUT', '2026-06-01 09:26:15', 120.9955065, 14.5842461, 55, 1, 22.8502, 'cap_39_20260601_092615.jpg', '2026-06-01 01:26:15', NULL, NULL, NULL, NULL),
+(911, 39, NULL, 'IN', '2026-06-01 09:26:33', 120.9956000, 14.5846000, 8886, 1, 20.6888, 'cap_39_20260601_092633.jpg', '2026-06-01 01:26:33', NULL, NULL, NULL, NULL),
+(912, 22, NULL, 'IN', '2026-06-01 10:13:18', 120.9956000, 14.5846000, 8886, 1, 20.6888, 'cap_22_20260601_101318.jpg', '2026-06-01 02:13:18', NULL, NULL, NULL, NULL),
+(913, 22, NULL, 'OUT', '2026-06-01 10:13:33', 120.9955015, 14.5842462, 55, 1, 23.1445, 'cap_22_20260601_101333.jpg', '2026-06-01 02:13:33', NULL, NULL, NULL, NULL),
+(914, 22, NULL, 'IN', '2026-06-01 10:13:41', 120.9955015, 14.5842462, 55, 1, 23.1445, 'cap_22_20260601_101341.jpg', '2026-06-01 02:13:41', NULL, NULL, NULL, NULL),
+(915, 22, NULL, 'OUT', '2026-06-01 10:13:49', 120.9955015, 14.5842462, 55, 1, 23.1445, 'cap_22_20260601_101349.jpg', '2026-06-01 02:13:49', NULL, NULL, NULL, NULL),
+(916, 39, NULL, 'OUT', '2026-06-01 14:43:41', 120.9956000, 14.5846000, 8886, 1, 20.6888, 'cap_39_20260601_144341.jpg', '2026-06-01 06:43:41', NULL, NULL, NULL, NULL),
+(917, 39, NULL, 'IN', '2026-06-01 15:15:35', 120.9956000, 14.5846000, 8886, 1, 20.6888, 'cap_39_20260601_151535.jpg', '2026-06-01 07:15:35', NULL, NULL, NULL, NULL),
+(918, 22, NULL, 'ADD_SCHEDULE', '2026-06-01 15:18:13', 0.0000000, 0.0000000, NULL, 0, NULL, NULL, '2026-06-01 07:18:13', NULL, 12, '99490c771cb73ba4', 39),
+(919, 22, NULL, 'ADD_SCHEDULE', '2026-06-01 15:18:41', 0.0000000, 0.0000000, NULL, 0, NULL, NULL, '2026-06-01 07:18:41', NULL, 13, 'b2439818e0a2739d', 39),
+(920, 22, NULL, 'OUT', '2026-06-01 15:18:52', 120.9954856, 14.5842606, 55, 1, 22.957, 'cap_22_20260601_151852.jpg', '2026-06-01 07:18:52', NULL, NULL, NULL, NULL),
+(921, 22, 612, 'IN', '2026-06-01 15:19:05', 120.9955060, 14.5842443, 55, 1, 23.0433, 'cap_22_20260601_151905.jpg', '2026-06-01 07:19:05', NULL, NULL, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -351,11 +352,11 @@ CREATE TABLE `log_edit_requests` (
 -- Dumping data for table `log_edit_requests`
 --
 
-INSERT INTO `log_edit_requests` (`id`, `log_id`, `employee_id`, `original_log_time`, `proposed_log_time`, `reason`, `requested_by`, `status`, `created_at`, `updated_at`) VALUES
-(1, 891, 19, '2026-05-25 09:51:49', '2026-05-25 08:30:00', 'No reason provided', 39, 'approved', '2026-05-25 01:51:49', '2026-05-29 01:59:18'),
-(2, 892, 39, '2026-05-25 10:23:29', '2026-05-25 07:23:00', 'No reason provided', 39, 'approved', '2026-05-25 02:23:29', '2026-05-29 01:59:18'),
-(4, 896, 39, '2026-05-29 10:00:15', '2026-05-29 07:30:00', 'No reason provided', 39, 'approved', '2026-05-29 02:01:49', '2026-05-29 02:01:49'),
-(5, 906, 22, '2026-05-29 11:50:22', '2026-05-29 22:50:00', 'No reason provided', 39, 'approved', '2026-05-29 03:50:53', '2026-05-29 03:50:53');
+INSERT INTO `log_edit_requests` (`id`, `log_id`, `employee_id`, `original_log_time`, `proposed_log_time`, `reason`, `requested_by`, `status`, `created_at`, `updated_at`, `approved_by`) VALUES
+(1, 891, 19, '2026-05-25 09:51:49', '2026-05-25 08:30:00', 'No reason provided', 39, 'approved', '2026-05-25 01:51:49', '2026-05-29 01:59:18', NULL),
+(2, 892, 39, '2026-05-25 10:23:29', '2026-05-25 07:23:00', 'No reason provided', 39, 'approved', '2026-05-25 02:23:29', '2026-05-29 01:59:18', NULL),
+(4, 896, 39, '2026-05-29 10:00:15', '2026-05-29 07:30:00', 'No reason provided', 39, 'approved', '2026-05-29 02:01:49', '2026-05-29 02:01:49', NULL),
+(5, 906, 22, '2026-05-29 11:50:22', '2026-05-29 22:50:00', 'No reason provided', 39, 'approved', '2026-05-29 03:50:53', '2026-05-29 03:50:53', NULL);
 
 -- --------------------------------------------------------
 
@@ -380,10 +381,10 @@ CREATE TABLE `overtime_requests` (
 -- Dumping data for table `overtime_requests`
 --
 
-INSERT INTO `overtime_requests` (`id`, `employee_id`, `date`, `time_in`, `time_out`, `reason`, `status`, `created_at`) VALUES
-(17, 22, '2026-05-12', '17:30:00', '18:22:00', 'PLSSS BATO I NEED THIS', 'approved', '2026-05-12 08:24:42'),
-(18, 22, '2026-05-19', '19:30:00', '20:00:00', 'OT pls', 'approved', '2026-05-20 07:20:09'),
-(19, 22, '2026-05-22', '17:30:00', '18:00:00', 'I NEED THIS', 'approved', '2026-05-22 08:01:05');
+INSERT INTO `overtime_requests` (`id`, `employee_id`, `date`, `time_in`, `time_out`, `reason`, `status`, `created_at`, `updated_at`, `approved_by`) VALUES
+(17, 22, '2026-05-12', '17:30:00', '18:22:00', 'PLSSS BATO I NEED THIS', 'approved', '2026-05-12 08:24:42', '2026-05-29 06:14:42', NULL),
+(18, 22, '2026-05-19', '19:30:00', '20:00:00', 'OT pls', 'approved', '2026-05-20 07:20:09', '2026-05-29 06:14:42', NULL),
+(19, 22, '2026-05-22', '17:30:00', '18:00:00', 'I NEED THIS', 'approved', '2026-05-22 08:01:05', '2026-05-29 06:14:42', NULL);
 
 -- --------------------------------------------------------
 
@@ -480,7 +481,8 @@ CREATE TABLE `schedules` (
 --
 
 INSERT INTO `schedules` (`id`, `employee_id`, `schedule_date`, `scheduled_start`, `scheduled_end`, `is_rest_day`, `pending_delete`, `updated_at`, `is_archived`, `request_type`, `batch_id`, `orig_is_rest_day`, `orig_scheduled_start`, `orig_scheduled_end`) VALUES
-(610, 22, '2026-05-29', '2026-05-29 12:00:00', '2026-05-29 21:00:00', 0, 0, NULL, 0, 'edit', '2c25269e9c3e1845', 0, '2026-05-29 08:30:00', '2026-05-29 17:30:00');
+(610, 22, '2026-05-29', '2026-05-29 12:00:00', '2026-05-29 21:00:00', 0, 0, NULL, 0, 'edit', '2c25269e9c3e1845', 0, '2026-05-29 08:30:00', '2026-05-29 17:30:00'),
+(612, 22, '2026-06-01', '2026-06-01 15:30:00', '2026-06-02 00:30:00', 0, 0, NULL, 0, 'added', 'b2439818e0a2739d', NULL, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -504,8 +506,10 @@ CREATE TABLE `schedule_edit_requests` (
 -- Dumping data for table `schedule_edit_requests`
 --
 
-INSERT INTO `schedule_edit_requests` (`id`, `batch_id`, `employee_id`, `reason`, `requested_by`, `status`, `created_at`, `updated_at`) VALUES
-(11, '2c25269e9c3e1845', 22, '', 39, 'approved', '2026-05-29 03:49:28', '2026-05-29 03:49:28');
+INSERT INTO `schedule_edit_requests` (`id`, `batch_id`, `employee_id`, `reason`, `requested_by`, `status`, `created_at`, `updated_at`, `approved_by`) VALUES
+(11, '2c25269e9c3e1845', 22, '', 39, 'approved', '2026-05-29 03:49:28', '2026-05-29 03:49:28', NULL),
+(12, '99490c771cb73ba4', 22, '', 39, 'approved', '2026-06-01 07:18:13', '2026-06-01 07:18:13', NULL),
+(13, 'b2439818e0a2739d', 22, '', 39, 'approved', '2026-06-01 07:18:41', '2026-06-01 07:18:41', NULL);
 
 -- --------------------------------------------------------
 
@@ -687,7 +691,7 @@ ALTER TABLE `events`
 -- AUTO_INCREMENT for table `leave_requests`
 --
 ALTER TABLE `leave_requests`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=26;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=28;
 
 --
 -- AUTO_INCREMENT for table `leave_types`
@@ -699,7 +703,7 @@ ALTER TABLE `leave_types`
 -- AUTO_INCREMENT for table `logs`
 --
 ALTER TABLE `logs`
-  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=907;
+  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=922;
 
 --
 -- AUTO_INCREMENT for table `log_edit_requests`
@@ -729,13 +733,13 @@ ALTER TABLE `roles`
 -- AUTO_INCREMENT for table `schedules`
 --
 ALTER TABLE `schedules`
-  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=611;
+  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=613;
 
 --
 -- AUTO_INCREMENT for table `schedule_edit_requests`
 --
 ALTER TABLE `schedule_edit_requests`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
 
 --
 -- Constraints for dumped tables
