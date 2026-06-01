@@ -392,7 +392,7 @@ if ($showLogEdit) {
         LEFT JOIN departments d ON e.department_id = d.id
         LEFT JOIN employees e_init ON l.edit_requested_by = e_init.id
         LEFT JOIN roles r_init ON r_init.id = e_init.role_id
-        WHERE l.edit_status IS NOT NULL AND l.log_type NOT IN ('ADD_EMPLOYEE', 'EDIT_EMPLOYEE', 'DELETE_EMPLOYEE', 'ADD_SCHEDULE', 'EDIT_SCHEDULE')
+        WHERE l.edit_status IS NOT NULL AND l.log_type NOT IN ('ADD_EMPLOYEE', 'EDIT_EMPLOYEE', 'DELETE_EMPLOYEE', 'ADD_SCHEDULE', 'EDIT_SCHEDULE', 'DELETE_SCHEDULE')
     ";
     $params = [];
     applyLogsFilter($sql, $params, 'l.employee_id', $scopedToEmployee, $deptScopeRoles, $deptScopeId, (int)$employeeId, $userRole);
@@ -692,14 +692,8 @@ if ($showAddSchedule) {
     ";
     $params = [];
     applyLogsFilter($sql, $params, 'l.employee_id', $scopedToEmployee, $deptScopeRoles, $deptScopeId, (int)$employeeId, $userRole);
-    if ($startDate !== '') {
-        $sql .= " AND DATE(l.log_time) >= ?";
-        $params[] = $startDate;
-    }
-    if ($endDate !== '') {
-        $sql .= " AND DATE(l.log_time) <= ?";
-        $params[] = $endDate;
-    }
+    // Date filter intentionally omitted: all schedule submission history must always be visible
+    // so that both rejected and approved submissions for the same date are never hidden.
     $stmt = $pdo->prepare($sql);
     $stmt->execute($params);
     foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
@@ -779,14 +773,7 @@ if ($showEditSchedule) {
     ";
     $params = [];
     applyLogsFilter($sql, $params, 'l.employee_id', $scopedToEmployee, $deptScopeRoles, $deptScopeId, (int)$employeeId, $userRole);
-    if ($startDate !== '') {
-        $sql .= " AND DATE(l.log_time) >= ?";
-        $params[] = $startDate;
-    }
-    if ($endDate !== '') {
-        $sql .= " AND DATE(l.log_time) <= ?";
-        $params[] = $endDate;
-    }
+    // Date filter intentionally omitted: same reason as ADD_SCHEDULE above.
     $stmt = $pdo->prepare($sql);
     $stmt->execute($params);
     foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
@@ -850,6 +837,7 @@ if ($showDeleteSchedule) {
             l.log_time,
             l.created_at,
             l.edit_reason,
+            l.edit_status,
             l.edit_requested_by AS initiated_by_id,
             CONCAT(e_init.first_name, ' ', e_init.last_name) AS initiator_name,
             r_init.role_key AS initiator_role,
@@ -888,10 +876,9 @@ if ($showDeleteSchedule) {
             'log_type'         => 'DELETE_SCHEDULE',
             'details'          => 'Schedule deleted',
             'emp_data'         => [
-                ['Employee',      $info['employee_name'] ?? '—'],
-                ['Deleted Date',  $info['schedule_date'] ?? '—'],
-                ['Time',          $info['time']          ?? '—'],
-                ['Deleted by',    $info['deleted_by']    ?? '—'],
+                ['Employee',     $info['employee_name'] ?? '—'],
+                ['Deleted Date', $info['schedule_date'] ?? '—'],
+                ['Time',         $info['time']          ?? '—'],
             ],
             'is_within_office' => null,
             'latitude'         => null,
@@ -903,7 +890,7 @@ if ($showDeleteSchedule) {
             'employee_role'    => $row['employee_role'] ?? '—',
             'department_name'  => $row['department_name'] ?? '—',
             'edit_role'        => ($initiatedById === $currentUserId) ? 'self' : $row['initiator_role'],
-            'edit_status'      => in_array($row['initiator_role'], ['superadmin', 'admin']) ? 'approved' : 'pending',
+            'edit_status'      => $row['edit_status'] ?? (in_array($row['initiator_role'], ['superadmin', 'admin']) ? 'approved' : 'pending'),
             'initiator_name'   => $row['initiator_name'],
             'photo_path'       => null,
             '_ts'              => $ts,

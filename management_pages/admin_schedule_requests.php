@@ -71,17 +71,27 @@ if (isset($_GET['action']) && (isset($_GET['id']) || isset($_GET['batch_id']))) 
             }
              }
 
-        if (!empty($schedList)) {
-            $empId       = $schedList[0]['employee_id'];
-            $requestedBy = $schedList[0]['requested_by'] ?? null;
+        if ($batchId) {
             $pdo->prepare("
                 UPDATE logs
                 SET edit_status = 'approved'
-                WHERE employee_id = ?
-                AND edit_requested_by = ?
+                WHERE edit_reason = ?
                 AND log_type IN ('ADD_SCHEDULE', 'EDIT_SCHEDULE')
                 AND edit_status = 'pending'
-            ")->execute([$empId, $requestedBy]);
+            ")->execute([$batchId]);
+        } elseif (!empty($schedList)) {
+            $empId       = $schedList[0]['employee_id'];
+            $requestedBy = $schedList[0]['requested_by'] ?? null;
+            if ($requestedBy) {
+                $pdo->prepare("
+                    UPDATE logs
+                    SET edit_status = 'approved'
+                    WHERE employee_id = ?
+                    AND edit_requested_by = ?
+                    AND log_type IN ('ADD_SCHEDULE', 'EDIT_SCHEDULE')
+                    AND edit_status = 'pending'
+                ")->execute([$empId, $requestedBy]);
+            }
         }
 
         if (!empty($schedList)) $success = "Schedule approved successfully!";
@@ -121,17 +131,27 @@ if (isset($_GET['action']) && (isset($_GET['id']) || isset($_GET['batch_id']))) 
             }
             $delAtt->execute([$row['employee_id'], $row['schedule_date']]);
         }
-        if (!empty($rows)) {
-            $empId       = $rows[0]['employee_id'];
-            $requestedBy = $rows[0]['requested_by'] ?? null;
+        if ($batchId) {
             $pdo->prepare("
                 UPDATE logs
                 SET edit_status = 'rejected'
-                WHERE employee_id = ?
-                AND edit_requested_by = ?
+                WHERE edit_reason = ?
                 AND log_type IN ('ADD_SCHEDULE', 'EDIT_SCHEDULE')
                 AND edit_status = 'pending'
-            ")->execute([$empId, $requestedBy]);
+            ")->execute([$batchId]);
+        } elseif (!empty($rows)) {
+            $empId       = $rows[0]['employee_id'];
+            $requestedBy = $rows[0]['requested_by'] ?? null;
+            if ($requestedBy) {
+                $pdo->prepare("
+                    UPDATE logs
+                    SET edit_status = 'rejected'
+                    WHERE employee_id = ?
+                    AND edit_requested_by = ?
+                    AND log_type IN ('ADD_SCHEDULE', 'EDIT_SCHEDULE')
+                    AND edit_status = 'pending'
+                ")->execute([$empId, $requestedBy]);
+            }
         }
         $success = "Schedule request rejected.";
 
@@ -142,7 +162,7 @@ if (isset($_GET['action']) && (isset($_GET['id']) || isset($_GET['batch_id']))) 
             if (!$chkStmt->fetch()) { $error = "Unauthorized action."; goto skip_action_sr; }
         }
         $siStmt = $pdo->prepare("
-            SELECT s.employee_id, s.schedule_date, s.scheduled_start, s.scheduled_end, s.is_rest_day,
+            SELECT s.employee_id, s.requested_by, s.schedule_date, s.scheduled_start, s.scheduled_end, s.is_rest_day,
                    CONCAT(e.first_name, ' ', e.last_name) AS employee_name
             FROM schedules s
             LEFT JOIN employees e ON s.employee_id = e.id
@@ -162,17 +182,17 @@ if (isset($_GET['action']) && (isset($_GET['id']) || isset($_GET['batch_id']))) 
             $initStmt = $pdo->prepare("SELECT CONCAT(first_name, ' ', last_name) AS name FROM employees WHERE id = ?");
             $initStmt->execute([$_SESSION['user_id']]);
             $initRow  = $initStmt->fetch(PDO::FETCH_ASSOC);
-            try {
-                $pdo->prepare("
-                    INSERT INTO logs (employee_id, log_type, log_time, longitude, latitude, is_within_office, edit_requested_by, edit_reason)
-                    VALUES (?, 'DELETE_SCHEDULE', NOW(), 0, 0, 0, ?, ?)
-                ")->execute([$si['employee_id'], $_SESSION['user_id'], json_encode([
-                    'employee_name' => $si['employee_name'] ?? '—',
-                    'schedule_date' => date('F j, Y', strtotime($si['schedule_date'])),
-                    'time'          => $timeStr,
-                    'deleted_by'    => $initRow['name'] ?? '—',
-                ])]);
-            } catch (Exception $e) {}
+            // edit_requested_by = workforce user who submitted the delete request (not the approving admin)
+            $logRequestedBy = $si['requested_by'] ?? $_SESSION['user_id'];
+            $pdo->prepare("
+                INSERT INTO logs (employee_id, log_type, log_time, longitude, latitude, is_within_office, edit_status, edit_requested_by, edit_reason)
+                VALUES (?, ?, NOW(), 0, 0, 0, 'approved', ?, ?)
+            ")->execute([$si['employee_id'], 'DELETE_SCHEDULE', $logRequestedBy, json_encode([
+                'employee_name' => $si['employee_name'] ?? '—',
+                'schedule_date' => date('F j, Y', strtotime($si['schedule_date'])),
+                'time'          => $timeStr,
+                'deleted_by'    => $initRow['name'] ?? '—',
+            ])]);
 
             $success = "Schedule deleted successfully!";
         }
@@ -427,7 +447,7 @@ function getStatusBadge(string $status): string {
                                         $firstDate       = $allDatesParts[0] ?? '';
                                         $lastDate        = end($allDatesParts) ?: $firstDate;
                                     ?>
-                                    <tr data-status="<?= $rowStatus ?>" data-date="<?= htmlspecialchars($firstDate) ?>" data-date-end="<?= htmlspecialchars($lastDate) ?>">
+                                    <tr data-status="<?= $rowStatus ?>" data-date="<?= htmlspecialchars($firstDate) ?>" data-date-end="<?= htmlspecialchars($lastDate) ?>" data-pending-delete="<?= $isPendingDelete ? '1' : '0' ?>"><?php // pending-delete rows bypass date filter ?>
                                         <td><?= htmlspecialchars($row['employee_name']) ?></td>
                                         <td><?= $row['department_code'] ? htmlspecialchars($row['department_code']) : '—' ?></td>
                                         <td><?= htmlspecialchars($dateLabel) ?></td>
@@ -539,8 +559,8 @@ function getStatusBadge(string $status): string {
         let currentStatus    = 'ALL';
         const fmtISO         = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
         const todayISO       = fmtISO(new Date());
-        let srDateFrom       = todayISO;
-        let srDateTo         = todayISO;
+        let srDateFrom       = localStorage.getItem('srDateFrom') || todayISO;
+        let srDateTo         = localStorage.getItem('srDateTo')   || todayISO;
         let SR_ROWS_PER_PAGE = parseInt(localStorage.getItem('srRowsPerPage') || '10');
         let srCurrentPage    = 1;
         let srLastTotal      = 0;
@@ -549,11 +569,14 @@ function getStatusBadge(string $status): string {
         document.addEventListener('DOMContentLoaded', () => {
             allRowsSR = Array.from(document.querySelectorAll('.tableScroll tbody tr'));
             applyFiltersSR();
+            updateSRDateLabel(srDateFrom && srDateTo
+                ? [new Date(srDateFrom + 'T00:00'), new Date(srDateTo + 'T00:00')]
+                : []);
 
             flatpickr(document.getElementById('srDatePickerBtn'), {
                 mode: 'range',
                 dateFormat: 'Y-m-d',
-                defaultDate: 'today',
+                defaultDate: srDateFrom && srDateTo ? [srDateFrom, srDateTo] : 'today',
                 onChange(dates) {
                     if (dates.length === 2) {
                         srDateFrom = fmtISO(dates[0]);
@@ -564,6 +587,8 @@ function getStatusBadge(string $status): string {
                     } else {
                         srDateFrom = srDateTo = null;
                     }
+                    localStorage.setItem('srDateFrom', srDateFrom || '');
+                    localStorage.setItem('srDateTo',   srDateTo   || '');
                     updateSRDateLabel(dates);
                     srCurrentPage = 1;
                     applyFiltersSR();
@@ -598,7 +623,10 @@ function getStatusBadge(string $status): string {
             const filtered = allRowsSR.filter(r => {
                 const matchSearch = r.textContent.toLowerCase().includes(search);
                 const matchStatus = currentStatus === 'ALL' || r.dataset.status === currentStatus;
-                const matchDate   = !srDateFrom || (r.dataset.date <= srDateTo && (r.dataset.dateEnd || r.dataset.date) >= srDateFrom);
+                // Pending-delete requests are action items the admin must review; always show them
+                // regardless of the schedule date so they are never hidden by the date filter.
+                const isPendingDel = r.dataset.pendingDelete === '1';
+                const matchDate   = isPendingDel || !srDateFrom || (r.dataset.date <= srDateTo && (r.dataset.dateEnd || r.dataset.date) >= srDateFrom);
                 return matchSearch && matchStatus && matchDate;
             });
 
