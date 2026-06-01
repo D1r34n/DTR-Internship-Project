@@ -100,7 +100,6 @@ date_default_timezone_set('Asia/Manila');
 $stmt = $pdo->prepare("
     SELECT log_type FROM logs
     WHERE employee_id = ?
-      AND log_type IN ('IN', 'OUT', 'BREAK_IN', 'BREAK_OUT')
     ORDER BY log_time DESC
     LIMIT 1
 ");
@@ -264,6 +263,8 @@ $breakDisabled = !$timedIn || $isBreakOut;
                     <li>
                         <a class="dropdown-item"
                         href="#"
+                        data-bs-toggle="modal"
+                        data-bs-target="#logEditModal"
                         onclick="openLogEditModal(); return false;">
                             <i class="bi bi-pencil-square"></i>
                             Request Log Edit
@@ -651,19 +652,7 @@ const handleTimeIn = async () => {
             }
 
             if (data.error === 'shift_ended') {
-                alert('Shift has already ended. You cannot time in for this shift anymore.');
-                reset();
-                return;
-            }
-
-            if (data.error === 'log_corrupted') {
-                alert(data.message || 'Your attendance log is corrupted. Please contact your administrator.');
-                reset();
-                return;
-            }
-
-            if (data.error === 'server_error' || data.error === 'unauthorized' || data.error === 'missing_location') {
-                alert('Something went wrong. Please try again.');
+                alert('Shift ended. You are marked absent.');
                 reset();
                 return;
             }
@@ -674,9 +663,6 @@ const handleTimeIn = async () => {
             } else if (data.tap === 'timed_out') {
                 clearSpinner(timeInHTML());
                 if (statusEl) statusEl.textContent = 'Timed Out';
-            } else {
-                reset();
-                return;
             }
 
             localStorage.setItem('attendance_tap_result', data.tap);
