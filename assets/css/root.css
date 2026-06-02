@@ -225,6 +225,8 @@
     --gantt-marker-out-glow:  rgba(220, 53, 69, 0.8);
     --gantt-ot-pending:       linear-gradient(90deg, #4facfe, #00f2fe);
     --gantt-ot-approved:      #2ecc71;
+    --gantt-restday:          rgba(251, 191, 36, 0.15);
+    --gantt-restday-border:   rgba(251, 191, 36, 0.45);
 
     /* TOOLTIP */
     --tooltip-late:        #f87171;
@@ -427,6 +429,10 @@
     --gantt-cursor-bg:        rgba(240, 240, 240, 0.95);
     --gantt-scheduled:        rgba(0, 0, 0, 0.06);
     --gantt-scheduled-border: rgba(0, 0, 0, 0.25);
+    --gantt-tardy:            rgba(180, 83, 9, 0.70);
+    --gantt-break:            rgba(161, 98, 7, 0.75);
+    --gantt-restday:          #fbbe24a9;
+    --gantt-restday-border:   #ac7b00;
     --gantt-pending-border:   rgba(0, 0, 0, 0.20);
     --gantt-absent-color:     #dc2626;
 }

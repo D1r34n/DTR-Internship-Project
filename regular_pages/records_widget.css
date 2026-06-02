@@ -368,8 +368,8 @@
 }
 
 .ganttBarRestDay {
-    background: rgba(251, 191, 36, 0.12);
-    border: 1px dashed rgba(251, 191, 36, 0.45);
+    background: var(--gantt-restday);
+    border: 1px dashed var(--gantt-restday-border);
 }
 
 .ganttRestDayLabel {
@@ -384,6 +384,8 @@
     white-space: nowrap;
     z-index: 2;
 }
+
+[data-theme="light"] .ganttRestDayLabel {color: var(--textlight);}
 
 .ganttBarUndertime { background: var(--gantt-early); }
 

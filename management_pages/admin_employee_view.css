@@ -1232,7 +1232,7 @@ body {
 .ganttBarBreak     { background: var(--gantt-break); opacity: 0.85; z-index: 5; }
 .ganttBarPending   { background: var(--gantt-pending); border: 1px dashed var(--gantt-pending-border); }
 .ganttBarAbsent    { background: var(--gantt-absent); border: 1px dashed var(--danger-color); }
-.ganttBarRestDay   { background: var(--warning-soft); border: 1px dashed var(--warning-border); }
+.ganttBarRestDay   { background: var(--gantt-restday); border: 1px dashed var(--gantt-restday-border); }
 
 .ganttRestDayLabel {
     position: absolute;
