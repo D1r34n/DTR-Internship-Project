@@ -124,7 +124,7 @@ if ($showLogs) {
         LEFT JOIN employees e_init ON ler.requested_by = e_init.id
         LEFT JOIN roles r_init ON r_init.id = e_init.role_id
         WHERE 1=1
-          AND l.log_type NOT IN ('ADD_EMPLOYEE', 'EDIT_EMPLOYEE', 'DELETE_EMPLOYEE', 'ADD_SCHEDULE', 'EDIT_SCHEDULE')
+          AND l.log_type NOT IN ('ADD_EMPLOYEE', 'EDIT_EMPLOYEE', 'DELETE_EMPLOYEE', 'ADD_SCHEDULE', 'EDIT_SCHEDULE', 'DELETE_SCHEDULE', 'ADD_DEPARTMENT', 'EDIT_DEPARTMENT', 'DELETE_DEPARTMENT')
     ";
     $params = [];
     applyLogsFilter($sql, $params, 'l.employee_id', $scopedToEmployee, $deptScopeRoles, $deptScopeId, (int)$employeeId, $userRole);
