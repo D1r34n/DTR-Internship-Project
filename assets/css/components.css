@@ -822,6 +822,13 @@ button.btn-sm {
     box-shadow: 0 4px 16px var(--status-warning-glow) !important;
 }
 
+[data-theme="light"] .btn-warning:hover,
+[data-theme="light"] .btn-warning:focus,
+[data-theme="light"] .btn-warning:focus-visible {
+    color: var(--text-darkest) !important;
+}
+
+
 /* ================================================
    DANGER
    ================================================ */
@@ -858,6 +865,12 @@ button.btn-sm {
         transparent 100%
     ) !important;
     box-shadow: 0 4px 16px var(--status-danger-glow) !important;
+}
+
+[data-theme="light"] .btn-danger:hover,
+[data-theme="light"] .btn-danger:focus,
+[data-theme="light"] .btn-danger:focus-visible {
+    color: var(--text-darkest) !important;
 }
 
 /* ================================================
@@ -1002,8 +1015,14 @@ button.btn-sm {
 .dropdown-item i {
     margin-right: 1rem;
 }
+
 .dropdown-divider {
-    border-color: var(--neutral-border) !important;
+    border-color: var(--text-dark-muted) !important;
+    opacity: 0.5 !important;
+}
+
+[data-theme="light"] .dropdown-divider {
+    border-color: var(--text-muted) !important;
     opacity: 0.5 !important;
 }
 

@@ -334,17 +334,20 @@
        EMPLOYEE ROLE TOKENS (LIGHT MODE)
        ================================================ */
 
-    /* EMPLOYEE (#9fe2bf) */
-    --employee:               #9fe2bf;
-    --employee-hover:         #7cd6aa;
-    --employee-text:          #115e42;
-    --employee-bg:            #e6f9f0; /* solid tint */
-    --employee-glass:         #e6f9f0;
-    --employee-glass-hover:   #cdede0; /* slightly darker on hover */
-    --employee-border:         #9fe2bf; /* full solid border */
-    --employee-soft:          #f2fdf8; /* lighter tint for subtle fills */
-    --employee-range:         rgba(159, 226, 191, 0.32);
-    --employee-glow:          rgba(159, 226, 191, 0.30);
+    /* EMPLOYEE (#9fe2bf base - Enhanced for White Backgrounds) */
+        --employee:               #2bb373; /* Sharpened: Deepened base green for structurally dominant accents */
+        --employee-hover:         #1f965e; /* Vibrant dark green feedback */
+        --employee-text:          #064e3b; /* Ultra-crisp, high-contrast text for ultimate legibility */
+        
+        --employee-bg:            #d1fae5; /* Deepened solid tint: distinct shape definitions on pure white */
+        --employee-glass:         #d1fae5; 
+        --employee-glass-hover:   #bbf7d0; /* Richer, highly visible hover background step */
+        
+        --employee-border:        #1f965e; /* Distinct crisp border frame instead of a faint wash */
+        --employee-soft:          #f0fdf4; /* True subtle featherweight background fill */
+        
+        --employee-range:         rgba(43, 179, 115, 0.22);
+        --employee-glow:          rgba(43, 179, 115, 0.25);
 
     /* WORKFORCE (#60a5fa) */
     --workforce:              #60a5fa;
