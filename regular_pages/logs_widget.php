@@ -43,6 +43,10 @@ $logsEmployeeId ??= null;
                     <li><a class="dropdown-item" href="#" data-value="ADD_DEPARTMENT">Added Department</a></li>
                     <li><a class="dropdown-item" href="#" data-value="EDIT_DEPARTMENT">Edited Department</a></li>
                     <li><a class="dropdown-item" href="#" data-value="DELETE_DEPARTMENT">Deleted Department</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item" href="#" data-value="ADD_EVENT">Added Event</a></li>
+                    <li><a class="dropdown-item" href="#" data-value="EDIT_EVENT">Edited Event</a></li>
+                    <li><a class="dropdown-item" href="#" data-value="DELETE_EVENT">Deleted Event</a></li>
                 </ul>
             </div>
 
@@ -232,6 +236,9 @@ const LOG_TYPE_CLASS = {
     ADD_DEPARTMENT:          'status-approved',
     EDIT_DEPARTMENT:         'status-info',
     DELETE_DEPARTMENT:       'btn-danger',
+    ADD_EVENT:               'status-approved',
+    EDIT_EVENT:              'status-info',
+    DELETE_EVENT:            'btn-danger',
 }; /* v2 */
 const LOG_TYPE_LABEL = {
     IN: 'Time In', OUT: 'Time Out', BREAK_IN: 'Break In', BREAK_OUT: 'Break Out',
@@ -249,6 +256,9 @@ const LOG_TYPE_LABEL = {
     ADD_DEPARTMENT:          'Added Department',
     EDIT_DEPARTMENT:         'Edited Department',
     DELETE_DEPARTMENT:       'Deleted Department',
+    ADD_EVENT:               'Added Event',
+    EDIT_EVENT:              'Edited Event',
+    DELETE_EVENT:            'Deleted Event',
 };
 
 /* =========================
@@ -341,6 +351,7 @@ function renderLogRows({ meta, rows, total = 0 }) {
         const obAttr      = row.ob_data       ? `data-ob="${esc(JSON.stringify(row.ob_data))}"` : '';
         const logEditAttr = row.log_edit_data ? `data-logedit="${esc(JSON.stringify(row.log_edit_data))}"` : '';
         const deptAttr    = row.dept_data     ? `data-dept="${esc(JSON.stringify(row.dept_data))}"` : '';
+        const eventAttr   = row.event_data   ? `data-event="${esc(JSON.stringify(row.event_data))}"` : '';
         const showLogIcon = !['IN', 'OUT', 'BREAK_IN', 'BREAK_OUT'].includes(row.log_type);
         const typePill = hasPhoto
             ? `<span class="pill ${typeClass} log-detail-pill" role="button"
@@ -348,14 +359,14 @@ function renderLogRows({ meta, rows, total = 0 }) {
                      data-type-class="${esc(typeClass)}"
                      data-details="${esc(row.details ?? '')}"
                      data-photo="${esc(row.photo_path)}"
-                     ${diffAttr} ${empAttr} ${otAttr} ${leaveAttr} ${obAttr} ${logEditAttr} ${deptAttr}>
+                     ${diffAttr} ${empAttr} ${otAttr} ${leaveAttr} ${obAttr} ${logEditAttr} ${deptAttr} ${eventAttr}>
                      <i class="bi bi-camera-fill" style="font-size:0.65rem;opacity:0.8;"></i> ${typeLabel}
                </span>`
             : `<span class="pill ${typeClass} log-detail-pill" role="button"
                      data-type-label="${esc(typeLabel)}"
                      data-type-class="${esc(typeClass)}"
                      data-details="${esc(row.details ?? '')}"
-                     ${diffAttr} ${empAttr} ${otAttr} ${leaveAttr} ${obAttr} ${logEditAttr} ${deptAttr}>
+                     ${diffAttr} ${empAttr} ${otAttr} ${leaveAttr} ${obAttr} ${logEditAttr} ${deptAttr} ${eventAttr}>
                      ${showLogIcon ? '<i class="bi bi-file-earmark-bar-graph-fill" style="font-size:0.65rem;opacity:0.8;"></i> ' : ''}${typeLabel}
                </span>`;
 
@@ -688,6 +699,8 @@ document.addEventListener('click', e => {
     try { if (pill.dataset.logedit) logEditData = JSON.parse(pill.dataset.logedit); } catch (_) {}
     let   deptData  = null;
     try { if (pill.dataset.dept)    deptData    = JSON.parse(pill.dataset.dept);    } catch (_) {}
+    let   eventData = null;
+    try { if (pill.dataset.event)   eventData   = JSON.parse(pill.dataset.event);   } catch (_) {}
 
     document.getElementById('ldm-type-pill-container').innerHTML =
         `<span class="pill ${typeClass}">${typeLabel}</span>`;
@@ -844,6 +857,34 @@ document.addEventListener('click', e => {
                     <div>${esc(deptCode)}</div>
                 </div>
                 ${parentHtml}
+            </div>`;
+    } else if (eventData) {
+        const evTitle = eventData.title          ?? '—';
+        const evType  = eventData.event_type     ?? '—';
+        const evDate  = eventData.start_datetime ?? '—';
+        const evDesc  = eventData.description    ?? null;
+
+        const descHtml = `
+            <div class="ot-cell ot-cell-full">
+                <span class="text-meta">Description:</span>
+                <div style="white-space:pre-wrap;">${esc(evDesc ?? '—')}</div>
+            </div>`;
+
+        document.getElementById('ldm-details').innerHTML = `
+            <div class="ot-detail-grid">
+                <div class="ot-cell ot-cell-full">
+                    <span class="text-meta">Title:</span>
+                    <div>${esc(evTitle)}</div>
+                </div>
+                <div class="ot-cell">
+                    <span class="text-meta">Type:</span>
+                    <div>${esc(evType)}</div>
+                </div>
+                <div class="ot-cell">
+                    <span class="text-meta">Date:</span>
+                    <div>${esc(evDate)}</div>
+                </div>
+                ${descHtml}
             </div>`;
     } else if (empData && Array.isArray(empData)) {
         const cells = empData.map(([label, value]) => `

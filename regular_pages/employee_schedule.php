@@ -13,11 +13,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $data   = json_decode(file_get_contents('php://input'), true);
     $action = $data['action'] ?? 'create';
 
+    $userId = (int)($_SESSION['user_id'] ?? 0);
+
     // ── Delete ──
     if ($action === 'delete') {
         $id = intval($data['id'] ?? 0);
         if (!$id) { http_response_code(400); echo json_encode(['error' => 'Missing id.']); exit(); }
+        $snap = $pdo->prepare("SELECT title, event_type, start_datetime, description FROM events WHERE id = ?");
+        $snap->execute([$id]);
+        $old = $snap->fetch(PDO::FETCH_ASSOC) ?: [];
         $pdo->prepare("DELETE FROM events WHERE id = ?")->execute([$id]);
+        $pdo->prepare("INSERT INTO logs (employee_id, log_type, log_time, edit_reason, edit_requested_by) VALUES (?, 'DELETE_EVENT', NOW(), ?, ?)")
+            ->execute([$userId, json_encode(['title' => $old['title'] ?? '—', 'event_type' => $old['event_type'] ?? '—', 'start_datetime' => $old['start_datetime'] ?? '—', 'description' => $old['description'] ?? null]), $userId]);
         echo json_encode(['success' => true]);
         exit();
     }
@@ -45,12 +52,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($action === 'update') {
         $id = intval($data['id'] ?? 0);
         if (!$id) { http_response_code(400); echo json_encode(['error' => 'Missing id.']); exit(); }
+        $snap = $pdo->prepare("SELECT title, event_type, start_datetime, description FROM events WHERE id = ?");
+        $snap->execute([$id]);
+        $old = $snap->fetch(PDO::FETCH_ASSOC) ?: [];
         $pdo->prepare("UPDATE events SET title=?, description=?, event_type=?, start_datetime=?, end_datetime=NULL, color=? WHERE id=?")
             ->execute([$title, $description ?: null, $eventType, $startDate, $colors[$eventType], $id]);
+        $diff = [];
+        $oldDate = $old['start_datetime'] ? date('Y-m-d', strtotime($old['start_datetime'])) : '';
+        $newDate = $startDate ? date('Y-m-d', strtotime($startDate)) : '';
+        $oldDesc = $old['description'] ?? '';
+        if (($old['title']      ?? '') !== $title)       $diff['Title']       = ['before' => $old['title']      ?? '—', 'after' => $title];
+        if (($old['event_type'] ?? '') !== $eventType)   $diff['Type']        = ['before' => ucfirst($old['event_type'] ?? '—'), 'after' => ucfirst($eventType)];
+        if ($oldDate             !== $newDate)            $diff['Date']        = ['before' => $oldDate  ?: '—', 'after' => $newDate  ?: '—'];
+        if ($oldDesc             !== $description)        $diff['Description'] = ['before' => $oldDesc  ?: '—', 'after' => $description ?: '—'];
+        if (!empty($diff))
+            $pdo->prepare("INSERT INTO logs (employee_id, log_type, log_time, edit_reason, edit_requested_by) VALUES (?, 'EDIT_EVENT', NOW(), ?, ?)")
+                ->execute([$userId, json_encode($diff), $userId]);
         echo json_encode(['success' => true]);
     } else {
         $stmt = $pdo->prepare("INSERT INTO events (title, description, event_type, start_datetime, end_datetime, color, created_by) VALUES (?, ?, ?, ?, NULL, ?, ?)");
-        $stmt->execute([$title, $description ?: null, $eventType, $startDate, $colors[$eventType], $_SESSION['user_id']]);
+        $stmt->execute([$title, $description ?: null, $eventType, $startDate, $colors[$eventType], $userId]);
+        $pdo->prepare("INSERT INTO logs (employee_id, log_type, log_time, edit_reason, edit_requested_by) VALUES (?, 'ADD_EVENT', NOW(), ?, ?)")
+            ->execute([$userId, json_encode(['title' => $title, 'event_type' => $eventType, 'start_datetime' => $startDate, 'description' => $description ?: null]), $userId]);
         echo json_encode(['success' => true, 'id' => (int) $pdo->lastInsertId()]);
     }
     exit();

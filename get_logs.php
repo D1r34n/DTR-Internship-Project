@@ -124,7 +124,7 @@ if ($showLogs) {
         LEFT JOIN employees e_init ON ler.requested_by = e_init.id
         LEFT JOIN roles r_init ON r_init.id = e_init.role_id
         WHERE 1=1
-          AND l.log_type NOT IN ('ADD_EMPLOYEE', 'EDIT_EMPLOYEE', 'DELETE_EMPLOYEE', 'ADD_SCHEDULE', 'EDIT_SCHEDULE', 'DELETE_SCHEDULE', 'ADD_DEPARTMENT', 'EDIT_DEPARTMENT', 'DELETE_DEPARTMENT')
+          AND l.log_type NOT IN ('ADD_EMPLOYEE', 'EDIT_EMPLOYEE', 'DELETE_EMPLOYEE', 'ADD_SCHEDULE', 'EDIT_SCHEDULE', 'DELETE_SCHEDULE', 'ADD_DEPARTMENT', 'EDIT_DEPARTMENT', 'DELETE_DEPARTMENT', 'ADD_EVENT', 'EDIT_EVENT', 'DELETE_EVENT')
     ";
     $params = [];
     applyLogsFilter($sql, $params, 'l.employee_id', $scopedToEmployee, $deptScopeRoles, $deptScopeId, (int)$employeeId, $userRole);
@@ -1268,6 +1268,156 @@ if ($showDeleteDepartment) {
             'photo_path'       => null,
             '_ts'              => $ts,
             '_date_ts'         => $reqDate,
+        ];
+    }
+}
+
+/* =========================
+   16. ADD EVENT
+========================= */
+$showAddEvent = $type === 'ALL' || $type === 'ADD_EVENT';
+if ($showAddEvent) {
+    $sql = "
+        SELECT CONCAT('addevent_', l.id) AS log_id, l.employee_id,
+               CONCAT(e.first_name,' ',e.last_name) AS employee_name,
+               r.role_key AS employee_role, d.department_name,
+               l.log_time, l.edit_reason,
+               l.edit_requested_by AS initiated_by_id,
+               CONCAT(ei.first_name,' ',ei.last_name) AS initiator_name,
+               ri.role_key AS initiator_role
+        FROM logs l
+        LEFT JOIN employees e  ON e.id  = l.employee_id
+        LEFT JOIN roles r      ON r.id  = e.role_id
+        LEFT JOIN departments d ON d.id = e.department_id
+        LEFT JOIN employees ei ON ei.id = l.edit_requested_by
+        LEFT JOIN roles ri     ON ri.id = ei.role_id
+        WHERE l.log_type = 'ADD_EVENT'
+    ";
+    $params = [];
+    applyLogsFilter($sql, $params, 'l.employee_id', $scopedToEmployee, $deptScopeRoles, $deptScopeId, $employeeId, $userRole);
+    if ($startDate !== '') { $sql .= " AND DATE(l.log_time) >= ?"; $params[] = $startDate; }
+    if ($endDate   !== '') { $sql .= " AND DATE(l.log_time) <= ?"; $params[] = $endDate; }
+    $stmt = $pdo->prepare($sql); $stmt->execute($params);
+    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $ts  = strtotime($row['log_time']);
+        $info = $row['edit_reason'] ? json_decode($row['edit_reason'], true) : [];
+        $initiatedById = (int)($row['initiated_by_id'] ?? 0);
+        $eventData = [
+            'title'          => $info['title']          ?? '—',
+            'event_type'     => $info['event_type']     ? ucfirst($info['event_type']) : '—',
+            'start_datetime' => $info['start_datetime'] ? date('D, F j, Y', strtotime($info['start_datetime'])) : '—',
+            'description'    => $info['description']    ?? null,
+        ];
+        $allRows[] = [
+            'log_id' => $row['log_id'], 'date' => date('F d, Y', $ts), 'time' => date('h:i A', $ts),
+            'log_datetime' => date('Y-m-d\TH:i', $ts), 'log_type' => 'ADD_EVENT',
+            'details' => 'Event added', 'event_data' => $eventData,
+            'is_within_office' => null, 'latitude' => null, 'longitude' => null,
+            'accuracy' => null, 'distance_meters' => null,
+            'employee_id' => (int)$row['employee_id'], 'employee_name' => $row['employee_name'],
+            'employee_role' => $row['employee_role'], 'department_name' => $row['department_name'],
+            'edit_role' => ($initiatedById === $currentUserId) ? 'self' : $row['initiator_role'],
+            'edit_status' => in_array($row['initiator_role'], ['superadmin','admin']) ? 'approved' : 'pending',
+            'initiator_name' => $row['initiator_name'], 'photo_path' => null,
+            '_ts' => $ts, '_date_ts' => strtotime(date('Y-m-d', $ts)),
+        ];
+    }
+}
+
+/* =========================
+   17. EDIT EVENT
+========================= */
+$showEditEvent = $type === 'ALL' || $type === 'EDIT_EVENT';
+if ($showEditEvent) {
+    $sql = "
+        SELECT CONCAT('editevent_', l.id) AS log_id, l.employee_id,
+               CONCAT(e.first_name,' ',e.last_name) AS employee_name,
+               r.role_key AS employee_role, d.department_name,
+               l.log_time, l.edit_reason,
+               l.edit_requested_by AS initiated_by_id,
+               CONCAT(ei.first_name,' ',ei.last_name) AS initiator_name,
+               ri.role_key AS initiator_role
+        FROM logs l
+        LEFT JOIN employees e  ON e.id  = l.employee_id
+        LEFT JOIN roles r      ON r.id  = e.role_id
+        LEFT JOIN departments d ON d.id = e.department_id
+        LEFT JOIN employees ei ON ei.id = l.edit_requested_by
+        LEFT JOIN roles ri     ON ri.id = ei.role_id
+        WHERE l.log_type = 'EDIT_EVENT'
+    ";
+    $params = [];
+    applyLogsFilter($sql, $params, 'l.employee_id', $scopedToEmployee, $deptScopeRoles, $deptScopeId, $employeeId, $userRole);
+    if ($startDate !== '') { $sql .= " AND DATE(l.log_time) >= ?"; $params[] = $startDate; }
+    if ($endDate   !== '') { $sql .= " AND DATE(l.log_time) <= ?"; $params[] = $endDate; }
+    $stmt = $pdo->prepare($sql); $stmt->execute($params);
+    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $ts  = strtotime($row['log_time']);
+        $initiatedById = (int)($row['initiated_by_id'] ?? 0);
+        $diffData = $row['edit_reason'] ? json_decode($row['edit_reason'], true) : null;
+        $allRows[] = [
+            'log_id' => $row['log_id'], 'date' => date('F d, Y', $ts), 'time' => date('h:i A', $ts),
+            'log_datetime' => date('Y-m-d\TH:i', $ts), 'log_type' => 'EDIT_EVENT',
+            'details' => 'Event updated', 'diff_data' => ($diffData && is_array($diffData)) ? $diffData : null,
+            'is_within_office' => null, 'latitude' => null, 'longitude' => null,
+            'accuracy' => null, 'distance_meters' => null,
+            'employee_id' => (int)$row['employee_id'], 'employee_name' => $row['employee_name'],
+            'employee_role' => $row['employee_role'], 'department_name' => $row['department_name'],
+            'edit_role' => ($initiatedById === $currentUserId) ? 'self' : $row['initiator_role'],
+            'edit_status' => in_array($row['initiator_role'], ['superadmin','admin']) ? 'approved' : 'pending',
+            'initiator_name' => $row['initiator_name'], 'photo_path' => null,
+            '_ts' => $ts, '_date_ts' => strtotime(date('Y-m-d', $ts)),
+        ];
+    }
+}
+
+/* =========================
+   18. DELETE EVENT
+========================= */
+$showDeleteEvent = $type === 'ALL' || $type === 'DELETE_EVENT';
+if ($showDeleteEvent) {
+    $sql = "
+        SELECT CONCAT('delevent_', l.id) AS log_id, l.employee_id,
+               CONCAT(e.first_name,' ',e.last_name) AS employee_name,
+               r.role_key AS employee_role, d.department_name,
+               l.log_time, l.edit_reason,
+               l.edit_requested_by AS initiated_by_id,
+               CONCAT(ei.first_name,' ',ei.last_name) AS initiator_name,
+               ri.role_key AS initiator_role
+        FROM logs l
+        LEFT JOIN employees e  ON e.id  = l.employee_id
+        LEFT JOIN roles r      ON r.id  = e.role_id
+        LEFT JOIN departments d ON d.id = e.department_id
+        LEFT JOIN employees ei ON ei.id = l.edit_requested_by
+        LEFT JOIN roles ri     ON ri.id = ei.role_id
+        WHERE l.log_type = 'DELETE_EVENT'
+    ";
+    $params = [];
+    applyLogsFilter($sql, $params, 'l.employee_id', $scopedToEmployee, $deptScopeRoles, $deptScopeId, $employeeId, $userRole);
+    if ($startDate !== '') { $sql .= " AND DATE(l.log_time) >= ?"; $params[] = $startDate; }
+    if ($endDate   !== '') { $sql .= " AND DATE(l.log_time) <= ?"; $params[] = $endDate; }
+    $stmt = $pdo->prepare($sql); $stmt->execute($params);
+    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $ts  = strtotime($row['log_time']);
+        $info = $row['edit_reason'] ? json_decode($row['edit_reason'], true) : [];
+        $initiatedById = (int)($row['initiated_by_id'] ?? 0);
+        $eventData = [
+            'title'          => $info['title']          ?? '—',
+            'event_type'     => $info['event_type']     ? ucfirst($info['event_type']) : '—',
+            'start_datetime' => $info['start_datetime'] ? date('D, F j, Y', strtotime($info['start_datetime'])) : '—',
+            'description'    => $info['description']    ?? null,
+        ];
+        $allRows[] = [
+            'log_id' => $row['log_id'], 'date' => date('F d, Y', $ts), 'time' => date('h:i A', $ts),
+            'log_datetime' => date('Y-m-d\TH:i', $ts), 'log_type' => 'DELETE_EVENT',
+            'details' => 'Event deleted', 'event_data' => $eventData,
+            'is_within_office' => null, 'latitude' => null, 'longitude' => null,
+            'accuracy' => null, 'distance_meters' => null,
+            'employee_id' => (int)$row['employee_id'], 'employee_name' => $row['employee_name'],
+            'employee_role' => $row['employee_role'], 'department_name' => $row['department_name'],
+            'edit_role' => ($initiatedById === $currentUserId) ? 'self' : $row['initiator_role'],
+            'edit_status' => in_array($row['initiator_role'], ['superadmin','admin']) ? 'approved' : 'pending',
+            'initiator_name' => $row['initiator_name'], 'photo_path' => null,
+            '_ts' => $ts, '_date_ts' => strtotime(date('Y-m-d', $ts)),
         ];
     }
 }
