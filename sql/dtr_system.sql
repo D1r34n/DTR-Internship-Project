@@ -289,7 +289,7 @@ CREATE TABLE `logs` (
   `id` bigint(20) NOT NULL,
   `employee_id` bigint(20) NOT NULL,
   `schedule_id` bigint(20) UNSIGNED DEFAULT NULL,
-  `log_type` enum('IN','OUT','BREAK_IN','BREAK_OUT','ADD_EMPLOYEE','EDIT_EMPLOYEE','DELETE_EMPLOYEE','ADD_SCHEDULE','EDIT_SCHEDULE') DEFAULT NULL,
+  `log_type` enum('IN','OUT','BREAK_IN','BREAK_OUT','ADD_EMPLOYEE','EDIT_EMPLOYEE','DELETE_EMPLOYEE','ADD_SCHEDULE','EDIT_SCHEDULE','DELETE_SCHEDULE','ADD_DEPARTMENT','EDIT_DEPARTMENT','DELETE_DEPARTMENT') DEFAULT NULL,
   `log_time` datetime NOT NULL,
   `longitude` decimal(10,7) NOT NULL,
   `latitude` decimal(10,7) NOT NULL,
@@ -538,6 +538,7 @@ INSERT INTO `system_state` (`key_name`, `value`) VALUES
 --
 ALTER TABLE `attendances`
   ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uq_emp_schedule` (`employee_id`,`schedule_id`),
   ADD KEY `idx_employee` (`employee_id`),
   ADD KEY `idx_schedule_id` (`schedule_id`),
   ADD KEY `idx_date` (`work_date`),

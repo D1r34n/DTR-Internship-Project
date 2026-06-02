@@ -40,6 +40,9 @@ $logsEmployeeId ??= null;
                     <li><a class="dropdown-item" href="#" data-value="ADD_SCHEDULE">Added Schedule</a></li>
                     <li><a class="dropdown-item" href="#" data-value="EDIT_SCHEDULE">Edited Schedule</a></li>
                     <li><a class="dropdown-item" href="#" data-value="DELETE_SCHEDULE">Deleted Schedule</a></li>
+                    <li><a class="dropdown-item" href="#" data-value="ADD_DEPARTMENT">Added Department</a></li>
+                    <li><a class="dropdown-item" href="#" data-value="EDIT_DEPARTMENT">Edited Department</a></li>
+                    <li><a class="dropdown-item" href="#" data-value="DELETE_DEPARTMENT">Deleted Department</a></li>
                 </ul>
             </div>
 
@@ -226,6 +229,9 @@ const LOG_TYPE_CLASS = {
     ADD_SCHEDULE:            'status-info',
     EDIT_SCHEDULE:           'status-info',
     DELETE_SCHEDULE:         'btn-danger',
+    ADD_DEPARTMENT:          'status-approved',
+    EDIT_DEPARTMENT:         'status-info',
+    DELETE_DEPARTMENT:       'btn-danger',
 }; /* v2 */
 const LOG_TYPE_LABEL = {
     IN: 'Time In', OUT: 'Time Out', BREAK_IN: 'Break In', BREAK_OUT: 'Break Out',
@@ -240,6 +246,9 @@ const LOG_TYPE_LABEL = {
     ADD_SCHEDULE:            'Added Schedule',
     EDIT_SCHEDULE:           'Edited Schedule',
     DELETE_SCHEDULE:         'Deleted Schedule',
+    ADD_DEPARTMENT:          'Added Department',
+    EDIT_DEPARTMENT:         'Edited Department',
+    DELETE_DEPARTMENT:       'Deleted Department',
 };
 
 /* =========================
@@ -327,6 +336,11 @@ function renderLogRows({ meta, rows, total = 0 }) {
         const hasPhoto  = row.photo_path && (row.log_type === 'IN' || row.log_type === 'OUT');
         const diffAttr  = row.diff_data ? `data-diff="${esc(JSON.stringify(row.diff_data))}"` : '';
         const empAttr   = row.emp_data  ? `data-emp="${esc(JSON.stringify(row.emp_data))}"` : '';
+        const otAttr    = row.ot_data    ? `data-ot="${esc(JSON.stringify(row.ot_data))}"` : '';
+        const leaveAttr = row.leave_data ? `data-leave="${esc(JSON.stringify(row.leave_data))}"` : '';
+        const obAttr      = row.ob_data       ? `data-ob="${esc(JSON.stringify(row.ob_data))}"` : '';
+        const logEditAttr = row.log_edit_data ? `data-logedit="${esc(JSON.stringify(row.log_edit_data))}"` : '';
+        const deptAttr    = row.dept_data     ? `data-dept="${esc(JSON.stringify(row.dept_data))}"` : '';
         const showLogIcon = !['IN', 'OUT', 'BREAK_IN', 'BREAK_OUT'].includes(row.log_type);
         const typePill = hasPhoto
             ? `<span class="pill ${typeClass} log-detail-pill" role="button"
@@ -334,14 +348,14 @@ function renderLogRows({ meta, rows, total = 0 }) {
                      data-type-class="${esc(typeClass)}"
                      data-details="${esc(row.details ?? '')}"
                      data-photo="${esc(row.photo_path)}"
-                     ${diffAttr} ${empAttr}>
+                     ${diffAttr} ${empAttr} ${otAttr} ${leaveAttr} ${obAttr} ${logEditAttr} ${deptAttr}>
                      <i class="bi bi-camera-fill" style="font-size:0.65rem;opacity:0.8;"></i> ${typeLabel}
                </span>`
             : `<span class="pill ${typeClass} log-detail-pill" role="button"
                      data-type-label="${esc(typeLabel)}"
                      data-type-class="${esc(typeClass)}"
                      data-details="${esc(row.details ?? '')}"
-                     ${diffAttr} ${empAttr}>
+                     ${diffAttr} ${empAttr} ${otAttr} ${leaveAttr} ${obAttr} ${logEditAttr} ${deptAttr}>
                      ${showLogIcon ? '<i class="bi bi-file-earmark-bar-graph-fill" style="font-size:0.65rem;opacity:0.8;"></i> ' : ''}${typeLabel}
                </span>`;
 
@@ -662,13 +676,176 @@ document.addEventListener('click', e => {
     const photo     = pill.dataset.photo;
     let   diffData  = null;
     let   empData   = null;
-    try { if (pill.dataset.diff) diffData = JSON.parse(pill.dataset.diff); } catch (_) {}
-    try { if (pill.dataset.emp)  empData  = JSON.parse(pill.dataset.emp);  } catch (_) {}
+    let   otData    = null;
+    let   leaveData = null;
+    let   obData    = null;
+    try { if (pill.dataset.diff)  diffData  = JSON.parse(pill.dataset.diff);  } catch (_) {}
+    try { if (pill.dataset.emp)   empData   = JSON.parse(pill.dataset.emp);   } catch (_) {}
+    try { if (pill.dataset.ot)    otData    = JSON.parse(pill.dataset.ot);    } catch (_) {}
+    try { if (pill.dataset.leave) leaveData = JSON.parse(pill.dataset.leave); } catch (_) {}
+    try { if (pill.dataset.ob)      obData      = JSON.parse(pill.dataset.ob);      } catch (_) {}
+    let   logEditData = null;
+    try { if (pill.dataset.logedit) logEditData = JSON.parse(pill.dataset.logedit); } catch (_) {}
+    let   deptData  = null;
+    try { if (pill.dataset.dept)    deptData    = JSON.parse(pill.dataset.dept);    } catch (_) {}
 
     document.getElementById('ldm-type-pill-container').innerHTML =
         `<span class="pill ${typeClass}">${typeLabel}</span>`;
 
-    if (empData && Array.isArray(empData)) {
+    if (otData) {
+        const schedStart = otData.scheduled_start ?? '—';
+        const schedEnd   = otData.scheduled_end   ?? '—';
+        const timeIn     = otData.actual_time_in  ?? '—';
+        const timeOut    = otData.actual_time_out  ?? '—';
+        const lateMin    = otData.late_minutes     ?? 0;
+        const earlyMin   = otData.early_minutes    ?? 0;
+        const otMin      = otData.overtime_minutes ?? 0;
+        const otStatus   = otData.overtime_status  ?? null;
+        const reason     = otData.reason           ?? null;
+
+        const earlyLateLabel = earlyMin > 0 ? 'Early:' : lateMin > 0 ? 'Late:' : '';
+        const earlyLateValue = earlyMin > 0 ? `${earlyMin} min` : lateMin > 0 ? `${lateMin} min` : '—';
+
+        let otValue = '—';
+        if (otMin > 0) {
+            const statusLabel = otStatus === 'approved' ? 'Approved'
+                              : otStatus === 'rejected' ? 'Rejected'
+                              : 'Pending';
+            const statusClass = otStatus === 'approved' ? 'status-approved'
+                              : otStatus === 'rejected' ? 'status-rejected'
+                              : 'status-pending';
+            otValue = `${otMin} min <span class="pill ${statusClass}" style="font-size:0.7rem;padding:1px 7px;margin-left:4px;">${statusLabel}</span>`;
+        }
+
+        document.getElementById('ldm-details').innerHTML = `
+            <div class="ot-detail-grid">
+                <div class="ot-cell">
+                    <span class="text-meta">Scheduled:</span>
+                    <div>${esc(schedStart)} – ${esc(schedEnd)}</div>
+                </div>
+                <div class="ot-cell">
+                    <span class="text-meta">${earlyLateLabel}</span>
+                    <div>${earlyLateValue}</div>
+                </div>
+                <div class="ot-cell">
+                    <span class="text-meta">Time In:</span>
+                    <div>${esc(timeIn)}</div>
+                </div>
+                <div class="ot-cell">
+                    <span class="text-meta">Time Out:</span>
+                    <div>${esc(timeOut)}</div>
+                </div>
+                <div class="ot-cell ot-cell-full">
+                    <span class="text-meta">Overtime:</span>
+                    <div>${otValue}</div>
+                </div>
+                <div class="ot-cell ot-cell-full">
+                    <span class="text-meta">Reason:</span>
+                    <div style="white-space:pre-wrap;">${esc(reason ?? '—')}</div>
+                </div>
+            </div>`;
+    } else if (leaveData) {
+        const leaveType = leaveData.leave_type ?? '—';
+        const dates     = Array.isArray(leaveData.dates) ? leaveData.dates : [];
+        const reason    = leaveData.reason ?? null;
+
+        const datesHtml = dates.length
+            ? dates.map(d => `<div>${esc(d)}</div>`).join('')
+            : '<div>—</div>';
+
+        const reasonHtml = `
+            <div class="ot-cell ot-cell-full">
+                <span class="text-meta">Reason:</span>
+                <div style="white-space:pre-wrap;">${esc(reason ?? '—')}</div>
+            </div>`;
+
+        document.getElementById('ldm-details').innerHTML = `
+            <div class="ot-detail-grid">
+                <div class="ot-cell ot-cell-full">
+                    <span class="text-meta">Leave Type:</span>
+                    <div>${esc(leaveType)}</div>
+                </div>
+                <div class="ot-cell ot-cell-full">
+                    <span class="text-meta">Leave Schedule:</span>
+                    <div class="leave-dates-list">${datesHtml}</div>
+                </div>
+                ${reasonHtml}
+            </div>`;
+    } else if (obData) {
+        const dates      = Array.isArray(obData.dates) ? obData.dates : [];
+        const clientName = obData.client_name ?? '—';
+        const reason     = obData.reason      ?? '—';
+
+        const datesHtml = dates.length
+            ? dates.map(d => `<div>${esc(d)}</div>`).join('')
+            : '<div>—</div>';
+
+        document.getElementById('ldm-details').innerHTML = `
+            <div class="ot-detail-grid">
+                <div class="ot-cell">
+                    <span class="text-meta">OB Date:</span>
+                    <div class="leave-dates-list">${datesHtml}</div>
+                </div>
+                <div class="ot-cell">
+                    <span class="text-meta">Client:</span>
+                    <div>${esc(clientName)}</div>
+                </div>
+                <div class="ot-cell ot-cell-full">
+                    <span class="text-meta">Reason:</span>
+                    <div style="white-space:pre-wrap;">${esc(reason)}</div>
+                </div>
+            </div>`;
+    } else if (logEditData) {
+        const logType      = logEditData.log_type          ?? '—';
+        const originalTime = logEditData.original_log_time ?? '—';
+        const proposedTime = logEditData.proposed_log_time ?? '—';
+        const reason       = logEditData.reason            ?? '—';
+
+        document.getElementById('ldm-details').innerHTML = `
+            <div class="ot-detail-grid">
+                <div class="ot-cell">
+                    <span class="text-meta">Log Type:</span>
+                    <div>${esc(logType)}</div>
+                </div>
+                <div class="ot-cell">
+                    <span class="text-meta">Original Time:</span>
+                    <div>${esc(originalTime)}</div>
+                </div>
+                <div class="ot-cell ot-cell-full">
+                    <span class="text-meta">Proposed Time:</span>
+                    <div>${esc(proposedTime)}</div>
+                </div>
+                <div class="ot-cell ot-cell-full">
+                    <span class="text-meta">Reason:</span>
+                    <div style="white-space:pre-wrap;">${esc(reason)}</div>
+                </div>
+            </div>`;
+    } else if (deptData) {
+        const deptName   = deptData.department_name ?? '—';
+        const deptCode   = deptData.department_code ?? '—';
+        const parentName = deptData.parent_name     ?? null;
+        const color      = deptData.color           ?? null;
+
+        const parentHtml = parentName
+            ? `<div class="ot-cell ot-cell-full">
+                   <span class="text-meta">Parent Department:</span>
+                   <div>${esc(parentName)}</div>
+               </div>`
+            : '';
+
+        document.getElementById('ldm-details').innerHTML = `
+            <div class="ot-detail-grid">
+                <div class="ot-cell">
+                    <span class="text-meta">Department:</span>
+                    <div>${esc(deptName)}</div>
+                </div>
+                <div class="ot-cell">
+                    <span class="text-meta">Code:</span>
+                    <div>${esc(deptCode)}</div>
+                </div>
+                ${parentHtml}
+            </div>`;
+    } else if (empData && Array.isArray(empData)) {
         const cells = empData.map(([label, value]) => `
             <div class="emp-info-cell">
                 <span class="text-meta">${esc(label)}:</span>

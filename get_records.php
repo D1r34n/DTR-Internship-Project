@@ -77,7 +77,7 @@ foreach ($obStmt->fetchAll(PDO::FETCH_ASSOC) as $ob) {
     $obMap[$ob['ob_date']] = $ob['status'];
 }
 
-$recordsOut = array_map(fn($r) => [
+$rawOut = array_map(fn($r) => [
     'work_date'         => $r['work_date'],
     'scheduled_start'   => $r['scheduled_start'],
     'scheduled_end'     => $r['scheduled_end'],
@@ -93,6 +93,27 @@ $recordsOut = array_map(fn($r) => [
     'first_break_in'    => $r['first_break_in'],
     'last_break_out'    => $r['last_break_out'],
 ], $records);
+
+// Deduplicate by work_date: prefer present > incomplete > absent, then most complete data
+$seenDates  = [];
+$recordsOut = [];
+$statusRank = ['present' => 3, 'incomplete' => 2, 'absent' => 1];
+foreach ($rawOut as $r) {
+    $d = $r['work_date'];
+    if (!isset($seenDates[$d])) {
+        $seenDates[$d]  = count($recordsOut);
+        $recordsOut[]   = $r;
+    } else {
+        $idx      = $seenDates[$d];
+        $existing = $recordsOut[$idx];
+        $rankNew  = $statusRank[$r['status']]      ?? 0;
+        $rankOld  = $statusRank[$existing['status']] ?? 0;
+        // Keep row with higher status rank; on tie, prefer row with actual_time_out set
+        if ($rankNew > $rankOld || ($rankNew === $rankOld && $r['actual_time_out'] && !$existing['actual_time_out'])) {
+            $recordsOut[$idx] = $r;
+        }
+    }
+}
 
 // Inject scheduled days that have no attendance record (upcoming = future, absent = past)
 $today          = date('Y-m-d');

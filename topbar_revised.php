@@ -663,6 +663,13 @@ const handleTimeIn = async () => {
             } else if (data.tap === 'timed_out') {
                 clearSpinner(timeInHTML());
                 if (statusEl) statusEl.textContent = 'Timed Out';
+            } else {
+                // Unexpected or error response — always restore the button so it isn't stuck
+                reset();
+                if (data.error && data.error !== 'too_fast' && data.error !== 'shift_ended') {
+                    console.error('Attendance tap error:', data.error);
+                }
+                return;
             }
 
             localStorage.setItem('attendance_tap_result', data.tap);

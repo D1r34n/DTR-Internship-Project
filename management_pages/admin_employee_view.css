@@ -151,15 +151,13 @@ body {
 
 /* Tab2 (Records) */
 .ev-tabs #tab2.tab-pane.show.active {
-    padding-right: 0;
-    padding-bottom: 0;
+    padding: 0;
 }
 #tab2 .records-card {
     flex: 1;
     min-height: 0;
-    margin: 1rem;
-    margin-right: 0;
-    margin-bottom: 0;
+    margin: 0;
+    border-radius: 0 !important;
 }
 #tab2 .records-card-body {
     display: flex;
@@ -169,6 +167,7 @@ body {
     overflow: visible;
     padding-right: 0;
 }
+
 
 /* Tab3 (Logs) */
 .ev-tabs #tab3.tab-pane.show.active {

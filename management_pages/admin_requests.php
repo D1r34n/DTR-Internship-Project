@@ -104,10 +104,10 @@ if (isset($_GET['action'], $_GET['type'], $_GET['id'])) {
         $le = $leStmt->fetch(PDO::FETCH_ASSOC);
 
         if ($status === 'approved' && $le && $le['proposed_log_time']) {
-            $logRow = $pdo->prepare("SELECT log_time FROM logs WHERE id = ?");
+            $logRow = $pdo->prepare("SELECT log_time, schedule_id FROM logs WHERE id = ?");
             $logRow->execute([$le['log_id']]);
-            $logData  = $logRow->fetch(PDO::FETCH_ASSOC);
-            $workDate = $logData ? date('Y-m-d', strtotime($logData['log_time'])) : null;
+            $logData    = $logRow->fetch(PDO::FETCH_ASSOC);
+            $scheduleId = $logData ? (int)$logData['schedule_id'] : null;
 
             $pdo->prepare("UPDATE logs SET log_time = ? WHERE id = ?")
                 ->execute([$le['proposed_log_time'], $le['log_id']]);
@@ -115,23 +115,13 @@ if (isset($_GET['action'], $_GET['type'], $_GET['id'])) {
             $pdo->prepare("UPDATE log_edit_requests SET status = 'approved', approved_by = ? WHERE id = ?")
                 ->execute([$_SESSION['user_id'], $id]);
 
-            if ($workDate) {
-                $pdo->prepare("UPDATE attendances SET status = 'incomplete' WHERE employee_id = ? AND work_date = ?")
-                    ->execute([$le['employee_id'], $workDate]);
+            if ($scheduleId) {
+                $pdo->prepare("UPDATE attendances SET status = 'incomplete' WHERE employee_id = ? AND schedule_id = ?")
+                    ->execute([$le['employee_id'], $scheduleId]);
 
-                $schedStmt = $pdo->prepare("
-                    SELECT schedule_date, scheduled_start, scheduled_end
-                    FROM schedules
-                    WHERE employee_id = ? AND schedule_date = ?
-                ");
-                $schedStmt->execute([$le['employee_id'], $workDate]);
-                $schedule = $schedStmt->fetch(PDO::FETCH_ASSOC);
-
-                if ($schedule) {
-                    require_once __DIR__ . '/../system_functions/system_service.php';
-                    $effectiveNow = max(array_filter([$le['proposed_log_time'], date('Y-m-d H:i:s')]));
-                    finalizeEmployeeAttendance($pdo, (int)$le['employee_id'], $schedule, $effectiveNow);
-                }
+                require_once __DIR__ . '/../system_functions/system_service.php';
+                $effectiveNow = max($le['proposed_log_time'], date('Y-m-d H:i:s'));
+                finalizeEmployeeAttendance($pdo, (int)$le['employee_id'], $scheduleId, $effectiveNow);
             }
         } else {
             $pdo->prepare("UPDATE log_edit_requests SET status = 'rejected', approved_by = ? WHERE id = ?")
