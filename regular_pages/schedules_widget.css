@@ -499,3 +499,26 @@
 }
 
 .sched-cal-empty-icon { font-size: 2rem; opacity: 0.4; }
+
+/* ============================================================
+   LIGHT THEME OVERRIDES
+   ============================================================ */
+
+[data-theme="light"] .schedule-filter-select {
+    background: rgba(0, 0, 0, 0.05);
+    border-color: rgba(0, 0, 0, 0.15);
+}
+
+[data-theme="light"] .schedule-filter-select:focus {
+    border-color: rgba(0, 0, 0, 0.30);
+    background: rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="light"] .schedule-filter-select option {
+    background: #ffffff;
+    color: var(--text-lightest);
+}
+
+[data-theme="light"] .fc-admin-time {
+    background: rgba(0, 0, 0, 0.15);
+}

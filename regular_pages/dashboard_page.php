@@ -938,7 +938,7 @@ for ($i = 0; $i < 7; $i++) {
                                     <?php elseif ($day['status'] === 'upcoming'): ?>
                                         <i class="bi bi-circle" style="color:rgba(255,255,255,0.15)"></i>
                                     <?php else: ?>
-                                        <i class="bi bi-calendar-x" style="color:rgba(255,255,255,0.35)"></i>
+                                        <i class="bi bi-calendar-x" style="color:var(--text-muted)"></i>
                                     <?php endif; ?>
                                 </span>
                             </div>
@@ -1165,90 +1165,116 @@ document.getElementById('saveQuoteBtn').addEventListener('click', function () {
     const absent  = <?= json_encode(array_values($weeklyAbsent)) ?>;
     const total   = <?= $count ?>;
 
-    new Chart(document.getElementById('attendanceChart'), {
-        type: 'line',
-        data: {
-            labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-            datasets: [
-                {
-                    label: 'Present',
-                    data: present,
-                    borderColor: '#0d6efd',
-                    backgroundColor: 'rgba(13,110,253,0.15)',
-                    fill: 'start',
-                    tension: 0.4,
-                    pointBackgroundColor: '#0d6efd',
-                    pointBorderColor: '#0d6efd',
-                    pointRadius: 4,
-                    pointHoverRadius: 6,
-                    borderWidth: 2,
-                },
-                {
-                    label: 'Absent',
-                    data: absent,
-                    borderColor: '#ff9900',
-                    backgroundColor: 'rgba(255,153,0,0.15)',
-                    fill: 'start',
-                    tension: 0.4,
-                    pointBackgroundColor: '#ff9900',
-                    pointBorderColor: '#ff9900',
-                    pointRadius: 4,
-                    pointHoverRadius: 6,
-                    borderWidth: 2,
-                }
-            ]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            layout: {
-                padding: { top: 10, bottom: 0 }
+    let chartInstance = null;
+
+    function isLight() {
+        return document.documentElement.getAttribute('data-theme') === 'light';
+    }
+
+    function buildChart() {
+        if (chartInstance) chartInstance.destroy();
+
+        const light = isLight();
+        const tickColor    = light ? 'rgba(0,0,0,0.5)'       : 'rgba(255,255,255,0.5)';
+        const gridColor    = light ? 'rgba(0,0,0,0.07)'      : 'rgba(255,255,255,0.07)';
+        const legendColor  = light ? 'rgba(0,0,0,0.7)'       : 'rgba(255,255,255,0.7)';
+        const tooltipBg    = light ? 'rgba(255,255,255,0.95)' : 'rgba(15,15,30,0.85)';
+        const tooltipTitle = light ? '#111'                   : '#fff';
+        const tooltipBody  = light ? 'rgba(0,0,0,0.65)'      : 'rgba(255,255,255,0.7)';
+        const tooltipBorder= light ? 'rgba(0,0,0,0.1)'       : 'rgba(255,255,255,0.1)';
+
+        chartInstance = new Chart(document.getElementById('attendanceChart'), {
+            type: 'line',
+            data: {
+                labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                datasets: [
+                    {
+                        label: 'Present',
+                        data: present,
+                        borderColor: '#0d6efd',
+                        backgroundColor: 'rgba(13,110,253,0.15)',
+                        fill: 'start',
+                        tension: 0.4,
+                        pointBackgroundColor: '#0d6efd',
+                        pointBorderColor: '#0d6efd',
+                        pointRadius: 4,
+                        pointHoverRadius: 6,
+                        borderWidth: 2,
+                    },
+                    {
+                        label: 'Absent',
+                        data: absent,
+                        borderColor: '#ff9900',
+                        backgroundColor: 'rgba(255,153,0,0.15)',
+                        fill: 'start',
+                        tension: 0.4,
+                        pointBackgroundColor: '#ff9900',
+                        pointBorderColor: '#ff9900',
+                        pointRadius: 4,
+                        pointHoverRadius: 6,
+                        borderWidth: 2,
+                    }
+                ]
             },
-            plugins: {
-                legend: {
-                    display: true,
-                    position: 'bottom',
-                    labels: {
-                        color: 'rgba(255,255,255,0.7)',
-                        usePointStyle: true,
-                        pointStyle: 'circle',
-                        padding: 20,
-                        font: { size: 11, family: 'Poppins' }
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                layout: {
+                    padding: { top: 10, bottom: 0 }
+                },
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'bottom',
+                        labels: {
+                            color: legendColor,
+                            usePointStyle: true,
+                            pointStyle: 'circle',
+                            padding: 20,
+                            font: { size: 11, family: 'Poppins' }
+                        }
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                        backgroundColor: tooltipBg,
+                        titleColor: tooltipTitle,
+                        bodyColor: tooltipBody,
+                        borderColor: tooltipBorder,
+                        borderWidth: 1,
                     }
                 },
-                tooltip: {
-                    mode: 'index',
-                    intersect: false,
-                    backgroundColor: 'rgba(15,15,30,0.85)',
-                    titleColor: '#fff',
-                    bodyColor: 'rgba(255,255,255,0.7)',
-                    borderColor: 'rgba(255,255,255,0.1)',
-                    borderWidth: 1,
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    suggestedMax: total + 1,
-                    ticks: {
-                        precision: 0,
-                        color: 'rgba(255,255,255,0.5)',
-                        font: { size: 10, family: 'Poppins' }
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        suggestedMax: total + 1,
+                        ticks: {
+                            precision: 0,
+                            color: tickColor,
+                            font: { size: 10, family: 'Poppins' }
+                        },
+                        grid:   { color: gridColor },
+                        border: { color: 'transparent' }
                     },
-                    grid:   { color: 'rgba(255,255,255,0.07)' },
-                    border: { color: 'transparent' }
-                },
-                x: {
-                    ticks: {
-                        color: 'rgba(255,255,255,0.5)',
-                        font: { size: 10, family: 'Poppins' }
-                    },
-                    grid:   { color: 'rgba(255,255,255,0.07)' },
-                    border: { color: 'transparent' }
+                    x: {
+                        ticks: {
+                            color: tickColor,
+                            font: { size: 10, family: 'Poppins' }
+                        },
+                        grid:   { color: gridColor },
+                        border: { color: 'transparent' }
+                    }
                 }
             }
-        }
-    });
+        });
+    }
+
+    buildChart();
+
+    new MutationObserver(buildChart).observe(
+        document.documentElement,
+        { attributes: true, attributeFilter: ['data-theme'] }
+    );
 })();
 </script>
 <?php endif; ?>

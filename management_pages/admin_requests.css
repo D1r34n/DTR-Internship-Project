@@ -382,14 +382,14 @@ body {
 }
 
 .modalBox {
-    background: var(--glass-bg);
-    backdrop-filter: blur(32px) saturate(160%) brightness(0.3);
-    -webkit-backdrop-filter: blur(32px) saturate(160%) brightness(0.3);
-    border: 1px solid var(--glass-border);
+    background: var(--frosted-bg);
+    backdrop-filter: var(--frosted-blur);
+    -webkit-backdrop-filter: var(--frosted-blur);
+    border: 1px solid var(--frosted-border);
     border-radius: 16px;
     width: 500px;
     padding: 30px;
-    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.5);
+    box-shadow: var(--frosted-shadow);
 }
 
 .modalHeader {
@@ -402,7 +402,7 @@ body {
 .modalHeader h6 {
     font-weight: 600;
     margin: 0;
-    color: #fff;
+    color: var(--text-lightest);
 }
 
 .modalHeader button {
@@ -410,11 +410,11 @@ body {
     border: none;
     font-size: 1.2rem;
     cursor: pointer;
-    color: rgba(255, 255, 255, 0.5);
+    color: var(--text-muted);
 }
 
 .modalHeader button:hover {
-    color: #fff;
+    color: var(--text-lightest);
 }
 
 /* ============================================================

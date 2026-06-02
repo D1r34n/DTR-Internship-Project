@@ -445,25 +445,27 @@
 
 /* Silver mode — pill sits on a silver frosted surface */
 [data-theme="light"] .theme-pill-track {
-    background: rgba(255, 255, 255, 0.22);
-    border-color: rgba(255, 255, 255, 0.52);
+    background: rgba(0, 0, 0, 0.06);           /* Darkened: shifted from white to a soft neutral tint */
+    border-color: rgba(0, 0, 0, 0.16);         /* Darkened: defined border instead of bright white */
 }
 [data-theme="light"] .theme-pill-track:hover {
-    background: rgba(255, 255, 255, 0.34);
-    border-color: rgba(255, 255, 255, 0.65);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.14);
+    background: rgba(0, 0, 0, 0.10);           /* Darkened: deeper tint on hover */
+    border-color: rgba(0, 0, 0, 0.22);         /* Darkened: more prominent hover border */
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18); /* Darkened: deepened the drop shadow */
 }
 [data-theme="light"] .theme-pill-knob {
-    background: rgba(255, 255, 255, 0.55);
-    border-color: rgba(255, 255, 255, 0.75);
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.20);
+    background: rgba(255, 255, 255, 0.75);     /* Solidified: less transparent so it steps out from the darker track */
+    border-color: rgba(0, 0, 0, 0.12);         /* Darkened: gives the knob a crisp, darker edge */
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.28); /* Darkened: heavier shadow for better depth contrast */
 }
+
 /* Unchecked = light mode: sun bright, moon dim */
-[data-theme="light"] .theme-icon-sun  { color: rgba(14, 16, 26, 0.82); }
-[data-theme="light"] .theme-icon-moon { color: rgba(14, 16, 26, 0.28); }
+[data-theme="light"] .theme-icon-sun  { color: rgba(14, 16, 26, 0.90); } /* Darkened: near solid for crisp visibility */
+[data-theme="light"] .theme-icon-moon { color: rgba(14, 16, 26, 0.35); } /* Darkened: slightly more readable but still dim */
+
 /* Checked = switching to dark: moon bright, sun dim */
-[data-theme="light"] #themeCheckbox:checked + .theme-pill-track .theme-icon-sun  { color: rgba(14, 16, 26, 0.28); }
-[data-theme="light"] #themeCheckbox:checked + .theme-pill-track .theme-icon-moon { color: rgba(14, 16, 26, 0.85); }
+[data-theme="light"] #themeCheckbox:checked + .theme-pill-track .theme-icon-sun  { color: rgba(14, 16, 26, 0.35); }
+[data-theme="light"] #themeCheckbox:checked + .theme-pill-track .theme-icon-moon { color: rgba(14, 16, 26, 0.95); } /* Darkened: clean, near-black icon contrast */
 
 /* ================================================
    SIDEBAR SYSTEM

@@ -33,7 +33,7 @@ $reportsOpen = in_array($currentPage, ['attendance_report', 'filing_report', 'le
     <!-- Brand / Logo -->
     <div class="sidebar-brand" id="sidebar-brand">
         <a id="brand-link" href="../dashboard_page.php" class="brand-item">
-            <img src="../assets/images/hsn_logo_white.png" height="20" alt="HSN Logo">
+            <img id="hsn-logo" src="../assets/images/hsn_logo_white.png" height="20" alt="HSN Logo">
             <span>DTR System</span>
         </a>
 

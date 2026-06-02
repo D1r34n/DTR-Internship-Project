@@ -307,3 +307,22 @@ body {
 #calendar .fc-daygrid-day:not(.fc-day-has-events):hover .es-day-add-overlay {
     opacity: 1;
 }
+
+/* ============================================================
+   LIGHT THEME OVERRIDES
+   ============================================================ */
+
+[data-theme="light"] .schedule-filter-select {
+    background: rgba(0, 0, 0, 0.05);
+    border-color: rgba(0, 0, 0, 0.15);
+}
+
+[data-theme="light"] .schedule-filter-select:focus {
+    border-color: rgba(0, 0, 0, 0.30);
+    background: rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="light"] .schedule-filter-select option {
+    background: #ffffff;
+    color: var(--text-lightest);
+}

@@ -16,7 +16,7 @@ $logsEmployeeId ??= null;
         </div>
 
             <div class="dropdown">
-                <button class="btn btn-sm dropdown-toggle" type="button" id="logTypeToggle"
+                <button class="btn dropdown-toggle" type="button" id="logTypeToggle"
                         data-bs-toggle="dropdown" aria-expanded="false">
                     <i class="bi bi-funnel"></i>
                     <span id="logTypeLabel">All Types</span>
