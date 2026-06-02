@@ -622,16 +622,29 @@ $initialDeptFilter = isset($_GET['dept']) ? (int)$_GET['dept'] : 0;
                                             <input type="hidden" name="role" id="roleInput">
                                         </div>
 
-                                        <!-- Department — datalist -->
+                                        <!-- Department -->
                                         <div class="col-md-12">
                                             <label class="form-label">Department</label>
-                                            <input type="text"
-                                                   class="form-control"
-                                                   id="deptTextInput"
-                                                   list="deptDatalist"
-                                                   placeholder="Type to search department..."
-                                                   autocomplete="off">
-                                            <datalist id="deptDatalist"></datalist>
+                                            <div class="dropdown w-100">
+                                                <button class="btn w-100 text-start dropdown-toggle"
+                                                        type="button"
+                                                        data-bs-toggle="dropdown"
+                                                        data-bs-auto-close="outside"
+                                                        aria-expanded="false"
+                                                        id="deptModalBtn">
+                                                    <span id="deptModalLabel">Select Department</span>
+                                                </button>
+                                                <div class="dropdown-menu w-100 p-2" id="dept-modal-menu">
+                                                    <input type="text"
+                                                           class="form-control form-control-sm mb-2"
+                                                           id="deptModalSearch"
+                                                           placeholder="Search department...">
+                                                    <ul class="list-unstyled mb-0"
+                                                        id="deptModalList"
+                                                        style="max-height:200px; overflow-y:auto;">
+                                                    </ul>
+                                                </div>
+                                            </div>
                                             <input type="hidden" name="department_id" id="deptInput">
                                         </div>
 
@@ -930,17 +943,21 @@ $initialDeptFilter = isset($_GET['dept']) ? (int)$_GET['dept'] : 0;
                     renderDeptList(deptItems.filter(d => d.label.toLowerCase().includes(q)), 'filter');
                 });
 
-            document.getElementById('deptTextInput')
+            document.getElementById('deptModalSearch')
                 ?.addEventListener('input', function () {
-                    const val   = this.value.trim().toLowerCase();
-                    const match = deptItems.find(d => d.value !== '' && d.label.toLowerCase() === val);
-                    document.getElementById('deptInput').value = match ? match.value : '';
+                    const q = this.value.toLowerCase();
+                    renderDeptList(
+                        deptItems.filter(d => d.value !== '' && d.label.toLowerCase().includes(q)),
+                        'modal'
+                    );
                 });
 
 document.getElementById('empModal')
                 ?.addEventListener('show.bs.modal', () => {
-                    document.getElementById('deptTextInput').value  = '';
-                    document.getElementById('deptInput').value      = '';
+                    document.getElementById('deptModalLabel').textContent = 'Select Department';
+                    document.getElementById('deptModalSearch').value      = '';
+                    document.getElementById('deptInput').value            = '';
+                    renderDeptList(deptItems.filter(d => d.value !== ''), 'modal');
                     document.getElementById('roleLabel').textContent = 'Select Role';
                     document.getElementById('roleInput').value      = '';
                     document.getElementById('modalEmpRefId').value  = '';
@@ -1006,7 +1023,7 @@ document.getElementById('empModal')
                         ...depts.map(d => ({ value: String(d.id), label: d.department_name }))
                     ];
                     renderDeptList(deptItems, 'filter');
-                    populateDeptDatalist(depts);
+                    renderDeptList(deptItems.filter(d => d.value !== ''), 'modal');
 
                     if (initialDeptFilter) {
                         const match = deptItems.find(d => d.value === String(initialDeptFilter));
@@ -1021,20 +1038,34 @@ document.getElementById('empModal')
                 .catch(() => {});
         }
 
-        function populateDeptDatalist(depts) {
-            const dl = document.getElementById('deptDatalist');
-            if (!dl) return;
-            dl.innerHTML = '';
-            depts.forEach(d => {
-                const opt   = document.createElement('option');
-                opt.value   = d.department_name;
-                dl.appendChild(opt);
-            });
-        }
-
         function renderDeptList(items, target) {
-            if (target !== 'filter') return;
-            const list = document.getElementById('deptFilterList');
+            let listId, onSelect;
+
+            if (target === 'filter') {
+                listId   = 'deptFilterList';
+                onSelect = item => {
+                    document.getElementById('dept-filter').value           = item.value;
+                    document.getElementById('deptFilterLabel').textContent = item.label;
+                    bootstrap.Dropdown.getInstance(
+                        document.getElementById('deptFilterBtn')
+                    )?.hide();
+                    currentPage = 1;
+                    applyFilters();
+                };
+            } else if (target === 'modal') {
+                listId   = 'deptModalList';
+                onSelect = item => {
+                    document.getElementById('deptInput').value            = item.value;
+                    document.getElementById('deptModalLabel').textContent = item.label;
+                    bootstrap.Dropdown.getInstance(
+                        document.getElementById('deptModalBtn')
+                    )?.hide();
+                };
+            } else {
+                return;
+            }
+
+            const list = document.getElementById(listId);
             if (!list) return;
 
             list.innerHTML = '';
@@ -1044,15 +1075,7 @@ document.getElementById('empModal')
                 btn.type        = 'button';
                 btn.className   = 'dropdown-item rounded';
                 btn.textContent = item.label;
-                btn.onclick = () => {
-                    document.getElementById('dept-filter').value          = item.value;
-                    document.getElementById('deptFilterLabel').textContent = item.label;
-                    bootstrap.Dropdown.getInstance(
-                        document.getElementById('deptFilterBtn')
-                    )?.hide();
-                    currentPage = 1;
-                    applyFilters();
-                };
+                btn.onclick     = () => onSelect(item);
                 li.appendChild(btn);
                 list.appendChild(li);
             });

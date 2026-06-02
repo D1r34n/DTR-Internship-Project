@@ -243,3 +243,64 @@
     box-shadow: none !important;
     background: rgba(0, 0, 0, 0.3) !important;
 }
+
+/* ============================================================
+   LIGHT THEME OVERRIDES
+   ============================================================ */
+
+[data-theme="light"] .ob-instruction {
+    color: var(--text-muted);
+}
+
+[data-theme="light"] .ob-selected-date-box {
+    background: rgba(0, 0, 0, 0.04);
+    border-color: rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="light"] .ob-selected-date-label {
+    color: var(--text-muted);
+}
+
+/* Calendar day cells */
+[data-theme="light"] #obCalendar .fc .fc-daygrid-day-frame {
+    background: rgba(0, 0, 0, 0.03);
+    border-color: rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="light"] #obCalendar .fc .fc-daygrid-day:hover .fc-daygrid-day-frame {
+    background: rgba(0, 0, 0, 0.07);
+}
+
+/* Calendar nav buttons */
+[data-theme="light"] #obCalendar .fc .fc-button,
+[data-theme="light"] #obCalendar .fc .fc-today-button {
+    background: rgba(0, 0, 0, 0.06);
+    border-color: rgba(0, 0, 0, 0.12);
+}
+
+[data-theme="light"] #obCalendar .fc .fc-button:hover,
+[data-theme="light"] #obCalendar .fc .fc-today-button:hover {
+    background: rgba(0, 0, 0, 0.11);
+    border-color: rgba(0, 0, 0, 0.2);
+}
+
+/* Scrollbars */
+[data-theme="light"] #obModal .modal-body::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.04); }
+[data-theme="light"] #obModal .modal-body::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.18); }
+[data-theme="light"] #obCalendar .fc-scroller::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.03); }
+[data-theme="light"] #obCalendar .fc-scroller::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.15); }
+
+/* Form control */
+[data-theme="light"] #obModal .form-control:not(textarea) {
+    background: rgba(0, 0, 0, 0.05) !important;
+    border-color: rgba(0, 0, 0, 0.15) !important;
+    color: var(--text-lightest) !important;
+}
+
+[data-theme="light"] #obModal .form-control:not(textarea)::placeholder {
+    color: var(--text-muted);
+}
+
+[data-theme="light"] #obModal .form-control:not(textarea):focus {
+    background: rgba(0, 0, 0, 0.05) !important;
+}

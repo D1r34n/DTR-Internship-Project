@@ -502,11 +502,11 @@ body {
     display: flex;
     width: 100%;
     height: calc(100vh - 100px);
-    background: var(--glass-bg);
-    backdrop-filter: blur(32px) saturate(160%) brightness(0.3);
-    -webkit-backdrop-filter: blur(32px) saturate(160%) brightness(0.3);
-    border: 1px solid var(--glass-border);
-    box-shadow: 0 12px 35px var(--box-shadow-heavy);
+    background: var(--frosted-bg);
+    backdrop-filter: var(--frosted-blur);
+    -webkit-backdrop-filter: var(--frosted-blur);
+    border: 1px solid var(--frosted-border);
+    box-shadow: var(--frosted-shadow);
     border-radius: 16px;
     overflow: hidden;
 }
@@ -1053,12 +1053,12 @@ body {
 }
 
 .sched-modal {
-    background: var(--glass-bg);
-    backdrop-filter: blur(32px) saturate(160%) brightness(0.3);
-    -webkit-backdrop-filter: blur(32px) saturate(160%) brightness(0.3);
-    border: 1px solid var(--glass-border);
+    background: var(--frosted-bg);
+    backdrop-filter: var(--frosted-blur);
+    -webkit-backdrop-filter: var(--frosted-blur);
+    border: 1px solid var(--frosted-border);
     border-radius: 16px;
-    box-shadow: 0 20px 60px var(--box-shadow-heavy);
+    box-shadow: var(--frosted-shadow);
     width: 520px;
     max-width: 95vw;
     max-height: 90vh;
@@ -1070,7 +1070,7 @@ body {
     align-items: center;
     justify-content: space-between;
     padding: 1rem 1.2rem;
-    border-bottom: 1px solid var(--glass-border);
+    border-bottom: 1px solid var(--frosted-border);
 }
 
 .sched-modal-header h6 {
@@ -1311,11 +1311,11 @@ body {
 
 #gantt_tooltip {
     position: fixed;
-    background: var(--glass-bg);
-    backdrop-filter: blur(32px) saturate(160%) brightness(0.3);
-    -webkit-backdrop-filter: blur(32px) saturate(160%) brightness(0.3);
-    border: 1px solid var(--glass-border);
-    box-shadow: 0 12px 35px var(--box-shadow-heavy);
+    background: var(--frosted-bg);
+    backdrop-filter: var(--frosted-blur);
+    -webkit-backdrop-filter: var(--frosted-blur);
+    border: 1px solid var(--frosted-border);
+    box-shadow: var(--frosted-shadow);
     color: var(--text-lightest);
     padding: 10px 14px;
     border-radius: 8px;
@@ -1807,4 +1807,22 @@ body {
     background: var(--primary-glass);
     color: var(--primary-color);
     font-weight: 600;
+}
+
+/* ============================================================
+   LIGHT THEME OVERRIDES
+   ============================================================ */
+
+[data-theme="light"] .manage-sched-card-header {
+    background: rgba(0, 0, 0, 0.04);
+    border-bottom-color: rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="light"] .mapPopUpInfo {
+    color: var(--text-lightest);
+    text-shadow: none;
+}
+
+[data-theme="light"] .ev-tabs .card-header {
+    background: rgba(0, 0, 0, 0.03);
 }

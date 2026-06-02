@@ -376,14 +376,14 @@ body {
 }
 
 .empModal {
-    background: var(--glass-bg);
-    backdrop-filter: blur(32px) saturate(160%) brightness(0.3);
-    -webkit-backdrop-filter: blur(32px) saturate(160%) brightness(0.3);
-    border: 1px solid var(--glass-border);
+    background: var(--frosted-bg);
+    backdrop-filter: var(--frosted-blur);
+    -webkit-backdrop-filter: var(--frosted-blur);
+    border: 1px solid var(--frosted-border);
     border-radius: 16px;
     width: 580px;
     max-width: 95vw;
-    box-shadow: 0 12px 35px rgba(0,0,0,0.5);
+    box-shadow: var(--frosted-shadow);
 }
 
 .empModalHeader {
@@ -391,25 +391,25 @@ body {
     justify-content: space-between;
     align-items: center;
     padding: 20px 24px 14px;
-    border-bottom: 1px solid rgba(255,255,255,0.08);
+    border-bottom: 1px solid var(--frosted-border);
 }
 
 .empModalHeader h6 {
     margin: 0;
     font-weight: 600;
-    color: #fff;
+    color: var(--text-lightest);
     font-size: 0.95rem;
 }
 
 .empModalHeader button {
     background: none;
     border: none;
-    color: rgba(255,255,255,0.4);
+    color: var(--text-muted);
     font-size: 1rem;
     cursor: pointer;
     transition: color 0.2s;
 }
-.empModalHeader button:hover { color: #fff; }
+.empModalHeader button:hover { color: var(--text-lightest); }
 
 .empModalBody { padding: 20px 24px 24px; }
 
@@ -762,8 +762,6 @@ body {
     bottom: 100%;
     margin-top: 0;
     margin-bottom: 2px;
-    max-height: 220px;
-    overflow-y: auto;
 }
 
 /* ============================================================
@@ -857,4 +855,50 @@ body {
 }
 
 .empRow { cursor: pointer; }
+
+/* ============================================================
+   LIGHT THEME OVERRIDES
+   ============================================================ */
+
+[data-theme="light"] .formControl,
+[data-theme="light"] .customSelectToggle {
+    background: rgba(0, 0, 0, 0.05);
+    border-color: rgba(0, 0, 0, 0.15);
+    color: var(--text-lightest);
+}
+
+[data-theme="light"] .customSelectMenu {
+    background: #ffffff;
+    border-color: rgba(0, 0, 0, 0.12);
+}
+
+[data-theme="light"] .customSelectItem {
+    color: var(--text-light);
+}
+
+[data-theme="light"] .customSelectMenu::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.15);
+}
+
+[data-theme="light"] .emp-search-input.form-control {
+    background: rgba(0, 0, 0, 0.05);
+    border-color: rgba(0, 0, 0, 0.15);
+    color: var(--text-lightest);
+}
+
+[data-theme="light"] .emp-search-input.form-control:focus {
+    background: rgba(0, 0, 0, 0.05);
+    color: var(--text-lightest);
+}
+
+[data-theme="light"] .empFilterSelect {
+    background: rgba(0, 0, 0, 0.05);
+    border-color: rgba(0, 0, 0, 0.15);
+    color: var(--text-lightest);
+}
+
+[data-theme="light"] .empFilterSelect option {
+    background: #ffffff;
+    color: var(--text-lightest);
+}
 

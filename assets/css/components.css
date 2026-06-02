@@ -61,7 +61,7 @@ hr {
 
 /* Track (keeps it almost invisible) */
 *::-webkit-scrollbar-track {
-    background: rgba(255, 255, 255, 0.04);
+    background: var(--neutral-glass);
     border-radius: 10px;
 }
 
@@ -348,6 +348,22 @@ hr {
     transform: none !important;
 }
 
+/* Search inputs inside dropdown menus blend with the glass background — no white box. */
+.dropdown-menu .form-control {
+    height: auto !important;
+    background: rgba(255, 255, 255, 0.07) !important;
+    border: 1px solid var(--frosted-border) !important;
+    color: var(--text-lightest) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    box-shadow: none !important;
+    transform: none !important;
+}
+
+.dropdown-menu .form-control::placeholder {
+    color: var(--text-muted) !important;
+}
+
 /* ================================================
    OPTIONAL: GLOW PULSE ANIMATION
    ================================================ */
@@ -382,12 +398,12 @@ hr {
 }
 
 .modal-content {
-    background: var(--glass-bg) !important;
-    backdrop-filter: blur(32px) saturate(160%) brightness(0.3) !important;
-    -webkit-backdrop-filter: blur(32px) saturate(160%) brightness(0.3) !important;
-    border: 1px solid var(--glass-border) !important;
+    background: var(--frosted-bg) !important;
+    backdrop-filter: var(--frosted-blur) !important;
+    -webkit-backdrop-filter: var(--frosted-blur) !important;
+    border: 1px solid var(--frosted-border) !important;
     border-radius: 16px !important;
-    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.5) !important;
+    box-shadow: var(--frosted-shadow) !important;
     color: var(--text-light) !important;
 
     display: flex;
@@ -407,11 +423,15 @@ hr {
 
 .modal-header,
 .modal-footer {
-    border-color: var(--glass-border) !important;
+    border-color: var(--frosted-border) !important;
 }
 
 .modal-title {
-    color: #fff !important;
+    color: var(--text-lightest) !important;
+}
+
+[data-theme="light"] .modal-body .form-control {
+    color-scheme: light;
 }
 
 /* ================================================
@@ -675,6 +695,10 @@ button.btn-sm {
     transform: scale(1.04) !important;
 }
 
+[data-theme="light"] .btn:hover {
+    color: var(--text-darkest) !important;
+}
+
 .btn:focus,
 .btn:focus-visible {
     outline: none !important;
@@ -752,6 +776,12 @@ button.btn-sm {
         transparent 100%
     ) !important;
     box-shadow: 0 4px 16px var(--status-success-glow) !important;
+}
+
+[data-theme="light"] .btn-success:hover,
+[data-theme="light"] .btn-success:focus,
+[data-theme="light"] .btn-success:focus-visible {
+    color: var(--text-darkest) !important;
 }
 
 /* ================================================
@@ -1466,6 +1496,20 @@ button.btn-sm {
 
     border-color: rgba(168, 85, 247, 0.18) !important;
 }
+
+/* ================================================
+   CARD VARIANTS — LIGHT THEME BORDER FIX
+   The default rgba(255,255,255,0.08) border is invisible on light bg.
+   ================================================ */
+
+[data-theme="light"] .card-success { border-color: rgba(151, 190, 65, 0.35) !important; }
+[data-theme="light"] .card-danger  { border-color: rgba(239, 68,  68,  0.30) !important; }
+[data-theme="light"] .card-warning { border-color: rgba(251, 191, 36,  0.40) !important; }
+[data-theme="light"] .card-info    { border-color: rgba(96,  165, 250, 0.35) !important; }
+[data-theme="light"] .card-mint    { border-color: rgba(159, 226, 191, 0.40) !important; }
+[data-theme="light"] .card-coral   { border-color: rgba(255, 127, 80,  0.35) !important; }
+[data-theme="light"] .card-pink    { border-color: rgba(244, 114, 182, 0.35) !important; }
+[data-theme="light"] .card-purple  { border-color: rgba(168, 85,  247, 0.30) !important; }
 
 /* ================================================
    TOOLTIP — FROSTED GLASS
@@ -2296,19 +2340,19 @@ button.btn-sm {
 }
 
 .flatpickr-calendar {
-    background: var(--glass-bg) !important;
-    backdrop-filter: blur(32px) saturate(160%) brightness(0.3) !important;
-    -webkit-backdrop-filter: blur(32px) saturate(160%) brightness(0.3) !important;
-    border: 1px solid var(--glass-border) !important;
+    background: var(--frosted-bg) !important;
+    backdrop-filter: var(--frosted-blur) !important;
+    -webkit-backdrop-filter: var(--frosted-blur) !important;
+    border: 1px solid var(--frosted-border) !important;
     border-radius: 16px !important;
-    box-shadow: 0 12px 35px var(--box-shadow-heavy) !important;
+    box-shadow: var(--frosted-shadow) !important;
     font-family: 'Poppins', sans-serif !important;
     color: var(--text-light) !important;
 }
 
 .flatpickr-calendar.arrowTop::before,
 .flatpickr-calendar.arrowTop::after {
-    border-bottom-color: var(--glass-border) !important;
+    border-bottom-color: var(--frosted-border) !important;
 }
 
 .flatpickr-months {
@@ -2394,314 +2438,41 @@ button.btn-sm {
 }
 
 .flatpickr-input.empDateInput {
-    border: 1px solid rgba(255,255,255,0.15) !important;
-    color: #fff !important;
+    border: 1px solid var(--neutral-border) !important;
+    color: var(--text-lightest) !important;
 }
 
 /* ================================================
-   LIGHT / SILVER MODE OVERRIDES
+   FLATPICKR — LIGHT THEME OVERRIDES
    ================================================ */
 
-/* ================================================
-   LIGHT MODE — TEXT REMAPPING
-   Root text vars stay pure; dark counterparts are
-   used explicitly for all light surfaces.
-   ================================================ */
-
-[data-theme="light"] .vr,
-[data-theme="light"] hr                                         { color: var(--text-dark); }
-[data-theme="light"] .toast                                     { color: var(--text-dark) !important; }
-[data-theme="light"] .input-group-text                          { color: var(--text-dark) !important; }
-[data-theme="light"] .input-group .form-control                 { color: var(--text-darkest) !important; }
-[data-theme="light"] .input-group .form-control::placeholder    { color: var(--text-dark-muted); }
-[data-theme="light"] .modal-content                             { color: var(--text-dark) !important; }
-[data-theme="light"] .modal-body .form-control                  { color: var(--text-dark) !important; }
-[data-theme="light"] .modal-body .form-control::placeholder     { color: var(--text-dark-muted) !important; }
-[data-theme="light"] .modal-body .form-control:hover,
-[data-theme="light"] .modal-body .form-control:focus            { color: var(--text-darkest) !important; }
-[data-theme="light"] .btn,
-[data-theme="light"] button.btn                                 { color: var(--text-dark) !important; }
-[data-theme="light"] .btn-neutral:hover,
-[data-theme="light"] .btn.btn-neutral:hover,
-[data-theme="light"] .btn-neutral:focus,
-[data-theme="light"] .btn.btn-neutral:focus,
-[data-theme="light"] .btn-neutral:focus-visible,
-[data-theme="light"] .btn.btn-neutral:focus-visible             { color: var(--text-dark) !important; }
-[data-theme="light"] .tooltip .tooltip-inner                    { color: var(--text-dark) !important; }
-[data-theme="light"] .popover-header                            { color: var(--text-darkest) !important; }
-[data-theme="light"] .map-popover                               { color: var(--text-dark) !important; }
-[data-theme="light"] .caption                                   { color: var(--text-dark); }
-[data-theme="light"] .table                                     { color: var(--text-dark); }
-[data-theme="light"] .table thead th                            { color: var(--text-dark-muted); }
-[data-theme="light"] .table tbody td                            { color: var(--text-dark); }
-[data-theme="light"] .tableHeaderGlass th                       { color: var(--text-dark-muted); }
-[data-theme="light"] .sortable                                  { color: var(--text-dark-muted); }
-[data-theme="light"] #page-jump-input,
-[data-theme="light"] .pag-jump-input                            { color: var(--text-dark); }
-[data-theme="light"] #page-jump-input:focus,
-[data-theme="light"] .pag-jump-input:focus                      { color: var(--text-dark); }
-
-/* Calendar (FullCalendar) */
-[data-theme="light"] .fc                                        { color: var(--text-dark); }
-[data-theme="light"] .fc .fc-toolbar-title                      { color: var(--text-dark); }
-[data-theme="light"] .fc .fc-button                             { color: var(--text-dark); }
-[data-theme="light"] .fc .fc-button:hover,
-[data-theme="light"] .fc .fc-today-button:hover                 { color: var(--text-darkest); }
-[data-theme="light"] .fc .fc-col-header-cell-cushion            { color: var(--text-dark); }
-[data-theme="light"] .fc .fc-daygrid-day-number                 { color: var(--text-dark); }
-[data-theme="light"] .fc .fc-daygrid-body .fc-daygrid-day-events:empty::after { color: var(--text-dark-muted); }
-
-/* Datepicker (Flatpickr) */
-[data-theme="light"] .flatpickr-month                           { color: var(--text-darkest) !important; fill: var(--text-darkest) !important; }
-[data-theme="light"] .flatpickr-current-month input.cur-year,
-[data-theme="light"] .flatpickr-current-month .flatpickr-monthDropdown-months { color: var(--text-darkest) !important; }
-[data-theme="light"] .flatpickr-monthDropdown-months            { color: var(--text-darkest) !important; }
-[data-theme="light"] .flatpickr-monthDropdown-months option     { color: var(--text-darkest) !important; }
-[data-theme="light"] .flatpickr-monthSelect-month:hover         { color: var(--text-darkest) !important; }
-[data-theme="light"] .flatpickr-prev-month,
-[data-theme="light"] .flatpickr-next-month                      { fill: var(--text-dark) !important; color: var(--text-dark) !important; }
-[data-theme="light"] .flatpickr-prev-month:hover,
-[data-theme="light"] .flatpickr-next-month:hover                { fill: var(--text-darkest) !important; color: var(--text-darkest) !important; }
-[data-theme="light"] .flatpickr-day                             { color: var(--text-dark) !important; }
-[data-theme="light"] .flatpickr-day.today                       { color: var(--text-dark) !important; }
-[data-theme="light"] .flatpickr-day.inRange                     { color: var(--text-darkest) !important; }
-[data-theme="light"] .flatpickr-input                           { color: var(--text-dark) !important; }
-
-/* Modal uses a hardcoded brightness(0.3) darkener — lift it for silver mode */
-[data-theme="light"] .modal-content {
-    backdrop-filter: blur(40px) saturate(140%) brightness(1.0) !important;
-    -webkit-backdrop-filter: blur(40px) saturate(140%) brightness(1.0) !important;
-    color-scheme: light;
+[data-theme="light"] .flatpickr-day.flatpickr-disabled,
+[data-theme="light"] .flatpickr-day.prevMonthDay,
+[data-theme="light"] .flatpickr-day.nextMonthDay {
+    color: rgba(0, 0, 0, 0.25) !important;
 }
 
-/* Pills & badges — solid colored, no glass blur */
-[data-theme="light"] .pill,
-[data-theme="light"] .badge,
-[data-theme="light"] [class*="empRole-"] {
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
-    box-shadow: none !important;
-    background: var(--neutral-glass) linear-gradient(
-        to right,
-        rgba(255,255,255,0.18) 0%,
-        rgba(255,255,255,0.10) 50%,
-        transparent 100%
-    ) !important;
-    border-color: var(--neutral-border) !important;
-    color: var(--text-dark) !important;
-}
-
-[data-theme="light"] .empRole-employee {
-    background: rgba(159, 226, 191, 0.30) !important;
-    border-color: rgba(80,  170, 110, 0.55) !important;
-    color: #0e4d2b !important;
-}
-
-[data-theme="light"] .empRole-workforce {
-    background: rgba(96,  165, 250, 0.28) !important;
-    border-color: rgba(37,  99,  235, 0.45) !important;
-    color: #1e3a8a !important;
-}
-
-[data-theme="light"] .empRole-admin {
-    background: rgba(248, 113, 113, 0.28) !important;
-    border-color: rgba(185,  28,  28, 0.45) !important;
-    color: #7f1d1d !important;
-}
-
-[data-theme="light"] .empRole-manager {
-    background: rgba(244, 114, 182, 0.28) !important;
-    border-color: rgba(190,  24, 93,  0.45) !important;
-    color: #831843 !important;
-}
-
-[data-theme="light"] .empRole-superadmin {
-    background: rgba(168,  85, 247, 0.26) !important;
-    border-color: rgba(109,  40, 217, 0.45) !important;
-    color: #4c1d95 !important;
-}
-
-[data-theme="light"] .status-approved {
-    background: rgba(151, 190, 65, 0.28) !important;
-    border-color: rgba(127, 174, 47, 0.50) !important;
-    color: #2d5000 !important;
-}
-
-[data-theme="light"] .status-pending,
-[data-theme="light"] .request-leave {
-    background: rgba(251, 191,  36, 0.28) !important;
-    border-color: rgba(180, 130,   0, 0.50) !important;
-    color: #78450a !important;
-}
-
-[data-theme="light"] .status-rejected {
-    background: rgba(239,  68,  68, 0.26) !important;
-    border-color: rgba(185,  28,  28, 0.48) !important;
-    color: #7f1d1d !important;
-}
-
-[data-theme="light"] .status-info {
-    background: rgba(96,  165, 250, 0.26) !important;
-    border-color: rgba(37,  99,  235, 0.44) !important;
-    color: #1e3a8a !important;
-}
-
-/* Colored buttons — solid, no glass blur */
-[data-theme="light"] .btn-success,
-[data-theme="light"] .btn.btn-success {
-    background: rgba(151, 190, 65, 0.52) !important;
-    border-color: rgba(127, 174, 47, 0.65) !important;
-    color: #1a3800 !important;
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
-    box-shadow: 0 2px 8px rgba(127, 174, 47, 0.25) !important;
-}
-[data-theme="light"] .btn-success:hover,
-[data-theme="light"] .btn.btn-success:hover {
-    background: rgba(151, 190, 65, 0.70) !important;
-    box-shadow: 0 4px 14px rgba(127, 174, 47, 0.35) !important;
-    color: var(--text-lightest) !important;
-}
-
-[data-theme="light"] .pagination .page-item:not(.disabled) .page-link:hover,
-[data-theme="light"] .pagination .page-item.active .page-link {
-    background: rgba(151, 190, 65, 0.70) !important;
-    border-color: rgba(127, 174, 47, 0.60) !important;
-    color: var(--text-lightest) !important;
-    box-shadow: 0 4px 14px rgba(127, 174, 47, 0.35) !important;
-}
-
-[data-theme="light"] .btn-danger,
-[data-theme="light"] .btn.btn-danger {
-    background: rgba(239, 68, 68, 0.45) !important;
-    border-color: rgba(185, 28, 28, 0.60) !important;
-    color: #7f1d1d !important;
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
-    box-shadow: 0 2px 8px rgba(185, 28, 28, 0.22) !important;
-}
-[data-theme="light"] .btn-danger:hover,
-[data-theme="light"] .btn.btn-danger:hover {
-    background: rgba(239, 68, 68, 0.62) !important;
-    box-shadow: 0 4px 14px rgba(185, 28, 28, 0.32) !important;
-    color: var(--text-lightest) !important;
-}
-
-[data-theme="light"] .btn-warning,
-[data-theme="light"] .btn.btn-warning {
-    background: rgba(251, 191, 36, 0.48) !important;
-    border-color: rgba(180, 120, 0, 0.58) !important;
-    color: #78350f !important;
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
-    box-shadow: 0 2px 8px rgba(180, 120, 0, 0.20) !important;
-}
-[data-theme="light"] .btn-warning:hover,
-[data-theme="light"] .btn.btn-warning:hover {
-    background: rgba(251, 191, 36, 0.65) !important;
-    box-shadow: 0 4px 14px rgba(180, 120, 0, 0.30) !important;
-    color: #78350f !important;
-}
-
-[data-theme="light"] .btn-info,
-[data-theme="light"] .btn.btn-info {
-    background: rgba(96, 165, 250, 0.42) !important;
-    border-color: rgba(37, 99, 235, 0.55) !important;
-    color: #1e3a8a !important;
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
-    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.18) !important;
-}
-[data-theme="light"] .btn-info:hover,
-[data-theme="light"] .btn.btn-info:hover {
-    background: rgba(96, 165, 250, 0.58) !important;
-    box-shadow: 0 4px 14px rgba(37, 99, 235, 0.28) !important;
-    color: #1e3a8a !important;
-}
-
-/* Icon boxes — solid tinted, no glass blur */
-[data-theme="light"] .icon-box {
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
-    background: rgba(255, 255, 255, 0.35) !important;
-    border-color: rgba(255, 255, 255, 0.55) !important;
-    color: var(--text-dark) !important;
-}
-
-[data-theme="light"] .icon-box-success {
-    background: rgba(151, 190, 65, 0.28) !important;
-    border-color: rgba(127, 174, 47, 0.50) !important;
-    color: var(--text-lightest) !important;
-}
-[data-theme="light"] .icon-box-danger {
-    background: rgba(239, 68, 68, 0.24) !important;
-    border-color: rgba(185, 28, 28, 0.45) !important;
-    color: #7f1d1d !important;
-}
-[data-theme="light"] .icon-box-warning {
-    background: rgba(251, 191, 36, 0.26) !important;
-    border-color: rgba(180, 120, 0, 0.45) !important;
-    color: #78350f !important;
-}
-[data-theme="light"] .icon-box-info {
-    background: rgba(96, 165, 250, 0.24) !important;
-    border-color: rgba(37, 99, 235, 0.42) !important;
-    color: #1e3a8a !important;
-}
-[data-theme="light"] .icon-box-mint {
-    background: rgba(159, 226, 191, 0.28) !important;
-    border-color: rgba(80, 170, 110, 0.48) !important;
-    color: #0e4d2b !important;
-}
-[data-theme="light"] .icon-box-coral {
-    background: rgba(248, 113, 113, 0.24) !important;
-    border-color: rgba(185, 28, 28, 0.42) !important;
-    color: #7f1d1d !important;
-}
-[data-theme="light"] .icon-box-pink {
-    background: rgba(244, 114, 182, 0.24) !important;
-    border-color: rgba(190, 24, 93, 0.42) !important;
-    color: #831843 !important;
-}
-[data-theme="light"] .icon-box-purple {
-    background: rgba(168, 85, 247, 0.22) !important;
-    border-color: rgba(109, 40, 217, 0.42) !important;
-    color: #4c1d95 !important;
+[data-theme="light"] .flatpickr-monthSelect-month.disabled {
+    color: rgba(0, 0, 0, 0.25) !important;
 }
 
 /* ================================================
-   DROPDOWN — LIGHT MODE
+   FULLCALENDAR — LIGHT THEME OVERRIDES
+   Scope the FC CSS custom-property overrides so
+   inline --fc-border-color / --fc-neutral-bg-color
+   pick up light-friendly values.
    ================================================ */
 
-[data-theme="light"] .dropdown-menu {
-    background: rgba(232, 235, 244, 0.96) linear-gradient(
-        to right,
-        rgba(255, 255, 255, 0.12) 0%,
-        rgba(255, 255, 255, 0.06) 40%,
-        rgba(255, 255, 255, 0.02) 70%,
-        transparent 100%
-    ) !important;
-    border-color: rgba(255, 255, 255, 0.70) !important;
-    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.18),
-                inset 0 1px 0 rgba(255, 255, 255, 0.80) !important;
+[data-theme="light"] #admin-calendar,
+[data-theme="light"] #sw-calendar,
+[data-theme="light"] #calendar {
+    --fc-border-color:       rgba(0, 0, 0, 0.10);
+    --fc-neutral-bg-color:   rgba(0, 0, 0, 0.02);
+    --fc-today-bg-color:     rgba(151, 190, 65, 0.10);
 }
 
-[data-theme="light"] .dropdown-item {
-    color: var(--text-dark) !important;
-}
-
-[data-theme="light"] .dropdown-item:hover,
-[data-theme="light"] .dropdown-item:focus {
-    background: rgba(151, 190, 65, 0.70) !important;
-    color: var(--text-lightest) !important;
-    box-shadow: 0 2px 8px rgba(127, 174, 47, 0.25) !important;
-}
-
-[data-theme="light"] .dropdown-item.active {
-    background: rgba(151, 190, 65, 0.52) !important;
-    color: var(--text-lightest) !important;
-}
-
-[data-theme="light"] .dropdown-divider {
-    border-color: rgba(0, 0, 0, 0.12) !important;
+[data-theme="light"] #sw-calendar .fc-ev-night-cont  .fc-admin-time,
+[data-theme="light"] #sw-calendar .fc-ev-rest        .fc-admin-time,
+[data-theme="light"] #sw-calendar .fc-ev-pending-schedule .fc-admin-time {
+    background: rgba(0, 0, 0, 0.07);
 }

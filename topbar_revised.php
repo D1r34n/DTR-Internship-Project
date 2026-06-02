@@ -144,7 +144,7 @@ $breakDisabled = !$timedIn || $isBreakOut;
                 </ol>
             </nav>
 
-            <div class="navbar-brand mb-0 h2 text-light"><?= htmlspecialchars($title) ?></div>
+            <div class="navbar-brand mb-0"><?= htmlspecialchars($title) ?></div>
         </div>
 
         <!-- RIGHT: Actions -->
@@ -992,19 +992,29 @@ function updateProfileImageUI(src) {
 /* -------------------------------------------------------
    THEME TOGGLE
 ------------------------------------------------------- */
+
 function toggleTheme(isDark) {
     document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
     localStorage.setItem('theme', isDark ? 'dark' : 'light');
 
     const icon  = document.getElementById('theme-icon');
     const label = document.getElementById('theme-label');
+    const logo  = document.getElementById('hsn-logo');
 
     if (isDark) {
-        icon.className  = 'bi bi-moon-stars-fill';
+        icon.className = 'bi bi-moon-stars-fill';
         label.textContent = 'Dark Mode';
+
+        if (logo) {
+            logo.src = '../assets/images/hsn_logo_white.png';
+        }
     } else {
-        icon.className  = 'bi bi-sun-fill';
+        icon.className = 'bi bi-sun-fill';
         label.textContent = 'Light Mode';
+
+        if (logo) {
+            logo.src = '../assets/images/hsn_logo.png';
+        }
     }
 }
 

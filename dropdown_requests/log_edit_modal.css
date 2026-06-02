@@ -74,3 +74,30 @@
 .leEditRowBtn:hover {
     background: rgba(13, 110, 253, 0.42);
 }
+
+/* ============================================================
+   LIGHT THEME OVERRIDES
+   ============================================================ */
+
+[data-theme="light"] .le-input-label {
+    color: var(--text-muted);
+}
+
+[data-theme="light"] .le-time-input {
+    background: rgba(0, 0, 0, 0.05);
+    border-color: rgba(0, 0, 0, 0.15);
+    color: var(--text-lightest);
+    color-scheme: light;
+}
+
+[data-theme="light"] .le-modal-info-row {
+    border-bottom-color: rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="light"] .le-modal-label {
+    color: var(--text-muted);
+}
+
+[data-theme="light"] .le-modal-value {
+    color: var(--text-lightest);
+}

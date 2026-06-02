@@ -267,15 +267,27 @@ $departmentList = $stmt2->fetchAll(PDO::FETCH_ASSOC);
                                         Parent Department
                                         <small class="text-muted">(Optional)</small>
                                     </label>
+                                    <div class="dropdown w-100">
+                                        <button class="btn w-100 text-start dropdown-toggle"
+                                                type="button"
+                                                data-bs-toggle="dropdown"
+                                                data-bs-auto-close="outside"
+                                                aria-expanded="false"
+                                                id="create-parent-btn">
+                                            <span id="create-parent-label">None</span>
+                                        </button>
+                                        <div class="dropdown-menu w-100 p-2">
+                                            <input type="text"
+                                                   class="form-control form-control-sm mb-2"
+                                                   id="create-parent-search"
+                                                   placeholder="Search department...">
+                                            <ul class="list-unstyled mb-0"
+                                                id="create-parent-list"
+                                                style="max-height:200px; overflow-y:auto;">
+                                            </ul>
+                                        </div>
+                                    </div>
                                     <input type="hidden" name="parent_id" id="create-parent-id" value="">
-                                    <input type="text" class="form-control" id="create-parent-input"
-                                           list="create-parent-list" placeholder="None"
-                                           autocomplete="off">
-                                    <datalist id="create-parent-list">
-                                        <?php foreach ($departmentList as $row): ?>
-                                            <option value="<?= htmlspecialchars($row['department_name']) ?>"></option>
-                                        <?php endforeach; ?>
-                                    </datalist>
                                 </div>
 
                                 <button type="submit" class="btn btn-success w-100">

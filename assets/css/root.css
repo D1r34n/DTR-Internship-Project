@@ -240,110 +240,174 @@
     --flatpickr-option-bg:     #1a1a1a;
 }
 
-/* ================================================
-   LIGHT THEME OVERRIDES
-   Applied when <html data-theme="light">
-   All accent / role / status colors stay the same.
-   Only surface, text, border, and shadow tokens flip.
-   ================================================ */
-
 [data-theme="light"] {
-    color-scheme: light;
+    /* FROSTED GLASS — UI SURFACES (cards, modals, dropdowns) */
+    --frosted-bg:        rgba(255, 255, 255, 0.7);
+    --frosted-border:    rgba(0, 0, 0, 0.09);
+    --frosted-blur:      blur(36px) saturate(160%) brightness(1.05);
+    --frosted-shadow:    0 12px 48px rgba(0, 0, 0, 0.12),
+                         inset 0 1px 0 rgba(255, 255, 255, 0.65);
+    --frosted-highlight: linear-gradient(
+        to bottom,
+        rgba(255, 255, 255, 0.40),
+        transparent 60%
+    );
 
-    /* TEXT — body text uses explicit dark counterparts in components */
+    /* GLASS INSET / SHADOW TOKENS */
+    --glass-inset:  inset 0 1px 0 rgba(255, 255, 255, 0.50);
+    --glass-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
 
-    /* BREADCRUMB */
-    --breadcrumb-divider-color:   rgba(0, 0, 0, 0.30);
+    /* TEXT */
+    --text-lightest:   #000000;
+    --text-light:      #202020;
+    --text-muted:      #4a4a4a;
 
-    /* NEUTRAL — white-tinted glass sitting on silver backgrounds */
-    --neutral-color:              #5c606e;
-    --neutral-hover:              #3c4050;
-    --neutral-glass:              rgba(255, 255, 255, 0.24);
-    --neutral-glass-hover:        rgba(255, 255, 255, 0.38);
-    --neutral-border:             rgba(255, 255, 255, 0.52);
-    --neutral-range:              rgba(255, 255, 255, 0.30);
-    --neutral-soft:               rgba(255, 255, 255, 0.18);
-    --neutral-glow:               rgba(0, 0, 0, 0.14);
+    --text-darkest:    #ffffff;
+    --text-dark:       rgba(255, 255, 255, 0.85);
+    --text-dark-muted: rgba(255, 255, 255, 0.55);
 
-    /* SHADOW */
-    --shadow:                     rgba(0, 0, 0, 0.14);
-    --box-shadow-heavy:           rgba(0, 0, 0, 0.22);
+    --bg-dark:    #ffffff;
+    --bg-darkest: #f5f5f5;
 
-    /* OVERLAY */
-    --overlay-hover-light:        rgba(151, 190, 65, 0.08);
-    --overlay-hover:              rgba(151, 190, 65, 0.14);
-    --overlay-soft:               rgba(151, 190, 65, 0.06);
-    --overlay-muted:              rgba(0, 0, 0, 0.32);
-    --danger-overlay:             rgba(255, 80, 80, 0.08);
+    /* DEFAULT / NEUTRAL (DARK) */
+    --neutral-color:        #3a3a3a;
+    --neutral-hover:        #4a4a4a;
 
-    /* MAP */
-    --map-bg:                     rgba(255, 255, 255, 0.22);
-    --map-border:                 rgba(255, 255, 255, 0.45);
-    --map-shadow:                 rgba(0, 0, 0, 0.14);
+    --neutral-glass:        rgba(58, 58, 58, 0.25);
+    --neutral-glass-hover:  rgba(74, 74, 74, 0.35);
 
-    /* GLASS — silver-tinted panels */
-    --glass-bg:                   rgba(196, 200, 212, 0.58);
-    --glass-border:               rgba(255, 255, 255, 0.54);
-    --glass-top:                  rgba(255, 255, 255, 0.88);
-    --glass-hover:                rgba(255, 255, 255, 0.18);
-    --glass-inset:                inset 0 1px 0 rgba(255, 255, 255, 0.72);
-    --glass-shadow:               0 8px 24px rgba(0, 0, 0, 0.14);
-    --sidebar-glow:               0 0 0 1px rgba(255, 255, 255, 0.10),
-                                  6px 0 48px rgba(0, 0, 0, 0.28),
-                                  inset -1px 0 0 rgba(255, 255, 255, 0.05);
+    --neutral-border:       rgba(255, 255, 255, 0.08);
+    --neutral-range:        rgba(255, 255, 255, 0.06);
+    --neutral-soft:         rgba(255, 255, 255, 0.04);
 
-    /* FROSTED GLASS — silver panels (Vision Pro / macOS style) */
-    --frosted-bg:                 rgba(184, 188, 202, 0.84);
-    --frosted-border:             rgba(255, 255, 255, 0.56);
-    --frosted-blur:               blur(40px) saturate(140%) brightness(1.02);
-    --frosted-shadow:             0 16px 56px rgba(0, 0, 0, 0.18),
-                                  inset 0 1px 0 rgba(255, 255, 255, 0.65);
-    --frosted-highlight:          linear-gradient(
-                                      to bottom,
-                                      rgba(255, 255, 255, 0.62),
-                                      transparent 60%
-                                  );
+    --neutral-glow:         rgba(0, 0, 0, 0.50);
 
-    /* CALENDAR */
-    --calendar-btn-bg:            rgba(255, 255, 255, 0.22);
-    --calendar-btn-hover-bg:      rgba(255, 255, 255, 0.36);
-    --calendar-btn-hover-border:  rgba(255, 255, 255, 0.55);
-    --calendar-day-hover:         rgba(255, 255, 255, 0.20);
+    /* PRIMARY (#97be41) */
+    --primary-color:        #97be41;
+    --primary-hover:        #7fae2f;
+    --primary-text:         #3a5a00;
 
-    /* GANTT */
-    --gantt-bar-bg:               rgba(255, 255, 255, 0.14);
-    --gantt-grid-line:            rgba(0, 0, 0, 0.10);
-    --gantt-cursor-line:          rgba(0, 0, 0, 0.58);
-    --gantt-cursor-bg:            rgba(255, 255, 255, 0.82);
-    --gantt-scale-color:          rgba(0, 0, 0, 0.48);
-    --gantt-scheduled:            rgba(255, 255, 255, 0.18);
-    --gantt-scheduled-border:     rgba(0, 0, 0, 0.20);
-    --gantt-pending:              rgba(100, 102, 114, 0.38);
-    --gantt-pending-border:       rgba(0, 0, 0, 0.16);
+    --primary-glass:        #e8f5c8; /* solid tint */
+    --primary-glass-hover:  #d9eeaa; /* slightly darker on hover */
+    --primary-border:       #97be41; /* full solid border */
+    --primary-range:        rgba(151, 190, 65, 0.28);
+    --primary-soft:         #f2fadf; /* lighter tint for subtle fills */
+    --primary-glow:         rgba(151, 190, 65, 0.35);
 
-    /* DATEPICKER */
-    --datepicker-input-border:    rgba(255, 255, 255, 0.42);
-    --datepicker-input-bg:        rgba(255, 255, 255, 0.28);
-    --flatpickr-month-bg:         rgba(190, 194, 208, 0.95);
-    --flatpickr-option-bg:        #d4d7e6;
-}
+    /* DANGER (#ef4444) */
+    --danger-color:         #ef4444;
+    --danger-hover:         #dc3545;
+    --danger-text:          #991b1b;
 
-/* Bootstrap hardcodes .text-light as white — override for silver mode */
-[data-theme="light"] .text-light {
-    color: rgba(14, 16, 26, 0.90) !important;
-}
+    --danger-glass:         #fde8e8; /* solid tint */
+    --danger-glass-hover:   #fcd1d1; /* slightly darker on hover */
+    --danger-border:        #ef4444; /* full solid border */
+    --danger-range:         rgba(239, 68, 68, 0.26);
+    --danger-soft:          #fff0f0; /* lighter tint for subtle fills */
+    --danger-glow:          rgba(239, 68, 68, 0.30);
 
-/* Sidebar stays dark in light mode — restore dark-mode text tokens locally */
-[data-theme="light"] #sidebar {
-    --text-lightest:       #ffffff;
-    --text-light:          rgba(255, 255, 255, 0.85);
-    --text-muted:          rgba(255, 255, 255, 0.55);
-    --neutral-border:      rgba(255, 255, 255, 0.12);
-    --neutral-glass:       rgba(255, 255, 255, 0.06);
-    --neutral-glass-hover: rgba(255, 255, 255, 0.10);
-}
+    /* WARNING (#fbbf24) */
+    --warning-color:        #fbbf24;
+    --warning-hover:        #eab308;
+    --warning-text:         #78350f;
 
-/* Native form controls (date inputs etc.) adopt light styling */
-[data-theme="light"] .modal-body .form-control {
-    color-scheme: light;
+    --warning-glass:        #fef3c7; /* solid tint */
+    --warning-glass-hover:  #fde68a; /* slightly darker on hover */
+    --warning-border:       #fbbf24; /* full solid border */
+    --warning-range:        rgba(251, 191, 36, 0.32);
+    --warning-soft:         #fffbeb; /* lighter tint for subtle fills */
+    --warning-glow:         rgba(234, 179, 8, 0.30);
+
+    /* INFO (#60a5fa) */
+    --info-color:           #60a5fa;
+    --info-hover:           #3b82f6;
+    --info-text:            #1d4ed8;
+
+    --info-glass:           #dbeafe; /* solid tint */
+    --info-glass-hover:     #bfdbfe; /* slightly darker on hover */
+    --info-border:          #60a5fa; /* full solid border */
+    --info-range:           rgba(96, 165, 250, 0.26);
+    --info-soft:            #eff6ff; /* lighter tint for subtle fills */
+    --info-glow:            rgba(96, 165, 250, 0.30);
+
+    /* ================================================
+       EMPLOYEE ROLE TOKENS (LIGHT MODE)
+       ================================================ */
+
+    /* EMPLOYEE (#9fe2bf) */
+    --employee:               #9fe2bf;
+    --employee-hover:         #7cd6aa;
+    --employee-text:          #115e42;
+    --employee-bg:            #e6f9f0; /* solid tint */
+    --employee-glass:         #e6f9f0;
+    --employee-glass-hover:   #cdede0; /* slightly darker on hover */
+    --employee-border:         #9fe2bf; /* full solid border */
+    --employee-soft:          #f2fdf8; /* lighter tint for subtle fills */
+    --employee-range:         rgba(159, 226, 191, 0.32);
+    --employee-glow:          rgba(159, 226, 191, 0.30);
+
+    /* WORKFORCE (#60a5fa) */
+    --workforce:              #60a5fa;
+    --workforce-hover:        #3b82f6;
+    --workforce-text:         #1d4ed8;
+    --workforce-bg:           #dbeafe; /* solid tint */
+    --workforce-glass:        #dbeafe;
+    --workforce-glass-hover:  #bfdbfe; /* slightly darker on hover */
+    --workforce-border:        #60a5fa; /* full solid border */
+    --workforce-soft:         #eff6ff; /* lighter tint for subtle fills */
+    --workforce-range:        rgba(96, 165, 250, 0.26);
+    --workforce-glow:         rgba(96, 165, 250, 0.30);
+
+    /* ADMIN (#f87171) */
+    --admin:                  #f87171;
+    --admin-hover:            #ef4444;
+    --admin-text:             #991b1b;
+    --admin-bg:               #fde8e8; /* solid tint */
+    --admin-glass:            #fde8e8;
+    --admin-glass-hover:      #fcd1d1; /* slightly darker on hover */
+    --admin-border:           #f87171; /* full solid border */
+    --admin-soft:             #fff0f0; /* lighter tint for subtle fills */
+    --admin-range:            rgba(248, 113, 113, 0.26);
+    --admin-glow:             rgba(248, 113, 113, 0.30);
+
+    /* MANAGER (#f472b6) */
+    --manager:                #f472b6;
+    --manager-hover:          #ec4899;
+    --manager-text:           #9d174d;
+    --manager-bg:             #fce7f3; /* solid tint */
+    --manager-glass:          #fce7f3;
+    --manager-glass-hover:    #fbcfe8; /* slightly darker on hover */
+    --manager-border:         #f472b6; /* full solid border */
+    --manager-soft:           #fdf2f8; /* lighter tint for subtle fills */
+    --manager-range:          rgba(244, 114, 182, 0.26);
+    --manager-glow:           rgba(244, 114, 182, 0.30);
+
+    /* SUPERADMIN (#a855f7) */
+    --superadmin:             #a855f7;
+    --superadmin-hover:       #9333ea;
+    --superadmin-text:        #6b21a8;
+    --superadmin-bg:          #f3e8ff; /* solid tint */
+    --superadmin-glass:       #f3e8ff;
+    --superadmin-glass-hover: #e9d5ff; /* slightly darker on hover */
+    --superadmin-border:      #a855f7; /* full solid border */
+    --superadmin-soft:        #faf5ff; /* lighter tint for subtle fills */
+    --superadmin-range:       rgba(168, 85, 247, 0.26);
+    --superadmin-glow:        rgba(168, 85, 247, 0.35);
+
+    /* GLASS — reused by glass containers, calendar cells, sidebar inner borders */
+    --glass-bg:     rgba(0, 0, 0, 0.04);
+    --glass-border: rgba(0, 0, 0, 0.10);
+    --glass-hover:  rgba(0, 0, 0, 0.06);
+
+    /* CALENDAR BUTTONS / CELLS */
+    --calendar-btn-bg:           rgba(0, 0, 0, 0.06);
+    --calendar-btn-hover-bg:     rgba(0, 0, 0, 0.10);
+    --calendar-btn-hover-border: rgba(0, 0, 0, 0.20);
+    --calendar-day-hover:        rgba(0, 0, 0, 0.04);
+
+    /* DATEPICKER / FLATPICKR */
+    --datepicker-input-border: rgba(0, 0, 0, 0.15);
+    --datepicker-input-bg:     rgba(0, 0, 0, 0.05);
+    --flatpickr-month-bg:      #ffffff;
+    --flatpickr-option-bg:     #f5f5f5;
 }
