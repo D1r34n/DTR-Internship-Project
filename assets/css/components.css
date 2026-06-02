@@ -873,6 +873,8 @@ button.btn-sm {
     color: var(--text-darkest) !important;
 }
 
+
+
 /* ================================================
    INFO
    ================================================ */
@@ -1026,6 +1028,11 @@ button.btn-sm {
     opacity: 0.5 !important;
 }
 
+/* Topbar user dropdown toggle name text is always white */
+.topbar .btn.dropdown-toggle:not(.dropdown-toggle-split) {
+    color: #ffffff !important;
+}
+
 .dropdown-menu .btn {
     width: 100% !important;
     display: flex !important;
@@ -1035,6 +1042,7 @@ button.btn-sm {
 .dropdown-toggle::after {
     transition: transform 0.25s ease !important;
 }
+
 
 .dropdown-toggle[aria-expanded="true"]::after {
     transform: rotate(180deg) !important;

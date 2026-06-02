@@ -111,6 +111,14 @@ $isOnBreak  = $lastLog && $lastLog['log_type'] === 'BREAK_IN';
 $isBreakOut = $lastLog && $lastLog['log_type'] === 'BREAK_OUT';
 $timedIn    = $hasTimeIn || $isOnBreak || $isBreakOut;
 $breakDisabled = !$timedIn || $isBreakOut;
+
+// Remaining cooldown to expose to JS (must match TAP_COOLDOWN_SECONDS in attendance_tap.php)
+$tapCooldownSecs = 5;
+$initialCooldown = 0;
+if (isset($_SESSION['last_attendance_tap'])) {
+    $remaining = $tapCooldownSecs - (time() - $_SESSION['last_attendance_tap']);
+    if ($remaining > 0) $initialCooldown = (int)$remaining;
+}
 ?>
 
 <!-- Modal CSS — topbar-specific, not duplicated in layout_start -->
@@ -451,7 +459,27 @@ let isProcessing      = false;
 let isBreakProcessing = false;
 let cachedPosition    = null;
 
-const GEO_OPTS = { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 };
+const GEO_OPTS         = { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 };
+const INITIAL_COOLDOWN = <?= $initialCooldown ?>;
+const TAP_COOLDOWN     = 5; // must match TAP_COOLDOWN_SECONDS in attendance_tap.php
+
+const startCooldown = (secs) => {
+    if (secs <= 0) return;
+    const g = grp();
+    if (!g) return;
+    g.style.setProperty('--cooldown-duration', `${secs}s`);
+    g.classList.add('btn-cooldown');
+    setTimeout(() => {
+        if (!g.isConnected) return;
+        g.classList.remove('btn-cooldown');
+        g.style.removeProperty('--cooldown-duration');
+        const btn = g.querySelector('.btn-success:not(.dropdown-toggle-split), .btn-danger:not(.dropdown-toggle-split)');
+        if (btn) {
+            btn.classList.add('btn-ready');
+            btn.addEventListener('animationend', () => btn.classList.remove('btn-ready'), { once: true });
+        }
+    }, secs * 1000);
+};
 
 function geoErrorMessage(err) {
     if (!err) return 'Unable to get your location. Please try again.';
@@ -484,6 +512,11 @@ document.addEventListener('DOMContentLoaded', () => {
             err => console.warn('GPS watch error:', err.message),
             { enableHighAccuracy: false, maximumAge: 60000, timeout: 15000 }
         );
+    }
+
+    // If a cooldown is still active from the last tap, show the spinner immediately
+    if (INITIAL_COOLDOWN > 0) {
+        startCooldown(INITIAL_COOLDOWN, grp().innerHTML);
     }
 });
 
@@ -552,13 +585,10 @@ const showSpinner = (html = spinnerCooldownHTML('')) => {
 
 const clearSpinner = html => {
     const g = grp();
-    g.innerHTML = html;
+    g.innerHTML      = html;
     g.classList.remove('is-loading');
-    // style.width is still the locked px value — CSS transition animates 42px → locked width
-    g.addEventListener('transitionend', () => {
-        g.style.width    = '';
-        g.style.overflow = '';
-    }, { once: true });
+    g.style.width    = '';
+    g.style.overflow = '';
 };
 
 // Break button helpers
@@ -595,7 +625,7 @@ const handleTimeIn = async () => {
     showSpinner();
 
     const reset   = () => { clearSpinner(originalHTML); isProcessing = false; };
-    const onError = err => { alert(geoErrorMessage(err)); reset(); };
+    const onError = err => { showToast(geoErrorMessage(err), 'danger'); reset(); };
 
     const submit = async pos => {
         try {
@@ -617,57 +647,33 @@ const handleTimeIn = async () => {
             const data = await res.json();
 
             if (data.error === 'too_fast') {
-
-                let remaining = data.seconds_remaining;
-
-                showSpinner(
-                    spinnerCooldownHTML(remaining)
-                );
-
-                const tick = () => {
-
-                    if (remaining <= 0) {
-                        clearSpinner(originalHTML);
-                        isProcessing = false;
-                        return;
-                    }
-
-                    remaining--;
-
-                    const el =
-                        document.getElementById(
-                            'cooldown-text'
-                        );
-
-                    if (el) {
-                        el.textContent = remaining;
-                    }
-
-                    setTimeout(tick, 1000);
-                };
-
-                setTimeout(tick, 1000);
-
+                clearSpinner(originalHTML);
+                startCooldown(data.seconds_remaining);
+                showToast('Please wait before tapping again.', 'warning');
                 return;
             }
 
             if (data.error === 'shift_ended') {
-                alert('Shift ended. You are marked absent.');
+                showToast('Shift ended. You are marked absent.', 'danger');
                 reset();
                 return;
             }
 
             if (data.tap === 'timed_in') {
-                clearSpinner(timeOutHTML());
                 if (statusEl) statusEl.textContent = 'Timed In';
+                clearSpinner(timeOutHTML());
+                startCooldown(TAP_COOLDOWN);
+                showToast('Timed in successfully!', 'success');
             } else if (data.tap === 'timed_out') {
-                clearSpinner(timeInHTML());
                 if (statusEl) statusEl.textContent = 'Timed Out';
+                clearSpinner(timeInHTML());
+                startCooldown(TAP_COOLDOWN);
+                showToast('Timed out successfully!', 'success');
             } else {
-                // Unexpected or error response — always restore the button so it isn't stuck
                 reset();
                 if (data.error && data.error !== 'too_fast' && data.error !== 'shift_ended') {
                     console.error('Attendance tap error:', data.error);
+                    showToast('Something went wrong. Please try again.', 'danger');
                 }
                 return;
             }
@@ -678,6 +684,7 @@ const handleTimeIn = async () => {
 
         } catch (err) {
             console.error(err);
+            showToast('Something went wrong. Please try again.', 'danger');
             reset();
         } finally {
             isProcessing = false;
@@ -704,7 +711,7 @@ const handleBreak = async () => {
     setLoading(btn);
 
     const reset   = () => { restoreButton(btn); isBreakProcessing = false; };
-    const onError = err => { alert(geoErrorMessage(err)); reset(); };
+    const onError = err => { showToast(geoErrorMessage(err), 'danger'); reset(); };
 
     const submit = async pos => {
         try {
@@ -722,21 +729,9 @@ const handleBreak = async () => {
             const data = await res.json();
 
             if (data.error === 'too_fast') {
-                let remaining = data.seconds_remaining;
-                showSpinner(spinnerCooldownHTML(remaining));
-
-                const tick = () => {
-                    if (remaining <= 0) {
-                        clearSpinner(originalGroupHTML);
-                        isBreakProcessing = false;
-                        return;
-                    }
-                    remaining--;
-                    const el = document.getElementById('cooldown-text');
-                    if (el) el.textContent = remaining;
-                    setTimeout(tick, 1000);
-                };
-                setTimeout(tick, 1000);
+                restoreButton(btn);
+                startCooldown(data.seconds_remaining);
+                showToast('Please wait before tapping again.', 'warning');
                 return;
             }
 
@@ -745,6 +740,8 @@ const handleBreak = async () => {
                 btn.dataset.state = 'out';
                 btn.innerHTML     = `<i class="bi bi-arrow-return-right"></i> Resume Work`;
                 document.dispatchEvent(new CustomEvent('attendance_tapped'));
+                startCooldown(TAP_COOLDOWN);
+                showToast('Break started. Enjoy your break!', 'info');
             }
 
             if (data.tap === 'break_out') {
@@ -752,15 +749,19 @@ const handleBreak = async () => {
                 btn.innerHTML     = `<i class="bi bi-cup-hot-fill"></i> Take Break`;
                 lockBreakBtn(btn);
                 document.dispatchEvent(new CustomEvent('attendance_tapped'));
+                startCooldown(TAP_COOLDOWN);
+                showToast('Break ended. Welcome back!', 'success');
             }
 
             if (data.error === 'not_timed_in') {
                 btn.innerHTML = btn.dataset.originalHtml || `<i class="bi bi-cup-hot-fill"></i> Take Break`;
                 lockBreakBtn(btn);
+                showToast('You are not timed in.', 'warning');
             }
 
         } catch (err) {
             console.error(err);
+            showToast('Something went wrong. Please try again.', 'danger');
             reset();
         } finally {
             isBreakProcessing = false;
