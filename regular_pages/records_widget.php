@@ -456,6 +456,30 @@ function fetchActiveCutoff() {
 const _allCutoffs  = <?= json_encode(array_values($cutoffs)) ?>;
 const _dropdownBtn = document.getElementById('cutoff-dropdown-btn');
 const _dropdownObj = bootstrap.Dropdown.getOrCreateInstance(_dropdownBtn);
+
+// Collect every overflow-clipping ancestor up to <body> so we can
+// temporarily clear them when the menu opens (letting it escape the
+// overflow:hidden / backdrop-filter boundary).
+const _overflowAncestors = [];
+(function () {
+    let el = _dropdownBtn.parentElement;
+    while (el && el.tagName !== 'BODY') {
+        _overflowAncestors.push(el);
+        el = el.parentElement;
+    }
+}());
+_dropdownBtn.addEventListener('show.bs.dropdown', function () {
+    _overflowAncestors.forEach(function (el) {
+        el.dataset.prevOverflow = el.style.overflow;
+        el.style.overflow = 'visible';
+    });
+});
+_dropdownBtn.addEventListener('hidden.bs.dropdown', function () {
+    _overflowAncestors.forEach(function (el) {
+        el.style.overflow = el.dataset.prevOverflow || '';
+        delete el.dataset.prevOverflow;
+    });
+});
 const _panel1      = document.getElementById('rw-panel-1');
 const _panel2      = document.getElementById('rw-panel-2');
 const _periodList  = document.getElementById('rw-period-list');

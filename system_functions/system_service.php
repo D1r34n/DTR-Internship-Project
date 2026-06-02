@@ -487,7 +487,7 @@ function finalizeEmployeeAttendance(PDO $pdo, int $employeeId, int $scheduleId, 
             $stmt = $pdo->prepare("
                 INSERT INTO attendances (employee_id, schedule_id, work_date, scheduled_start, scheduled_end, status, total_work_minutes)
                 VALUES (?, ?, ?, ?, ?, 'absent', 0)
-                ON DUPLICATE KEY UPDATE status = 'absent'
+                ON DUPLICATE KEY UPDATE status = IF(status = 'present', 'present', 'absent')
             ");
             $stmt->execute([$employeeId, $scheduleId, $date, $scheduledStart, $scheduledEnd]);
         }
@@ -536,15 +536,15 @@ function finalizeEmployeeAttendance(PDO $pdo, int $employeeId, int $scheduleId, 
         )
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON DUPLICATE KEY UPDATE
-            actual_time_in     = IF(status = 'incomplete', VALUES(actual_time_in), actual_time_in),
-            actual_time_out    = IF(status = 'incomplete', COALESCE(VALUES(actual_time_out), actual_time_out), actual_time_out),
-            total_work_minutes = IF(status = 'incomplete', VALUES(total_work_minutes), total_work_minutes),
-            late_minutes       = IF(status = 'incomplete', VALUES(late_minutes),       late_minutes),
-            undertime_minutes  = IF(status = 'incomplete', VALUES(undertime_minutes),  undertime_minutes),
-            overtime_minutes   = IF(status = 'incomplete', VALUES(overtime_minutes),   overtime_minutes),
-            break_minutes      = IF(status = 'incomplete', VALUES(break_minutes),      break_minutes),
-            status             = IF(status = 'incomplete', VALUES(status),             status),
-            missed_time_out    = IF(status = 'incomplete', VALUES(missed_time_out),    missed_time_out)
+            actual_time_in     = VALUES(actual_time_in),
+            actual_time_out    = COALESCE(VALUES(actual_time_out), actual_time_out),
+            total_work_minutes = VALUES(total_work_minutes),
+            late_minutes       = VALUES(late_minutes),
+            undertime_minutes  = VALUES(undertime_minutes),
+            overtime_minutes   = IF(overtime_status IN ('approved','rejected'), overtime_minutes, VALUES(overtime_minutes)),
+            break_minutes      = VALUES(break_minutes),
+            status             = VALUES(status),
+            missed_time_out    = VALUES(missed_time_out)
     ");
 
     $stmt->execute([

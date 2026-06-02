@@ -26,11 +26,9 @@ $scopedToEmployee =
     $userRole !== 'employee' &&
     !empty($_GET['employee_id']);
 
-if ($scopedToEmployee) {
-    $employeeId = intval($_GET['employee_id']);
-} else {
-    $employeeId = (int)($_SESSION['user_id'] ?? 0);
-}
+$employeeId = $scopedToEmployee
+    ? intval($_GET['employee_id'])
+    : (int)($_SESSION['user_id'] ?: 0);
 
 date_default_timezone_set('Asia/Manila');
 
@@ -216,11 +214,27 @@ if ($showOT) {
             d.department_name,
             ot.date AS req_date,
             ot.created_at,
-            ot.status
+            ot.status,
+            ot.reason AS ot_reason,
+            a.scheduled_start,
+            a.scheduled_end,
+            a.actual_time_in,
+            a.actual_time_out,
+            a.late_minutes,
+            a.overtime_minutes,
+            a.overtime_status
         FROM overtime_requests ot
         LEFT JOIN employees e ON ot.employee_id = e.id
         LEFT JOIN roles r ON r.id = e.role_id
         LEFT JOIN departments d ON e.department_id = d.id
+        LEFT JOIN attendances a ON a.employee_id = ot.employee_id
+            AND a.work_date = ot.date
+            AND a.id = (
+                SELECT id FROM attendances
+                WHERE employee_id = ot.employee_id AND work_date = ot.date
+                ORDER BY FIELD(status,'present','incomplete','absent'), id DESC
+                LIMIT 1
+            )
         WHERE 1=1
     ";
     $params = [];
@@ -238,6 +252,34 @@ if ($showOT) {
     foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
         $ts      = strtotime($row['created_at']);
         $reqDate = strtotime($row['req_date']);
+
+        // Build structured attendance detail for the modal
+        $otData = null;
+        $schedStart  = $row['scheduled_start'] ?? null;
+        $schedEnd    = $row['scheduled_end']   ?? null;
+        $actualIn    = $row['actual_time_in']  ?? null;
+        $actualOut   = $row['actual_time_out'] ?? null;
+        $lateMin     = (int)($row['late_minutes']     ?? 0);
+        $otMin       = (int)($row['overtime_minutes'] ?? 0);
+        $otStatus    = $row['overtime_status']         ?? null;
+
+        $earlyMin = 0;
+        if ($actualIn && $schedStart && strtotime($actualIn) < strtotime($schedStart)) {
+            $earlyMin = (int)round((strtotime($schedStart) - strtotime($actualIn)) / 60);
+        }
+
+        $otData = [
+            'scheduled_start'  => $schedStart  ? date('h:i A', strtotime($schedStart))  : null,
+            'scheduled_end'    => $schedEnd    ? date('h:i A', strtotime($schedEnd))    : null,
+            'actual_time_in'   => $actualIn    ? date('h:i A', strtotime($actualIn))    : null,
+            'actual_time_out'  => $actualOut   ? date('h:i A', strtotime($actualOut))   : null,
+            'late_minutes'     => $lateMin,
+            'early_minutes'    => $earlyMin,
+            'overtime_minutes' => $otMin,
+            'overtime_status'  => $otStatus,
+            'reason'           => $row['ot_reason'] ?? null,
+        ];
+
         $allRows[] = [
             'log_id'           => $row['log_id'],
             'date'             => date('F d, Y', $reqDate),
@@ -245,6 +287,7 @@ if ($showOT) {
             'log_datetime'     => date('Y-m-d\TH:i', $ts),
             'log_type'         => 'REQUEST_OT',
             'details'          => 'Overtime request submitted',
+            'ot_data'          => $otData,
             'is_within_office' => null,
             'latitude'         => null,
             'longitude'        => null,
@@ -276,12 +319,17 @@ if ($showLeave) {
             r.role_key AS employee_role,
             d.department_name,
             lr.start_date AS req_date,
+            lr.end_date,
+            lr.selected_dates,
+            lr.reason AS leave_reason,
             lr.created_at,
-            lr.status
+            lr.status,
+            lt.name AS leave_type_name
         FROM leave_requests lr
         LEFT JOIN employees e ON lr.employee_id = e.id
         LEFT JOIN roles r ON r.id = e.role_id
         LEFT JOIN departments d ON e.department_id = d.id
+        LEFT JOIN leave_types lt ON lt.id = lr.leave_type_id
         WHERE lr.leave_type_id != (SELECT id FROM leave_types WHERE name = 'ob leave')
     ";
     $params = [];
@@ -299,6 +347,27 @@ if ($showLeave) {
     foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
         $ts      = strtotime($row['created_at']);
         $reqDate = strtotime($row['req_date']);
+
+        $selectedDates = json_decode($row['selected_dates'] ?? '[]', true);
+        if (!is_array($selectedDates) || empty($selectedDates)) {
+            $cur = new DateTime($row['req_date']);
+            $fin = new DateTime($row['end_date'] ?? $row['req_date']);
+            while ($cur <= $fin) {
+                $selectedDates[] = $cur->format('Y-m-d');
+                $cur->modify('+1 day');
+            }
+        }
+        $formattedDates = array_map(
+            fn($d) => date('D, F j, Y', strtotime($d)),
+            $selectedDates
+        );
+
+        $leaveData = [
+            'leave_type' => $row['leave_type_name'] ? ucwords($row['leave_type_name']) : null,
+            'dates'      => $formattedDates,
+            'reason'     => $row['leave_reason'] ?? null,
+        ];
+
         $allRows[] = [
             'log_id'           => $row['log_id'],
             'date'             => date('F d, Y', $reqDate),
@@ -306,6 +375,7 @@ if ($showLeave) {
             'log_datetime'     => date('Y-m-d\TH:i', $ts),
             'log_type'         => 'REQUEST_LEAVE',
             'details'          => 'Leave request submitted',
+            'leave_data'       => $leaveData,
             'is_within_office' => null,
             'latitude'         => null,
             'longitude'        => null,
@@ -337,6 +407,10 @@ if ($showOB) {
             r.role_key AS employee_role,
             d.department_name,
             lr.start_date AS req_date,
+            lr.end_date,
+            lr.selected_dates,
+            lr.client_name,
+            lr.reason AS ob_reason,
             lr.created_at,
             lr.status
         FROM leave_requests lr
@@ -360,6 +434,27 @@ if ($showOB) {
     foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
         $ts      = strtotime($row['created_at']);
         $reqDate = strtotime($row['req_date']);
+
+        $selectedDates = json_decode($row['selected_dates'] ?? '[]', true);
+        if (!is_array($selectedDates) || empty($selectedDates)) {
+            $cur = new DateTime($row['req_date']);
+            $fin = new DateTime($row['end_date'] ?? $row['req_date']);
+            while ($cur <= $fin) {
+                $selectedDates[] = $cur->format('Y-m-d');
+                $cur->modify('+1 day');
+            }
+        }
+        $formattedDates = array_map(
+            fn($d) => date('D, F j, Y', strtotime($d)),
+            $selectedDates
+        );
+
+        $obData = [
+            'dates'       => $formattedDates,
+            'client_name' => $row['client_name'] ?? null,
+            'reason'      => $row['ob_reason']   ?? null,
+        ];
+
         $allRows[] = [
             'log_id'           => $row['log_id'],
             'date'             => date('F d, Y', $reqDate),
@@ -367,6 +462,7 @@ if ($showOB) {
             'log_datetime'     => date('Y-m-d\TH:i', $ts),
             'log_type'         => 'REQUEST_OB',
             'details'          => 'Official business request submitted',
+            'ob_data'          => $obData,
             'is_within_office' => null,
             'latitude'         => null,
             'longitude'        => null,
@@ -398,6 +494,10 @@ if ($showLogEdit) {
             r.role_key AS employee_role,
             d.department_name,
             DATE(lg.log_time) AS req_date,
+            lg.log_type AS original_log_type,
+            ler.original_log_time,
+            ler.proposed_log_time,
+            ler.reason AS edit_reason,
             ler.created_at,
             ler.status,
             ler.requested_by AS initiated_by_id,
@@ -437,6 +537,19 @@ if ($showLogEdit) {
             $editRole = $row['initiator_role'];
         }
 
+        $logTypeLabels = [
+            'IN'        => 'Time In',
+            'OUT'       => 'Time Out',
+            'BREAK_IN'  => 'Break In',
+            'BREAK_OUT' => 'Break Out',
+        ];
+        $logEditData = [
+            'log_type'          => $logTypeLabels[$row['original_log_type']] ?? ($row['original_log_type'] ?? '—'),
+            'original_log_time' => $row['original_log_time'] ? date('M j, Y h:i A', strtotime($row['original_log_time'])) : '—',
+            'proposed_log_time' => $row['proposed_log_time'] ? date('M j, Y h:i A', strtotime($row['proposed_log_time'])) : '—',
+            'reason'            => $row['edit_reason'] ?? null,
+        ];
+
         $allRows[] = [
             'log_id'           => $row['log_id'],
             'date'             => date('F d, Y', $reqDate),
@@ -444,6 +557,7 @@ if ($showLogEdit) {
             'log_datetime'     => date('Y-m-d\TH:i', $ts),
             'log_type'         => 'REQUEST_LOG_EDIT',
             'details'          => 'Requested log edit',
+            'log_edit_data'    => $logEditData,
             'is_within_office' => null,
             'latitude'         => null,
             'longitude'        => null,
@@ -926,6 +1040,228 @@ if ($showDeleteSchedule) {
             'employee_name'    => $info['employee_name'] ?? ($row['employee_name'] ?? '—'),
             'employee_role'    => $row['employee_role']  ?? '—',
             'department_name'  => $row['department_name'] ?? '—',
+            'edit_role'        => ($initiatedById === $currentUserId) ? 'self' : $row['initiator_role'],
+            'edit_status'      => in_array($row['initiator_role'], ['superadmin', 'admin']) ? 'approved' : 'pending',
+            'initiator_name'   => $row['initiator_name'],
+            'photo_path'       => null,
+            '_ts'              => $ts,
+            '_date_ts'         => $reqDate,
+        ];
+    }
+}
+
+/* =========================
+   13. ADD DEPARTMENT
+========================= */
+$showAddDepartment = $type === 'ALL' || $type === 'ADD_DEPARTMENT';
+if ($showAddDepartment) {
+    $sql = "
+        SELECT
+            CONCAT('adddept_', l.id) AS log_id,
+            l.employee_id,
+            CONCAT(e.first_name, ' ', e.last_name) AS employee_name,
+            r.role_key AS employee_role,
+            d.department_name,
+            l.log_time,
+            l.edit_reason,
+            l.edit_requested_by AS initiated_by_id,
+            CONCAT(e_init.first_name, ' ', e_init.last_name) AS initiator_name,
+            r_init.role_key AS initiator_role
+        FROM logs l
+        LEFT JOIN employees e ON l.employee_id = e.id
+        LEFT JOIN roles r ON r.id = e.role_id
+        LEFT JOIN departments d ON e.department_id = d.id
+        LEFT JOIN employees e_init ON l.edit_requested_by = e_init.id
+        LEFT JOIN roles r_init ON r_init.id = e_init.role_id
+        WHERE l.log_type = 'ADD_DEPARTMENT'
+    ";
+    $params = [];
+    applyLogsFilter($sql, $params, 'l.employee_id', $scopedToEmployee, $deptScopeRoles, $deptScopeId, (int)$employeeId, $userRole);
+    if ($startDate !== '') {
+        $sql     .= " AND DATE(l.log_time) >= ?";
+        $params[] = $startDate;
+    }
+    if ($endDate !== '') {
+        $sql     .= " AND DATE(l.log_time) <= ?";
+        $params[] = $endDate;
+    }
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute($params);
+    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $ts            = strtotime($row['log_time']);
+        $reqDate       = strtotime(date('Y-m-d', $ts));
+        $initiatedById = (int)($row['initiated_by_id'] ?? 0);
+        $info          = $row['edit_reason'] ? json_decode($row['edit_reason'], true) : [];
+
+        $deptData = [
+            'department_name' => $info['department_name'] ?? '—',
+            'department_code' => $info['department_code'] ?? '—',
+            'parent_name'     => $info['parent_name']     ?? null,
+        ];
+
+        $allRows[] = [
+            'log_id'           => $row['log_id'],
+            'date'             => date('F d, Y', $ts),
+            'time'             => date('h:i A', $ts),
+            'log_datetime'     => date('Y-m-d\TH:i', $ts),
+            'log_type'         => 'ADD_DEPARTMENT',
+            'details'          => 'Department added',
+            'dept_data'        => $deptData,
+            'is_within_office' => null,
+            'latitude'         => null,
+            'longitude'        => null,
+            'accuracy'         => null,
+            'distance_meters'  => null,
+            'employee_id'      => (int)$row['employee_id'],
+            'employee_name'    => $row['employee_name'],
+            'employee_role'    => $row['employee_role'],
+            'department_name'  => $row['department_name'],
+            'edit_role'        => ($initiatedById === $currentUserId) ? 'self' : $row['initiator_role'],
+            'edit_status'      => in_array($row['initiator_role'], ['superadmin', 'admin']) ? 'approved' : 'pending',
+            'initiator_name'   => $row['initiator_name'],
+            'photo_path'       => null,
+            '_ts'              => $ts,
+            '_date_ts'         => $reqDate,
+        ];
+    }
+}
+
+/* =========================
+   14. EDIT DEPARTMENT
+========================= */
+$showEditDepartment = $type === 'ALL' || $type === 'EDIT_DEPARTMENT';
+if ($showEditDepartment) {
+    $sql = "
+        SELECT
+            CONCAT('editdept_', l.id) AS log_id,
+            l.employee_id,
+            CONCAT(e.first_name, ' ', e.last_name) AS employee_name,
+            r.role_key AS employee_role,
+            d.department_name,
+            l.log_time,
+            l.edit_reason,
+            l.edit_requested_by AS initiated_by_id,
+            CONCAT(e_init.first_name, ' ', e_init.last_name) AS initiator_name,
+            r_init.role_key AS initiator_role
+        FROM logs l
+        LEFT JOIN employees e ON l.employee_id = e.id
+        LEFT JOIN roles r ON r.id = e.role_id
+        LEFT JOIN departments d ON e.department_id = d.id
+        LEFT JOIN employees e_init ON l.edit_requested_by = e_init.id
+        LEFT JOIN roles r_init ON r_init.id = e_init.role_id
+        WHERE l.log_type = 'EDIT_DEPARTMENT'
+    ";
+    $params = [];
+    applyLogsFilter($sql, $params, 'l.employee_id', $scopedToEmployee, $deptScopeRoles, $deptScopeId, (int)$employeeId, $userRole);
+    if ($startDate !== '') {
+        $sql     .= " AND DATE(l.log_time) >= ?";
+        $params[] = $startDate;
+    }
+    if ($endDate !== '') {
+        $sql     .= " AND DATE(l.log_time) <= ?";
+        $params[] = $endDate;
+    }
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute($params);
+    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $ts            = strtotime($row['log_time']);
+        $reqDate       = strtotime(date('Y-m-d', $ts));
+        $initiatedById = (int)($row['initiated_by_id'] ?? 0);
+        $diffData      = $row['edit_reason'] ? json_decode($row['edit_reason'], true) : null;
+
+        $allRows[] = [
+            'log_id'           => $row['log_id'],
+            'date'             => date('F d, Y', $ts),
+            'time'             => date('h:i A', $ts),
+            'log_datetime'     => date('Y-m-d\TH:i', $ts),
+            'log_type'         => 'EDIT_DEPARTMENT',
+            'details'          => 'Department updated',
+            'diff_data'        => ($diffData && is_array($diffData)) ? $diffData : null,
+            'is_within_office' => null,
+            'latitude'         => null,
+            'longitude'        => null,
+            'accuracy'         => null,
+            'distance_meters'  => null,
+            'employee_id'      => (int)$row['employee_id'],
+            'employee_name'    => $row['employee_name'],
+            'employee_role'    => $row['employee_role'],
+            'department_name'  => $row['department_name'],
+            'edit_role'        => ($initiatedById === $currentUserId) ? 'self' : $row['initiator_role'],
+            'edit_status'      => in_array($row['initiator_role'], ['superadmin', 'admin']) ? 'approved' : 'pending',
+            'initiator_name'   => $row['initiator_name'],
+            'photo_path'       => null,
+            '_ts'              => $ts,
+            '_date_ts'         => $reqDate,
+        ];
+    }
+}
+
+/* =========================
+   15. DELETE DEPARTMENT
+========================= */
+$showDeleteDepartment = $type === 'ALL' || $type === 'DELETE_DEPARTMENT';
+if ($showDeleteDepartment) {
+    $sql = "
+        SELECT
+            CONCAT('deldept_', l.id) AS log_id,
+            l.employee_id,
+            CONCAT(e.first_name, ' ', e.last_name) AS employee_name,
+            r.role_key AS employee_role,
+            d.department_name,
+            l.log_time,
+            l.edit_reason,
+            l.edit_requested_by AS initiated_by_id,
+            CONCAT(e_init.first_name, ' ', e_init.last_name) AS initiator_name,
+            r_init.role_key AS initiator_role
+        FROM logs l
+        LEFT JOIN employees e ON l.employee_id = e.id
+        LEFT JOIN roles r ON r.id = e.role_id
+        LEFT JOIN departments d ON e.department_id = d.id
+        LEFT JOIN employees e_init ON l.edit_requested_by = e_init.id
+        LEFT JOIN roles r_init ON r_init.id = e_init.role_id
+        WHERE l.log_type = 'DELETE_DEPARTMENT'
+    ";
+    $params = [];
+    applyLogsFilter($sql, $params, 'l.employee_id', $scopedToEmployee, $deptScopeRoles, $deptScopeId, (int)$employeeId, $userRole);
+    if ($startDate !== '') {
+        $sql     .= " AND DATE(l.log_time) >= ?";
+        $params[] = $startDate;
+    }
+    if ($endDate !== '') {
+        $sql     .= " AND DATE(l.log_time) <= ?";
+        $params[] = $endDate;
+    }
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute($params);
+    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $ts            = strtotime($row['log_time']);
+        $reqDate       = strtotime(date('Y-m-d', $ts));
+        $initiatedById = (int)($row['initiated_by_id'] ?? 0);
+        $info          = $row['edit_reason'] ? json_decode($row['edit_reason'], true) : [];
+
+        $deptData = [
+            'department_name' => $info['department_name'] ?? '—',
+            'department_code' => $info['department_code'] ?? '—',
+            'parent_name'     => $info['parent_name']     ?? null,
+        ];
+
+        $allRows[] = [
+            'log_id'           => $row['log_id'],
+            'date'             => date('F d, Y', $ts),
+            'time'             => date('h:i A', $ts),
+            'log_datetime'     => date('Y-m-d\TH:i', $ts),
+            'log_type'         => 'DELETE_DEPARTMENT',
+            'details'          => 'Department deleted',
+            'dept_data'        => $deptData,
+            'is_within_office' => null,
+            'latitude'         => null,
+            'longitude'        => null,
+            'accuracy'         => null,
+            'distance_meters'  => null,
+            'employee_id'      => (int)$row['employee_id'],
+            'employee_name'    => $row['employee_name'],
+            'employee_role'    => $row['employee_role'],
+            'department_name'  => $row['department_name'],
             'edit_role'        => ($initiatedById === $currentUserId) ? 'self' : $row['initiator_role'],
             'edit_status'      => in_array($row['initiator_role'], ['superadmin', 'admin']) ? 'approved' : 'pending',
             'initiator_name'   => $row['initiator_name'],
