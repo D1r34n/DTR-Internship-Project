@@ -1,0 +1,192 @@
+/* ============================================================
+   SCHEDULE EDIT REQUEST MODAL — schedule_edit_modal.css
+   ============================================================ */
+
+/* ---------- Step 1 — Schedule List ---------- */
+
+.se-step-hint {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.85rem;
+    margin-bottom: 1rem;
+}
+
+#seScheduleList {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+}
+
+.se-loading {
+    color: #aaa;
+    text-align: center;
+    padding: 1.5rem 0;
+}
+
+/* ---------- Schedule Row ---------- */
+
+.se-schedule-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+}
+
+.se-schedule-row.can-edit {
+    border-color: rgba(151, 190, 65, 0.2);
+}
+
+.se-schedule-row.can-edit:hover {
+    background: rgba(151, 190, 65, 0.07);
+    border-color: rgba(151, 190, 65, 0.4);
+}
+
+.se-schedule-row.has-pending {
+    cursor: default;
+    opacity: 0.6;
+    border-color: rgba(240, 173, 78, 0.25);
+}
+
+.se-schedule-row-date {
+    min-width: 6.5rem;
+    flex-shrink: 0;
+}
+
+.se-date-main {
+    font-size: 0.875rem;
+    color: rgba(255, 255, 255, 0.85);
+    font-weight: 500;
+}
+
+.se-date-sub {
+    font-size: 0.72rem;
+    color: #aaa;
+}
+
+.se-schedule-row-times {
+    flex: 1;
+    font-size: 0.82rem;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.se-schedule-row-badge {
+    font-size: 0.72rem;
+    padding: 0.2rem 0.55rem;
+    border-radius: 20px;
+    white-space: nowrap;
+}
+
+.se-badge-pending {
+    background: rgba(240, 173, 78, 0.15);
+    color: #f0ad4e;
+    border: 1px solid rgba(240, 173, 78, 0.3);
+}
+
+.se-badge-edit {
+    background: rgba(151, 190, 65, 0.15);
+    color: #97be41;
+    border: 1px solid rgba(151, 190, 65, 0.3);
+    font-size: 0.7rem;
+}
+
+/* ---------- Step 2 — Edit Form ---------- */
+
+.se-summary-card {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    padding: 1rem;
+    margin-bottom: 1.25rem;
+}
+
+.se-summary-label {
+    color: #aaa;
+    font-size: 0.8rem;
+    margin: 0 0 0.25rem;
+}
+
+.se-summary-value {
+    color: #fff;
+    font-weight: 600;
+    margin: 0;
+    font-size: 0.9rem;
+}
+
+.se-summary-value.highlight {
+    color: #97be41;
+}
+
+.se-field-label {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.85rem;
+    font-weight: 600;
+    display: block;
+    margin-bottom: 0.4rem;
+}
+
+/* ---------- Footer ---------- */
+
+#seFooterStep1 {
+    display: flex;
+    width: 100%;
+    justify-content: flex-end;
+}
+
+#seFooterStep2 {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+}
+
+/* ============================================================
+   LIGHT THEME OVERRIDES
+   ============================================================ */
+
+[data-theme="light"] .se-step-hint {
+    color: var(--text-muted);
+}
+
+[data-theme="light"] .se-schedule-row {
+    border-color: rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="light"] .se-schedule-row.can-edit {
+    border-color: rgba(80, 130, 20, 0.2);
+}
+
+[data-theme="light"] .se-schedule-row.can-edit:hover {
+    background: rgba(80, 130, 20, 0.05);
+    border-color: rgba(80, 130, 20, 0.35);
+}
+
+[data-theme="light"] .se-date-main {
+    color: var(--text-light);
+}
+
+[data-theme="light"] .se-date-sub {
+    color: var(--text-muted);
+}
+
+[data-theme="light"] .se-schedule-row-times {
+    color: var(--text-muted);
+}
+
+[data-theme="light"] .se-summary-card {
+    background: rgba(0, 0, 0, 0.04);
+    border-color: rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="light"] .se-summary-label {
+    color: var(--text-muted);
+}
+
+[data-theme="light"] .se-summary-value {
+    color: var(--text-lightest);
+}
+
+[data-theme="light"] .se-field-label {
+    color: var(--text-muted);
+}

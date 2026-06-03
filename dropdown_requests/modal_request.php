@@ -139,6 +139,71 @@
   </div>
 </div>
 
+<!-- SCHEDULE EDIT REQUEST MODAL -->
+<div class="modal fade" id="scheduleEditModal" tabindex="-1" aria-labelledby="scheduleEditModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <h5 class="modal-title" id="scheduleEditModalLabel">Request Schedule Edit</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+
+      <div class="modal-body">
+
+        <!-- Step 1: Schedule selection -->
+        <div id="seStep1">
+          <p class="se-step-hint">Select a schedule to request an edit for:</p>
+          <div id="seScheduleList">
+            <p class="se-loading">Loading...</p>
+          </div>
+        </div>
+
+        <!-- Step 2: Edit form -->
+        <div id="seStep2" style="display:none;">
+          <div class="se-summary-card">
+            <p class="se-summary-label">Selected Date</p>
+            <p class="se-summary-value" id="seSelectedDate"></p>
+            <p class="se-summary-label mt-2">Current Schedule</p>
+            <p class="se-summary-value highlight" id="seCurrentTimes"></p>
+          </div>
+
+          <div class="mb-3">
+            <label class="se-field-label form-label">Requested Time In</label>
+            <input type="time" id="seNewTimeIn" class="form-control">
+          </div>
+
+          <div class="mb-3">
+            <label class="se-field-label form-label">Requested Time Out</label>
+            <input type="time" id="seNewTimeOut" class="form-control">
+          </div>
+
+          <div class="mb-1">
+            <label class="se-field-label form-label">Reason</label>
+            <textarea id="seReason" class="form-control" rows="3" placeholder="Enter reason for schedule change..."></textarea>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="modal-footer" id="seModalFooter">
+        <div id="seFooterStep1">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        </div>
+        <div id="seFooterStep2" style="display:none;">
+          <button type="button" class="btn btn-outline-secondary" onclick="seBackToStep1()">
+            <i class="bi bi-arrow-left"></i> Back
+          </button>
+          <button type="button" id="seSubmitBtn" class="btn btn-primary" onclick="submitScheduleEditRequest()">
+            <i class="bi bi-check-circle-fill"></i> Submit Request
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
 <!-- LOG EDIT REQUEST MODAL -->
 <div class="modal fade" id="logEditModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
@@ -1117,6 +1182,169 @@
       btn.className = 'btn btn-neutral w-100';
       btn.innerHTML = '<i class="bi bi-send"></i> Submit Edit';
     }
+  }
+
+  // ===== SCHEDULE EDIT REQUEST MODAL =====
+
+  let seSelectedScheduleId   = null;
+  let seSelectedScheduleDate = null;
+
+  function openScheduleEditModal() {
+    seSelectedScheduleId   = null;
+    seSelectedScheduleDate = null;
+
+    document.getElementById('seStep1').style.display       = 'block';
+    document.getElementById('seStep2').style.display       = 'none';
+    document.getElementById('seFooterStep1').style.display = 'flex';
+    document.getElementById('seFooterStep2').style.display = 'none';
+
+    loadSeSchedules();
+  }
+
+  document.getElementById('scheduleEditModal').addEventListener('hidden.bs.modal', function () {
+    seSelectedScheduleId   = null;
+    seSelectedScheduleDate = null;
+    document.getElementById('seNewTimeIn').value  = '';
+    document.getElementById('seNewTimeOut').value = '';
+    document.getElementById('seReason').value     = '';
+    const btn = document.getElementById('seSubmitBtn');
+    btn.disabled  = false;
+    btn.innerHTML = '<i class="bi bi-check-circle-fill"></i> Submit Request';
+  });
+
+  function loadSeSchedules() {
+    const list = document.getElementById('seScheduleList');
+    list.innerHTML = '<p class="se-loading">Loading...</p>';
+
+    fetch('/DTR-Internship-Project/dropdown_requests/get_schedule_for_edit.php')
+      .then(r => r.json())
+      .then(schedules => {
+        if (!schedules.length) {
+          list.innerHTML = '<p class="se-loading">No upcoming work schedules found.</p>';
+          return;
+        }
+
+        list.innerHTML = '';
+
+        schedules.forEach(s => {
+          const hasPending  = s.edit_status === 'pending';
+          const startFmt    = s.scheduled_start ? fmtTimeFromDT(s.scheduled_start) : '—';
+          const endFmt      = s.scheduled_end   ? fmtTimeFromDT(s.scheduled_end)   : '—';
+          const dateObj     = new Date(s.schedule_date + 'T00:00:00');
+          const dayName     = dateObj.toLocaleDateString('en-US', { weekday: 'short' });
+          const dateFull    = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+          const row = document.createElement('div');
+          row.className = 'se-schedule-row ' + (hasPending ? 'has-pending' : 'can-edit');
+
+          row.innerHTML = `
+            <div class="se-schedule-row-date">
+              <div class="se-date-main">${dateFull}</div>
+              <div class="se-date-sub">${dayName}</div>
+            </div>
+            <div class="se-schedule-row-times">${startFmt} – ${endFmt}</div>
+            ${hasPending
+              ? '<span class="se-schedule-row-badge se-badge-pending"><i class="bi bi-hourglass-split me-1"></i>Pending</span>'
+              : '<span class="se-schedule-row-badge se-badge-edit"><i class="bi bi-pencil me-1"></i>Edit</span>'
+            }
+          `;
+
+          if (!hasPending) {
+            row.addEventListener('click', () => {
+              seGoToStep2(s.id, s.schedule_date, startFmt, endFmt);
+            });
+          }
+
+          list.appendChild(row);
+        });
+      })
+      .catch(() => showToast('Failed to load schedules.', 'danger'));
+  }
+
+  function fmtTimeFromDT(dtStr) {
+    const d = new Date(dtStr);
+    return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+  }
+
+  function seGoToStep2(id, date, startFmt, endFmt) {
+    seSelectedScheduleId   = id;
+    seSelectedScheduleDate = date;
+
+    document.getElementById('seSelectedDate').textContent = modalFmtDate(date);
+    document.getElementById('seCurrentTimes').textContent = startFmt + ' – ' + endFmt;
+    document.getElementById('seNewTimeIn').value  = '';
+    document.getElementById('seNewTimeOut').value = '';
+    document.getElementById('seReason').value     = '';
+
+    document.getElementById('seStep1').style.display       = 'none';
+    document.getElementById('seStep2').style.display       = 'block';
+    document.getElementById('seFooterStep1').style.display = 'none';
+    document.getElementById('seFooterStep2').style.display = 'flex';
+  }
+
+  function seBackToStep1() {
+    seSelectedScheduleId   = null;
+    seSelectedScheduleDate = null;
+
+    document.getElementById('seStep1').style.display       = 'block';
+    document.getElementById('seStep2').style.display       = 'none';
+    document.getElementById('seFooterStep1').style.display = 'flex';
+    document.getElementById('seFooterStep2').style.display = 'none';
+  }
+
+  function submitScheduleEditRequest() {
+    const newTimeIn  = document.getElementById('seNewTimeIn').value.trim();
+    const newTimeOut = document.getElementById('seNewTimeOut').value.trim();
+    const reason     = document.getElementById('seReason').value.trim();
+
+    if (!seSelectedScheduleId) {
+      showToast('No schedule selected.', 'danger');
+      return;
+    }
+    if (!newTimeIn) {
+      showToast('Please enter a requested time in.', 'danger');
+      return;
+    }
+    if (!newTimeOut) {
+      showToast('Please enter a requested time out.', 'danger');
+      return;
+    }
+    if (!reason) {
+      showToast('Please enter a reason for the schedule change.', 'danger');
+      return;
+    }
+
+    const btn = document.getElementById('seSubmitBtn');
+    btn.disabled  = true;
+    btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Submitting...';
+
+    const fd = new FormData();
+    fd.append('schedule_id', seSelectedScheduleId);
+    fd.append('new_time_in',  newTimeIn);
+    fd.append('new_time_out', newTimeOut);
+    fd.append('reason',       reason);
+
+    fetch('/DTR-Internship-Project/dropdown_requests/request_schedule_edit.php', {
+      method: 'POST',
+      body: fd,
+    })
+      .then(r => r.json())
+      .then(data => {
+        if (data.success) {
+          showToast(data.message, 'success');
+          const modal = bootstrap.Modal.getInstance(document.getElementById('scheduleEditModal'));
+          setTimeout(() => modal && modal.hide(), 1800);
+        } else {
+          showToast(data.message, 'danger');
+          btn.disabled  = false;
+          btn.innerHTML = '<i class="bi bi-check-circle-fill"></i> Submit Request';
+        }
+      })
+      .catch(() => {
+        showToast('Something went wrong. Please try again.', 'danger');
+        btn.disabled  = false;
+        btn.innerHTML = '<i class="bi bi-check-circle-fill"></i> Submit Request';
+      });
   }
 
   async function submitLeEdit() {

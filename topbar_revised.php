@@ -126,6 +126,7 @@ if (isset($_SESSION['last_attendance_tap'])) {
 <link rel="stylesheet" href="../dropdown_requests/leave_modal.css">
 <link rel="stylesheet" href="../dropdown_requests/ob_modal.css">
 <link rel="stylesheet" href="../dropdown_requests/log_edit_modal.css">
+<link rel="stylesheet" href="../dropdown_requests/schedule_edit_modal.css">
 <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
 
@@ -276,6 +277,17 @@ if (isset($_SESSION['last_attendance_tap'])) {
                         onclick="openLogEditModal(); return false;">
                             <i class="bi bi-pencil-square"></i>
                             Request Log Edit
+                        </a>
+                    </li>
+
+                    <li>
+                        <a class="dropdown-item"
+                        href="#"
+                        data-bs-toggle="modal"
+                        data-bs-target="#scheduleEditModal"
+                        onclick="openScheduleEditModal(); return false;">
+                            <i class="bi bi-calendar-week"></i>
+                            Request Schedule Edit
                         </a>
                     </li>
 
