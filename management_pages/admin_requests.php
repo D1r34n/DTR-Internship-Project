@@ -175,93 +175,7 @@ $totalOvertime = $pendingOvertime + $approvedOvertime + $rejectedOvertime;
 $totalOB       = $pendingOB + $approvedOB + $rejectedOB;
 $totalLogEdit  = $pendingLogEdit + $approvedLogEdit + $rejectedLogEdit;
 
-// ---- GET LEAVE REQUESTS (non-OB) ----
-if ($deptScoped) {
-    $s = $pdo->prepare("SELECT lr.*, lt.label AS leave_type, CONCAT(e.first_name, ' ', e.last_name) AS employee_name FROM leave_requests lr JOIN leave_types lt ON lt.id = lr.leave_type_id JOIN employees e ON lr.employee_id = e.id WHERE lt.name != 'ob leave' AND e.department_id = ? ORDER BY lr.created_at DESC");
-    $s->execute([$myDeptId]);
-    $leaveRequests = $s->fetchAll(PDO::FETCH_ASSOC);
-} else {
-    $leaveRequests = $pdo->query("SELECT lr.*, lt.label AS leave_type, CONCAT(e.first_name, ' ', e.last_name) AS employee_name FROM leave_requests lr JOIN leave_types lt ON lt.id = lr.leave_type_id JOIN employees e ON lr.employee_id = e.id WHERE lt.name != 'ob leave' ORDER BY lr.created_at DESC")->fetchAll(PDO::FETCH_ASSOC);
-}
-
-// ---- GET OVERTIME REQUESTS ----
-if ($deptScoped) {
-    $s = $pdo->prepare("SELECT or2.*, CONCAT(e.first_name, ' ', e.last_name) AS employee_name FROM overtime_requests or2 JOIN employees e ON or2.employee_id = e.id WHERE e.department_id = ? ORDER BY or2.created_at DESC");
-    $s->execute([$myDeptId]);
-    $overtimeRequests = $s->fetchAll(PDO::FETCH_ASSOC);
-} else {
-    $overtimeRequests = $pdo->query("SELECT or2.*, CONCAT(e.first_name, ' ', e.last_name) AS employee_name FROM overtime_requests or2 JOIN employees e ON or2.employee_id = e.id ORDER BY or2.created_at DESC")->fetchAll(PDO::FETCH_ASSOC);
-}
-
-// ---- GET OB REQUESTS ----
-if ($deptScoped) {
-    $s = $pdo->prepare("SELECT lr.*, lt.label AS leave_type, CONCAT(e.first_name, ' ', e.last_name) AS employee_name FROM leave_requests lr JOIN leave_types lt ON lt.id = lr.leave_type_id JOIN employees e ON lr.employee_id = e.id WHERE lt.name = 'ob leave' AND e.department_id = ? ORDER BY lr.created_at DESC");
-    $s->execute([$myDeptId]);
-    $obRequests = $s->fetchAll(PDO::FETCH_ASSOC);
-} else {
-    $obRequests = $pdo->query("SELECT lr.*, lt.label AS leave_type, CONCAT(e.first_name, ' ', e.last_name) AS employee_name FROM leave_requests lr JOIN leave_types lt ON lt.id = lr.leave_type_id JOIN employees e ON lr.employee_id = e.id WHERE lt.name = 'ob leave' ORDER BY lr.created_at DESC")->fetchAll(PDO::FETCH_ASSOC);
-}
-
-// ---- GET LOG EDIT REQUESTS ----
-$leBaseSql = "
-    SELECT ler.id, ler.employee_id, lg.log_type, ler.status,
-           ler.reason, ler.original_log_time, ler.proposed_log_time,
-           ler.requested_by AS requested_by_id,
-           DATE(lg.log_time) AS work_date, ler.created_at,
-           CONCAT(e.first_name, ' ', e.last_name) AS employee_name,
-           CONCAT(r.first_name, ' ', r.last_name) AS requested_by_name,
-           rr.role_key AS requested_by_role
-    FROM log_edit_requests ler
-    JOIN logs lg ON ler.log_id = lg.id
-    JOIN employees e ON ler.employee_id = e.id
-    LEFT JOIN employees r ON ler.requested_by = r.id
-    LEFT JOIN roles rr ON r.role_id = rr.id";
-if ($deptScoped) {
-    $s = $pdo->prepare($leBaseSql . " WHERE e.department_id = ? ORDER BY ler.created_at DESC");
-    $s->execute([$myDeptId]);
-    $logEditRequests = $s->fetchAll(PDO::FETCH_ASSOC);
-} else {
-    $logEditRequests = $pdo->query($leBaseSql . " ORDER BY ler.created_at DESC")->fetchAll(PDO::FETCH_ASSOC);
-}
-
-// ---- HELPER FUNCTIONS ----
-function getRolePill(?string $name, ?string $role): string {
-    if (!$name) return '<span style="color:rgba(255,255,255,0.3)">—</span>';
-    $icon  = $role === 'superadmin' ? 'bi-shield-fill' : 'bi-person-fill';
-    $class = $role ? 'empRoleBadge empRole-' . htmlspecialchars($role) : '';
-    return '<span class="pill ' . $class . '"><i class="bi ' . $icon . '"></i> ' . htmlspecialchars($name) . '</span>';
-}
-
-function getStatusBadge($status) {
-    $badges = [
-        'pending'  => '<span class="badge status-pending">Pending</span>',
-        'approved' => '<span class="badge status-approved">Approved</span>',
-        'rejected' => '<span class="badge status-rejected">Rejected</span>',
-    ];
-    return $badges[$status] ?? '<span class="badge">Unknown</span>';
-}
-
-function getActionButtons($type, $id, $status) {
-    if ($status === 'pending') {
-        $approveUrl = 'admin_requests.php?action=approve&type=' . $type . '&id=' . $id;
-        $rejectUrl  = 'admin_requests.php?action=reject&type='  . $type . '&id=' . $id;
-        return '
-            <button type="button" class="btn btn-sm btn-success confirm-action-btn"
-                data-url="' . $approveUrl . '"
-                data-label="Approve"
-                data-bs-toggle="modal" data-bs-target="#confirmActionModal">
-                <i class="bi bi-check-lg"></i> Approve
-            </button>
-            <button type="button" class="btn btn-sm btn-danger confirm-action-btn"
-                data-url="' . $rejectUrl . '"
-                data-label="Reject"
-                data-bs-toggle="modal" data-bs-target="#confirmActionModal">
-                <i class="bi bi-x-lg"></i> Reject
-            </button>
-        ';
-    }
-    return '<span class="no-action-text">No actions</span>';
-}
+// Row data is now loaded client-side via admin_requests_api.php
 ?>
 
 <!doctype html>
@@ -460,62 +374,12 @@ function getActionButtons($type, $id, $status) {
                                 <th>Employee</th><th>Type</th><th>Details</th>
                                 <th>Reason</th><th>Status</th><th>Actions</th>
                             </tr></thead>
-                            <tbody>
-                                <?php foreach ($leaveRequests as $row): ?>
-                                    <tr>
-                                        <td><?= htmlspecialchars($row['employee_name']) ?></td>
-                                        <td><span class="badge request-leave"><?= ucfirst($row['leave_type']) ?></span></td>
-                                        <td><?= date('M d', strtotime($row['start_date'])) ?> - <?= date('M d, Y', strtotime($row['end_date'])) ?></td>
-                                        <td class="reasonCol"><?= htmlspecialchars($row['reason']) ?></td>
-                                        <td><?= getStatusBadge($row['status']) ?></td>
-                                        <td class="actionsCol"><?= getActionButtons('leave', $row['id'], $row['status']) ?></td>
-                                    </tr>
-                                <?php endforeach; ?>
-                                <?php foreach ($overtimeRequests as $row): ?>
-                                    <tr>
-                                        <td><?= htmlspecialchars($row['employee_name']) ?></td>
-                                        <td><span class="badge request-overtime">Overtime</span></td>
-                                        <td><?= date('M d, Y', strtotime($row['date'])) ?> | <?= date('h:i A', strtotime($row['time_in'])) ?> - <?= date('h:i A', strtotime($row['time_out'])) ?></td>
-                                        <td class="reasonCol"><?= htmlspecialchars($row['reason']) ?></td>
-                                        <td><?= getStatusBadge($row['status']) ?></td>
-                                        <td class="actionsCol"><?= getActionButtons('overtime', $row['id'], $row['status']) ?></td>
-                                    </tr>
-                                <?php endforeach; ?>
-                                <?php foreach ($obRequests as $row): ?>
-                                    <tr>
-                                        <td><?= htmlspecialchars($row['employee_name']) ?></td>
-                                        <td><span class="badge request-official-business">Official Business</span></td>
-                                        <td><?= date('M d, Y', strtotime($row['start_date'])) ?> | <?= htmlspecialchars($row['client_name'] ?? '') ?></td>
-                                        <td class="reasonCol"><?= htmlspecialchars($row['reason']) ?></td>
-                                        <td><?= getStatusBadge($row['status']) ?></td>
-                                        <td class="actionsCol"><?= getActionButtons('leave', $row['id'], $row['status']) ?></td>
-                                    </tr>
-                                <?php endforeach; ?>
-                                <?php foreach ($logEditRequests as $row): ?>
-                                    <tr>
-                                        <td><?= htmlspecialchars($row['employee_name']) ?></td>
-                                        <td><span class="badge request-log-edit">Log Edit</span></td>
-                                        <td><?= date('M d, Y', strtotime($row['work_date'])) ?> |
-                                            <?php
-                                            $origTime = $row['original_log_time'] ? date('h:i A', strtotime($row['original_log_time'])) : '—';
-                                            $propTime = $row['proposed_log_time']  ? date('h:i A', strtotime($row['proposed_log_time']))  : '—';
-                                            $typeLabel = match($row['log_type']) { 'IN' => 'In', 'OUT' => 'Out', 'BREAK_IN' => 'Break In', 'BREAK_OUT' => 'Break Out', default => $row['log_type'] };
-                                            ?>
-                                            <?= $typeLabel ?>: <?= $origTime ?> &rarr; <?= $propTime ?>
-                                        </td>
-                                        <td class="reasonCol"><?= htmlspecialchars($row['reason']) ?></td>
-                                        <td><?= getStatusBadge($row['status']) ?></td>
-                                        <td class="actionsCol"><?= getActionButtons('log_edit', $row['id'], $row['status']) ?></td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            </tbody>
+                            <tbody id="tbody-all"></tbody>
                         </table>
-                        <?php if (empty($leaveRequests) && empty($overtimeRequests) && empty($obRequests) && empty($logEditRequests)): ?>
-                        <div class="table-empty">
+                        <div class="table-empty" id="empty-all" style="display:none;">
                             <i class="bi bi-calendar2-x-fill"></i>
                             <div class="text-meta">No requests found.</div>
                         </div>
-                        <?php endif; ?>
                     </div>
                     <div id="pag-all" class="reqPagination"></div>
                 </div>
@@ -528,26 +392,12 @@ function getActionButtons($type, $id, $status) {
                                 <th>Employee</th><th>Leave Type</th><th>Start</th>
                                 <th>End</th><th>Reason</th><th>Status</th><th>Actions</th>
                             </tr></thead>
-                            <tbody>
-                                <?php foreach ($leaveRequests as $row): ?>
-                                    <tr>
-                                        <td><?= htmlspecialchars($row['employee_name']) ?></td>
-                                        <td><span class="badge request-leave"><?= ucfirst($row['leave_type']) ?></span></td>
-                                        <td><?= date('M d, Y', strtotime($row['start_date'])) ?></td>
-                                        <td><?= date('M d, Y', strtotime($row['end_date'])) ?></td>
-                                        <td class="reasonCol"><?= htmlspecialchars($row['reason']) ?></td>
-                                        <td><?= getStatusBadge($row['status']) ?></td>
-                                        <td class="actionsCol"><?= getActionButtons('leave', $row['id'], $row['status']) ?></td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            </tbody>
+                            <tbody id="tbody-leave"></tbody>
                         </table>
-                        <?php if (empty($leaveRequests)): ?>
-                        <div class="table-empty">
+                        <div class="table-empty" id="empty-leave" style="display:none;">
                             <i class="bi bi-calendar2-x-fill"></i>
                             <div class="text-meta">No leave requests found.</div>
                         </div>
-                        <?php endif; ?>
                     </div>
                     <div id="pag-leave" class="reqPagination"></div>
                 </div>
@@ -560,26 +410,12 @@ function getActionButtons($type, $id, $status) {
                                 <th>Employee</th><th>Date</th><th>Time In</th>
                                 <th>Time Out</th><th>Reason</th><th>Status</th><th>Actions</th>
                             </tr></thead>
-                            <tbody>
-                                <?php foreach ($overtimeRequests as $row): ?>
-                                    <tr>
-                                        <td><?= htmlspecialchars($row['employee_name']) ?></td>
-                                        <td><?= date('M d, Y', strtotime($row['date'])) ?></td>
-                                        <td><?= date('h:i A', strtotime($row['time_in'])) ?></td>
-                                        <td><?= date('h:i A', strtotime($row['time_out'])) ?></td>
-                                        <td class="reasonCol"><?= htmlspecialchars($row['reason']) ?></td>
-                                        <td><?= getStatusBadge($row['status']) ?></td>
-                                        <td class="actionsCol"><?= getActionButtons('overtime', $row['id'], $row['status']) ?></td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            </tbody>
+                            <tbody id="tbody-overtime"></tbody>
                         </table>
-                        <?php if (empty($overtimeRequests)): ?>
-                        <div class="table-empty">
+                        <div class="table-empty" id="empty-overtime" style="display:none;">
                             <i class="bi bi-calendar2-x-fill"></i>
                             <div class="text-meta">No overtime requests found.</div>
                         </div>
-                        <?php endif; ?>
                     </div>
                     <div id="pag-overtime" class="reqPagination"></div>
                 </div>
@@ -592,33 +428,12 @@ function getActionButtons($type, $id, $status) {
                                 <th>Employee</th><th>Date</th><th>Type</th><th>Current Log</th>
                                 <th>Correction</th><th>Reason</th><th>Requested By</th><th>Status</th><th>Actions</th>
                             </tr></thead>
-                            <tbody>
-                                <?php foreach ($logEditRequests as $row): ?>
-                                    <tr>
-                                        <td><?= htmlspecialchars($row['employee_name']) ?></td>
-                                        <td><?= date('M d, Y', strtotime($row['work_date'])) ?></td>
-                                        <td>
-                                            <?php
-                                            $typeLabels = ['IN' => 'Time In', 'OUT' => 'Time Out', 'BREAK_IN' => 'Break In', 'BREAK_OUT' => 'Break Out'];
-                                            echo htmlspecialchars($typeLabels[$row['log_type']] ?? $row['log_type']);
-                                            ?>
-                                        </td>
-                                        <td><?= $row['original_log_time'] ? date('h:i A', strtotime($row['original_log_time'])) : '—' ?></td>
-                                        <td><?= $row['proposed_log_time'] ? date('h:i A', strtotime($row['proposed_log_time'])) : '—' ?></td>
-                                        <td class="reasonCol"><?= htmlspecialchars($row['reason']) ?></td>
-                                        <td><?= ((int)($row['requested_by_id'] ?? 0) === (int)$_SESSION['user_id']) ? '<span class="pill"><i class="bi bi-person-fill"></i> You</span>' : getRolePill($row['requested_by_name'] ?? null, $row['requested_by_role'] ?? null) ?></td>
-                                        <td><?= getStatusBadge($row['status']) ?></td>
-                                        <td class="actionsCol"><?= getActionButtons('log_edit', $row['id'], $row['status']) ?></td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            </tbody>
+                            <tbody id="tbody-log-edit"></tbody>
                         </table>
-                        <?php if (empty($logEditRequests)): ?>
-                        <div class="table-empty">
+                        <div class="table-empty" id="empty-log-edit" style="display:none;">
                             <i class="bi bi-calendar2-x-fill"></i>
                             <div class="text-meta">No log edit requests found.</div>
                         </div>
-                        <?php endif; ?>
                     </div>
                     <div id="pag-log-edit" class="reqPagination"></div>
                 </div>
@@ -631,25 +446,12 @@ function getActionButtons($type, $id, $status) {
                                 <th>Employee</th><th>Date</th><th>Client Name</th>
                                 <th>Reason</th><th>Status</th><th>Actions</th>
                             </tr></thead>
-                            <tbody>
-                                <?php foreach ($obRequests as $row): ?>
-                                    <tr>
-                                        <td><?= htmlspecialchars($row['employee_name']) ?></td>
-                                        <td><?= date('M d, Y', strtotime($row['start_date'])) ?></td>
-                                        <td><?= htmlspecialchars($row['client_name']) ?></td>
-                                        <td class="reasonCol"><?= htmlspecialchars($row['reason']) ?></td>
-                                        <td><?= getStatusBadge($row['status']) ?></td>
-                                        <td class="actionsCol"><?= getActionButtons('leave', $row['id'], $row['status']) ?></td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            </tbody>
+                            <tbody id="tbody-ob"></tbody>
                         </table>
-                        <?php if (empty($obRequests)): ?>
-                        <div class="table-empty">
+                        <div class="table-empty" id="empty-ob" style="display:none;">
                             <i class="bi bi-calendar2-x-fill"></i>
                             <div class="text-meta">No OB requests found.</div>
                         </div>
-                        <?php endif; ?>
                     </div>
                     <div id="pag-ob" class="reqPagination"></div>
                 </div>
@@ -694,179 +496,250 @@ function getActionButtons($type, $id, $status) {
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
 
-        // ---- PAGINATION STATE ----
-        const TAB_IDS  = ['all', 'leave', 'overtime', 'ob', 'log-edit'];
-        const tabState = {};
-        TAB_IDS.forEach(id => { tabState[id] = { page: 1 }; });
-        let REQ_ROWS_PER_PAGE = parseInt(localStorage.getItem('reqRowsPerPage') || '10');
-        const reqLastTotals   = {};
+        const MY_USER_ID      = <?= (int)$_SESSION['user_id'] ?>;
+        const TAB_IDS         = ['all', 'leave', 'overtime', 'ob', 'log-edit'];
+        const TAB_TO_TYPE     = { all: 'all', leave: 'leave', overtime: 'overtime', ob: 'ob', 'log-edit': 'log_edit' };
+        const tabPages        = {};
+        TAB_IDS.forEach(id => { tabPages[id] = 1; });
+        let REQ_ROWS_PER_PAGE = parseInt(localStorage.getItem('reqRowsPerPage') || '25');
+        let searchTimeout     = null;
 
-        document.addEventListener('DOMContentLoaded', () => {
-            TAB_IDS.forEach(id => applyFiltersReq(id));
+        /* ── Helpers ─────────────────────────────────────────── */
+        function esc(v) {
+            return v == null ? '' : String(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+        }
+        function fmtDate(s) {
+            if (!s) return '—';
+            const [y,m,d] = s.slice(0,10).split('-').map(Number);
+            return new Date(y,m-1,d).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+        }
+        function fmtTime(s) {
+            if (!s) return '—';
+            // TIME-only value from MySQL e.g. "08:00:00"
+            if (/^\d{1,2}:\d{2}(:\d{2})?$/.test(s.trim())) {
+                const [h, m] = s.split(':').map(Number);
+                return new Date(1970, 0, 1, h, m)
+                    .toLocaleTimeString('en-US', {hour:'numeric', minute:'2-digit', hour12:true});
+            }
+            const d = new Date(s.includes('T') ? s : s.replace(' ','T'));
+            return d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true});
+        }
+        function statusBadge(s) {
+            return s === 'pending'  ? '<span class="badge status-pending">Pending</span>'
+                 : s === 'approved' ? '<span class="badge status-approved">Approved</span>'
+                 : s === 'rejected' ? '<span class="badge status-rejected">Rejected</span>'
+                 : '<span class="badge">Unknown</span>';
+        }
+        function actionBtns(type, id, status) {
+            if (status !== 'pending') return '<span class="text-muted">No actions</span>';
+            return `<button class="btn btn-sm btn-success confirm-action-btn"
+                        data-url="admin_requests.php?action=approve&type=${type}&id=${id}"
+                        data-label="Approve" data-bs-toggle="modal" data-bs-target="#confirmActionModal">
+                        <i class="bi bi-check-lg"></i> Approve</button>
+                    <button class="btn btn-sm btn-danger confirm-action-btn"
+                        data-url="admin_requests.php?action=reject&type=${type}&id=${id}"
+                        data-label="Reject" data-bs-toggle="modal" data-bs-target="#confirmActionModal">
+                        <i class="bi bi-x-lg"></i> Reject</button>`;
+        }
+        function rolePill(name, role, requestedById) {
+            if (parseInt(requestedById) === MY_USER_ID) return '<span class="pill"><i class="bi bi-person-fill"></i> You</span>';
+            if (!name) return '<span style="color:rgba(255,255,255,0.3)">—</span>';
+            const icon = role === 'superadmin' ? 'bi-shield-fill' : 'bi-person-fill';
+            const cls  = role ? `empRoleBadge empRole-${esc(role)}` : '';
+            return `<span class="pill ${cls}"><i class="bi ${icon}"></i> ${esc(name)}</span>`;
+        }
 
-            document.getElementById('search-input')
-                .addEventListener('input', () => {
-                    const tabId = getActiveTabId();
-                    tabState[tabId].page = 1;
-                    applyFiltersReq(tabId);
+        /* ── Row renderers ────────────────────────────────────── */
+        const LOG_TYPE_LABELS = {IN:'Time In',OUT:'Time Out',BREAK_IN:'Break In',BREAK_OUT:'Break Out'};
+        const TYPE_BADGE = {
+            leave:    '<span class="badge request-leave">Leave</span>',
+            overtime: '<span class="badge request-overtime">Overtime</span>',
+            ob:       '<span class="badge request-official-business">Official Business</span>',
+            log_edit: '<span class="badge request-log-edit">Log Edit</span>',
+        };
+
+        function renderRow(tabId, r) {
+            switch (tabId) {
+                case 'all': {
+                    const at = r.req_type === 'ob' ? 'leave' : r.req_type;
+                    let details = '';
+                    if (r.req_type === 'leave')    details = `${fmtDate(r.start_date)} – ${fmtDate(r.end_date)}`;
+                    if (r.req_type === 'overtime')  details = `${fmtDate(r.date)} | ${fmtTime(r.time_in)} – ${fmtTime(r.time_out)}`;
+                    if (r.req_type === 'ob')        details = `${fmtDate(r.start_date)} | ${esc(r.client_name)}`;
+                    if (r.req_type === 'log_edit')  details = `${fmtDate(r.work_date)} | ${LOG_TYPE_LABELS[r.log_type]||r.log_type}: ${fmtTime(r.original_log_time)} &rarr; ${fmtTime(r.proposed_log_time)}`;
+                    return `<tr><td>${esc(r.employee_name)}</td><td>${TYPE_BADGE[r.req_type]||''}</td><td>${details}</td>
+                        <td class="reasonCol">${esc(r.reason)}</td><td>${statusBadge(r.status)}</td>
+                        <td class="actionsCol">${actionBtns(at, r.id, r.status)}</td></tr>`;
+                }
+                case 'leave':
+                    return `<tr><td>${esc(r.employee_name)}</td>
+                        <td><span class="badge request-leave">${esc(r.leave_type)}</span></td>
+                        <td>${fmtDate(r.start_date)}</td><td>${fmtDate(r.end_date)}</td>
+                        <td class="reasonCol">${esc(r.reason)}</td><td>${statusBadge(r.status)}</td>
+                        <td class="actionsCol">${actionBtns('leave', r.id, r.status)}</td></tr>`;
+                case 'overtime':
+                    return `<tr><td>${esc(r.employee_name)}</td><td>${fmtDate(r.date)}</td>
+                        <td>${fmtTime(r.time_in)}</td><td>${fmtTime(r.time_out)}</td>
+                        <td class="reasonCol">${esc(r.reason)}</td><td>${statusBadge(r.status)}</td>
+                        <td class="actionsCol">${actionBtns('overtime', r.id, r.status)}</td></tr>`;
+                case 'ob':
+                    return `<tr><td>${esc(r.employee_name)}</td><td>${fmtDate(r.start_date)}</td>
+                        <td>${esc(r.client_name)}</td>
+                        <td class="reasonCol">${esc(r.reason)}</td><td>${statusBadge(r.status)}</td>
+                        <td class="actionsCol">${actionBtns('leave', r.id, r.status)}</td></tr>`;
+                case 'log-edit':
+                    return `<tr><td>${esc(r.employee_name)}</td><td>${fmtDate(r.work_date)}</td>
+                        <td>${esc(LOG_TYPE_LABELS[r.log_type]||r.log_type)}</td>
+                        <td>${fmtTime(r.original_log_time)}</td><td>${fmtTime(r.proposed_log_time)}</td>
+                        <td class="reasonCol">${esc(r.reason)}</td>
+                        <td>${rolePill(r.requested_by_name, r.requested_by_role, r.requested_by_id)}</td>
+                        <td>${statusBadge(r.status)}</td>
+                        <td class="actionsCol">${actionBtns('log_edit', r.id, r.status)}</td></tr>`;
+            }
+            return '';
+        }
+
+        /* ── Fetch ────────────────────────────────────────────── */
+        function fetchRequests(tabId, page) {
+            tabPages[tabId] = page || tabPages[tabId] || 1;
+            const search = document.getElementById('search-input').value.trim();
+            const params = new URLSearchParams({
+                type: TAB_TO_TYPE[tabId], page: tabPages[tabId],
+                limit: REQ_ROWS_PER_PAGE, search
+            });
+            const tbody   = document.getElementById('tbody-' + tabId);
+            const emptyEl = document.getElementById('empty-' + tabId);
+            const pagEl   = document.getElementById('pag-'   + tabId);
+
+            tbody.innerHTML = `<tr class="emptyRow"><td colspan="10" class="text-center py-3">
+                <div class="spinner-border spinner-border-sm text-secondary"></div></td></tr>`;
+            if (emptyEl) emptyEl.style.display = 'none';
+
+            fetch('admin_requests_api.php?' + params)
+                .then(r => r.json())
+                .then(res => {
+                    if (res.error) throw new Error(res.error);
+                    const rows  = res.data  || [];
+                    const total = res.total || 0;
+                    tbody.innerHTML = '';
+                    if (!rows.length) {
+                        if (emptyEl) emptyEl.style.display = '';
+                        if (pagEl)   pagEl.innerHTML = '';
+                        return;
+                    }
+                    tbody.innerHTML = rows.map(r => renderRow(tabId, r)).join('');
+                    const totalPages = Math.max(1, Math.ceil(total / REQ_ROWS_PER_PAGE));
+                    renderReqPagination(tabId, total, totalPages, (tabPages[tabId] - 1) * REQ_ROWS_PER_PAGE);
+                })
+                .catch(err => {
+                    tbody.innerHTML = `<tr class="emptyRow"><td colspan="10" class="text-center py-3 text-meta">${esc(err.message||'Failed to load.')}</td></tr>`;
                 });
+        }
+
+        /* ── Pagination render ────────────────────────────────── */
+        function renderReqPagination(tabId, total, totalPages, start) {
+            const pag = document.getElementById('pag-' + tabId);
+            if (!pag) return;
+            if (total === 0) { pag.innerHTML = ''; return; }
+            const cur = tabPages[tabId];
+            const end = Math.min(start + REQ_ROWS_PER_PAGE, total);
+            let pageLinks = `<li class="page-item${cur===1?' disabled':''}">
+                <button class="page-link" onclick="changeReqPage('${tabId}',${cur-1})">&laquo;</button></li>`;
+            getReqPageNums(cur, totalPages).forEach(p => {
+                pageLinks += p === '...'
+                    ? `<li class="page-item disabled"><span class="page-link text-meta">...</span></li>`
+                    : `<li class="page-item${p===cur?' active':''}"><button class="page-link" onclick="changeReqPage('${tabId}',${p})">${p}</button></li>`;
+            });
+            pageLinks += `<li class="page-item${cur===totalPages?' disabled':''}">
+                <button class="page-link" onclick="changeReqPage('${tabId}',${cur+1})">&raquo;</button></li>`;
+            pag.innerHTML = `
+                <div class="d-flex flex-sm-nowrap flex-wrap align-items-center justify-content-between gap-3 w-100">
+                    <div class="small text-meta text-nowrap flex-sm-fill w-sm-100 text-sm-start text-center order-1">
+                        Showing ${start+1} to ${end} of ${total} entries</div>
+                    <div class="d-flex align-items-center justify-content-center flex-wrap gap-3 flex-sm-fill w-sm-100 order-2">
+                        <nav><ul class="pagination pagination-sm mb-0">${pageLinks}</ul></nav>
+                        ${totalPages>1?`<div class="d-flex align-items-center gap-1 pag-jump-wrapper">
+                            <small class="text-meta text-nowrap">Go to:</small>
+                            <input type="number" class="form-control form-control-sm text-center px-1 pag-jump-input pag-jump-req"
+                                data-tab="${tabId}" min="1" max="${totalPages}" value="${cur}"
+                                style="width:45px;height:28px;" placeholder="Go"></div>`:''}
+                    </div>
+                    <div class="d-flex align-items-center justify-content-sm-end justify-content-center gap-2 flex-sm-fill w-sm-100 order-3">
+                        <small class="text-meta text-nowrap">Rows Per Page:</small>
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">${REQ_ROWS_PER_PAGE} rows</button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                ${[10,25,50,100].map(n=>`<li><button class="dropdown-item" onclick="changeReqRows(${n})">${n} rows</button></li>`).join('')}
+                            </ul>
+                        </div>
+                    </div>
+                </div>`;
+        }
+
+        function getReqPageNums(cur, tot) {
+            if (tot <= 7) return Array.from({length:tot},(_,i)=>i+1);
+            if (cur <= 4) return [1,2,3,4,5,'...',tot];
+            if (cur >= tot-3) return [1,'...',tot-4,tot-3,tot-2,tot-1,tot];
+            return [1,'...',cur-1,cur,cur+1,'...',tot];
+        }
+        function changeReqPage(tabId, n) { if (n >= 1) fetchRequests(tabId, n); }
+        function changeReqRows(value) {
+            REQ_ROWS_PER_PAGE = parseInt(value);
+            localStorage.setItem('reqRowsPerPage', value);
+            TAB_IDS.forEach(id => fetchRequests(id, 1));
+        }
+        document.addEventListener('keydown', e => {
+            if (e.key !== 'Enter' || !e.target.classList.contains('pag-jump-req')) return;
+            e.preventDefault();
+            const max = parseInt(e.target.max)||1;
+            let t = parseInt(e.target.value);
+            if (isNaN(t)||t<1) t=1; if (t>max) t=max;
+            e.target.value = t;
+            changeReqPage(e.target.dataset.tab, t);
+        });
+
+        /* ── Init ─────────────────────────────────────────────── */
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchRequests('all', 1);
+
+            document.getElementById('search-input').addEventListener('input', () => {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => fetchRequests(getActiveTabId(), 1), 400);
+            });
 
             document.querySelectorAll('#reqTab .nav-link').forEach(btn => {
                 btn.addEventListener('shown.bs.tab', e => {
-                    const tabId = e.target.dataset.bsTarget.replace('#', '');
-                    applyFiltersReq(tabId);
+                    const tabId = e.target.dataset.bsTarget.replace('#','');
+                    fetchRequests(tabId, tabPages[tabId] || 1);
                 });
             });
         });
 
         function getActiveTabId() {
-            const active = document.querySelector('#reqTab .nav-link.active');
-            return active?.dataset?.bsTarget?.replace('#', '') ?? 'all';
-        }
-
-        function searchTable() {
-            const tabId = getActiveTabId();
-            tabState[tabId].page = 1;
-            applyFiltersReq(tabId);
-        }
-
-        function applyFiltersReq(tabId) {
-            const q    = document.getElementById('search-input').value.toLowerCase();
-            const rows = Array.from(document.querySelectorAll('#' + tabId + ' tbody tr'));
-
-            const filtered   = rows.filter(r => r.textContent.toLowerCase().includes(q));
-            const total      = filtered.length;
-            reqLastTotals[tabId] = total;
-            const totalPages = Math.max(1, Math.ceil(total / REQ_ROWS_PER_PAGE));
-
-            if (tabState[tabId].page > totalPages) tabState[tabId].page = 1;
-
-            const start    = (tabState[tabId].page - 1) * REQ_ROWS_PER_PAGE;
-            const pageRows = filtered.slice(start, start + REQ_ROWS_PER_PAGE);
-
-            rows.forEach(r => r.style.display = 'none');
-            pageRows.forEach(r => r.style.display = '');
-
-            renderReqPagination(tabId, total, totalPages, start);
-        }
-
-        function renderReqPagination(tabId, total, totalPages, start) {
-            const pag = document.getElementById('pag-' + tabId);
-            if (!pag) return;
-            if (total === 0) { pag.innerHTML = ''; return; }
-
-            const cur     = tabState[tabId].page;
-            const end     = Math.min(start + REQ_ROWS_PER_PAGE, total);
-            const showing = `${start + 1}–${end} of ${total}`;
-
-            let html = `
-                <div class="row align-items-center g-2 w-100">
-                    <div class="col-md d-flex align-items-center gap-2">
-                        <span class="text-meta">Showing ${showing}</span>
-                    </div>
-                    <div class="col-md d-flex justify-content-center">
-                        <ul class="pagination pagination-sm mb-0">
-                            <li class="page-item${cur === 1 ? ' disabled' : ''}">
-                                <button class="page-link" onclick="changeReqPage('${tabId}',${cur - 1})"><i class="bi bi-chevron-left"></i></button>
-                            </li>
-            `;
-
-            getReqPageNums(cur, totalPages).forEach(p => {
-                if (p === '...') {
-                    html += `<li class="page-item disabled"><span class="page-link">…</span></li>`;
-                } else {
-                    html += `<li class="page-item${p === cur ? ' active' : ''}">
-                        <button class="page-link" onclick="changeReqPage('${tabId}',${p})">${p}</button>
-                    </li>`;
-                }
-            });
-
-            html += `
-                            <li class="page-item${cur === totalPages ? ' disabled' : ''}">
-                                <button class="page-link" onclick="changeReqPage('${tabId}',${cur + 1})"><i class="bi bi-chevron-right"></i></button>
-                            </li>
-                        </ul>
-                    </div>
-                    <div class="col-md d-flex justify-content-md-end align-items-center gap-2">
-                        <span class="text-meta text-nowrap">Rows per page</span>
-                        <div class="dropdown">
-                            <button class="btn btn-sm dropdown-toggle" data-bs-toggle="dropdown">
-                                <span>${REQ_ROWS_PER_PAGE} Rows</span>
-                            </button>
-                            <ul class="dropdown-menu">
-                                <li><button class="dropdown-item" onclick="changeReqRows(10)">10</button></li>
-                                <li><button class="dropdown-item" onclick="changeReqRows(25)">25</button></li>
-                                <li><button class="dropdown-item" onclick="changeReqRows(50)">50</button></li>
-                                <li><button class="dropdown-item" onclick="changeReqRows(100)">100</button></li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-            `;
-
-            pag.innerHTML = html;
-        }
-
-        function getReqPageNums(cur, tot) {
-            if (tot <= 7) return Array.from({ length: tot }, (_, i) => i + 1);
-            if (cur <= 4) return [1, 2, 3, 4, 5, '...', tot];
-            if (cur >= tot - 3) return [1, '...', tot - 4, tot - 3, tot - 2, tot - 1, tot];
-            return [1, '...', cur - 1, cur, cur + 1, '...', tot];
-        }
-
-        function changeReqPage(tabId, n) {
-            const totalPages = Math.max(1, Math.ceil((reqLastTotals[tabId] || 0) / REQ_ROWS_PER_PAGE));
-            if (n < 1 || n > totalPages) return;
-            tabState[tabId].page = n;
-            applyFiltersReq(tabId);
-        }
-
-        function changeReqRows(value) {
-            REQ_ROWS_PER_PAGE = parseInt(value);
-            localStorage.setItem('reqRowsPerPage', value);
-            TAB_IDS.forEach(id => { tabState[id].page = 1; });
-            applyFiltersReq(getActiveTabId());
+            return document.querySelector('#reqTab .nav-link.active')?.dataset?.bsTarget?.replace('#','') ?? 'all';
         }
 
         // ---- CLOSE MODAL ----
-        function closeModal() {
-            document.getElementById('modalOverlay').style.display = 'none';
-        }
+        function closeModal() { document.getElementById('modalOverlay').style.display = 'none'; }
 
         // ---- CONFIRM ACTION MODAL ----
         document.addEventListener('click', e => {
             const btn = e.target.closest('.confirm-action-btn');
             if (!btn) return;
-            const label      = btn.dataset.label;
-            const url        = btn.dataset.url;
-            const isApprove  = label === 'Approve';
-
+            const label     = btn.dataset.label;
+            const isApprove = label === 'Approve';
             document.getElementById('confirmActionTitle').textContent = label + ' Request';
             document.getElementById('confirmActionBody').textContent  = 'Are you sure you want to ' + label.toLowerCase() + ' this request?';
-
-            const confirmBtn = document.getElementById('confirmActionBtn');
-            confirmBtn.href      = url;
-            confirmBtn.className = 'btn ' + (isApprove ? 'btn-success' : 'btn-danger');
-            confirmBtn.textContent = label + ' Request';
+            const cb = document.getElementById('confirmActionBtn');
+            cb.href = btn.dataset.url;
+            cb.className = 'btn ' + (isApprove ? 'btn-success' : 'btn-danger');
+            cb.textContent = label + ' Request';
         });
 
         <?php if ($success || $error): ?>
         showToast(<?= json_encode($success ?: $error) ?>, '<?= $success ? 'success' : 'danger' ?>');
         <?php endif; ?>
 
-        // ---- HORIZONTAL MOUSE WHEEL SCROLL ----
-        document.querySelectorAll('.table-scroll-wrapper').forEach(wrapper => {
-            let nearHScrollbar = false;
-            wrapper.addEventListener('mousemove', e => {
-                nearHScrollbar = e.clientY > wrapper.getBoundingClientRect().bottom - 16;
-            });
-            wrapper.addEventListener('mouseleave', () => { nearHScrollbar = false; });
-            wrapper.addEventListener('wheel', e => {
-                if (!nearHScrollbar) return;
-                e.preventDefault();
-                wrapper.scrollLeft += e.deltaY + e.deltaX;
-            }, { passive: false });
-        });
     </script>
 </body>
 </html>

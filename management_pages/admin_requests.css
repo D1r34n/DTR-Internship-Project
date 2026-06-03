@@ -71,7 +71,7 @@ body {
     flex: 1;
     min-height: 0;
     overflow: hidden;
-    padding: 0 0 1rem 1rem;
+    padding: 0;
 }
 
 /* Filter Wrapper */
@@ -79,7 +79,7 @@ body {
     display: flex;
     align-items: center;
     gap: 1rem;
-    padding: 1rem 1rem 1rem 0rem;
+    padding: 1rem;
     flex-wrap: wrap;
 }
 
@@ -276,7 +276,7 @@ body {
     flex-direction: column;
     height: 100%;
     overflow: hidden;
-    padding: 1rem 0 1rem 1rem;
+    padding: 0;
 }
 
 /* ============================================================
@@ -287,13 +287,6 @@ body {
     flex: 1;
     min-height: 0;
     overflow: auto;
-    padding-right: 1rem;
-    scrollbar-gutter: stable;
-}
-
-.requests-card-body > .table-scroll-wrapper {
-    scrollbar-gutter: stable;
-    padding-right: 1rem;
 }
 
 /* Let content drive column widths — mirrors logs_widget table rules */
@@ -302,13 +295,6 @@ body {
     width: max-content;
     min-width: 100%;
     table-layout: auto;
-}
-
-
-.reqTabContent tbody tr:hover td,
-.tableScroll tbody tr:hover td {
-    background-color: rgba(151, 190, 65, 0.08);
-    color: #fff;
 }
 
 /* ============================================================
@@ -354,15 +340,6 @@ body {
 .rejectBtn:hover {
     background-color: #b02a37 !important;
     color: white !important;
-}
-
-/* ============================================================
-   NO ACTIONS TEXT
-   ============================================================ */
-.no-action-text {
-    font-family: 'Poppins', sans-serif;
-    font-size: 0.8rem;
-    color: rgba(255, 255, 255, 0.5);
 }
 
 /* ============================================================
@@ -600,7 +577,7 @@ body {
 
 .reqPagination {
     flex-shrink: 0;
-    padding: 0.5rem 1rem 0.25rem 0;
+    padding: 0.5rem 1rem 0.25rem 1rem;
 }
 
 /* ============================================================

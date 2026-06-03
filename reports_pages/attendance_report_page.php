@@ -59,7 +59,7 @@ require_once 'cutoff_helpers.php';
                     <span id="ar-btn-label"><?= htmlspecialchars($defaultLabel ?? '') ?></span>
                 </button>
 
-                <ul class="dropdown-menu" style="min-width:280px; z-index:1055;">
+                <ul class="dropdown-menu" style="min-width:280px;">
                     <div id="ar-panel-1">
                         <?php include 'cutoff_dropdown_items.php'; ?>
 
@@ -124,7 +124,7 @@ require_once 'cutoff_helpers.php';
                         <i class="bi bi-funnel"></i>
                         <span id="status-label">All Status</span>
                     </button>
-                    <ul class="dropdown-menu" style="z-index:1055;">
+                    <ul class="dropdown-menu">
                         <li><a class="dropdown-item status-opt" href="#" data-value="ALL">All Status</a></li>
                         <li><a class="dropdown-item status-opt" href="#" data-value="present">Present</a></li>
                         <li><a class="dropdown-item status-opt" href="#" data-value="absent">Absent</a></li>
@@ -138,7 +138,7 @@ require_once 'cutoff_helpers.php';
                             id="export-btn" data-bs-toggle="dropdown" aria-expanded="false" disabled>
                         <i class="bi bi-download"></i> Export
                     </button>
-                    <ul class="dropdown-menu dropdown-menu-end" style="z-index:1055;">
+                    <ul class="dropdown-menu dropdown-menu-end">
                         <li>
                             <a class="dropdown-item" href="#" onclick="exportAllCSV(); return false;">
                                 <i class="bi bi-filetype-csv me-2"></i> Export CSV
@@ -169,8 +169,8 @@ require_once 'cutoff_helpers.php';
                 <table class="table table-hover mb-0" id="reportTable">
                     <thead id="report-thead">
                         <tr>
-                            <th>Employee ID</th>
-                            <th class="sortable" data-sort="name">Name <i class="bi bi-filter sortIcon" id="sort-name"></i></th>
+                            <th class="sortable" data-sort="employee_id">Employee ID <i class="bi bi-filter sortIcon"></i></th>
+                            <th class="sortable" data-sort="name">Name <i class="bi bi-filter sortIcon" id="sort-name"></i><span class="col-group-toggle ms-3" id="dept-role-toggle" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Toggle Dept &amp; Role columns"><i class="bi bi-chevron-right"></i></span></th>
                             <th>Department</th>
                             <th>Role</th>
                             <th class="sortable" data-sort="date">Date <i class="bi bi-filter sortIcon" id="sort-date"></i></th>
@@ -224,7 +224,7 @@ require_once 'cutoff_helpers.php';
                                 data-bs-toggle="dropdown" aria-expanded="false">
                             10 rows
                         </button>
-                        <ul class="dropdown-menu dropdown-menu-end" style="z-index:1055;">
+                        <ul class="dropdown-menu dropdown-menu-end">
                             <li><a class="dropdown-item row-limit-opt" href="#" data-value="10">10 rows</a></li>
                             <li><a class="dropdown-item row-limit-opt" href="#" data-value="25">25 rows</a></li>
                             <li><a class="dropdown-item row-limit-opt" href="#" data-value="50">50 rows</a></li>
@@ -237,7 +237,7 @@ require_once 'cutoff_helpers.php';
     </div>
 </div>
 
-<?php include '../toast.php'; ?>
+<?php include '../system_functions/show_toast.php'; ?>
 
 <script>
 /* ── Shared State ───────────────────────────────────────── */
@@ -572,17 +572,31 @@ function getExportData() {
     return fetch(`reports_api.php?${params.toString()}`).then(r => r.json());
 }
 
+function _fmtMins(mins) {
+    if (mins == null) return '—';
+    mins = parseInt(mins, 10);
+    if (isNaN(mins)) return '—';
+    if (mins === 0) return '0m';
+    const h = Math.floor(mins / 60), m = mins % 60;
+    if (h > 0 && m > 0) return `${h}h ${m}m`;
+    return h > 0 ? `${h}h` : `${m}m`;
+}
+
 function exportAllCSV() {
     getExportData().then(resData => {
         const dataRows = resData.data || [];
         if (!dataRows.length) { showToast('No records to export.', 'warning'); return; }
 
-        const headers = ['Employee ID','Name','Department','Role','Date','Time In','Time Out','Status'];
-        const escCSV  = v => '"' + String(v || '').replace(/"/g,'""').replace(/\n/g,' ').trim() + '"';
+        const headers = ['Employee ID','Name','Department','Role','Date','Time In','Time Out','Regular Hours','Tardiness','Leave','Undertime','Overtime','Status'];
+        const escCSV  = v => '"' + String(v ?? '—').replace(/"/g,'""').replace(/\n/g,' ').trim() + '"';
         const rows    = dataRows.map(r => [
-            escCSV(r.employee_id), escCSV(r.employee_name), escCSV(r.department_name),
-            escCSV(r.role_name),   escCSV(parseDateString(r.work_date)),
+            escCSV(r.employee_id),              escCSV(r.employee_name),
+            escCSV(r.department_name),          escCSV(r.role_name),
+            escCSV(parseDateString(r.work_date)),
             escCSV(parseTimeString(r.actual_time_in)), escCSV(parseTimeString(r.actual_time_out)),
+            escCSV(_fmtMins(r.total_work_minutes)), escCSV(_fmtMins(r.late_minutes)),
+            escCSV('—'),
+            escCSV(_fmtMins(r.undertime_minutes)), escCSV(_fmtMins(r.overtime_minutes)),
             escCSV(r.status)
         ].join(','));
 
@@ -612,20 +626,45 @@ async function exportAllPDF() {
     doc.setFontSize(14);
     doc.text(`Attendance Report for ${fmtD(_selStart)} to ${fmtD(_selEnd)}`, 14, 12);
 
-    const head = [['Employee ID','Name','Department','Role','Date','Time In','Time Out','Status']];
+    const head = [['Employee ID','Name','Department','Role','Date','Time In','Time Out','Reg. Hours','Tardiness','Leave','Undertime','Overtime','Status']];
     const body = dataRows.map(r => [
-        r.employee_id || '—', r.employee_name || '—', r.department_name || '—', r.role_name || '—',
-        parseDateString(r.work_date), parseTimeString(r.actual_time_in),
-        parseTimeString(r.actual_time_out), r.status ? r.status.toUpperCase() : '—'
+        r.employee_id || '—',       r.employee_name || '—',
+        r.department_name || '—',   r.role_name || '—',
+        parseDateString(r.work_date),
+        parseTimeString(r.actual_time_in), parseTimeString(r.actual_time_out),
+        _fmtMins(r.total_work_minutes),   _fmtMins(r.late_minutes),
+        '—',
+        _fmtMins(r.undertime_minutes),    _fmtMins(r.overtime_minutes),
+        r.status ? r.status.toUpperCase() : '—'
     ]);
-    doc.autoTable({ head, body, startY: 20, styles: { fontSize: 9, cellPadding: 3 }, headStyles: { fillColor: [151, 190, 65] } });
+    doc.autoTable({ head, body, startY: 20, styles: { fontSize: 7, cellPadding: 2 }, headStyles: { fillColor: [151, 190, 65] } });
     doc.save(`attendance_report_${_selStart}_to_${_selEnd}.pdf`);
 }
+
+/* ── Collapsible columns ────────────────────────────────── */
+const AR_COL_LS_KEY = 'ar_col_collapsed';
+
+function loadCollapsedCols() {
+    try {
+        if (JSON.parse(localStorage.getItem(AR_COL_LS_KEY) || 'false'))
+            document.getElementById('reportTable').classList.add('cols-dept-role-collapsed');
+    } catch (_) {}
+}
+
+document.getElementById('dept-role-toggle').addEventListener('click', e => {
+    e.stopPropagation();
+    bootstrap.Tooltip.getInstance(e.currentTarget)?.hide();
+    document.getElementById('reportTable').classList.toggle('cols-dept-role-collapsed');
+    localStorage.setItem(AR_COL_LS_KEY,
+        document.getElementById('reportTable').classList.contains('cols-dept-role-collapsed'));
+});
 
 /* ── Init ───────────────────────────────────────────────── */
 document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('rowsPerPageBtn').textContent = `${rowsPerPage} rows`;
+    loadCollapsedCols();
+    bootstrap.Tooltip.getOrCreateInstance(document.getElementById('dept-role-toggle'), { trigger: 'hover' });
 
     try {
         const saved = localStorage.getItem('ar_cutoff');

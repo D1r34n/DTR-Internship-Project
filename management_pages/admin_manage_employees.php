@@ -451,9 +451,15 @@ $initialDeptFilter = isset($_GET['dept']) ? (int)$_GET['dept'] : 0;
                                     data-dept="<?= htmlspecialchars($emp['department_id'] ?? '') ?>"
                                     data-dept-name="<?= htmlspecialchars($emp['department_name'] ?? '') ?>">
 
-                                    <td><?= htmlspecialchars($emp['employee_id'] ?? '—') ?></td>
                                     <td>
-                                        <div class="d-flex align-items-center gap-2">
+                                        <div class="copy-cell">
+                                            <button class="copy-btn" data-copy="<?= htmlspecialchars($emp['employee_id'] ?? '') ?>" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Copy ID"><i class="bi bi-copy"></i></button>
+                                            <?= htmlspecialchars($emp['employee_id'] ?? '—') ?>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="copy-cell gap-2">
+                                            <button class="copy-btn" data-copy="<?= htmlspecialchars($emp['name']) ?>" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Copy name"><i class="bi bi-copy"></i></button>
                                             <?php
                                             $avatar = !empty($emp['profile_image'])
                                                 ? $emp['profile_image']
@@ -922,7 +928,32 @@ $initialDeptFilter = isset($_GET['dept']) ? (int)$_GET['dept'] : 0;
             allRows = Array.from(document.querySelectorAll('#empList .empRow'));
             applyFilters();
 
+            document.querySelectorAll('.copy-btn').forEach(el =>
+                bootstrap.Tooltip.getOrCreateInstance(el, { trigger: 'hover focus' })
+            );
+
             document.getElementById('empList').addEventListener('click', e => {
+                const copyBtn = e.target.closest('.copy-btn');
+                if (copyBtn) {
+                    e.stopPropagation();
+                    const tip = bootstrap.Tooltip.getInstance(copyBtn);
+                    navigator.clipboard.writeText(copyBtn.dataset.copy).then(() => {
+                        const icon = copyBtn.querySelector('i');
+                        icon.className = 'bi bi-check-lg';
+                        if (tip) {
+                            tip.setContent({ '.tooltip-inner': 'Copied!' });
+                            tip.show();
+                        }
+                        setTimeout(() => {
+                            icon.className = 'bi bi-copy';
+                            if (tip) {
+                                tip.setContent({ '.tooltip-inner': copyBtn.dataset.bsTitle });
+                                tip.hide();
+                            }
+                        }, 1200);
+                    });
+                    return;
+                }
                 if (e.target.closest('a, button')) return;
                 const row = e.target.closest('.empRow');
                 if (row) window.location.href = `admin_employee_view.php?employee_id=${row.dataset.employeeId}`;

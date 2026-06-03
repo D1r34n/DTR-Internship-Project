@@ -98,7 +98,7 @@ $logsEmployeeId ??= null;
                         id="logsRowsPerPageBtn" data-bs-toggle="dropdown" aria-expanded="false">
                     25 rows
                 </button>
-                <ul class="dropdown-menu dropdown-menu-end" style="z-index:1056;">
+                <ul class="dropdown-menu dropdown-menu-end">
                     <li><a class="dropdown-item logs-row-limit-opt" href="#" data-value="10">10 rows</a></li>
                     <li><a class="dropdown-item logs-row-limit-opt" href="#" data-value="25">25 rows</a></li>
                     <li><a class="dropdown-item logs-row-limit-opt" href="#" data-value="50">50 rows</a></li>
@@ -189,7 +189,7 @@ const COLS = {
         { label: 'Location',     sort: 'location' },
         { label: 'Requested By'                   },
         { label: 'Edit Status'                    },
-        { label: ''                               },
+        { label: 'Action'                               },
     ],
 };
 
@@ -646,28 +646,6 @@ document.addEventListener('click', e => {
     }
 });
 
-/* =========================
-   MOUSE WHEEL SCROLL
-========================= */
-(function () {
-    const wrapper = tbody.closest('.table-scroll-wrapper');
-    if (!wrapper) return;
-
-    let nearHScrollbar = false;
-
-    wrapper.addEventListener('mousemove', e => {
-        const rect = wrapper.getBoundingClientRect();
-        nearHScrollbar = e.clientY > rect.bottom - 16;
-    });
-
-    wrapper.addEventListener('mouseleave', () => { nearHScrollbar = false; });
-
-    wrapper.addEventListener('wheel', e => {
-        if (!nearHScrollbar) return;
-        e.preventDefault();
-        wrapper.scrollLeft += e.deltaY + e.deltaX;
-    }, { passive: false });
-})();
 
 /* =========================
    LOG DETAIL PILL — CLICK TO MODAL

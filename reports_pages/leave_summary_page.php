@@ -49,7 +49,7 @@ $currentYear = (int)date('Y');
                 <button class="btn btn-success dropdown-toggle" type="button" id="yearSelectBtn" data-bs-toggle="dropdown" aria-expanded="false">
                     <i class="bi bi-calendar-event me-1"></i> <span id="selectedYearLabel">Selected Year: <?= $currentYear ?></span>
                 </button>
-                <ul class="dropdown-menu" aria-labelledby="yearSelectBtn" style="z-index: 1055;">
+                <ul class="dropdown-menu" aria-labelledby="yearSelectBtn">
                     <?php for($y = $currentYear; $y >= $currentYear - 4; $y--): ?>
                         <li><a class="dropdown-item year-opt" href="#" data-value="<?= $y ?>"><?= $y ?></a></li>
                     <?php endfor; ?>
@@ -67,7 +67,7 @@ $currentYear = (int)date('Y');
                     <button class="btn btn-outline-light dropdown-toggle" type="button" id="export-btn" data-bs-toggle="dropdown" aria-expanded="false" disabled>
                         <i class="bi bi-download"></i> Export
                     </button>
-                    <ul class="dropdown-menu dropdown-menu-end" style="z-index: 1055;">
+                    <ul class="dropdown-menu dropdown-menu-end">
                         <li><a class="dropdown-item" href="#" onclick="exportAllCSV(); return false;"><i class="bi bi-filetype-csv me-2"></i> Export CSV</a></li>
                         <li><a class="dropdown-item" href="#" onclick="exportAllPDF(); return false;"><i class="bi bi-filetype-pdf me-2"></i> Export PDF</a></li>
                     </ul>
@@ -91,7 +91,7 @@ $currentYear = (int)date('Y');
                     <thead id="reportTableHead">
                         <tr>
                             <th class="sortable" data-sort="employee_id">Employee ID <i class="sortIcon bi bi-filter"></i></th>
-                            <th class="sortable" data-sort="name">Name <i class="sortIcon bi bi-filter"></i></th>
+                            <th class="sortable" data-sort="name">Name <i class="sortIcon bi bi-filter"></i><span class="col-group-toggle ms-3" id="dept-role-toggle" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Toggle Dept &amp; Role columns"><i class="bi bi-chevron-right"></i></span></th>
                             <th class="sortable" data-sort="department">Department <i class="sortIcon bi bi-filter"></i></th>
                             <th class="sortable" data-sort="role">Role <i class="sortIcon bi bi-filter"></i></th>
                             <th class="sortable" data-sort="entitled_vl">Entitled VL <i class="sortIcon bi bi-filter"></i></th>
@@ -137,7 +137,7 @@ $currentYear = (int)date('Y');
                         <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="rowsPerPageBtn" data-bs-toggle="dropdown" aria-expanded="false">
                             25 rows
                         </button>
-                        <ul class="dropdown-menu dropdown-menu-end" style="z-index: 1055;">
+                        <ul class="dropdown-menu dropdown-menu-end">
                             <li><a class="dropdown-item row-limit-opt" href="#" data-value="10">10 rows</a></li>
                             <li><a class="dropdown-item row-limit-opt" href="#" data-value="25">25 rows</a></li>
                             <li><a class="dropdown-item row-limit-opt" href="#" data-value="50">50 rows</a></li>
@@ -150,7 +150,7 @@ $currentYear = (int)date('Y');
     </div>
 </div>
 
-<?php include '../toast.php'; ?>
+<?php include '../system_functions/show_toast.php'; ?>
 
 <script>
 /* ── State ────────────────────────────────────────── */
@@ -251,7 +251,7 @@ function fetchLeaveSummary() {
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td>${row.employee_id      || '<span class="text-meta">-</span>'}</td>
-                    <td><strong>${row.employee_name || '<span class="text-meta">-</span>'}</strong></td>
+                    <td>${row.employee_name || '<span class="text-meta">-</span>'}</td>
                     <td>${row.department_name   || '<span class="text-meta">-</span>'}</td>
                     <td>${row.role_name         || '<span class="text-meta">-</span>'}</td>
                     <td>${parseInt(row.entitled_vacation_leave,  10) || '<span class="text-meta">-</span>'}</td>
@@ -262,7 +262,7 @@ function fetchLeaveSummary() {
                     <td>${parseInt(row.sick_leave_taken,         10) || '<span class="text-meta">-</span>'}</td>
                     <td>${parseInt(row.remaining_sick_leave,     10) || '<span class="text-meta">-</span>'}</td>
                     <td>${parseInt(row.total_entitled,           10) || '<span class="text-meta">-</span>'}</td>
-                    <td>${parseInt(row.total_taken,              10) || '<span class="text-meta">-</span>'}</td>
+                    <td class="border-start">${parseInt(row.total_taken,              10) || '<span class="text-meta">0</span>'}</td>
                 `;
                 tbody.appendChild(tr);
             });
@@ -387,9 +387,29 @@ async function exportAllPDF() {
     doc.save(`leave_summary_${_selYear}.pdf`);
 }
 
+/* ── Collapsible columns ────────────────────────────────── */
+const LS_COL_LS_KEY = 'ls_col_collapsed';
+
+function loadCollapsedCols() {
+    try {
+        if (JSON.parse(localStorage.getItem(LS_COL_LS_KEY) || 'false'))
+            document.getElementById('reportTable').classList.add('cols-dept-role-collapsed');
+    } catch (_) {}
+}
+
+document.getElementById('dept-role-toggle').addEventListener('click', e => {
+    e.stopPropagation();
+    bootstrap.Tooltip.getInstance(e.currentTarget)?.hide();
+    document.getElementById('reportTable').classList.toggle('cols-dept-role-collapsed');
+    localStorage.setItem(LS_COL_LS_KEY,
+        document.getElementById('reportTable').classList.contains('cols-dept-role-collapsed'));
+});
+
 /* ── Init ───────────────────────────────────────── */
 document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('rowsPerPageBtn').textContent = `${rowsPerPage} rows`;
+    loadCollapsedCols();
+    bootstrap.Tooltip.getOrCreateInstance(document.getElementById('dept-role-toggle'), { trigger: 'hover' });
 
     document.getElementById('page-jump-input')?.addEventListener('keydown', function (e) {
         if (e.key !== 'Enter') return;

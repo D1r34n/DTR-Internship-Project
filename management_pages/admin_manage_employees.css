@@ -96,6 +96,39 @@ body {
     object-fit: cover;
 }
 
+/* Name column — left-aligned */
+#empList td:nth-child(2),
+.table thead th:nth-child(2) {
+    text-align: left;
+}
+
+/* ── Copy-on-hover cells ── */
+.copy-cell {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.copy-btn {
+    opacity: 0.45;
+    flex-shrink: 0;
+    background: none;
+    border: none;
+    padding: 2px 5px;
+    border-radius: 5px;
+    cursor: pointer;
+    color: var(--text-muted);
+    font-size: 0.7rem;
+    line-height: 1;
+    transition: opacity 0.15s, color 0.15s, background 0.15s;
+}
+
+.copy-btn:hover {
+    opacity: 1;
+    color: var(--primary-color);
+    background: var(--primary-glass);
+}
+
 .employee-title {
     display: flex;
     align-items: center;

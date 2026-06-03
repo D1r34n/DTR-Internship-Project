@@ -66,7 +66,7 @@ $defaultEnd   = $today;
                             id="export-btn" data-bs-toggle="dropdown" aria-expanded="false" disabled>
                         <i class="bi bi-download"></i> Export
                     </button>
-                    <ul class="dropdown-menu dropdown-menu-end" style="z-index:1055;">
+                    <ul class="dropdown-menu dropdown-menu-end">
                         <li>
                             <a class="dropdown-item" href="#" onclick="exportAllCSV(); return false;">
                                 <i class="bi bi-filetype-csv me-2"></i> Export CSV
@@ -98,7 +98,7 @@ $defaultEnd   = $today;
                     <thead id="reportTableHead">
                         <tr>
                             <th class="sortable" data-sort="employee_id">Employee ID <i class="sortIcon bi bi-filter"></i></th>
-                            <th class="sortable" data-sort="name">Name <i class="sortIcon bi bi-filter"></i></th>
+                            <th class="sortable" data-sort="name">Name <i class="sortIcon bi bi-filter"></i><span class="col-group-toggle ms-2" id="dept-role-toggle" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Toggle Dept &amp; Role columns"><i class="bi bi-chevron-right"></i></span></th>
                             <th class="sortable" data-sort="department">Department <i class="sortIcon bi bi-filter"></i></th>
                             <th class="sortable" data-sort="role">Role <i class="sortIcon bi bi-filter"></i></th>
                         </tr>
@@ -143,7 +143,7 @@ $defaultEnd   = $today;
                                 data-bs-toggle="dropdown" aria-expanded="false">
                             10 rows
                         </button>
-                        <ul class="dropdown-menu dropdown-menu-end" style="z-index:1055;">
+                        <ul class="dropdown-menu dropdown-menu-end">
                             <li><a class="dropdown-item row-limit-opt" href="#" data-value="10">10 rows</a></li>
                             <li><a class="dropdown-item row-limit-opt" href="#" data-value="25">25 rows</a></li>
                             <li><a class="dropdown-item row-limit-opt" href="#" data-value="50">50 rows</a></li>
@@ -156,7 +156,7 @@ $defaultEnd   = $today;
     </div>
 </div>
 
-<?php include '../toast.php'; ?>
+<?php include '../system_functions/show_toast.php'; ?>
 
 <script>
 /* ── State ────────────────────────────────────────── */
@@ -213,7 +213,7 @@ function buildTableHeaders(types) {
     
     tr.innerHTML = `
         <th class="sortable ${lrSortColumn === 'employee_id' ? 'sorted' : ''}" data-sort="employee_id">Employee ID <i class="sortIcon bi ${lrSortColumn === 'employee_id' ? (lrSortDirection === 'asc' ? 'bi-sort-up' : 'bi-sort-down') : 'bi-filter'}"></i></th>
-        <th class="sortable ${lrSortColumn === 'name' ? 'sorted' : ''}" data-sort="name">Name <i class="sortIcon bi ${lrSortColumn === 'name' ? (lrSortDirection === 'asc' ? 'bi-sort-up' : 'bi-sort-down') : 'bi-filter'}"></i></th>
+        <th class="sortable ${lrSortColumn === 'name' ? 'sorted' : ''}" data-sort="name">Name <i class="sortIcon bi ${lrSortColumn === 'name' ? (lrSortDirection === 'asc' ? 'bi-sort-up' : 'bi-sort-down') : 'bi-filter'}"></i><span class="col-group-toggle ms-3" id="dept-role-toggle" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Toggle Dept &amp; Role columns"><i class="bi bi-chevron-right"></i></span></th>
         <th class="sortable ${lrSortColumn === 'department' ? 'sorted' : ''}" data-sort="department">Department <i class="sortIcon bi ${lrSortColumn === 'department' ? (lrSortDirection === 'asc' ? 'bi-sort-up' : 'bi-sort-down') : 'bi-filter'}"></i></th>
         <th class="sortable ${lrSortColumn === 'role' ? 'sorted' : ''}" data-sort="role">Role <i class="sortIcon bi ${lrSortColumn === 'role' ? (lrSortDirection === 'asc' ? 'bi-sort-up' : 'bi-sort-down') : 'bi-filter'}"></i></th>
         <th class="sortable ${lrSortColumn === 'buffer' ? 'sorted' : ''}" data-sort="buffer">Buffer Leave <i class="sortIcon bi ${lrSortColumn === 'buffer' ? (lrSortDirection === 'asc' ? 'bi-sort-up' : 'bi-sort-down') : 'bi-filter'}"></i></th>
@@ -309,6 +309,7 @@ function fetchLeaveReport() {
 
             _currentTypes = types;
             buildTableHeaders(types);
+            initCollapseToggle();
 
             if (!dataRows.length) {
                 emptyState.style.display = 'flex';
@@ -335,7 +336,7 @@ function fetchLeaveReport() {
                     <td>${row.role_name       || '<span class="text-meta">-</span>'}</td>
                     <td>${bufferBal > 0 ? bufferBal : '<span class="text-meta">-</span>'}</td>
                     ${typeCells}
-                    <td>${leaveBalance}</td>
+                    <td class="border-start">${leaveBalance > 0 ? leaveBalance : '<span class="text-meta">0</span>'}</td>
                 `;
                 tbody.appendChild(tr);
             });
@@ -468,9 +469,33 @@ async function exportAllPDF() {
     doc.save(`leave_consumed_${_selStart}_to_${_selEnd}.pdf`);
 }
 
+/* ── Collapsible columns ────────────────────────────────── */
+const LR_COL_LS_KEY = 'lr_col_collapsed';
+
+function loadCollapsedCols() {
+    try {
+        if (JSON.parse(localStorage.getItem(LR_COL_LS_KEY) || 'false'))
+            document.getElementById('reportTable').classList.add('cols-dept-role-collapsed');
+    } catch (_) {}
+}
+
+function initCollapseToggle() {
+    const el = document.getElementById('dept-role-toggle');
+    if (!el) return;
+    bootstrap.Tooltip.getOrCreateInstance(el, { trigger: 'hover' });
+    el.addEventListener('click', e => {
+        e.stopPropagation();
+        bootstrap.Tooltip.getInstance(el)?.hide();
+        document.getElementById('reportTable').classList.toggle('cols-dept-role-collapsed');
+        localStorage.setItem(LR_COL_LS_KEY,
+            document.getElementById('reportTable').classList.contains('cols-dept-role-collapsed'));
+    });
+}
+
 /* ── Init ─────────────────────────────────────────── */
 document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('rowsPerPageBtn').textContent = `${rowsPerPage} rows`;
+    loadCollapsedCols();
 
     document.getElementById('page-jump-input')?.addEventListener('keydown', function (e) {
         if (e.key !== 'Enter') return;

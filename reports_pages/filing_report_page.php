@@ -124,7 +124,7 @@ require_once 'cutoff_helpers.php';
                         <i class="bi bi-funnel"></i>
                         <span id="status-label">All Filings</span>
                     </button>
-                    <ul class="dropdown-menu" style="z-index:1055;">
+                    <ul class="dropdown-menu">
                         <li><a class="dropdown-item status-opt" href="#" data-value="ALL">All Filings</a></li>
                         <li><hr class="dropdown-divider"></li>
                         <li><h6 class="dropdown-header">Leave</h6></li>
@@ -148,7 +148,7 @@ require_once 'cutoff_helpers.php';
                             id="export-btn" data-bs-toggle="dropdown" aria-expanded="false" disabled>
                         <i class="bi bi-download"></i> Export
                     </button>
-                    <ul class="dropdown-menu dropdown-menu-end" style="z-index:1055;">
+                    <ul class="dropdown-menu dropdown-menu-end">
                         <li>
                             <a class="dropdown-item" href="#" onclick="exportAllCSV(); return false;">
                                 <i class="bi bi-filetype-csv me-2"></i> Export CSV
@@ -184,7 +184,7 @@ require_once 'cutoff_helpers.php';
                     <thead id="report-thead">
                         <tr>
                             <th class="sortable" data-sort="employee_id">Employee ID <i class="bi bi-filter sortIcon" id="sort-employee_id"></i></th>
-                            <th class="sortable" data-sort="employee_name">Name <i class="bi bi-filter sortIcon" id="sort-employee_name"></i></th>
+                            <th class="sortable" data-sort="employee_name">Name <i class="bi bi-filter sortIcon" id="sort-employee_name"></i><span class="col-group-toggle ms-3" id="dept-cat-toggle" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Toggle Dept &amp; Category columns"><i class="bi bi-chevron-right"></i></span></th>
                             <th class="sortable" data-sort="department_name">Department <i class="bi bi-filter sortIcon" id="sort-department_name"></i></th>
                             <th class="sortable" data-sort="category">Category <i class="bi bi-filter sortIcon" id="sort-category"></i></th>
                             <th class="sortable" data-sort="request_name">Filing Type <i class="bi bi-filter sortIcon" id="sort-request_name"></i></th>
@@ -237,7 +237,7 @@ require_once 'cutoff_helpers.php';
                                 data-bs-toggle="dropdown" aria-expanded="false">
                             10 rows
                         </button>
-                        <ul class="dropdown-menu dropdown-menu-end" style="z-index:1055;">
+                        <ul class="dropdown-menu dropdown-menu-end">
                             <li><a class="dropdown-item row-limit-opt" href="#" data-value="10">10 rows</a></li>
                             <li><a class="dropdown-item row-limit-opt" href="#" data-value="25">25 rows</a></li>
                             <li><a class="dropdown-item row-limit-opt" href="#" data-value="50">50 rows</a></li>
@@ -250,7 +250,7 @@ require_once 'cutoff_helpers.php';
     </div>
 </div>
 
-<?php include '../toast.php'; ?>
+<?php include '../system_functions/show_toast.php'; ?>
 
 <script>
 /* ── State ─────────────────────────────────────────────── */
@@ -480,7 +480,7 @@ function exportAllCSV() {
         if (!dataRows.length) { showToast('No records to export.', 'warning'); return; }
 
         const headers = ['Employee ID', 'Name', 'Department', 'Category', 'Filing Type', 'Start Date', 'End Date', 'Status', 'Date Filed', 'Date Approved', 'Approved By', 'Reason'];
-        const escCSV  = v => '"' + String(v || '').replace(/"/g,'""').replace(/\n/g,' ').trim() + '"';
+        const escCSV  = v => '"' + String(v ?? '—').replace(/"/g,'""').replace(/\n/g,' ').trim() + '"';
         const rows    = dataRows.map(r => [
             escCSV(r.employee_id),
             escCSV(r.employee_name),
@@ -601,11 +601,31 @@ const _monthFp = flatpickr('#ar-month-fp-anchor', {
     }
 });
 
+/* ── Collapsible columns ────────────────────────────────── */
+const FR_COL_LS_KEY = 'fr_col_collapsed';
+
+function loadCollapsedCols() {
+    try {
+        if (JSON.parse(localStorage.getItem(FR_COL_LS_KEY) || 'false'))
+            document.getElementById('reportTable').classList.add('cols-dept-cat-collapsed');
+    } catch (_) {}
+}
+
+document.getElementById('dept-cat-toggle').addEventListener('click', e => {
+    e.stopPropagation();
+    bootstrap.Tooltip.getInstance(e.currentTarget)?.hide();
+    document.getElementById('reportTable').classList.toggle('cols-dept-cat-collapsed');
+    localStorage.setItem(FR_COL_LS_KEY,
+        document.getElementById('reportTable').classList.contains('cols-dept-cat-collapsed'));
+});
+
 /* ── DOM event listeners ────────────────────────────────── */
 document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('ar-btn-label').textContent   = _selBtnLbl;
     document.getElementById('ar-range-label').textContent = _selRngLbl;
     document.getElementById('rowsPerPageBtn').textContent = `${rowsPerPage} rows`;
+    loadCollapsedCols();
+    bootstrap.Tooltip.getOrCreateInstance(document.getElementById('dept-cat-toggle'), { trigger: 'hover' });
 
     applyArHeaderUI();
 

@@ -68,7 +68,7 @@ body {
     flex: 1;
     min-height: 0;
     overflow: hidden;
-    padding: 1rem 0 0 1rem;
+    padding: 0rem;
 }
 
 /* Filter Wrapper */
@@ -119,6 +119,58 @@ body {
 .requests-card .card-header { overflow: visible !important; }
 .requests-card              { position: relative; z-index: 1; }
 .requests-card .card-header { position: relative; z-index: 20; }
+
+/* =========================
+   COLLAPSIBLE COLUMNS
+========================= */
+.col-group-toggle {
+    cursor: pointer;
+    opacity: 0.35;
+    font-size: 0.6rem;
+    padding: 1px 5px;
+    border-radius: 4px;
+    border: 1px solid currentColor;
+    vertical-align: middle;
+    transition: opacity 0.15s;
+}
+
+.col-group-toggle .bi { transition: transform 0.2s; display: inline-block; }
+.col-group-toggle:hover { opacity: 1; }
+
+#reportTable.cols-dept-role-collapsed .col-group-toggle .bi,
+#reportTable.cols-dept-cat-collapsed .col-group-toggle .bi { transform: rotate(180deg); }
+
+#reportTable th:nth-child(3),
+#reportTable td:nth-child(3),
+#reportTable th:nth-child(4),
+#reportTable td:nth-child(4) {
+    max-width: 300px;
+    overflow: hidden;
+    white-space: nowrap;
+    transition: max-width 0.3s ease, opacity 0.25s ease, padding 0.3s ease;
+}
+
+#reportTable.cols-dept-role-collapsed th:nth-child(3),
+#reportTable.cols-dept-role-collapsed td:nth-child(3),
+#reportTable.cols-dept-role-collapsed th:nth-child(4),
+#reportTable.cols-dept-role-collapsed td:nth-child(4),
+#reportTable.cols-dept-cat-collapsed th:nth-child(3),
+#reportTable.cols-dept-cat-collapsed td:nth-child(3),
+#reportTable.cols-dept-cat-collapsed th:nth-child(4),
+#reportTable.cols-dept-cat-collapsed td:nth-child(4) {
+    max-width: 0 !important;
+    opacity: 0;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+}
+
+/* Tighter horizontal padding for inner cells — specificity 0,1,2 stays below
+   components.css first/last-child rules (0,2,2) so edge padding is inherited naturally */
+.requests-card-body table th,
+.requests-card-body table td {
+    padding-left: 0.65rem;
+    padding-right: 0.65rem;
+}
 
 .ar-empty {
     position: absolute;

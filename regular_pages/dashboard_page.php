@@ -507,7 +507,7 @@ for ($i = 0; $i < 7; $i++) {
                     <!-- Summary Cards (admin / manager) -->
                     <div class="row g-2 mb-2">
                         <div class="col-4">
-                            <div class="card card-success p-3">
+                            <div class="card card-success p-3 h-100">
                                 <div class="card-body d-flex flex-column gap-2 p-0">
                                     <div class="d-flex align-items-center gap-3">
                                         <div class="icon-box icon-box-success">
@@ -531,7 +531,7 @@ for ($i = 0; $i < 7; $i++) {
                             </div>
                         </div>
                         <div class="col-4">
-                            <div class="card card-danger p-3">
+                            <div class="card card-danger p-3 h-100">
                                 <div class="card-body d-flex flex-column gap-2 p-0">
                                     <div class="d-flex align-items-center gap-3">
                                         <div class="icon-box icon-box-danger">
@@ -555,7 +555,7 @@ for ($i = 0; $i < 7; $i++) {
                             </div>
                         </div>
                         <div class="col-4">
-                            <div class="card card-warning p-3">
+                            <div class="card card-warning p-3 h-100">
                                 <div class="card-body d-flex flex-column gap-2 p-0">
                                     <div class="d-flex align-items-center gap-3">
                                         <div class="icon-box icon-box-warning">
@@ -565,6 +565,7 @@ for ($i = 0; $i < 7; $i++) {
                                             <div class="stats-number" style="color:var(--warning-color)"><?= $sTotal ?></div>
                                             <div class="text-meta">Pending <?= $sTotal == 1 ? 'Request' : 'Requests' ?></div>
                                             <small class="text-meta-secondary">Awaiting Approval</small>
+                                            
                                         </div>
                                     </div>
                                 </div>
@@ -576,7 +577,7 @@ for ($i = 0; $i < 7; $i++) {
                     <!-- Summary Cards (employee) -->
                     <div class="row g-2 mb-2">
                         <div class="col-4">
-                            <div class="card card-success p-3">
+                            <div class="card card-success p-3 h-100">
                                 <div class="card-body d-flex flex-column gap-2 p-0">
                                     <div class="d-flex align-items-center gap-3">
                                         <div class="icon-box icon-box-success">
@@ -600,7 +601,7 @@ for ($i = 0; $i < 7; $i++) {
                             </div>
                         </div>
                         <div class="col-4">
-                            <div class="card card-danger p-3">
+                            <div class="card card-danger p-3 h-100">
                                 <div class="card-body d-flex flex-column gap-2 p-0">
                                     <div class="d-flex align-items-center gap-3">
                                         <div class="icon-box icon-box-danger">
@@ -624,7 +625,7 @@ for ($i = 0; $i < 7; $i++) {
                             </div>
                         </div>
                         <div class="col-4">
-                            <div class="card card-warning p-3">
+                            <div class="card card-warning p-3 h-100">
                                 <div class="card-body d-flex flex-column gap-2 p-0">
                                     <div class="d-flex align-items-center gap-3">
                                         <div class="icon-box icon-box-warning">

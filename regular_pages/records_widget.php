@@ -10,7 +10,7 @@ $useCutoffMode = !empty($cutoffs);
 $loadCutoff    = null;
 ?>
 
-<?php if (!defined('TOAST_INCLUDED')): define('TOAST_INCLUDED', true); include __DIR__ . '/../toast.php'; endif; ?>
+<?php if (!defined('TOAST_INCLUDED')): define('TOAST_INCLUDED', true); include __DIR__ . '/../system_functions/show_toast.php'; endif; ?>
 
 <!-- MAIN CARD -->
 <div class="card card-neutral records-card">

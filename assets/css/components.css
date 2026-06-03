@@ -987,6 +987,13 @@ button.btn-sm {
     z-index: 9999;
 }
 
+/* Lift the card containing an open dropdown above sibling cards.
+   backdrop-filter on every card variant creates an isolated stacking context,
+   so without this a sibling card later in the DOM paints over the open menu. */
+.card:has(.dropdown-menu.show) {
+    z-index: 10;
+}
+
 .dropdown-item {
     border-radius: 8px !important;
     color: var(--text-light) !important;
@@ -2107,7 +2114,6 @@ button.btn-sm {
     overflow-y: auto;
     overflow-x: auto; /* Required for handling wide 12+ column data sets */
     -webkit-overflow-scrolling: touch; /* Smooth scrolling for mobile */
-    padding-right: 1rem;
 }
 
 .tableScroll thead th,
@@ -2152,10 +2158,10 @@ button.btn-sm {
     font-weight: 300;
     font-size: 0.8rem;
     user-select: none;
-    text-align: left;
+    text-align: center;
     color: var(--text-muted);
     text-transform: none;
-    padding: 0.5rem 0.75rem;
+    padding: 0.7rem 1rem;
     vertical-align: middle;
 }
 
@@ -2187,12 +2193,26 @@ button.btn-sm {
 
 /* cells */
 .table tbody td {
-    padding: 0.5rem 0.75rem;
+    padding: 0.7rem 1rem;
     background: transparent;
     font-size: 0.8rem;
     color: var(--text-light);
+    border-color: var(--neutral-border) !important;
     user-select: none;
     vertical-align: middle;
+    text-align: center;
+}
+
+.table thead th:first-child,
+.table tbody td:first-child {
+    text-align: left;
+    padding-left: 1.5rem;
+}
+
+.table thead th:last-child,
+.table tbody td:last-child {
+    text-align: right;
+    padding-right: 1.5rem;
 }
 
 

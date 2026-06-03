@@ -453,7 +453,7 @@ if (isset($_SESSION['last_attendance_tap'])) {
         </div>
     </div>
 </div>
-<?php include '../toast.php'; ?>
+<?php include '../system_functions/show_toast.php'; ?>
 <script defer>
 let isProcessing      = false;
 let isBreakProcessing = false;
@@ -1073,3 +1073,4 @@ function saveProfileImage() {
 }
 
 </script>
+<script src="../system_functions/scrolling_function.js" defer></script>

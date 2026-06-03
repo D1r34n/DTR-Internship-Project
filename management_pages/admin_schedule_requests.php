@@ -229,95 +229,7 @@ if ($deptScoped) {
     $rejectedCount = (int)$pdo->query("SELECT COUNT(*) FROM schedule_edit_requests WHERE status = 'rejected'")->fetchColumn();
 }
 
-// ---- GET SCHEDULE REQUESTS (grouped by batch) ----
-$batchSql = "
-    SELECT
-        g.*,
-        CONCAT(r.first_name, ' ', r.last_name) AS requested_by_name,
-        rr.role_key AS requested_by_role
-    FROM (
-        SELECT
-            COALESCE(s.batch_id, CONCAT('solo_', s.id)) AS group_key,
-            MIN(s.batch_id)                              AS batch_id,
-            MIN(s.id)                                    AS id,
-            MIN(s.employee_id)                           AS employee_id,
-            MIN(CONCAT(e.first_name, ' ', e.last_name)) AS employee_name,
-            MIN(d.department_code)                       AS department_code,
-            GROUP_CONCAT(s.schedule_date ORDER BY s.schedule_date SEPARATOR ',') AS all_dates,
-            MIN(s.scheduled_start) AS scheduled_start,
-            MIN(s.scheduled_end)   AS scheduled_end,
-            MIN(s.is_rest_day)     AS is_rest_day,
-            COALESCE(MIN(ser.status), 'approved')        AS status,
-            MAX(s.pending_delete)  AS pending_delete,
-            MAX(COALESCE(s.is_archived, 0)) AS is_archived,
-            MIN(s.request_type)    AS request_type,
-            COALESCE(MIN(ser.requested_by), MIN(s.employee_id)) AS requested_by,
-            MAX(s.updated_at)      AS updated_at,
-            COUNT(*)               AS date_count
-        FROM schedules s
-        JOIN employees e ON s.employee_id = e.id
-        LEFT JOIN departments d ON e.department_id = d.id
-        LEFT JOIN schedule_edit_requests ser ON ser.batch_id = s.batch_id
-        WHERE (s.is_rest_day = 0 OR s.pending_delete = 1 OR COALESCE(s.is_archived, 0) = 1)
-        %%DEPT%%
-        GROUP BY COALESCE(s.batch_id, CONCAT('solo_', s.id))
-    ) g
-    LEFT JOIN employees r  ON g.requested_by = r.id
-    LEFT JOIN roles     rr ON r.role_id = rr.id
-    ORDER BY g.pending_delete DESC,
-             CASE WHEN g.status = 'pending' THEN 0 ELSE 1 END ASC,
-             g.updated_at DESC, g.id DESC
-    LIMIT 300
-";
-
-if ($deptScoped) {
-    $srStmt = $pdo->prepare(str_replace('%%DEPT%%', 'AND e.department_id = ?', $batchSql));
-    $srStmt->execute([$myDeptId]);
-    $scheduleRequests = $srStmt->fetchAll(PDO::FETCH_ASSOC);
-} else {
-    $scheduleRequests = $pdo->query(str_replace('%%DEPT%%', '', $batchSql))->fetchAll(PDO::FETCH_ASSOC);
-}
-
-function formatScheduleDates(string $allDates): string {
-    $dates = array_values(array_filter(explode(',', $allDates)));
-    sort($dates);
-    $n = count($dates);
-    if ($n === 0) return '—';
-    if ($n === 1) return date('M d, Y', strtotime($dates[0]));
-
-    $first = new DateTime($dates[0]);
-    $last  = new DateTime($dates[$n - 1]);
-    if ($first->format('M Y') === $last->format('M Y')) {
-        return $first->format('M d') . ' – ' . $last->format('d, Y');
-    }
-    return $first->format('M d') . ' – ' . $last->format('M d, Y');
-}
-
-function getRolePill(?string $name, ?string $role): string {
-    if (!$name) return '<span style="color:rgba(255,255,255,0.3)">—</span>';
-    $icon  = $role === 'superadmin' ? 'bi-shield-fill' : 'bi-person-fill';
-    $class = $role ? 'empRoleBadge empRole-' . htmlspecialchars($role) : '';
-    return '<span class="pill ' . $class . '"><i class="bi ' . $icon . '"></i> ' . htmlspecialchars($name) . '</span>';
-}
-
-function getTypeBadge(?string $type): string {
-    $badges = [
-        'added'   => '<span class="badge status-approved">Added</span>',
-        'edit'    => '<span class="badge status-info">Edit</span>',
-        'deleted' => '<span class="badge status-rejected">Deleted</span>',
-    ];
-    return $badges[$type] ?? '<span style="color:rgba(255,255,255,0.3)">—</span>';
-}
-
-function getStatusBadge(string $status): string {
-    $badges = [
-        'pending'  => '<span class="badge status-pending">Pending</span>',
-        'approved' => '<span class="badge status-approved">Approved</span>',
-        'rejected' => '<span class="badge status-rejected">Rejected</span>',
-        'deleted'  => '<span class="badge status-rejected">Deleted</span>',
-    ];
-    return $badges[$status] ?? '<span class="badge">Unknown</span>';
-}
+// Row data is now loaded client-side via admin_schedule_api.php
 ?>
 <!doctype html>
 <html lang="en">
@@ -440,94 +352,7 @@ function getStatusBadge(string $status): string {
                             <th>Time In</th><th>Time Out</th><th>Shift</th>
                             <th>Type</th><th>Requested By</th><th>Status</th><th>Actions</th>
                         </tr></thead>
-                        <tbody>
-                            <?php foreach ($scheduleRequests as $row): ?>
-                                    <?php
-                                        $startHour       = $row['scheduled_start'] ? (int)date('H', strtotime($row['scheduled_start'])) : 6;
-                                        $isNightShift    = $startHour >= 18 || $startHour < 6;
-                                        $isPendingDelete = !empty($row['pending_delete']);
-                                        $isArchived      = !empty($row['is_archived']);
-                                        $rowStatus       = $isArchived ? 'deleted' : $row['status'];
-                                        $actionParam     = $row['batch_id']
-                                            ? 'batch_id=' . urlencode($row['batch_id'])
-                                            : 'id=' . $row['id'];
-                                        $dateLabel       = formatScheduleDates($row['all_dates']);
-                                        $allDatesParts   = array_values(array_filter(explode(',', $row['all_dates'])));
-                                        $firstDate       = $allDatesParts[0] ?? '';
-                                        $lastDate        = end($allDatesParts) ?: $firstDate;
-                                    ?>
-                                    <tr data-status="<?= $rowStatus ?>" data-date="<?= htmlspecialchars($firstDate) ?>" data-date-end="<?= htmlspecialchars($lastDate) ?>" data-pending-delete="<?= $isPendingDelete ? '1' : '0' ?>"><?php // pending-delete rows bypass date filter ?>
-                                        <td><?= htmlspecialchars($row['employee_name']) ?></td>
-                                        <td><?= $row['department_code'] ? htmlspecialchars($row['department_code']) : '—' ?></td>
-                                        <td><?= htmlspecialchars($dateLabel) ?></td>
-                                        <td><?= $row['scheduled_start'] ? date('h:i A', strtotime($row['scheduled_start'])) : '—' ?></td>
-                                        <td><?= $row['scheduled_end']   ? date('h:i A', strtotime($row['scheduled_end']))   : '—' ?></td>
-                                        <td>
-                                            <?php if ($isNightShift): ?>
-                                                <span class="badge request-overtime">Night</span>
-                                            <?php else: ?>
-                                                <span class="badge status-approved">Day</span>
-                                            <?php endif; ?>
-                                        </td>
-                                        <td><?= getTypeBadge($row['request_type'] ?? null) ?></td>
-                                        <td><?= ((int)($row['requested_by'] ?? 0) === (int)$_SESSION['user_id']) ? '<span class="pill"><i class="bi bi-person-fill"></i> You</span>' : getRolePill($row['requested_by_name'] ?? null, $row['requested_by_role'] ?? null) ?></td>
-                                        <td>
-                                            <?php if ($isArchived): ?>
-                                                <?= getStatusBadge('deleted') ?>
-                                            <?php elseif ($isPendingDelete): ?>
-                                                <span class="badge status-pending">Pending Delete</span>
-                                            <?php else: ?>
-                                                <?= getStatusBadge($row['status']) ?>
-                                            <?php endif; ?>
-                                        </td>
-                                        <td class="actionsCol">
-                                            <?php if ($isArchived): ?>
-                                                <span class="no-action-text">No actions</span>
-                                            <?php elseif ($isPendingDelete): ?>
-                                                <button type="button"
-                                                    class="btn btn-sm btn-danger confirm-action-btn"
-                                                    data-url="admin_schedule_requests.php?action=approve_delete&id=<?= $row['id'] ?>"
-                                                    data-label="Approve Delete"
-                                                    data-body="Are you sure you want to approve this deletion? The schedule will be permanently removed."
-                                                    data-btn-class="btn-danger"
-                                                    data-bs-toggle="modal" data-bs-target="#confirmActionModal">
-                                                    <i class="bi bi-trash"></i> Approve Delete
-                                                </button>
-                                                <button type="button"
-                                                    class="btn btn-sm btn-secondary confirm-action-btn"
-                                                    data-url="admin_schedule_requests.php?action=reject_delete&id=<?= $row['id'] ?>"
-                                                    data-label="Reject Delete"
-                                                    data-body="Are you sure you want to reject this delete request?"
-                                                    data-btn-class="btn-secondary"
-                                                    data-bs-toggle="modal" data-bs-target="#confirmActionModal">
-                                                    <i class="bi bi-x-lg"></i> Reject
-                                                </button>
-                                            <?php elseif ($row['status'] === 'pending'): ?>
-                                                <button type="button"
-                                                    class="btn btn-sm btn-success confirm-action-btn"
-                                                    data-url="admin_schedule_requests.php?action=approve&<?= $actionParam ?>"
-                                                    data-label="Approve"
-                                                    data-body="Are you sure you want to approve this schedule request?"
-                                                    data-btn-class="btn-success"
-                                                    data-bs-toggle="modal" data-bs-target="#confirmActionModal">
-                                                    <i class="bi bi-check-lg"></i> Approve
-                                                </button>
-                                                <button type="button"
-                                                    class="btn btn-sm btn-danger confirm-action-btn"
-                                                    data-url="admin_schedule_requests.php?action=reject&<?= $actionParam ?>"
-                                                    data-label="Reject"
-                                                    data-body="Are you sure you want to reject this schedule request?"
-                                                    data-btn-class="btn-danger"
-                                                    data-bs-toggle="modal" data-bs-target="#confirmActionModal">
-                                                    <i class="bi bi-x-lg"></i> Reject
-                                                </button>
-                                            <?php else: ?>
-                                                <span class="no-action-text">No actions</span>
-                                            <?php endif; ?>
-                                        </td>
-                                    </tr>
-                            <?php endforeach; ?>
-                        </tbody>
+                        <tbody id="srTbody"></tbody>
                     </table>
                     <div id="srEmptyState" class="table-empty" style="display:none">
                         <i class="bi bi-calendar2-x-fill"></i>
@@ -560,188 +385,277 @@ function getStatusBadge(string $status): string {
     </div>
 </div>
 
-    <?php include '../toast.php'; ?>
+    <?php include '../system_functions/show_toast.php'; ?>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script>
-        let currentStatus    = 'ALL';
+        const MY_USER_ID_SR  = <?= (int)$_SESSION['user_id'] ?>;
         const fmtISO         = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
         const todayISO       = fmtISO(new Date());
+        let currentStatus    = 'ALL';
         let srDateFrom       = localStorage.getItem('srDateFrom') || todayISO;
         let srDateTo         = localStorage.getItem('srDateTo')   || todayISO;
-        let SR_ROWS_PER_PAGE = parseInt(localStorage.getItem('srRowsPerPage') || '10');
+        let SR_ROWS_PER_PAGE = parseInt(localStorage.getItem('srRowsPerPage') || '25');
         let srCurrentPage    = 1;
-        let srLastTotal      = 0;
-        let allRowsSR        = [];
+        let srSearchTimeout  = null;
 
-        document.addEventListener('DOMContentLoaded', () => {
-            allRowsSR = Array.from(document.querySelectorAll('.tableScroll tbody tr'));
-            applyFiltersSR();
-            updateSRDateLabel(srDateFrom && srDateTo
-                ? [new Date(srDateFrom + 'T00:00'), new Date(srDateTo + 'T00:00')]
-                : []);
-
-            flatpickr(document.getElementById('srDatePickerBtn'), {
-                mode: 'range',
-                dateFormat: 'Y-m-d',
-                defaultDate: srDateFrom && srDateTo ? [srDateFrom, srDateTo] : 'today',
-                onChange(dates) {
-                    if (dates.length === 2) {
-                        srDateFrom = fmtISO(dates[0]);
-                        srDateTo   = fmtISO(dates[1]);
-                    } else if (dates.length === 1) {
-                        srDateFrom = fmtISO(dates[0]);
-                        srDateTo   = srDateFrom;
-                    } else {
-                        srDateFrom = srDateTo = null;
-                    }
-                    localStorage.setItem('srDateFrom', srDateFrom || '');
-                    localStorage.setItem('srDateTo',   srDateTo   || '');
-                    updateSRDateLabel(dates);
-                    srCurrentPage = 1;
-                    applyFiltersSR();
-                }
-            });
-
-        });
-
-        function updateSRDateLabel(dates) {
-            if (!dates.length) {
-                document.getElementById('srDateRangeLabel').textContent = 'Today';
-                return;
+        /* ── Helpers ─────────────────────────────────────────── */
+        function escSR(v) {
+            return v == null ? '' : String(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+        }
+        function fmtTimeSR(s) {
+            if (!s) return '—';
+            // TIME-only value e.g. "08:00:00"
+            if (/^\d{1,2}:\d{2}(:\d{2})?$/.test(s.trim())) {
+                const [h, m] = s.split(':').map(Number);
+                return new Date(1970, 0, 1, h, m)
+                    .toLocaleTimeString('en-US', {hour:'numeric', minute:'2-digit', hour12:true});
             }
-            const today = fmtISO(new Date());
-            const fmt = d => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-            const isSame = dates.length > 1 && dates[0].toDateString() === dates[1].toDateString();
-            const singleDay = dates.length === 1 || isSame;
-            const d0ISO = fmtISO(dates[0]);
-            document.getElementById('srDateRangeLabel').textContent = (singleDay && d0ISO === today)
-                ? 'Today'
-                : singleDay ? fmt(dates[0]) : fmt(dates[0]) + ' – ' + fmt(dates[1]);
+            const d = new Date(s.includes('T') ? s : s.replace(' ','T'));
+            return d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true});
+        }
+        function getStartHour(s) {
+            if (!s) return 6;
+            const timePart = s.includes(' ') ? s.split(' ')[1] : s;
+            return parseInt(timePart.split(':')[0]);
+        }
+        function fmtDatesSR(allDates) {
+            const parts = allDates.split(',').filter(Boolean).sort();
+            if (!parts.length) return '—';
+            const parse = s => { const [y,m,d] = s.split('-').map(Number); return new Date(y,m-1,d); };
+            const short = d => d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+            if (parts.length === 1) {
+                const d = parse(parts[0]);
+                return d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+            }
+            const first = parse(parts[0]), last = parse(parts[parts.length-1]);
+            const sameMonth = first.getMonth()===last.getMonth() && first.getFullYear()===last.getFullYear();
+            return sameMonth
+                ? `${short(first)} – ${last.getDate()}, ${last.getFullYear()}`
+                : `${short(first)} – ${last.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}`;
+        }
+        function typeBadgeSR(t) {
+            return t==='added' ? '<span class="badge status-approved">Added</span>'
+                 : t==='edit'  ? '<span class="badge status-info">Edit</span>'
+                 : t==='deleted' ? '<span class="badge status-rejected">Deleted</span>'
+                 : '<span style="color:rgba(255,255,255,0.3)">—</span>';
+        }
+        function statusBadgeSR(s) {
+            return s==='pending'  ? '<span class="badge status-pending">Pending</span>'
+                 : s==='approved' ? '<span class="badge status-approved">Approved</span>'
+                 : s==='rejected' ? '<span class="badge status-rejected">Rejected</span>'
+                 : s==='deleted'  ? '<span class="badge status-rejected">Deleted</span>'
+                 : '<span class="badge">Unknown</span>';
+        }
+        function rolePillSR(name, role, requestedById) {
+            if (parseInt(requestedById) === MY_USER_ID_SR) return '<span class="pill"><i class="bi bi-person-fill"></i> You</span>';
+            if (!name) return '<span style="color:rgba(255,255,255,0.3)">—</span>';
+            const icon = role==='superadmin' ? 'bi-shield-fill' : 'bi-person-fill';
+            const cls  = role ? `empRoleBadge empRole-${escSR(role)}` : '';
+            return `<span class="pill ${cls}"><i class="bi ${icon}"></i> ${escSR(name)}</span>`;
         }
 
-        function filterTable() {
-            srCurrentPage = 1;
-            applyFiltersSR();
+        /* ── Row renderer ─────────────────────────────────────── */
+        function renderSRRow(r) {
+            const isArchived     = parseInt(r.is_archived);
+            const isPendingDel   = parseInt(r.pending_delete);
+            const isNight        = (() => { const h = getStartHour(r.scheduled_start); return h >= 18 || h < 6; })();
+            const rowStatus      = isArchived ? 'deleted' : r.status;
+            const actionParam    = r.batch_id ? `batch_id=${encodeURIComponent(r.batch_id)}` : `id=${r.id}`;
+            const dateLabel      = fmtDatesSR(r.all_dates || '');
+
+            let statusCell = statusBadgeSR(rowStatus);
+            if (!isArchived && isPendingDel) statusCell = '<span class="badge status-pending">Pending Delete</span>';
+
+            let actionsCell = '<span class="no-action-text">No actions</span>';
+            if (!isArchived && isPendingDel) {
+                actionsCell = `
+                    <button class="btn btn-sm btn-danger confirm-action-btn"
+                        data-url="admin_schedule_requests.php?action=approve_delete&id=${r.id}"
+                        data-label="Approve Delete"
+                        data-body="Are you sure you want to approve this deletion? The schedule will be permanently removed."
+                        data-btn-class="btn-danger" data-bs-toggle="modal" data-bs-target="#confirmActionModal">
+                        <i class="bi bi-trash"></i> Approve Delete</button>
+                    <button class="btn btn-sm btn-secondary confirm-action-btn"
+                        data-url="admin_schedule_requests.php?action=reject_delete&id=${r.id}"
+                        data-label="Reject Delete"
+                        data-body="Are you sure you want to reject this delete request?"
+                        data-btn-class="btn-secondary" data-bs-toggle="modal" data-bs-target="#confirmActionModal">
+                        <i class="bi bi-x-lg"></i> Reject</button>`;
+            } else if (!isArchived && r.status === 'pending') {
+                actionsCell = `
+                    <button class="btn btn-sm btn-success confirm-action-btn"
+                        data-url="admin_schedule_requests.php?action=approve&${actionParam}"
+                        data-label="Approve"
+                        data-body="Are you sure you want to approve this schedule request?"
+                        data-btn-class="btn-success" data-bs-toggle="modal" data-bs-target="#confirmActionModal">
+                        <i class="bi bi-check-lg"></i> Approve</button>
+                    <button class="btn btn-sm btn-danger confirm-action-btn"
+                        data-url="admin_schedule_requests.php?action=reject&${actionParam}"
+                        data-label="Reject"
+                        data-body="Are you sure you want to reject this schedule request?"
+                        data-btn-class="btn-danger" data-bs-toggle="modal" data-bs-target="#confirmActionModal">
+                        <i class="bi bi-x-lg"></i> Reject</button>`;
+            }
+
+            return `<tr>
+                <td>${escSR(r.employee_name)}</td>
+                <td>${r.department_code ? escSR(r.department_code) : '—'}</td>
+                <td>${escSR(dateLabel)}</td>
+                <td>${fmtTimeSR(r.scheduled_start)}</td>
+                <td>${fmtTimeSR(r.scheduled_end)}</td>
+                <td>${isNight ? '<span class="badge request-overtime">Night</span>' : '<span class="badge status-approved">Day</span>'}</td>
+                <td>${typeBadgeSR(r.request_type)}</td>
+                <td>${rolePillSR(r.requested_by_name, r.requested_by_role, r.requested_by)}</td>
+                <td>${statusCell}</td>
+                <td class="actionsCol">${actionsCell}</td>
+            </tr>`;
         }
 
-        function applyFiltersSR() {
-            const search = document.getElementById('searchInput').value.toLowerCase();
-
-            const filtered = allRowsSR.filter(r => {
-                const matchSearch = r.textContent.toLowerCase().includes(search);
-                const matchStatus = currentStatus === 'ALL' || r.dataset.status === currentStatus;
-                // Pending-delete requests are action items the admin must review; always show them
-                // regardless of the schedule date so they are never hidden by the date filter.
-                const isPendingDel = r.dataset.pendingDelete === '1';
-                const matchDate   = isPendingDel || !srDateFrom || (r.dataset.date <= srDateTo && (r.dataset.dateEnd || r.dataset.date) >= srDateFrom);
-                return matchSearch && matchStatus && matchDate;
+        /* ── Fetch ────────────────────────────────────────────── */
+        function fetchSR(page) {
+            srCurrentPage = page || srCurrentPage;
+            const search  = document.getElementById('searchInput').value.trim();
+            const params  = new URLSearchParams({
+                page: srCurrentPage, limit: SR_ROWS_PER_PAGE,
+                search, status: currentStatus,
+                date_from: srDateFrom || '', date_to: srDateTo || ''
             });
+            const tbody   = document.getElementById('srTbody');
+            const emptyEl = document.getElementById('srEmptyState');
 
-            const total      = filtered.length;
-            srLastTotal      = total;
-            const totalPages = Math.max(1, Math.ceil(total / SR_ROWS_PER_PAGE));
+            tbody.innerHTML = `<tr class="emptyRow"><td colspan="10" class="text-center py-3">
+                <div class="spinner-border spinner-border-sm text-secondary"></div></td></tr>`;
+            if (emptyEl) emptyEl.style.display = 'none';
 
-            if (srCurrentPage > totalPages) srCurrentPage = 1;
-
-            const start    = (srCurrentPage - 1) * SR_ROWS_PER_PAGE;
-            const pageRows = filtered.slice(start, start + SR_ROWS_PER_PAGE);
-
-            allRowsSR.forEach(r => r.style.display = 'none');
-            pageRows.forEach(r => r.style.display = '');
-
-            const emptyState = document.getElementById('srEmptyState');
-            if (emptyState) emptyState.style.display = total === 0 ? '' : 'none';
-
-            renderSRPagination(total, totalPages, start);
+            fetch('admin_schedule_api.php?' + params)
+                .then(r => r.json())
+                .then(res => {
+                    if (res.error) throw new Error(res.error);
+                    const rows  = res.data  || [];
+                    const total = res.total || 0;
+                    tbody.innerHTML = '';
+                    if (!rows.length) {
+                        if (emptyEl) emptyEl.style.display = '';
+                        document.getElementById('srPagination').innerHTML = '';
+                        return;
+                    }
+                    tbody.innerHTML = rows.map(renderSRRow).join('');
+                    const totalPages = Math.max(1, Math.ceil(total / SR_ROWS_PER_PAGE));
+                    renderSRPagination(total, totalPages, (srCurrentPage - 1) * SR_ROWS_PER_PAGE);
+                })
+                .catch(err => {
+                    tbody.innerHTML = `<tr class="emptyRow"><td colspan="10" class="text-center py-3 text-meta">${escSR(err.message||'Failed to load.')}</td></tr>`;
+                });
         }
 
+        /* ── Pagination render ────────────────────────────────── */
         function renderSRPagination(total, totalPages, start) {
             const pag = document.getElementById('srPagination');
             if (!pag) return;
             if (total === 0) { pag.innerHTML = ''; return; }
-
-            const end     = Math.min(start + SR_ROWS_PER_PAGE, total);
-            const showing = `${start + 1}–${end} of ${total}`;
-
-            let html = `
-                <div class="row align-items-center g-2 w-100">
-                    <div class="col-md d-flex align-items-center gap-2">
-                        <span class="text-meta">Showing ${showing}</span>
-                    </div>
-                    <div class="col-md d-flex justify-content-center">
-                        <ul class="pagination pagination-sm mb-0">
-                            <li class="page-item${srCurrentPage === 1 ? ' disabled' : ''}">
-                                <button class="page-link" onclick="changeSRPage(${srCurrentPage - 1})"><i class="bi bi-chevron-left"></i></button>
-                            </li>
-            `;
-
+            const end = Math.min(start + SR_ROWS_PER_PAGE, total);
+            let pageLinks = `<li class="page-item${srCurrentPage===1?' disabled':''}">
+                <button class="page-link" onclick="changeSRPage(${srCurrentPage-1})">&laquo;</button></li>`;
             getSRPageNums(srCurrentPage, totalPages).forEach(p => {
-                if (p === '...') {
-                    html += `<li class="page-item disabled"><span class="page-link">…</span></li>`;
-                } else {
-                    html += `<li class="page-item${p === srCurrentPage ? ' active' : ''}">
-                        <button class="page-link" onclick="changeSRPage(${p})">${p}</button>
-                    </li>`;
-                }
+                pageLinks += p==='...'
+                    ? `<li class="page-item disabled"><span class="page-link text-meta">...</span></li>`
+                    : `<li class="page-item${p===srCurrentPage?' active':''}"><button class="page-link" onclick="changeSRPage(${p})">${p}</button></li>`;
             });
-
-            html += `
-                            <li class="page-item${srCurrentPage === totalPages ? ' disabled' : ''}">
-                                <button class="page-link" onclick="changeSRPage(${srCurrentPage + 1})"><i class="bi bi-chevron-right"></i></button>
-                            </li>
-                        </ul>
+            pageLinks += `<li class="page-item${srCurrentPage===totalPages?' disabled':''}">
+                <button class="page-link" onclick="changeSRPage(${srCurrentPage+1})">&raquo;</button></li>`;
+            pag.innerHTML = `
+                <div class="d-flex flex-sm-nowrap flex-wrap align-items-center justify-content-between gap-3 w-100">
+                    <div class="small text-meta text-nowrap flex-sm-fill w-sm-100 text-sm-start text-center order-1">
+                        Showing ${start+1} to ${end} of ${total} entries</div>
+                    <div class="d-flex align-items-center justify-content-center flex-wrap gap-3 flex-sm-fill w-sm-100 order-2">
+                        <nav><ul class="pagination pagination-sm mb-0">${pageLinks}</ul></nav>
+                        ${totalPages>1?`<div class="d-flex align-items-center gap-1 pag-jump-wrapper">
+                            <small class="text-meta text-nowrap">Go to:</small>
+                            <input type="number" id="srPageJumpInput" class="form-control form-control-sm text-center px-1 pag-jump-input"
+                                min="1" max="${totalPages}" value="${srCurrentPage}"
+                                style="width:45px;height:28px;" placeholder="Go"></div>`:''}
                     </div>
-                    <div class="col-md d-flex justify-content-md-end align-items-center gap-2">
-                        <span class="text-meta text-nowrap">Rows per page</span>
+                    <div class="d-flex align-items-center justify-content-sm-end justify-content-center gap-2 flex-sm-fill w-sm-100 order-3">
+                        <small class="text-meta text-nowrap">Rows Per Page:</small>
                         <div class="dropdown">
-                            <button class="btn btn-sm dropdown-toggle" data-bs-toggle="dropdown">
-                                <span>${SR_ROWS_PER_PAGE} Rows</span>
-                            </button>
-                            <ul class="dropdown-menu">
-                                <li><button class="dropdown-item" onclick="changeSRRows(10)">10</button></li>
-                                <li><button class="dropdown-item" onclick="changeSRRows(25)">25</button></li>
-                                <li><button class="dropdown-item" onclick="changeSRRows(50)">50</button></li>
-                                <li><button class="dropdown-item" onclick="changeSRRows(100)">100</button></li>
+                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">${SR_ROWS_PER_PAGE} rows</button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                ${[10,25,50,100].map(n=>`<li><button class="dropdown-item" onclick="changeSRRows(${n})">${n} rows</button></li>`).join('')}
                             </ul>
                         </div>
                     </div>
-                </div>
-            `;
-
-            pag.innerHTML = html;
+                </div>`;
+            document.getElementById('srPageJumpInput')?.addEventListener('keydown', function(e) {
+                if (e.key !== 'Enter') return;
+                e.preventDefault();
+                let t = parseInt(this.value);
+                if (isNaN(t)||t<1) t=1; if (t>totalPages) t=totalPages;
+                this.value = t; changeSRPage(t);
+            });
         }
 
         function getSRPageNums(cur, tot) {
-            if (tot <= 7) return Array.from({ length: tot }, (_, i) => i + 1);
-            if (cur <= 4) return [1, 2, 3, 4, 5, '...', tot];
-            if (cur >= tot - 3) return [1, '...', tot - 4, tot - 3, tot - 2, tot - 1, tot];
-            return [1, '...', cur - 1, cur, cur + 1, '...', tot];
+            if (tot<=7) return Array.from({length:tot},(_,i)=>i+1);
+            if (cur<=4) return [1,2,3,4,5,'...',tot];
+            if (cur>=tot-3) return [1,'...',tot-4,tot-3,tot-2,tot-1,tot];
+            return [1,'...',cur-1,cur,cur+1,'...',tot];
         }
-
-        function changeSRPage(n) {
-            const totalPages = Math.max(1, Math.ceil(srLastTotal / SR_ROWS_PER_PAGE));
-            if (n < 1 || n > totalPages) return;
-            srCurrentPage = n;
-            applyFiltersSR();
-        }
-
+        function changeSRPage(n) { if (n >= 1) fetchSR(n); }
         function changeSRRows(value) {
             SR_ROWS_PER_PAGE = parseInt(value);
             localStorage.setItem('srRowsPerPage', value);
-            srCurrentPage = 1;
-            applyFiltersSR();
+            fetchSR(1);
+        }
+        function filterTable() { fetchSR(1); }
+
+        /* ── Date label ───────────────────────────────────────── */
+        function updateSRDateLabel(dates) {
+            if (!dates.length) { document.getElementById('srDateRangeLabel').textContent = 'Today'; return; }
+            const today = fmtISO(new Date());
+            const fmt = d => d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+            const isSame = dates.length > 1 && dates[0].toDateString() === dates[1].toDateString();
+            const single = dates.length === 1 || isSame;
+            document.getElementById('srDateRangeLabel').textContent =
+                (single && fmtISO(dates[0]) === today) ? 'Today'
+                : single ? fmt(dates[0]) : fmt(dates[0]) + ' – ' + fmt(dates[1]);
         }
 
+        /* ── Status filter ────────────────────────────────────── */
         document.querySelectorAll('#statusMenu .dropdown-item').forEach(item => {
             item.addEventListener('click', e => {
                 e.preventDefault();
                 document.getElementById('statusLabel').textContent = item.textContent.trim();
                 currentStatus = item.dataset.value;
-                srCurrentPage = 1;
-                applyFiltersSR();
+                fetchSR(1);
             });
+        });
+
+        /* ── Init ─────────────────────────────────────────────── */
+        document.addEventListener('DOMContentLoaded', () => {
+            updateSRDateLabel(srDateFrom && srDateTo
+                ? [new Date(srDateFrom+'T00:00'), new Date(srDateTo+'T00:00')] : []);
+
+            flatpickr(document.getElementById('srDatePickerBtn'), {
+                mode: 'range', dateFormat: 'Y-m-d',
+                defaultDate: srDateFrom && srDateTo ? [srDateFrom, srDateTo] : 'today',
+                onChange(dates) {
+                    srDateFrom = dates.length >= 1 ? fmtISO(dates[0]) : null;
+                    srDateTo   = dates.length === 2 ? fmtISO(dates[1]) : srDateFrom;
+                    localStorage.setItem('srDateFrom', srDateFrom || '');
+                    localStorage.setItem('srDateTo',   srDateTo   || '');
+                    updateSRDateLabel(dates);
+                    fetchSR(1);
+                }
+            });
+
+            document.getElementById('searchInput').addEventListener('input', () => {
+                clearTimeout(srSearchTimeout);
+                srSearchTimeout = setTimeout(() => fetchSR(1), 400);
+            });
+
+            fetchSR(1);
         });
 
         // ---- CONFIRM ACTION MODAL ----
@@ -749,36 +663,18 @@ function getStatusBadge(string $status): string {
             const btn = e.target.closest('.confirm-action-btn');
             if (!btn) return;
             const label    = btn.dataset.label;
-            const url      = btn.dataset.url;
             const body     = btn.dataset.body || 'Are you sure you want to ' + label.toLowerCase() + '?';
             const btnClass = btn.dataset.btnClass || 'btn-primary';
-
             document.getElementById('confirmActionTitle').textContent = label;
             document.getElementById('confirmActionBody').textContent  = body;
-
-            const confirmBtn = document.getElementById('confirmActionBtn');
-            confirmBtn.href      = url;
-            confirmBtn.className = 'btn ' + btnClass;
-            confirmBtn.textContent = label;
+            const cb = document.getElementById('confirmActionBtn');
+            cb.href = btn.dataset.url; cb.className = 'btn ' + btnClass; cb.textContent = label;
         });
 
         <?php if ($success || $error): ?>
         showToast(<?= json_encode($success ?: $error) ?>, '<?= $success ? 'success' : 'danger' ?>');
         <?php endif; ?>
 
-        // ---- HORIZONTAL MOUSE WHEEL SCROLL ----
-        document.querySelectorAll('.table-scroll-wrapper, .tableScroll').forEach(wrapper => {
-            let nearHScrollbar = false;
-            wrapper.addEventListener('mousemove', e => {
-                nearHScrollbar = e.clientY > wrapper.getBoundingClientRect().bottom - 16;
-            });
-            wrapper.addEventListener('mouseleave', () => { nearHScrollbar = false; });
-            wrapper.addEventListener('wheel', e => {
-                if (!nearHScrollbar) return;
-                e.preventDefault();
-                wrapper.scrollLeft += e.deltaY + e.deltaX;
-            }, { passive: false });
-        });
     </script>
 </body>
 </html>
