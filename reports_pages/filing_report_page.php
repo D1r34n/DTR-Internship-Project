@@ -184,7 +184,7 @@ require_once 'cutoff_helpers.php';
                     <thead id="report-thead">
                         <tr>
                             <th class="sortable" data-sort="employee_id">Employee ID <i class="bi bi-filter sortIcon" id="sort-employee_id"></i></th>
-                            <th class="sortable" data-sort="employee_name">Name <i class="bi bi-filter sortIcon" id="sort-employee_name"></i><span class="col-group-toggle ms-3" id="dept-cat-toggle" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Toggle Dept &amp; Category columns"><i class="bi bi-chevron-right"></i></span></th>
+                            <th class="sortable" data-sort="employee_name">Name <i class="bi bi-filter sortIcon" id="sort-employee_name"></i><span class="col-group-toggle ms-3" id="dept-cat-toggle" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Toggle Department column"><i class="bi bi-chevron-right"></i></span></th>
                             <th class="sortable" data-sort="department_name">Department <i class="bi bi-filter sortIcon" id="sort-department_name"></i></th>
                             <th class="sortable" data-sort="category">Category <i class="bi bi-filter sortIcon" id="sort-category"></i></th>
                             <th class="sortable" data-sort="request_name">Filing Type <i class="bi bi-filter sortIcon" id="sort-request_name"></i></th>

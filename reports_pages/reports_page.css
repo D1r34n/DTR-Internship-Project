@@ -155,13 +155,17 @@ body {
 #reportTable.cols-dept-role-collapsed th:nth-child(4),
 #reportTable.cols-dept-role-collapsed td:nth-child(4),
 #reportTable.cols-dept-cat-collapsed th:nth-child(3),
-#reportTable.cols-dept-cat-collapsed td:nth-child(3),
-#reportTable.cols-dept-cat-collapsed th:nth-child(4),
-#reportTable.cols-dept-cat-collapsed td:nth-child(4) {
+#reportTable.cols-dept-cat-collapsed td:nth-child(3) {
     max-width: 0 !important;
     opacity: 0;
     padding-left: 0 !important;
     padding-right: 0 !important;
+}
+
+/* Name column — left-aligned across all report tables */
+#reportTable thead th:nth-child(2),
+#reportTable tbody td:nth-child(2) {
+    text-align: left;
 }
 
 /* Tighter horizontal padding for inner cells — specificity 0,1,2 stays below

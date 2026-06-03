@@ -531,7 +531,7 @@ $totalLogEdit  = $pendingLogEdit + $approvedLogEdit + $rejectedLogEdit;
                  : '<span class="badge">Unknown</span>';
         }
         function actionBtns(type, id, status) {
-            if (status !== 'pending') return '<span class="text-muted">No actions</span>';
+            if (status !== 'pending') return '<span class="text-meta">No actions</span>';
             return `<button class="btn btn-sm btn-success confirm-action-btn"
                         data-url="admin_requests.php?action=approve&type=${type}&id=${id}"
                         data-label="Approve" data-bs-toggle="modal" data-bs-target="#confirmActionModal">

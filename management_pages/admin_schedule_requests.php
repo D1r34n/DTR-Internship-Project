@@ -468,7 +468,7 @@ if ($deptScoped) {
             let statusCell = statusBadgeSR(rowStatus);
             if (!isArchived && isPendingDel) statusCell = '<span class="badge status-pending">Pending Delete</span>';
 
-            let actionsCell = '<span class="no-action-text">No actions</span>';
+            let actionsCell = '<span class="text-meta">No actions</span>';
             if (!isArchived && isPendingDel) {
                 actionsCell = `
                     <button class="btn btn-sm btn-danger confirm-action-btn"
