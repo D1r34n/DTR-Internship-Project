@@ -135,8 +135,15 @@ function gantt_cursor(): string
 // Create scale per row where it takes the scheduled time in and scheduled time out (+2 hours)
 function gantt_scale(int $rangeStart, int $rangeEnd): string
 {
+    $rangeSecs = $rangeEnd - $rangeStart;
+    if      ($rangeSecs <= 4  * 3600) $step = 3600;
+    elseif  ($rangeSecs <= 8  * 3600) $step = 2 * 3600;
+    elseif  ($rangeSecs <= 16 * 3600) $step = 3 * 3600;
+    else                              $step = 4 * 3600;
+
+    $firstTick = (int) ceil($rangeStart / $step) * $step;
     $html = '<div class="ganttScale">';
-    for ($t = $rangeStart; $t <= $rangeEnd; $t += 3600) {
+    for ($t = $firstTick; $t <= $rangeEnd; $t += $step) {
         $pos   = (($t - $rangeStart) / ($rangeEnd - $rangeStart)) * 100;
         $html .= '<div class="ganttScaleItem" style="left: ' . $pos . '%">'
             . date('g:i A', $t)

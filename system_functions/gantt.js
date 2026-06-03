@@ -18,8 +18,16 @@ function ganttCursorHtml() {
 }
 
 function ganttScaleHtml(rangeStart, rangeEnd) {
+    const rangeSecs = rangeEnd - rangeStart;
+    let step;
+    if      (rangeSecs <= 4  * 3600) step = 3600;
+    else if (rangeSecs <= 8  * 3600) step = 2 * 3600;
+    else if (rangeSecs <= 16 * 3600) step = 3 * 3600;
+    else                             step = 4 * 3600;
+
+    const firstTick = Math.ceil(rangeStart / step) * step;
     let html = '<div class="ganttScale">';
-    for (let t = rangeStart; t <= rangeEnd; t += 3600) {
+    for (let t = firstTick; t <= rangeEnd; t += step) {
         const pos = ((t - rangeStart) / (rangeEnd - rangeStart)) * 100;
         html += `<div class="ganttScaleItem" style="left: ${pos}%">${fmtTime(t)}</div>`;
     }

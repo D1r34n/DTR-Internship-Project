@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jun 01, 2026 at 10:02 AM
+-- Generation Time: Jun 02, 2026 at 01:42 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -53,7 +53,7 @@ CREATE TABLE `attendances` (
 --
 
 INSERT INTO `attendances` (`id`, `employee_id`, `schedule_id`, `work_date`, `scheduled_start`, `scheduled_end`, `actual_time_in`, `actual_time_out`, `total_work_minutes`, `late_minutes`, `undertime_minutes`, `overtime_minutes`, `break_minutes`, `status`, `overtime_status`, `missed_time_out`, `created_at`, `updated_at`) VALUES
-(0, 22, 610, '2026-05-29', '2026-05-29 08:30:00', '2026-05-29 17:30:00', '2026-05-29 11:48:13', '2026-05-29 22:50:00', 662, 0, 0, 110, 0, 'present', 'none', 0, '2026-05-29 03:48:13', '2026-06-01 02:13:18');
+(0, 22, 619, '2026-06-01', '2026-06-01 08:30:00', '2026-06-01 17:30:00', '2026-06-02 07:36:01', NULL, 0, 0, 0, 0, 0, 'incomplete', 'none', 0, '2026-06-01 23:36:01', '2026-06-01 23:36:01');
 
 -- --------------------------------------------------------
 
@@ -289,7 +289,7 @@ CREATE TABLE `logs` (
   `id` bigint(20) NOT NULL,
   `employee_id` bigint(20) NOT NULL,
   `schedule_id` bigint(20) UNSIGNED DEFAULT NULL,
-  `log_type` enum('IN','OUT','BREAK_IN','BREAK_OUT','ADD_EMPLOYEE','EDIT_EMPLOYEE','DELETE_EMPLOYEE','ADD_SCHEDULE','EDIT_SCHEDULE','DELETE_SCHEDULE','ADD_DEPARTMENT','EDIT_DEPARTMENT','DELETE_DEPARTMENT') DEFAULT NULL,
+  `log_type` enum('IN','OUT','BREAK_IN','BREAK_OUT','ADD_EMPLOYEE','EDIT_EMPLOYEE','DELETE_EMPLOYEE','ADD_SCHEDULE','EDIT_SCHEDULE','DELETE_SCHEDULE','ADD_DEPARTMENT','EDIT_DEPARTMENT','DELETE_DEPARTMENT','ADD_EVENT','EDIT_EVENT','DELETE_EVENT') DEFAULT NULL,
   `log_time` datetime NOT NULL,
   `longitude` decimal(10,7) NOT NULL,
   `latitude` decimal(10,7) NOT NULL,
@@ -309,24 +309,7 @@ CREATE TABLE `logs` (
 --
 
 INSERT INTO `logs` (`id`, `employee_id`, `schedule_id`, `log_type`, `log_time`, `longitude`, `latitude`, `accuracy`, `is_within_office`, `distance_meters`, `photo_path`, `created_at`, `original_log_time`, `schedule_request_id`, `edit_reason`, `edit_requested_by`) VALUES
-(904, 22, 610, 'IN', '2026-05-29 11:48:13', 120.9954910, 14.5842560, 55, 1, 22.966, 'cap_22_20260529_114813.jpg', '2026-05-29 03:48:13', NULL, NULL, NULL, NULL),
-(905, 22, NULL, 'EDIT_SCHEDULE', '2026-05-29 11:49:28', 0.0000000, 0.0000000, NULL, 0, NULL, NULL, '2026-05-29 03:49:28', NULL, 11, '2c25269e9c3e1845', 39),
-(906, 22, 610, 'OUT', '2026-05-29 22:50:00', 120.9954929, 14.5842550, 55, 1, 22.9184, 'cap_22_20260529_115022.jpg', '2026-05-29 03:50:22', '2026-05-29 11:50:22', NULL, NULL, NULL),
-(907, 39, NULL, 'IN', '2026-06-01 09:25:13', 120.9955111, 14.5842413, 55, 1, 23.013, 'cap_39_20260601_092513.jpg', '2026-06-01 01:25:13', NULL, NULL, NULL, NULL),
-(908, 39, NULL, 'OUT', '2026-06-01 09:25:43', 120.9956000, 14.5846000, 8886, 1, 20.6888, 'cap_39_20260601_092543.jpg', '2026-06-01 01:25:43', NULL, NULL, NULL, NULL),
-(909, 39, NULL, 'IN', '2026-06-01 09:26:10', 120.9956000, 14.5846000, 8886, 1, 20.6888, 'cap_39_20260601_092610.jpg', '2026-06-01 01:26:10', NULL, NULL, NULL, NULL),
-(910, 39, NULL, 'OUT', '2026-06-01 09:26:15', 120.9955065, 14.5842461, 55, 1, 22.8502, 'cap_39_20260601_092615.jpg', '2026-06-01 01:26:15', NULL, NULL, NULL, NULL),
-(911, 39, NULL, 'IN', '2026-06-01 09:26:33', 120.9956000, 14.5846000, 8886, 1, 20.6888, 'cap_39_20260601_092633.jpg', '2026-06-01 01:26:33', NULL, NULL, NULL, NULL),
-(912, 22, NULL, 'IN', '2026-06-01 10:13:18', 120.9956000, 14.5846000, 8886, 1, 20.6888, 'cap_22_20260601_101318.jpg', '2026-06-01 02:13:18', NULL, NULL, NULL, NULL),
-(913, 22, NULL, 'OUT', '2026-06-01 10:13:33', 120.9955015, 14.5842462, 55, 1, 23.1445, 'cap_22_20260601_101333.jpg', '2026-06-01 02:13:33', NULL, NULL, NULL, NULL),
-(914, 22, NULL, 'IN', '2026-06-01 10:13:41', 120.9955015, 14.5842462, 55, 1, 23.1445, 'cap_22_20260601_101341.jpg', '2026-06-01 02:13:41', NULL, NULL, NULL, NULL),
-(915, 22, NULL, 'OUT', '2026-06-01 10:13:49', 120.9955015, 14.5842462, 55, 1, 23.1445, 'cap_22_20260601_101349.jpg', '2026-06-01 02:13:49', NULL, NULL, NULL, NULL),
-(916, 39, NULL, 'OUT', '2026-06-01 14:43:41', 120.9956000, 14.5846000, 8886, 1, 20.6888, 'cap_39_20260601_144341.jpg', '2026-06-01 06:43:41', NULL, NULL, NULL, NULL),
-(917, 39, NULL, 'IN', '2026-06-01 15:15:35', 120.9956000, 14.5846000, 8886, 1, 20.6888, 'cap_39_20260601_151535.jpg', '2026-06-01 07:15:35', NULL, NULL, NULL, NULL),
-(918, 22, NULL, 'ADD_SCHEDULE', '2026-06-01 15:18:13', 0.0000000, 0.0000000, NULL, 0, NULL, NULL, '2026-06-01 07:18:13', NULL, 12, '99490c771cb73ba4', 39),
-(919, 22, NULL, 'ADD_SCHEDULE', '2026-06-01 15:18:41', 0.0000000, 0.0000000, NULL, 0, NULL, NULL, '2026-06-01 07:18:41', NULL, 13, 'b2439818e0a2739d', 39),
-(920, 22, NULL, 'OUT', '2026-06-01 15:18:52', 120.9954856, 14.5842606, 55, 1, 22.957, 'cap_22_20260601_151852.jpg', '2026-06-01 07:18:52', NULL, NULL, NULL, NULL),
-(921, 22, 612, 'IN', '2026-06-01 15:19:05', 120.9955060, 14.5842443, 55, 1, 23.0433, 'cap_22_20260601_151905.jpg', '2026-06-01 07:19:05', NULL, NULL, NULL, NULL);
+(948, 22, 620, 'IN', '2026-06-02 07:36:01', 120.9955016, 14.5842488, 55, 1, 22.8963, 'cap_22_20260602_073601.jpg', '2026-06-01 23:36:01', NULL, NULL, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -481,8 +464,13 @@ CREATE TABLE `schedules` (
 --
 
 INSERT INTO `schedules` (`id`, `employee_id`, `schedule_date`, `scheduled_start`, `scheduled_end`, `is_rest_day`, `pending_delete`, `updated_at`, `is_archived`, `request_type`, `batch_id`, `orig_is_rest_day`, `orig_scheduled_start`, `orig_scheduled_end`) VALUES
-(610, 22, '2026-05-29', '2026-05-29 12:00:00', '2026-05-29 21:00:00', 0, 0, NULL, 0, 'edit', '2c25269e9c3e1845', 0, '2026-05-29 08:30:00', '2026-05-29 17:30:00'),
-(612, 22, '2026-06-01', '2026-06-01 15:30:00', '2026-06-02 00:30:00', 0, 0, NULL, 0, 'added', 'b2439818e0a2739d', NULL, NULL, NULL);
+(619, 22, '2026-06-01', '2026-06-01 08:30:00', '2026-06-01 17:30:00', 0, 0, NULL, 0, 'added', '707d8f6956e28652', NULL, NULL, NULL),
+(620, 22, '2026-06-02', '2026-06-02 08:30:00', '2026-06-02 17:30:00', 0, 0, NULL, 0, 'added', '707d8f6956e28652', NULL, NULL, NULL),
+(621, 22, '2026-06-03', '2026-06-03 08:30:00', '2026-06-03 17:30:00', 0, 0, NULL, 0, 'added', '707d8f6956e28652', NULL, NULL, NULL),
+(622, 22, '2026-06-04', '2026-06-04 08:30:00', '2026-06-04 17:30:00', 0, 0, NULL, 0, 'added', '707d8f6956e28652', NULL, NULL, NULL),
+(623, 22, '2026-06-05', '2026-06-05 08:30:00', '2026-06-05 17:30:00', 0, 0, NULL, 0, 'added', '707d8f6956e28652', NULL, NULL, NULL),
+(624, 22, '2026-06-06', '2026-06-06 08:30:00', '2026-06-06 17:30:00', 1, 0, NULL, 0, 'added', '707d8f6956e28652', NULL, NULL, NULL),
+(625, 22, '2026-06-07', '2026-06-07 08:30:00', '2026-06-07 17:30:00', 1, 0, NULL, 0, 'added', '707d8f6956e28652', NULL, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -665,6 +653,12 @@ ALTER TABLE `system_state`
 --
 
 --
+-- AUTO_INCREMENT for table `attendances`
+--
+ALTER TABLE `attendances`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1;
+
+--
 -- AUTO_INCREMENT for table `cutoffs`
 --
 ALTER TABLE `cutoffs`
@@ -704,7 +698,7 @@ ALTER TABLE `leave_types`
 -- AUTO_INCREMENT for table `logs`
 --
 ALTER TABLE `logs`
-  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=922;
+  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=949;
 
 --
 -- AUTO_INCREMENT for table `log_edit_requests`
@@ -734,7 +728,7 @@ ALTER TABLE `roles`
 -- AUTO_INCREMENT for table `schedules`
 --
 ALTER TABLE `schedules`
-  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=613;
+  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=626;
 
 --
 -- AUTO_INCREMENT for table `schedule_edit_requests`

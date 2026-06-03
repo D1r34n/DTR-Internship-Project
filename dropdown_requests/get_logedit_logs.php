@@ -24,16 +24,24 @@ $stmt = $pdo->prepare("
     FROM logs l
     LEFT JOIN attendances a
         ON  a.employee_id = l.employee_id
-        AND DATE(l.log_time) = a.work_date
+        AND a.schedule_id = l.schedule_id
     LEFT JOIN log_edit_requests ler
         ON  ler.log_id = l.id
         AND ler.id = (SELECT MAX(id) FROM log_edit_requests WHERE log_id = l.id)
 
     WHERE l.employee_id = ?
-        AND DATE(l.log_time) = CURDATE()
         AND l.log_type IN ('IN', 'OUT')
+        AND l.schedule_id = (
+            SELECT schedule_id
+            FROM logs
+            WHERE employee_id = ?
+              AND log_type = 'IN'
+              AND schedule_id IS NOT NULL
+            ORDER BY log_time DESC
+            LIMIT 1
+        )
 
     ORDER BY l.log_time ASC
 ");
-$stmt->execute([$employeeId]);
+$stmt->execute([$employeeId, $employeeId]);
 echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));
