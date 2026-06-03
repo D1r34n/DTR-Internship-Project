@@ -197,6 +197,56 @@ $initialDeptFilter = isset($_GET['dept']) ? (int)$_GET['dept'] : 0;
     <link rel="stylesheet" href="../navbars_revised.css">
 
     <link rel="stylesheet" href="admin_manage_employees.css">
+
+    <style>
+        /* Department selector — tooltip-style popover list.
+           Uses !important to override the global frosted .dropdown-menu theme.
+           This menu opens UPWARD (see admin_manage_employees.css), so it sits
+           above the field and the arrow points down toward it. */
+        .dept-pop { position: relative; }
+        /* Lift the whole control above sibling fields while open so the
+           upward menu/arrow aren't covered by the rows above. */
+        .dept-pop:has(> .dept-tooltip-menu.show) { z-index: 10001; }
+        .dept-tooltip-menu {
+            border: 1px solid rgba(255, 255, 255, .12) !important;
+            border-radius: .6rem !important;
+            padding: .35rem !important;
+            background: #1b1f24 !important;
+            background-image: none !important;
+            box-shadow: 0 .75rem 1.5rem rgba(0, 0, 0, .5) !important;
+            max-height: 240px !important;
+            overflow-y: auto !important;
+        }
+        #empModal #dept-modal-menu.dept-tooltip-menu {
+            margin-top: 0 !important;
+            margin-bottom: .6rem !important;
+        }
+        /* Arrow on the wrapper (scrollable menu can't clip it). Points down. */
+        .dept-pop-up:has(> .dept-tooltip-menu.show)::after {
+            content: "";
+            position: absolute;
+            left: 20px;
+            top: -9px;
+            width: 12px;
+            height: 12px;
+            background: #1b1f24;
+            border-right: 1px solid rgba(255, 255, 255, .12);
+            border-bottom: 1px solid rgba(255, 255, 255, .12);
+            transform: rotate(45deg);
+            z-index: 10000;
+        }
+        .dept-tooltip-menu .dropdown-item {
+            color: #f8f9fa !important;
+            border-radius: .35rem !important;
+            padding: .45rem .65rem !important;
+            font-size: .9rem !important;
+        }
+        .dept-tooltip-menu .dropdown-item:hover,
+        .dept-tooltip-menu .dropdown-item:focus {
+            background: rgba(255, 255, 255, .12) !important;
+            color: #fff !important;
+        }
+    </style>
 </head>
 <body>
 
@@ -625,25 +675,13 @@ $initialDeptFilter = isset($_GET['dept']) ? (int)$_GET['dept'] : 0;
                                         <!-- Department -->
                                         <div class="col-md-12">
                                             <label class="form-label">Department</label>
-                                            <div class="dropdown w-100">
-                                                <button class="btn w-100 text-start dropdown-toggle"
-                                                        type="button"
-                                                        data-bs-toggle="dropdown"
-                                                        data-bs-auto-close="outside"
-                                                        aria-expanded="false"
-                                                        id="deptModalBtn">
-                                                    <span id="deptModalLabel">Select Department</span>
-                                                </button>
-                                                <div class="dropdown-menu w-100 p-2" id="dept-modal-menu">
-                                                    <input type="text"
-                                                           class="form-control form-control-sm mb-2"
-                                                           id="deptModalSearch"
-                                                           placeholder="Search department...">
-                                                    <ul class="list-unstyled mb-0"
-                                                        id="deptModalList"
-                                                        style="max-height:200px; overflow-y:auto;">
-                                                    </ul>
+                                            <div class="dropdown w-100 dept-pop dept-pop-up">
+                                                <div class="input-group">
+                                                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                                                    <input type="text" id="deptModalSearch" class="form-control"
+                                                           placeholder="Select Department" autocomplete="off">
                                                 </div>
+                                                <ul class="dropdown-menu p-2 w-100 dept-tooltip-menu" id="dept-modal-menu"></ul>
                                             </div>
                                             <input type="hidden" name="department_id" id="deptInput">
                                         </div>
@@ -943,20 +981,27 @@ $initialDeptFilter = isset($_GET['dept']) ? (int)$_GET['dept'] : 0;
                     renderDeptList(deptItems.filter(d => d.label.toLowerCase().includes(q)), 'filter');
                 });
 
-            document.getElementById('deptModalSearch')
-                ?.addEventListener('input', function () {
-                    const q = this.value.toLowerCase();
-                    renderDeptList(
-                        deptItems.filter(d => d.value !== '' && d.label.toLowerCase().includes(q)),
-                        'modal'
-                    );
-                });
+            const deptSearch = document.getElementById('deptModalSearch');
+            const deptMenu   = document.getElementById('dept-modal-menu');
+            deptSearch?.addEventListener('click', () => deptMenu.classList.add('show'));
+            deptSearch?.addEventListener('input', function () {
+                const q = this.value.toLowerCase();
+                renderDeptList(
+                    deptItems.filter(d => d.value !== '' && d.label.toLowerCase().includes(q)),
+                    'modal'
+                );
+                deptMenu.classList.add('show');
+            });
+            document.addEventListener('click', e => {
+                if (!e.target.closest('#dept-modal-menu') && !e.target.closest('#deptModalSearch'))
+                    deptMenu?.classList.remove('show');
+            });
 
 document.getElementById('empModal')
                 ?.addEventListener('show.bs.modal', () => {
-                    document.getElementById('deptModalLabel').textContent = 'Select Department';
-                    document.getElementById('deptModalSearch').value      = '';
-                    document.getElementById('deptInput').value            = '';
+                    document.getElementById('deptModalSearch').value = '';
+                    document.getElementById('deptInput').value       = '';
+                    document.getElementById('dept-modal-menu').classList.remove('show');
                     renderDeptList(deptItems.filter(d => d.value !== ''), 'modal');
                     document.getElementById('roleLabel').textContent = 'Select Role';
                     document.getElementById('roleInput').value      = '';
@@ -1053,13 +1098,11 @@ document.getElementById('empModal')
                     applyFilters();
                 };
             } else if (target === 'modal') {
-                listId   = 'deptModalList';
+                listId   = 'dept-modal-menu';
                 onSelect = item => {
-                    document.getElementById('deptInput').value            = item.value;
-                    document.getElementById('deptModalLabel').textContent = item.label;
-                    bootstrap.Dropdown.getInstance(
-                        document.getElementById('deptModalBtn')
-                    )?.hide();
+                    document.getElementById('deptModalSearch').value = item.label;
+                    document.getElementById('deptInput').value       = item.value;
+                    document.getElementById('dept-modal-menu').classList.remove('show');
                 };
             } else {
                 return;

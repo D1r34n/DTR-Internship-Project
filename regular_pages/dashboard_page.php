@@ -1136,12 +1136,9 @@ document.getElementById('saveQuoteBtn').addEventListener('click', function () {
         .then(r => r.json())
         .then(data => {
             if (data.success) {
-                msgEl.className = 'alert alert-success mt-2';
-                msgEl.textContent = 'Quote saved! Employees will see it on their dashboard.';
-                setTimeout(() => {
-                    bootstrap.Modal.getInstance(document.getElementById('editQuoteModal')).hide();
-                    msgEl.className = 'd-none';
-                }, 1500);
+                msgEl.className = 'd-none';
+                bootstrap.Modal.getInstance(document.getElementById('editQuoteModal')).hide();
+                showToast('Quote saved! Employees will see it on their dashboard.', 'success');
             } else {
                 msgEl.className = 'alert alert-danger mt-2';
                 msgEl.textContent = data.message || 'Failed to save quote.';
