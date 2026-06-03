@@ -689,6 +689,64 @@ $leaveTypes = [
     <link rel="stylesheet" href="../regular_pages/records_widget.css">
     <link rel="stylesheet" href="../regular_pages/schedules_widget.css">
 
+    <style>
+        /* Department selector — tooltip-style popover list.
+           Uses !important to override the global frosted .dropdown-menu theme. */
+        .dept-pop { position: relative; }
+        /* Let the popover float in FRONT of the modal instead of being clipped
+           by the modal body / form overflow. This modal is short and doesn't
+           need internal scrolling, so visible overflow is safe here. */
+        #edit-employee-modal .modal-content > form,
+        #edit-employee-modal .modal-body { overflow: visible !important; }
+        /* Lift the whole control above sibling fields while open so the
+           upward menu/arrow aren't covered by the row above or the Role field. */
+        .dept-pop:has(> .dept-tooltip-menu.show) { z-index: 10001; }
+        .dept-tooltip-menu {
+            margin-top: .6rem !important;
+            border: 1px solid rgba(255, 255, 255, .12) !important;
+            border-radius: .6rem !important;
+            padding: .35rem !important;
+            background: #1b1f24 !important;
+            background-image: none !important;
+            box-shadow: 0 .75rem 1.5rem rgba(0, 0, 0, .5) !important;
+            max-height: 240px !important;
+            overflow-y: auto !important;
+        }
+        /* Menu opens UPWARD (above the field) so it never runs off-screen. */
+        #edit-dept-menu.dept-tooltip-menu {
+            top: auto !important;
+            bottom: 100% !important;
+            margin-top: 0 !important;
+            margin-bottom: .6rem !important;
+        }
+        /* Arrow lives on the wrapper so the scrollable menu can't clip it.
+           Only shown while the menu is open. Points down toward the field. */
+        .dept-pop-up:has(> .dept-tooltip-menu.show)::after {
+            content: "";
+            position: absolute;
+            left: 20px;
+            top: -9px;
+            width: 12px;
+            height: 12px;
+            background: #1b1f24;
+            border-right: 1px solid rgba(255, 255, 255, .12);
+            border-bottom: 1px solid rgba(255, 255, 255, .12);
+            transform: rotate(45deg);
+            z-index: 10000;
+        }
+        .dept-tooltip-menu .dropdown-item {
+            color: #f8f9fa !important;
+            border-radius: .35rem !important;
+            padding: .45rem .65rem !important;
+            font-size: .9rem !important;
+        }
+        .dept-tooltip-menu .dropdown-item:hover,
+        .dept-tooltip-menu .dropdown-item:focus {
+            background: rgba(255, 255, 255, .12) !important;
+            color: #fff !important;
+        }
+    </style>
+
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/monthSelect/index.js"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -995,14 +1053,14 @@ $leaveTypes = [
 
                         <div class="col-md-6">
                             <label class="form-label">Department</label>
-                            <div class="dropdown w-100">
+                            <div class="dropdown w-100 dept-pop dept-pop-up">
                                 <div class="input-group">
                                     <span class="input-group-text"><i class="bi bi-search"></i></span>
                                     <input type="text" id="edit-dept-search" class="form-control"
                                            value="<?= htmlspecialchars($emp['department_name'] ?? '') ?>"
                                            placeholder="Select Department" autocomplete="off">
                                 </div>
-                                <ul class="dropdown-menu p-2 w-100" id="edit-dept-menu"></ul>
+                                <ul class="dropdown-menu p-2 w-100 dept-tooltip-menu" id="edit-dept-menu"></ul>
                             </div>
                             <input type="hidden" name="department_id" id="edit-dept-id"
                                    value="<?= htmlspecialchars($emp['department_id'] ?? '') ?>">
