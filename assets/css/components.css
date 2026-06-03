@@ -101,6 +101,20 @@ hr {
     box-shadow: var(--frosted-shadow) !important;
     color: var(--text-light) !important;
     min-width: 280px;
+    overflow: hidden;
+}
+
+.toast-progress {
+    height: 3px;
+    width: 100%;
+    background: currentColor;
+    animation: toast-progress-shrink 5s linear forwards;
+    border-radius: 12px 12px 0 0;
+}
+
+@keyframes toast-progress-shrink {
+    from { width: 100%; }
+    to   { width: 0%; }
 }
 
 .toast.toast-success {

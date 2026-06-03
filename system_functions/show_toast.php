@@ -29,6 +29,7 @@ function showToast(message, type = 'primary') {
     toastEl.setAttribute('aria-atomic', 'true');
 
     toastEl.innerHTML = `
+        <div class="toast-progress"></div>
         <div class="d-flex align-items-center">
 
             <div class="toast-body d-flex align-items-center gap-2">
