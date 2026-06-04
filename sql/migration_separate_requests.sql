@@ -106,4 +106,18 @@ ALTER TABLE `schedules`
     DROP COLUMN IF EXISTS `status`,
     DROP COLUMN IF EXISTS `requested_by`;
 
+-- ─────────────────────────────────────────────────────────────
+-- 6. Allow REQUEST_CHANGE_SCHEDULE in logs.log_type
+--    (employee-submitted schedule edit requests are logged with
+--    this type so they appear in the activity log).
+-- ─────────────────────────────────────────────────────────────
+ALTER TABLE `logs` MODIFY COLUMN `log_type` ENUM(
+    'IN','OUT','BREAK_IN','BREAK_OUT',
+    'ADD_EMPLOYEE','EDIT_EMPLOYEE','DELETE_EMPLOYEE',
+    'ADD_SCHEDULE','EDIT_SCHEDULE','DELETE_SCHEDULE',
+    'ADD_DEPARTMENT','EDIT_DEPARTMENT','DELETE_DEPARTMENT',
+    'ADD_EVENT','EDIT_EVENT','DELETE_EVENT',
+    'REQUEST_CHANGE_SCHEDULE'
+);
+
 SET foreign_key_checks = 1;

@@ -77,27 +77,10 @@ if (isset($_GET['action']) && (isset($_GET['id']) || isset($_GET['batch_id']))) 
             }
         }
 
-        if ($batchId) {
-            $pdo->prepare("
-                UPDATE logs
-                SET edit_status = 'approved'
-                WHERE edit_reason = ?
-                AND log_type IN ('ADD_SCHEDULE', 'EDIT_SCHEDULE')
-                AND edit_status = 'pending'
-            ")->execute([$batchId]);
-        } elseif (!empty($schedList)) {
-            $empId       = $schedList[0]['employee_id'];
-            $requestedBy = $schedList[0]['requested_by'] ?? null;
-            if ($requestedBy) {
-                $pdo->prepare("
-                    UPDATE logs
-                    SET edit_status = 'approved'
-                    WHERE employee_id = ?
-                    AND edit_requested_by = ?
-                    AND log_type IN ('ADD_SCHEDULE', 'EDIT_SCHEDULE')
-                    AND edit_status = 'pending'
-                ")->execute([$empId, $requestedBy]);
-            }
+        // Request state lives in schedule_edit_requests now (logs.edit_status was dropped).
+        if ($ser) {
+            $pdo->prepare("UPDATE schedule_edit_requests SET status = 'approved' WHERE id = ?")
+                ->execute([$ser['id']]);
         }
 
         if (!empty($schedList)) $success = "Schedule approved successfully!";
@@ -139,27 +122,10 @@ if (isset($_GET['action']) && (isset($_GET['id']) || isset($_GET['batch_id']))) 
             }
             $delAtt->execute([$row['employee_id'], $row['schedule_date']]);
         }
-        if ($batchId) {
-            $pdo->prepare("
-                UPDATE logs
-                SET edit_status = 'rejected'
-                WHERE edit_reason = ?
-                AND log_type IN ('ADD_SCHEDULE', 'EDIT_SCHEDULE')
-                AND edit_status = 'pending'
-            ")->execute([$batchId]);
-        } elseif (!empty($rows)) {
-            $empId       = $rows[0]['employee_id'];
-            $requestedBy = $rows[0]['requested_by'] ?? null;
-            if ($requestedBy) {
-                $pdo->prepare("
-                    UPDATE logs
-                    SET edit_status = 'rejected'
-                    WHERE employee_id = ?
-                    AND edit_requested_by = ?
-                    AND log_type IN ('ADD_SCHEDULE', 'EDIT_SCHEDULE')
-                    AND edit_status = 'pending'
-                ")->execute([$empId, $requestedBy]);
-            }
+        // Request state lives in schedule_edit_requests now (logs.edit_status was dropped).
+        if ($ser) {
+            $pdo->prepare("UPDATE schedule_edit_requests SET status = 'rejected' WHERE id = ?")
+                ->execute([$ser['id']]);
         }
         $success = "Schedule request rejected.";
 
@@ -170,7 +136,7 @@ if (isset($_GET['action']) && (isset($_GET['id']) || isset($_GET['batch_id']))) 
             if (!$chkStmt->fetch()) { $error = "Unauthorized action."; goto skip_action_sr; }
         }
         $siStmt = $pdo->prepare("
-            SELECT s.employee_id, s.requested_by, s.schedule_date, s.scheduled_start, s.scheduled_end, s.is_rest_day,
+            SELECT s.employee_id, s.schedule_date, s.scheduled_start, s.scheduled_end, s.is_rest_day,
                    CONCAT(e.first_name, ' ', e.last_name) AS employee_name
             FROM schedules s
             LEFT JOIN employees e ON s.employee_id = e.id
@@ -190,11 +156,11 @@ if (isset($_GET['action']) && (isset($_GET['id']) || isset($_GET['batch_id']))) 
             $initStmt = $pdo->prepare("SELECT CONCAT(first_name, ' ', last_name) AS name FROM employees WHERE id = ?");
             $initStmt->execute([$_SESSION['user_id']]);
             $initRow  = $initStmt->fetch(PDO::FETCH_ASSOC);
-            // edit_requested_by = workforce user who submitted the delete request (not the approving admin)
-            $logRequestedBy = $si['requested_by'] ?? $_SESSION['user_id'];
+            // schedules.requested_by was dropped; fall back to the schedule owner as the requester.
+            $logRequestedBy = $si['employee_id'];
             $pdo->prepare("
-                INSERT INTO logs (employee_id, log_type, log_time, longitude, latitude, is_within_office, edit_status, edit_requested_by, edit_reason)
-                VALUES (?, ?, NOW(), 0, 0, 0, 'approved', ?, ?)
+                INSERT INTO logs (employee_id, log_type, log_time, longitude, latitude, is_within_office, edit_requested_by, edit_reason)
+                VALUES (?, ?, NOW(), 0, 0, 0, ?, ?)
             ")->execute([$si['employee_id'], 'DELETE_SCHEDULE', $logRequestedBy, json_encode([
                 'employee_name' => $si['employee_name'] ?? '—',
                 'schedule_date' => date('F j, Y', strtotime($si['schedule_date'])),

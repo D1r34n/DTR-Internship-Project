@@ -213,6 +213,16 @@ $stmt = $pdo->prepare("
 $stmt->execute([$employeeId, $start, $end]);
 $schedules = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+// ---- PENDING SCHEDULE-EDIT REQUESTS (so the request-edit calendar can lock them) ----
+$pendingEditBatches = [];
+$batchIds = array_values(array_filter(array_column($schedules, 'batch_id')));
+if ($batchIds) {
+    $ph     = implode(',', array_fill(0, count($batchIds), '?'));
+    $peStmt = $pdo->prepare("SELECT DISTINCT batch_id FROM schedule_edit_requests WHERE status = 'pending' AND batch_id IN ($ph)");
+    $peStmt->execute($batchIds);
+    foreach ($peStmt->fetchAll(PDO::FETCH_COLUMN) as $b) { $pendingEditBatches[$b] = true; }
+}
+
 // ---- GET LEAVE REQUESTS (Fixed to use leave_type_id reference structural block) ----
 $leaveStmt = $pdo->prepare("
     SELECT start_date, end_date, selected_dates, status
@@ -372,6 +382,10 @@ foreach ($schedules as $row) {
                 'shift_type'   => 'night',
                 'timeInStr'    => $startTimeStr,
                 'timeOutStr'   => $endTimeStr . ($isOvernight ? ' ↪' : ''),
+                'schedId'      => (int) $row['id'],
+                'schedInVal'   => date('H:i', strtotime($startDT)),
+                'schedOutVal'  => date('H:i', strtotime($endDT)),
+                'editStatus'   => (!empty($row['batch_id']) && isset($pendingEditBatches[$row['batch_id']])) ? 'pending' : null,
             ],
         ];
 
@@ -399,7 +413,11 @@ foreach ($schedules as $row) {
                 'is_overnight' => $isOvernight,
                 'shift_type'   => 'day',
                 'timeInStr'    => $startTimeStr,
-                'timeOutStr'   => $endTimeStr . ($isOvernight ? ' ↪' : ''),
+                'timeOutStr'   => $endTimeStr,
+                'schedId'      => (int) $row['id'],
+                'schedInVal'   => date('H:i', strtotime($startDT)),
+                'schedOutVal'  => date('H:i', strtotime($endDT)),
+                'editStatus'   => (!empty($row['batch_id']) && isset($pendingEditBatches[$row['batch_id']])) ? 'pending' : null,
             ],
         ];
 

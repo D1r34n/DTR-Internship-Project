@@ -124,7 +124,7 @@ if ($showLogs) {
         LEFT JOIN employees e_init ON ler.requested_by = e_init.id
         LEFT JOIN roles r_init ON r_init.id = e_init.role_id
         WHERE 1=1
-          AND l.log_type NOT IN ('ADD_EMPLOYEE', 'EDIT_EMPLOYEE', 'DELETE_EMPLOYEE', 'ADD_SCHEDULE', 'EDIT_SCHEDULE', 'DELETE_SCHEDULE', 'ADD_DEPARTMENT', 'EDIT_DEPARTMENT', 'DELETE_DEPARTMENT', 'ADD_EVENT', 'EDIT_EVENT', 'DELETE_EVENT')
+          AND l.log_type NOT IN ('ADD_EMPLOYEE', 'EDIT_EMPLOYEE', 'DELETE_EMPLOYEE', 'ADD_SCHEDULE', 'EDIT_SCHEDULE', 'DELETE_SCHEDULE', 'REQUEST_CHANGE_SCHEDULE', 'ADD_DEPARTMENT', 'EDIT_DEPARTMENT', 'DELETE_DEPARTMENT', 'ADD_EVENT', 'EDIT_EVENT', 'DELETE_EVENT')
     ";
     $params = [];
     applyLogsFilter($sql, $params, 'l.employee_id', $scopedToEmployee, $deptScopeRoles, $deptScopeId, (int)$employeeId, $userRole);
@@ -968,6 +968,102 @@ if ($showEditSchedule) {
             'department_name'  => $row['department_name'],
             'edit_role'        => ($initiatedById === $currentUserId) ? 'self' : $row['initiator_role'],
             'edit_status'      => $row['edit_status'] ?? (in_array($row['initiator_role'], ['superadmin', 'admin']) ? 'approved' : ($initiatedById ? 'pending' : null)),
+            'initiator_name'   => $row['initiator_name'],
+            'photo_path'       => null,
+            '_ts'              => $ts,
+            '_date_ts'         => $reqDate,
+        ];
+    }
+}
+
+/* =========================
+   11b. REQUEST SCHEDULE EDIT  (employee-submitted schedule edit request)
+========================= */
+$showReqSchedule = $type === 'ALL' || $type === 'REQUEST_CHANGE_SCHEDULE';
+if ($showReqSchedule) {
+    $sql = "
+        SELECT
+            CONCAT('reqsched_', l.id) AS log_id,
+            l.employee_id,
+            CONCAT(e.first_name, ' ', e.last_name) AS employee_name,
+            r.role_key AS employee_role,
+            d.department_name,
+            l.log_time,
+            l.created_at,
+            ser.status AS edit_status,
+            ser.reason AS edit_reason,
+            l.edit_requested_by AS initiated_by_id,
+            CONCAT(e_init.first_name, ' ', e_init.last_name) AS initiator_name,
+            r_init.role_key AS initiator_role,
+            (SELECT MIN(s.schedule_date)        FROM schedules s WHERE s.employee_id = l.employee_id AND s.batch_id = ser.batch_id AND ser.batch_id IS NOT NULL) AS sched_min_date,
+            (SELECT MAX(s.schedule_date)        FROM schedules s WHERE s.employee_id = l.employee_id AND s.batch_id = ser.batch_id AND ser.batch_id IS NOT NULL) AS sched_max_date,
+            (SELECT MIN(s.orig_scheduled_start) FROM schedules s WHERE s.employee_id = l.employee_id AND s.batch_id = ser.batch_id AND ser.batch_id IS NOT NULL) AS orig_sched_start,
+            (SELECT MIN(s.orig_scheduled_end)   FROM schedules s WHERE s.employee_id = l.employee_id AND s.batch_id = ser.batch_id AND ser.batch_id IS NOT NULL) AS orig_sched_end,
+            (SELECT MIN(s.scheduled_start)      FROM schedules s WHERE s.employee_id = l.employee_id AND s.batch_id = ser.batch_id AND ser.batch_id IS NOT NULL) AS sched_start,
+            (SELECT MIN(s.scheduled_end)        FROM schedules s WHERE s.employee_id = l.employee_id AND s.batch_id = ser.batch_id AND ser.batch_id IS NOT NULL) AS sched_end
+        FROM logs l
+        LEFT JOIN employees e ON l.employee_id = e.id
+        LEFT JOIN roles r ON r.id = e.role_id
+        LEFT JOIN departments d ON e.department_id = d.id
+        LEFT JOIN employees e_init ON l.edit_requested_by = e_init.id
+        LEFT JOIN roles r_init ON r_init.id = e_init.role_id
+        LEFT JOIN schedule_edit_requests ser ON ser.id = l.schedule_request_id
+        WHERE l.log_type = 'REQUEST_CHANGE_SCHEDULE'
+    ";
+    $params = [];
+    applyLogsFilter($sql, $params, 'l.employee_id', $scopedToEmployee, $deptScopeRoles, $deptScopeId, (int)$employeeId, $userRole);
+    // Date filter intentionally omitted: same reason as ADD/EDIT_SCHEDULE above.
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute($params);
+    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $ts             = strtotime($row['log_time']);
+        $reqDate        = strtotime(date('Y-m-d', $ts));
+        $initiatedById  = (int)($row['initiated_by_id'] ?? 0);
+        $minDate        = $row['sched_min_date']   ?? null;
+        $maxDate        = $row['sched_max_date']   ?? null;
+        $origSchedStart = $row['orig_sched_start'] ?? null;
+        $origSchedEnd   = $row['orig_sched_end']   ?? null;
+        $schedStart     = $row['sched_start']      ?? null;
+        $schedEnd       = $row['sched_end']        ?? null;
+
+        if ($minDate) {
+            $minFmt      = date('M j, Y', strtotime($minDate));
+            $maxFmt      = date('M j, Y', strtotime($maxDate));
+            $dateStr     = ($minDate === $maxDate) ? $minFmt : "$minFmt – $maxFmt";
+            $schedDetails = "Schedule edit requested:\n$dateStr";
+            if ($origSchedStart && $origSchedEnd && $schedStart && $schedEnd) {
+                $beforeTime    = date('g:i A', strtotime($origSchedStart)) . ' - ' . date('g:i A', strtotime($origSchedEnd));
+                $afterTime     = date('g:i A', strtotime($schedStart))     . ' - ' . date('g:i A', strtotime($schedEnd));
+                $schedDetails .= "\n\nBefore:\n$beforeTime\nRequested:\n$afterTime";
+            } elseif ($schedStart && $schedEnd) {
+                $afterTime     = date('g:i A', strtotime($schedStart)) . ' - ' . date('g:i A', strtotime($schedEnd));
+                $schedDetails .= "\nRequested:\n$afterTime";
+            }
+        } else {
+            $schedDetails = 'Schedule edit requested';
+        }
+        if (!empty($row['edit_reason'])) {
+            $schedDetails .= "\n\nReason:\n" . $row['edit_reason'];
+        }
+
+        $allRows[] = [
+            'log_id'           => $row['log_id'],
+            'date'             => date('F d, Y', $ts),
+            'time'             => date('h:i A', $ts),
+            'log_datetime'     => date('Y-m-d\TH:i', $ts),
+            'log_type'         => 'REQUEST_CHANGE_SCHEDULE',
+            'details'          => $schedDetails,
+            'is_within_office' => null,
+            'latitude'         => null,
+            'longitude'        => null,
+            'accuracy'         => null,
+            'distance_meters'  => null,
+            'employee_id'      => (int)$row['employee_id'],
+            'employee_name'    => $row['employee_name'],
+            'employee_role'    => $row['employee_role'],
+            'department_name'  => $row['department_name'],
+            'edit_role'        => ($initiatedById === $currentUserId) ? 'self' : $row['initiator_role'],
+            'edit_status'      => $row['edit_status'] ?? ($initiatedById ? 'pending' : null),
             'initiator_name'   => $row['initiator_name'],
             'photo_path'       => null,
             '_ts'              => $ts,

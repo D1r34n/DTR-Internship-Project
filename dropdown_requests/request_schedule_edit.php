@@ -75,10 +75,20 @@ try {
         WHERE id = ?
     ")->execute([$newStart, $newEnd, $batchId, $scheduleId]);
 
-    $pdo->prepare("
+    $serStmt = $pdo->prepare("
         INSERT INTO schedule_edit_requests (batch_id, employee_id, reason, requested_by, status)
         VALUES (?, ?, ?, ?, 'pending')
-    ")->execute([$batchId, $employeeId, $reason, $employeeId]);
+    ");
+    $serStmt->execute([$batchId, $employeeId, $reason, $employeeId]);
+    $serId = (int)$pdo->lastInsertId();
+
+    // Activity-log entry so the request shows up in the logs as its own type.
+    // Status is read from schedule_edit_requests via schedule_request_id; before/after
+    // times come from the schedule's orig_*/scheduled_* columns set above.
+    $pdo->prepare("
+        INSERT INTO logs (employee_id, log_type, log_time, longitude, latitude, is_within_office, schedule_request_id, edit_requested_by, edit_reason)
+        VALUES (?, 'REQUEST_CHANGE_SCHEDULE', NOW(), 0, 0, 0, ?, ?, ?)
+    ")->execute([$employeeId, $serId, $employeeId, $batchId]);
 
     $pdo->commit();
     echo json_encode(['success' => true, 'message' => 'Schedule edit request submitted for admin approval.']);
