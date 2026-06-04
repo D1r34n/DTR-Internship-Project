@@ -404,7 +404,89 @@
     box-shadow:   0 0 0 2px var(--warning-glow);
 }
 
-/* ---- Preset schedule dropdown ---- */
+/* ---- Manage schedule tab switcher ---- */
+.sw-sched-tab-switcher {
+    display:       flex;
+    background:    var(--neutral-glass);
+    border:        1px solid var(--neutral-border);
+    border-radius: 10px;
+    padding:       4px;
+    gap:           4px;
+}
+
+.sw-sched-tab {
+    flex:          1;
+    border:        none;
+    background:    transparent;
+    color:         var(--text-muted);
+    border-radius: 7px;
+    padding:       0.45rem 0.75rem;
+    font-family:   'Poppins', sans-serif;
+    font-size:     0.82rem;
+    font-weight:   500;
+    cursor:        pointer;
+    transition:    background 0.18s, color 0.18s;
+    display:       flex;
+    align-items:   center;
+    justify-content: center;
+    gap:           0.3rem;
+}
+
+.sw-sched-tab:hover:not(.active) {
+    background: var(--neutral-glass-hover);
+    color:      var(--text-light);
+}
+
+.sw-sched-tab.active {
+    background: var(--primary-color);
+    color:      #fff;
+    font-weight: 600;
+}
+
+/* ---- Preset schedule Bootstrap dropdown ---- */
+.sw-preset-bs-btn {
+    background:    var(--neutral-glass) !important;
+    border:        1px solid var(--neutral-border) !important;
+    color:         var(--text-muted) !important;
+    border-radius: 8px !important;
+    font-size:     0.85rem;
+    transition:    border-color 0.18s, background 0.18s, color 0.18s;
+}
+
+.sw-preset-bs-btn:hover,
+.sw-preset-bs-btn:focus,
+.sw-preset-bs-btn.show {
+    background:   var(--neutral-glass-hover) !important;
+    border-color: var(--primary-border) !important;
+    color:        var(--text-light) !important;
+    box-shadow:   none !important;
+}
+
+.sw-preset-bs-btn::after {
+    margin-left: auto;
+}
+
+.sw-preset-bs-menu {
+    background:    #1a1a22;
+    border:        1px solid var(--neutral-border);
+    border-radius: 8px;
+    box-shadow:    0 8px 24px rgba(0, 0, 0, 0.6);
+    max-height:    220px;
+    overflow-y:    auto;
+    z-index:       1065;
+}
+
+.sw-preset-bs-menu .sw-preset-item {
+    font-size:  0.85rem;
+    color:      var(--text-light);
+    padding:    0.55rem 1rem;
+    transition: background 0.14s;
+}
+
+.sw-preset-bs-menu .sw-preset-item:hover  { background: var(--neutral-glass-hover); }
+.sw-preset-bs-menu .sw-preset-item.active { background: var(--primary-glass); color: var(--primary-color); font-weight: 600; }
+
+/* ---- Preset schedule dropdown (legacy, kept for compatibility) ---- */
 .preset-sched-dropdown-wrap { position: relative; }
 
 .preset-sched-trigger {
@@ -460,7 +542,7 @@
 
 /* ---- Selected date tags ---- */
 .selected-date-tag {
-    background:    var(--primary-bg);
+    background:    var(--primary-glass);
     border:        1px solid var(--primary-border);
     color:         var(--primary-color);
     border-radius: 20px;

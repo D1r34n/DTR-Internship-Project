@@ -155,52 +155,72 @@ $isScoped = $schedEmployeeId !== null;
 
                 <div class="modal-body">
 
-                    <div class="preset-sched-dropdown-wrap mb-3">
-                        <label class="form-label">Preset Schedule</label>
-                        <button type="button" class="preset-sched-trigger" id="swPresetSchedTrigger">
-                            <span id="swPresetSchedDisplay">Select a preset schedule…</span>
-                            <i class="bi bi-chevron-down"></i>
-                        </button>
-                        <div class="preset-sched-menu" id="swPresetSchedMenu"></div>
-                        <script>
-                        (function () {
-                            const menu = document.getElementById('swPresetSchedMenu');
-                            const startMin = 6 * 60, endMin = 24 * 60 + 5 * 60 + 30;
-                            function fmt(h, m) {
-                                const p = h >= 12 ? 'PM' : 'AM';
-                                const dh = h % 12 || 12;
-                                return `${dh}:${String(m).padStart(2,'0')} ${p}`;
-                            }
-                            function to24(h, m) { return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`; }
-                            for (let t = startMin; t <= endMin; t += 30) {
-                                const cm = t % (24 * 60);
-                                const ih = Math.floor(cm / 60), im = cm % 60;
-                                const ot = (cm + 9 * 60) % (24 * 60);
-                                const oh = Math.floor(ot / 60), om = ot % 60;
-                                const el = document.createElement('div');
-                                el.className = 'preset-sched-item';
-                                el.dataset.in  = to24(ih, im);
-                                el.dataset.out = to24(oh, om);
-                                el.textContent = `${fmt(ih,im)} – ${fmt(oh,om)}`;
-                                menu.appendChild(el);
-                            }
-                        })();
-                        </script>
-                    </div>
-
-                    <div class="row g-3 mb-3">
-                        <div class="col-6">
-                            <label class="form-label">Time In</label>
-                            <div class="input-group">
-                                <span class="input-group-text"><i class="bi bi-clock"></i></span>
-                                <input type="time" name="time_in" id="swAddModalTimeIn" class="form-control">
-                            </div>
+                    <div id="swTimeSection">
+                        <!-- Tab switcher -->
+                        <div class="sw-sched-tab-switcher mb-3">
+                            <button type="button" class="sw-sched-tab active" id="swTabPreset">
+                                <i class="bi bi-collection me-1"></i> Use preset
+                            </button>
+                            <button type="button" class="sw-sched-tab" id="swTabManual">
+                                <i class="bi bi-clock me-1"></i> Set manually
+                            </button>
                         </div>
-                        <div class="col-6">
-                            <label class="form-label">Time Out <small class="text-muted">(next day if night)</small></label>
-                            <div class="input-group">
-                                <span class="input-group-text"><i class="bi bi-clock"></i></span>
-                                <input type="time" name="time_out" id="swAddModalTimeOut" class="form-control">
+
+                        <!-- Preset panel -->
+                        <div id="swPresetPanel" class="mb-3">
+                            <label class="form-label">Preset schedule</label>
+                            <div class="dropdown">
+                                <button type="button" class="btn dropdown-toggle w-100 sw-preset-bs-btn text-start"
+                                        id="swPresetSchedTrigger" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <span id="swPresetSchedDisplay">Select a preset schedule…</span>
+                                </button>
+                                <ul class="dropdown-menu w-100 sw-preset-bs-menu" id="swPresetSchedMenu" aria-labelledby="swPresetSchedTrigger"></ul>
+                            </div>
+                            <small class="text-muted mt-1 d-block">Choose from saved schedules. Time in, time out and rest days will be filled automatically.</small>
+                            <script>
+                            (function () {
+                                const menu = document.getElementById('swPresetSchedMenu');
+                                const startMin = 6 * 60, endMin = 24 * 60 + 5 * 60 + 30;
+                                function fmt(h, m) {
+                                    const p = h >= 12 ? 'PM' : 'AM';
+                                    const dh = h % 12 || 12;
+                                    return `${dh}:${String(m).padStart(2,'0')} ${p}`;
+                                }
+                                function to24(h, m) { return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`; }
+                                for (let t = startMin; t <= endMin; t += 30) {
+                                    const cm = t % (24 * 60);
+                                    const ih = Math.floor(cm / 60), im = cm % 60;
+                                    const ot = (cm + 9 * 60) % (24 * 60);
+                                    const oh = Math.floor(ot / 60), om = ot % 60;
+                                    const li = document.createElement('li');
+                                    const a  = document.createElement('a');
+                                    a.className   = 'dropdown-item sw-preset-item';
+                                    a.href        = '#';
+                                    a.dataset.in  = to24(ih, im);
+                                    a.dataset.out = to24(oh, om);
+                                    a.textContent = `${fmt(ih,im)} – ${fmt(oh,om)}`;
+                                    li.appendChild(a);
+                                    menu.appendChild(li);
+                                }
+                            })();
+                            </script>
+                        </div>
+
+                        <!-- Manual panel -->
+                        <div id="swManualPanel" class="row g-3 mb-3" style="display:none;">
+                            <div class="col-6">
+                                <label class="form-label">Time In</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bi bi-clock"></i></span>
+                                    <input type="time" name="time_in" id="swAddModalTimeIn" class="form-control">
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">Time Out <small class="text-muted">(next day if night)</small></label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bi bi-clock"></i></span>
+                                    <input type="time" name="time_out" id="swAddModalTimeOut" class="form-control">
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -226,8 +246,8 @@ $isScoped = $schedEmployeeId !== null;
                     </div>
 
                     <div id="swSingleDateRestDaySection" style="display:none;">
-                        <div class="form-check mt-1">
-                            <input class="form-check-input" type="checkbox" id="swIsSingleRestDay">
+                        <div class="form-check form-switch mt-1">
+                            <input class="form-check-input me-2" type="checkbox" role="switch" id="swIsSingleRestDay">
                             <label class="form-check-label" for="swIsSingleRestDay">Is Rest Day</label>
                         </div>
                     </div>
@@ -829,11 +849,11 @@ document.querySelectorAll('#swRestDayToggles .rest-day-toggle').forEach(function
     });
 });
 
-/* FIX Bug 3 — wire up the single-date rest day checkbox so the time fields react */
+/* FIX Bug 3 — wire up the single-date rest day checkbox so the time section reacts */
 document.getElementById('swIsSingleRestDay').addEventListener('change', function () {
     const isRest = this.checked;
-    const timeRow = document.querySelector('#swManageScheduleModal .row.g-3.mb-3');
-    if (timeRow) timeRow.style.display = isRest ? 'none' : '';
+    const timeSection = document.getElementById('swTimeSection');
+    if (timeSection) timeSection.style.display = isRest ? 'none' : '';
     if (!isRest) {
         document.getElementById('swAddModalTimeIn').value  = '';
         document.getElementById('swAddModalTimeOut').value = '';
@@ -916,23 +936,38 @@ document.getElementById('swModalRestDayCheck').addEventListener('change', functi
     document.getElementById('swModalTimeOut').required          = !isRest;
 });
 
-/* ---- Preset schedule ---- */
-(function () {
-    const trigger = document.getElementById('swPresetSchedTrigger');
-    const menu    = document.getElementById('swPresetSchedMenu');
-    trigger.addEventListener('click', function (e) { e.stopPropagation(); menu.classList.toggle('open'); });
-    document.querySelectorAll('#swPresetSchedMenu .preset-sched-item').forEach(function (item) {
-        item.addEventListener('click', function () {
-            document.getElementById('swAddModalTimeIn').value  = item.dataset.in;
-            document.getElementById('swAddModalTimeOut').value = item.dataset.out;
-            document.querySelectorAll('#swPresetSchedMenu .preset-sched-item').forEach(function (el) { el.classList.remove('active'); });
-            item.classList.add('active');
-            document.getElementById('swPresetSchedDisplay').textContent = item.textContent;
-            menu.classList.remove('open');
-        });
-    });
-    document.addEventListener('click', function () { menu.classList.remove('open'); });
-})();
+/* ---- Preset schedule (Bootstrap dropdown) ---- */
+document.getElementById('swPresetSchedMenu').addEventListener('click', function (e) {
+    const item = e.target.closest('.sw-preset-item');
+    if (!item) return;
+    e.preventDefault();
+    document.getElementById('swAddModalTimeIn').value  = item.dataset.in;
+    document.getElementById('swAddModalTimeOut').value = item.dataset.out;
+    document.querySelectorAll('#swPresetSchedMenu .sw-preset-item').forEach(function (el) { el.classList.remove('active'); });
+    item.classList.add('active');
+    document.getElementById('swPresetSchedDisplay').textContent = item.textContent;
+});
+
+/* ---- Tab switcher ---- */
+function swSwitchTab(tab) {
+    const presetPanel = document.getElementById('swPresetPanel');
+    const manualPanel = document.getElementById('swManualPanel');
+    const tabPreset   = document.getElementById('swTabPreset');
+    const tabManual   = document.getElementById('swTabManual');
+    if (tab === 'preset') {
+        presetPanel.style.display = '';
+        manualPanel.style.display = 'none';
+        tabPreset.classList.add('active');
+        tabManual.classList.remove('active');
+    } else {
+        presetPanel.style.display = 'none';
+        manualPanel.style.display = '';
+        tabPreset.classList.remove('active');
+        tabManual.classList.add('active');
+    }
+}
+document.getElementById('swTabPreset').addEventListener('click', function () { swSwitchTab('preset'); });
+document.getElementById('swTabManual').addEventListener('click', function () { swSwitchTab('manual'); });
 
 /* ---- Helper functions (scoped mode) ---- */
 function swRenderDateTagsAdd() {
@@ -993,13 +1028,13 @@ function swOpenManageModal() {
 
     document.getElementById('swAddModalTimeIn').value  = '';
     document.getElementById('swAddModalTimeOut').value = '';
-    document.querySelectorAll('#swPresetSchedMenu .preset-sched-item').forEach(function (el) { el.classList.remove('active'); });
+    document.querySelectorAll('#swPresetSchedMenu .sw-preset-item').forEach(function (el) { el.classList.remove('active'); });
     document.getElementById('swPresetSchedDisplay').textContent = 'Select a preset schedule…';
-    document.getElementById('swPresetSchedMenu').classList.remove('open');
+    swSwitchTab('preset');
 
-    /* FIX Bug 3 — also reset time-row visibility when opening fresh */
-    const timeRow = document.querySelector('#swManageScheduleModal .row.g-3.mb-3');
-    if (timeRow) timeRow.style.display = '';
+    /* Reset time section visibility when opening fresh */
+    const timeSection = document.getElementById('swTimeSection');
+    if (timeSection) timeSection.style.display = '';
 
     swSelectedDatesAdd = [];
     swRenderDateTagsAdd();
@@ -1055,13 +1090,14 @@ function swOpenManageModalAsEdit(dateStr, timeIn, timeOut, isRestDay) {
     const restDayCheck = document.getElementById('swIsSingleRestDay');
     if (isRestDay) {
         restDayCheck.checked = true;
+        restDayCheck.dispatchEvent(new Event('change'));
     } else {
         restDayCheck.checked = false;
+        restDayCheck.dispatchEvent(new Event('change'));
+        swSwitchTab('manual');
         document.getElementById('swAddModalTimeIn').value  = timeIn;
         document.getElementById('swAddModalTimeOut').value = timeOut;
     }
-    /* Trigger change listener so time-row visibility updates */
-    restDayCheck.dispatchEvent(new Event('change'));
 }
 
 function swOpenRestDayEditModal(dateStr) {
