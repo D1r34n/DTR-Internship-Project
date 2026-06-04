@@ -1385,10 +1385,6 @@ body {
 .log-type-badge.break-in  { background: var(--warning-bg);    color: var(--warning); }
 .log-type-badge.break-out { background: var(--info-bg);       color: var(--info); }
 
-[data-theme="light"] .log-type-badge.in,
-[data-theme="light"] .log-type-badge.out,
-[data-theme="light"] .log-type-badge.break-in,
-[data-theme="light"] .log-type-badge.break-out { color: var(--text-light); }
 
 /* ------------------------------------------------
    TAB SHARED HEADER

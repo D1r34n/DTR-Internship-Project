@@ -255,11 +255,11 @@ $isScoped = $schedEmployeeId !== null;
                 </div>
 
                 <div class="modal-footer d-flex justify-content-between">
-                    <button type="button" id="swDeleteSchedBtn" class="btn btn-danger" style="display:none;">
-                        <i class="bi bi-trash-fill me-1"></i>Delete Schedule
-                    </button>
+                    <button type="button" class="btn btn-secondary border border-secondary" data-bs-dismiss="modal">Cancel</button>
                     <div class="ms-auto d-flex gap-2">
-                        <button type="button" class="btn btn-secondary border border-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" id="swDeleteSchedBtn" class="btn btn-danger" style="display:none;">
+                            <i class="bi bi-trash-fill me-1"></i>Delete Schedule
+                        </button>
                         <button type="submit" class="btn btn-success">
                             <i class="bi bi-check-circle-fill me-1"></i>
                             <?= $isWorkforce ? 'Submit for Approval' : 'Save Schedule' ?>
@@ -721,9 +721,9 @@ swCalendar = new FullCalendar.Calendar(calEl, {
                 titleEl.style.setProperty('color',        '#ffffff',     'important');
 
                 if (type === 'rest' || props.isRestDay) {
-                    titleEl.style.setProperty('background-color', 'var(--bs-gray-600)',    'important');
+                    titleEl.style.setProperty('background-color', 'var(--shift-rest)',     'important');
                 } else if (type === 'night') {
-                    titleEl.style.setProperty('background-color', 'var(--indigo)',         'important');
+                    titleEl.style.setProperty('background-color', 'var(--shift-night)',    'important');
                 } else if (type === 'day') {
                     titleEl.style.setProperty('background-color', 'var(--primary-color)',  'important');
                 }

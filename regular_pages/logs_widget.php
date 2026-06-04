@@ -222,7 +222,7 @@ function esc(v) {
 }
 
 const LOG_TYPE_CLASS = {
-    IN: 'btn-success', OUT: 'btn-danger', BREAK_IN: 'status-pending', BREAK_OUT: 'btn-info',
+    IN: 'status-approved', OUT: 'status-rejected', BREAK_IN: 'status-pending', BREAK_OUT: 'status-info',
     REQUEST_OT:              'request-overtime',
     REQUEST_LEAVE:           'request-leave',
     REQUEST_OB:              'request-official-business',
@@ -230,16 +230,16 @@ const LOG_TYPE_CLASS = {
     REQUEST_CHANGE_SCHEDULE: 'status-info',
     ADD_EMPLOYEE:            'status-approved',
     EDIT_EMPLOYEE:           'status-info',
-    DELETE_EMPLOYEE:         'btn-danger',
+    DELETE_EMPLOYEE:         'status-rejected',
     ADD_SCHEDULE:            'status-info',
     EDIT_SCHEDULE:           'status-info',
-    DELETE_SCHEDULE:         'btn-danger',
+    DELETE_SCHEDULE:         'status-rejected',
     ADD_DEPARTMENT:          'status-approved',
     EDIT_DEPARTMENT:         'status-info',
-    DELETE_DEPARTMENT:       'btn-danger',
+    DELETE_DEPARTMENT:       'status-rejected',
     ADD_EVENT:               'status-approved',
     EDIT_EVENT:              'status-info',
-    DELETE_EVENT:            'btn-danger',
+    DELETE_EVENT:            'status-rejected',
 }; /* v2 */
 const LOG_TYPE_LABEL = {
     IN: 'Time In', OUT: 'Time Out', BREAK_IN: 'Break In', BREAK_OUT: 'Break Out',
@@ -292,7 +292,7 @@ function renderLogRows({ meta, rows, total = 0 }) {
     tbody.innerHTML = rows.map(row => {
         const isInside = row.is_within_office;
         const locLabel = isInside ? 'Within Office' : 'Outside Office';
-        const locClass = isInside ? 'btn-success' : 'btn-danger';
+        const locClass = isInside ? 'status-approved' : 'status-rejected';
         const acc      = row.accuracy        != null ? row.accuracy        : 'N/A';
         const dist     = row.distance_meters != null ? row.distance_meters : 'N/A';
         const typeClass = LOG_TYPE_CLASS[row.log_type] ?? '';
@@ -308,11 +308,11 @@ function renderLogRows({ meta, rows, total = 0 }) {
 
         let editStatusHtml = `<span style="color:rgba(255,255,255,0.2);font-size:0.75rem;">—</span>`;
         if (row.edit_status === 'pending') {
-            editStatusHtml = `<span class="pill btn-info"><i class="bi bi-hourglass-split"></i> Pending</span>`;
+            editStatusHtml = `<span class="pill status-pending"><i class="bi bi-hourglass-split"></i> Pending</span>`;
         } else if (row.edit_status === 'approved') {
-            editStatusHtml = `<span class="pill btn-success"><i class="bi bi-check-circle-fill"></i> Approved</span>`;
+            editStatusHtml = `<span class="pill status-approved"><i class="bi bi-check-circle-fill"></i> Approved</span>`;
         } else if (row.edit_status === 'rejected') {
-            editStatusHtml = `<span class="pill btn-danger"><i class="bi bi-x-circle-fill"></i> Rejected</span>`;
+            editStatusHtml = `<span class="pill status-rejected"><i class="bi bi-x-circle-fill"></i> Rejected</span>`;
         }
 
         let adminCols = '';

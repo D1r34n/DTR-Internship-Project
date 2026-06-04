@@ -209,27 +209,27 @@
     color:            var(--text-muted) !important;
 }
 
-#sw-calendar .fc-ev-night-cont       { background-color: rgba(77,163,255,0.12)  !important; border: 2px dashed #4da3ff !important; color: #4da3ff !important; border-radius: 4px !important; }
-#sw-calendar .fc-ev-rest             { background-color: rgba(251,191,36,0.12)  !important; border-color: #f59e0b !important; color: #f59e0b !important; }
-#sw-calendar .fc-ev-on-leave         { background-color: #fd7e14                !important; border-color: #e8610a !important; color: #fff    !important; }
+#sw-calendar .fc-ev-night-cont       { background-color: var(--shift-night-bg)  !important; border: 2px dashed var(--shift-night) !important; color: var(--shift-night) !important; border-radius: 4px !important; }
+#sw-calendar .fc-ev-rest             { background-color: var(--warning-soft)     !important; border-color: var(--shift-rest) !important; color: var(--shift-rest) !important; }
+#sw-calendar .fc-ev-on-leave         { background-color: var(--shift-leave-approved) !important; border-color: var(--shift-leave-approved) !important; color: #fff !important; }
 #sw-calendar .fc-ev-leave-rejected {
     background-color: transparent !important;
     border-color:     transparent !important;
     color:            var(--text-muted) !important;
 }
 
-#sw-calendar .fc-ev-leave-rejected .fc-admin-label { background: #dc3545; color: #fff; border-radius: 4px; padding: 1px 6px; }
+#sw-calendar .fc-ev-leave-rejected .fc-admin-label { background: var(--shift-leave-rejected); color: #fff; border-radius: 4px; padding: 1px 6px; }
 #sw-calendar .fc-ev-leave-rejected .fc-admin-time  { background: transparent; }
-#sw-calendar .fc-ev-on-ob            { background-color: #6f42c1                !important; border-color: #59359a !important; color: #fff    !important; }
-#sw-calendar .fc-ev-pending-schedule { background-color: rgba(245,158,11,0.12)  !important; border-color: #f59e0b !important; color: #f59e0b !important; }
+#sw-calendar .fc-ev-on-ob            { background-color: var(--shift-ob-approved) !important; border-color: var(--shift-ob-approved) !important; color: #fff !important; }
+#sw-calendar .fc-ev-pending-schedule { background-color: var(--warning-soft)      !important; border-color: var(--warning-hover) !important; color: var(--warning-hover) !important; }
 
 /* Leave pending and OB pending share the same amber style */
 #sw-calendar .fc-ev-leave-pending,
-#sw-calendar .fc-ev-ob-pending       { background-color: #f0ad4e                !important; border-color: #d99a3a !important; color: #fff    !important; }
+#sw-calendar .fc-ev-ob-pending       { background-color: var(--shift-leave-pending) !important; border-color: var(--warning-hover) !important; color: #fff !important; }
 
 /* ---- Day / night label pills ---- */
-#sw-calendar .fc-ev-day   .fc-admin-label { background: #97be41; color: #fff; border-radius: 4px; padding: 1px 6px; }
-#sw-calendar .fc-ev-night .fc-admin-label { background: #4da3ff; color: #fff; border-radius: 4px; padding: 1px 6px; }
+#sw-calendar .fc-ev-day   .fc-admin-label { background: var(--primary-color); color: #fff; border-radius: 4px; padding: 1px 6px; }
+#sw-calendar .fc-ev-night .fc-admin-label { background: var(--shift-night);   color: #fff; border-radius: 4px; padding: 1px 6px; }
 
 #sw-calendar .fc-ev-day   .fc-admin-time,
 #sw-calendar .fc-ev-night .fc-admin-time  { background: transparent; }

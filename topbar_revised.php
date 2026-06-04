@@ -179,7 +179,7 @@ if (isset($_SESSION['last_attendance_tap'])) {
                     </button>
                     <ul class="dropdown-menu break-menu">
                         <li>
-                            <button class="btn btn-break"
+                            <button class="btn <?= $isOnBreak ? 'btn-info' : 'btn-warning' ?>"
                                     id="break-action-btn"
                                     data-state="<?= $isOnBreak ? 'out' : 'in' ?>"
                                     onclick="handleBreak()"
@@ -552,7 +552,7 @@ const timeOutHTML = () => `
     </button>
     <ul class="dropdown-menu break-menu">
         <li>
-            <button class="btn btn-break"
+            <button class="btn btn-warning"
                     id="break-action-btn"
                     data-state="in"
                     onclick="handleBreak()">
@@ -770,6 +770,7 @@ const handleBreak = async () => {
             if (data.tap === 'break_in') {
                 btn.disabled      = false;
                 btn.dataset.state = 'out';
+                btn.classList.replace('btn-warning', 'btn-info');
                 btn.innerHTML     = `<i class="bi bi-arrow-return-right"></i> Resume Work`;
                 document.dispatchEvent(new CustomEvent('attendance_tapped'));
                 startCooldown(TAP_COOLDOWN);
@@ -778,6 +779,7 @@ const handleBreak = async () => {
 
             if (data.tap === 'break_out') {
                 btn.dataset.state = 'in';
+                btn.classList.replace('btn-info', 'btn-warning');
                 btn.innerHTML     = `<i class="bi bi-cup-hot-fill"></i> Take Break`;
                 lockBreakBtn(btn);
                 document.dispatchEvent(new CustomEvent('attendance_tapped'));

@@ -642,7 +642,7 @@ hr {
 }
 
 /* ------------------------------------------------
-   HOVER (SLIGHT BRIGHTEN ONLY)
+   HOVER — semantic background + darker text
    ------------------------------------------------ */
 
 .pill:hover,
@@ -650,27 +650,40 @@ hr {
 [class*="empRole-"]:hover {
     transform: scale(1.04) !important;
     background: var(--neutral-glass-hover) !important;
-}
-
-/* ------------------------------------------------
-   LIGHT MODE — near-black text on all pill variants
-   ------------------------------------------------ */
-
-[data-theme="light"] .empRole-employee,
-[data-theme="light"] .empRole-workforce,
-[data-theme="light"] .request-overtime,
-[data-theme="light"] .empRole-admin,
-[data-theme="light"] .empRole-manager,
-[data-theme="light"] .request-log-edit,
-[data-theme="light"] .empRole-superadmin,
-[data-theme="light"] .request-official-business,
-[data-theme="light"] .status-approved,
-[data-theme="light"] .status-pending,
-[data-theme="light"] .request-leave,
-[data-theme="light"] .status-rejected,
-[data-theme="light"] .status-info {
     color: var(--text-light) !important;
 }
+
+/* Role variant hover backgrounds */
+.empRole-employee:hover                              { background: var(--employee-hover)   !important; }
+.empRole-workforce:hover, .request-overtime:hover    { background: var(--workforce-hover)  !important; }
+.empRole-admin:hover                                 { background: var(--admin-hover)      !important; }
+.empRole-manager:hover, .request-log-edit:hover      { background: var(--manager-hover)    !important; }
+.empRole-superadmin:hover, .request-official-business:hover { background: var(--superadmin-hover) !important; }
+
+/* Status variant hover backgrounds */
+.status-approved:hover                   { background: var(--status-success-hover) !important; }
+.status-pending:hover, .request-leave:hover { background: var(--status-warning-hover) !important; }
+.status-rejected:hover                   { background: var(--status-danger-hover)  !important; }
+.status-info:hover                       { background: var(--status-info-hover)    !important; }
+
+/* ------------------------------------------------
+   LIGHT MODE — darker text per variant for readability
+   ------------------------------------------------ */
+
+[data-theme="light"] .empRole-employee                              { color: #1a7a4a !important; }
+[data-theme="light"] .empRole-workforce,
+[data-theme="light"] .request-overtime                              { color: #1d4ed8 !important; }
+[data-theme="light"] .empRole-admin                                 { color: #b91c1c !important; }
+[data-theme="light"] .empRole-manager,
+[data-theme="light"] .request-log-edit                              { color: #be185d !important; }
+[data-theme="light"] .empRole-superadmin,
+[data-theme="light"] .request-official-business                     { color: #7e22ce !important; }
+
+[data-theme="light"] .status-approved                               { color: #2a5c0a !important; }
+[data-theme="light"] .status-pending,
+[data-theme="light"] .request-leave                                 { color: #92400e !important; }
+[data-theme="light"] .status-rejected                               { color: #b91c1c !important; }
+[data-theme="light"] .status-info                                   { color: #1e40af !important; }
 
 /* ================================================
    BTN-SELECT — dropdown button acting as a select
@@ -867,13 +880,7 @@ button.btn-sm {
 
 [data-theme="light"] .btn-success,
 [data-theme="light"] .btn.btn-success {
-    color: var(--text-light) !important;
-}
-
-[data-theme="light"] .btn-success:hover,
-[data-theme="light"] .btn-success:focus,
-[data-theme="light"] .btn-success:focus-visible {
-    color: var(--text-light) !important;
+    color: #3a6b0e !important;
 }
 
 /* ================================================
@@ -914,10 +921,9 @@ button.btn-sm {
     box-shadow: 0 4px 16px var(--status-warning-glow) !important;
 }
 
-[data-theme="light"] .btn-warning:hover,
-[data-theme="light"] .btn-warning:focus,
-[data-theme="light"] .btn-warning:focus-visible {
-    color: var(--text-darkest) !important;
+[data-theme="light"] .btn-warning,
+[data-theme="light"] .btn.btn-warning {
+    color: #92400e !important;
 }
 
 
@@ -961,16 +967,8 @@ button.btn-sm {
 
 [data-theme="light"] .btn-danger,
 [data-theme="light"] .btn.btn-danger {
-    color: var(--text-light) !important;
+    color: #b91c1c !important;
 }
-
-[data-theme="light"] .btn-danger:hover,
-[data-theme="light"] .btn-danger:focus,
-[data-theme="light"] .btn-danger:focus-visible {
-    color: var(--text-light) !important;
-}
-
-
 
 
 /* ================================================
@@ -1009,6 +1007,11 @@ button.btn-sm {
         transparent 100%
     ) !important;
     box-shadow: 0 4px 16px var(--status-info-glow) !important;
+}
+
+[data-theme="light"] .btn-info,
+[data-theme="light"] .btn.btn-info {
+    color: #1e40af !important;
 }
 
 /* ================================================
