@@ -2,18 +2,12 @@
    SCHEDULE EDIT REQUEST MODAL — schedule_edit_modal.css
    ============================================================ */
 
-/* ---------- Step 1 — Schedule List ---------- */
+/* ---------- Step 1 — Hint + loading ---------- */
 
 .se-step-hint {
     color: var(--text-muted);
     font-size: 0.85rem;
     margin-bottom: 1rem;
-}
-
-#seScheduleList {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
 }
 
 .se-loading {
@@ -22,106 +16,68 @@
     padding: 1.5rem 0;
 }
 
-/* ---------- Schedule Row ---------- */
+/* ---------- Step 1 — Calendar (mirrors the schedules tab via get_schedule.php) ---------- */
 
-.se-schedule-row {
-    display: flex;
-    align-items: center;
-    gap: 0.85rem;
-    padding: 0.6rem 0.85rem;
-    border-radius: 8px;
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    transition: background 0.15s, border-color 0.15s;
+#seCalendar {
+    margin-top: 0.25rem;
+    font-size: 0.8rem;
 }
 
-.se-schedule-row.can-edit {
-    cursor: pointer;
+/* Shift events: block is uncolored, only the label is a colored pill, time is plain */
+#seCalendar .fc-ev-day,
+#seCalendar .fc-ev-night,
+#seCalendar .fc-ev-leave-rejected {
+    background-color: transparent !important;
+    border-color: transparent !important;
+    color: var(--text-muted) !important;
 }
 
-.se-schedule-row.can-edit:hover {
-    background: rgba(255, 255, 255, 0.04);
-    border-color: rgba(255, 255, 255, 0.12);
-}
+#seCalendar .fc-ev-day   .fc-admin-label { background: #97be41; color: #fff; }
+#seCalendar .fc-ev-night .fc-admin-label { background: #4da3ff; color: #fff; }
+#seCalendar .fc-ev-leave-rejected .fc-admin-label { background: var(--shift-leave-rejected); color: #fff; }
 
-.se-schedule-row.has-pending {
-    cursor: default;
-    opacity: 0.55;
-}
+/* Status events: full colored bars matching the schedules tab legend */
+#seCalendar .fc-ev-rest       { background-color: rgba(251,191,36,0.12) !important; border-color: #f59e0b !important; color: #f59e0b !important; }
+#seCalendar .fc-ev-on-leave   { background-color: var(--shift-leave-approved) !important; border-color: #e8610a !important; color: #fff !important; }
+#seCalendar .fc-ev-on-ob      { background-color: var(--shift-ob-approved) !important; border-color: #59359a !important; color: #fff !important; }
+#seCalendar .fc-ev-leave-pending,
+#seCalendar .fc-ev-ob-pending { background-color: var(--shift-leave-pending) !important; border-color: #d99a3a !important; color: #fff !important; }
+#seCalendar .fc-ev-night-cont { background-color: rgba(77,163,255,0.12) !important; border: 2px dashed #4da3ff !important; color: #4da3ff !important; border-radius: 4px !important; }
 
-/* ---- Date column ---- */
-
-.se-row-date {
-    min-width: 5.5rem;
-    flex-shrink: 0;
-}
-
-.se-date-full {
-    display: block;
-    font-size: 0.82rem;
-    font-weight: 500;
-    color: var(--text-light);
-}
-
-.se-date-dow {
-    display: block;
-    font-size: 0.7rem;
-    color: var(--text-muted);
-}
-
-/* ---- Event card (mirrors fc-admin-inner + fc-admin-label / fc-admin-time) ---- */
-
-.se-event-card {
-    display: flex;
-    flex-direction: column;
-    gap: 3px;
-    flex: 1;
-}
-
-.se-shift-label {
-    display: inline-block;
-    font-size: 0.72rem;
+/* Inner layout shared by label events */
+#seCalendar .fc-admin-inner { display: flex; flex-direction: column; gap: 1px; padding: 1px 3px; }
+#seCalendar .fc-admin-label {
+    align-self: flex-start;
+    font-size: 0.6rem;
     font-weight: 600;
-    color: #fff;
     border-radius: 4px;
-    padding: 1px 7px;
-    line-height: 1.5;
-    align-self: flex-start;
+    padding: 0 5px;
+    line-height: 1.45;
+}
+#seCalendar .fc-admin-time  { font-size: 0.58rem; color: var(--text-muted); padding-left: 1px; }
+
+/* Colored status-bar titles stay compact */
+#seCalendar .fc-ev-rest .fc-event-title,
+#seCalendar .fc-ev-on-leave .fc-event-title,
+#seCalendar .fc-ev-on-ob .fc-event-title,
+#seCalendar .fc-ev-leave-pending .fc-event-title,
+#seCalendar .fc-ev-ob-pending .fc-event-title,
+#seCalendar .fc-ev-night-cont .fc-event-title {
+    font-size: 0.6rem;
+    font-weight: 600;
+    padding: 0 4px;
 }
 
-.se-shift-time {
-    display: inline-block;
-    font-size: 0.7rem;
-    font-weight: 500;
-    padding: 1px 6px;
-    border-radius: 4px;
-    background: rgba(255, 255, 255, 0.1);
-    color: var(--text-muted);
-    white-space: nowrap;
-    align-self: flex-start;
+/* Past / today cells — no future shift can land there */
+#seCalendar .fc-day-dimmed {
+    opacity: 0.4;
+    pointer-events: none;
 }
 
-/* ---- Row indicators ---- */
-
-.se-row-chevron {
-    color: var(--text-muted);
-    font-size: 0.7rem;
-    flex-shrink: 0;
-    opacity: 0;
-    transition: opacity 0.15s;
-}
-
-.se-schedule-row.can-edit:hover .se-row-chevron { opacity: 1; }
-
-.se-pending-pill {
-    font-size: 0.7rem;
-    padding: 1px 8px;
-    border-radius: 20px;
-    background: rgba(240, 173, 78, 0.12);
-    color: #f0ad4e;
-    border: 1px solid rgba(240, 173, 78, 0.25);
-    white-space: nowrap;
-    flex-shrink: 0;
-}
+/* Event affordances */
+#seCalendar .se-ev-editable        { cursor: pointer; }
+#seCalendar .se-ev-editable:hover  { filter: brightness(1.12); }
+#seCalendar .se-ev-locked          { cursor: default; }
 
 /* ---------- Step 2 — Summary + Form ---------- */
 
@@ -160,20 +116,6 @@
     font-weight: 500;
     display: block;
     margin-bottom: 0.35rem;
-}
-
-/* ---------- Footer ---------- */
-
-#seFooterStep1 {
-    display: flex;
-    width: 100%;
-    justify-content: flex-end;
-}
-
-#seFooterStep2 {
-    width: 100%;
-    display: flex;
-    justify-content: space-between;
 }
 
 /* ============================================================

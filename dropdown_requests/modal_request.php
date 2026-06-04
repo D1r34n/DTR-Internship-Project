@@ -150,57 +150,64 @@
       </div>
 
       <div class="modal-body">
+        <p class="se-step-hint">Select a future schedule on the calendar to request an edit for:</p>
+        <p class="se-loading" id="seCalLoading">Loading...</p>
+        <div id="seCalendar"></div>
+      </div>
 
-        <!-- Step 1: Schedule selection -->
-        <div id="seStep1">
-          <p class="se-step-hint">Select a schedule to request an edit for:</p>
-          <div id="seScheduleList">
-            <p class="se-loading">Loading...</p>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- SCHEDULE EDIT — DETAIL POPUP (opens on top of the calendar; mirrors admin Edit Schedule modal) -->
+<div class="modal fade" id="seEditModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-pencil-square me-2"></i>Request Schedule Edit</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+
+      <div class="modal-body">
+        <div class="se-summary-card">
+          <p class="se-summary-label">Selected Date</p>
+          <p class="se-summary-value" id="seSelectedDate"></p>
+          <p class="se-summary-label mt-2">Current Schedule</p>
+          <div class="se-summary-shift-row">
+            <span class="se-shift-label" id="seShiftLabelBadge"></span>
+            <span class="se-shift-time" id="seCurrentTimes"></span>
           </div>
         </div>
 
-        <!-- Step 2: Edit form -->
-        <div id="seStep2" style="display:none;">
-          <div class="se-summary-card">
-            <p class="se-summary-label">Selected Date</p>
-            <p class="se-summary-value" id="seSelectedDate"></p>
-            <p class="se-summary-label mt-2">Current Schedule</p>
-            <div class="se-summary-shift-row">
-              <span class="se-shift-label" id="seShiftLabelBadge"></span>
-              <span class="se-shift-time" id="seCurrentTimes"></span>
-            </div>
-          </div>
-
-          <div class="mb-3">
+        <div class="row g-3 mb-3">
+          <div class="col-md-6">
             <label class="se-field-label form-label">Requested Time In</label>
             <input type="time" id="seNewTimeIn" class="form-control">
           </div>
-
-          <div class="mb-3">
-            <label class="se-field-label form-label">Requested Time Out</label>
+          <div class="col-md-6">
+            <label class="se-field-label form-label">Requested Time Out <small class="text-muted">(next day if night)</small></label>
             <input type="time" id="seNewTimeOut" class="form-control">
           </div>
-
-          <div class="mb-1">
-            <label class="se-field-label form-label">Reason</label>
-            <textarea id="seReason" class="form-control" rows="3" placeholder="Enter reason for schedule change..."></textarea>
-          </div>
         </div>
 
+        <div class="mb-1">
+          <label class="se-field-label form-label">Reason</label>
+          <textarea id="seReason" class="form-control" rows="3" placeholder="Enter reason for schedule change..."></textarea>
+        </div>
       </div>
 
-      <div class="modal-footer" id="seModalFooter">
-        <div id="seFooterStep1">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-        </div>
-        <div id="seFooterStep2" style="display:none;">
-          <button type="button" class="btn btn-outline-secondary" onclick="seBackToStep1()">
-            <i class="bi bi-arrow-left"></i> Back
-          </button>
-          <button type="button" id="seSubmitBtn" class="btn btn-primary" onclick="submitScheduleEditRequest()">
-            <i class="bi bi-check-circle-fill"></i> Submit Request
-          </button>
-        </div>
+      <div class="modal-footer" style="justify-content: space-between;">
+        <button type="button" class="btn btn-outline-secondary" onclick="seBackToCalendar()">
+          <i class="bi bi-arrow-left"></i> Back
+        </button>
+        <button type="button" id="seSubmitBtn" class="btn btn-primary" onclick="submitScheduleEditRequest()">
+          <i class="bi bi-check-circle-fill"></i> Submit Request
+        </button>
       </div>
 
     </div>
@@ -1191,20 +1198,28 @@
 
   let seSelectedScheduleId   = null;
   let seSelectedScheduleDate = null;
+  let seCalendarInstance     = null;
+
+  // Same endpoint the schedules tab uses — it already classifies day/night/rest/leave/OB.
+  const SE_SCHEDULE_API = '/DTR-Internship-Project/get_schedule.php';
 
   function openScheduleEditModal() {
     seSelectedScheduleId   = null;
     seSelectedScheduleDate = null;
-
-    document.getElementById('seStep1').style.display       = 'block';
-    document.getElementById('seStep2').style.display       = 'none';
-    document.getElementById('seFooterStep1').style.display = 'flex';
-    document.getElementById('seFooterStep2').style.display = 'none';
-
-    loadSeSchedules();
+    renderSeCalendar();
   }
 
-  document.getElementById('scheduleEditModal').addEventListener('hidden.bs.modal', function () {
+  // Open the native time picker as soon as either time field is clicked/focused.
+  ['seNewTimeIn', 'seNewTimeOut'].forEach(function (id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const openPicker = function () { try { el.showPicker(); } catch (e) {} };
+    el.addEventListener('click', openPicker);
+    el.addEventListener('focus', openPicker);
+  });
+
+  // Reset the edit popup whenever it closes (Cancel, submit, or backdrop).
+  document.getElementById('seEditModal').addEventListener('hidden.bs.modal', function () {
     seSelectedScheduleId   = null;
     seSelectedScheduleDate = null;
     document.getElementById('seNewTimeIn').value  = '';
@@ -1215,95 +1230,147 @@
     btn.innerHTML = '<i class="bi bi-check-circle-fill"></i> Submit Request';
   });
 
-  function loadSeSchedules() {
-    const list = document.getElementById('seScheduleList');
-    list.innerHTML = '<p class="se-loading">Loading...</p>';
+  // Calendar is rendered while the modal is still hidden (zero width), so
+  // resize it once the modal is fully shown.
+  document.getElementById('scheduleEditModal').addEventListener('shown.bs.modal', function () {
+    if (seCalendarInstance) seCalendarInstance.updateSize();
+  });
 
-    fetch('/DTR-Internship-Project/dropdown_requests/get_schedule_for_edit.php')
-      .then(r => r.json())
-      .then(schedules => {
-        if (!schedules.length) {
-          list.innerHTML = '<p class="se-loading">No upcoming work schedules found.</p>';
-          return;
+  // Editable = a future day/night shift with no pending edit. Leave/OB/rest are
+  // already separate event types from get_schedule.php, so no client classification needed.
+  function seIsEditable(ev) {
+    const p = ev.extendedProps || {};
+    if (p.shift_type !== 'day' && p.shift_type !== 'night') return false;
+    if (!ev.startStr || ev.startStr <= todayStr()) return false;
+    return p.editStatus !== 'pending';
+  }
+
+  function renderSeCalendar() {
+    if (seCalendarInstance) {
+      seCalendarInstance.destroy();
+      seCalendarInstance = null;
+    }
+
+    const calendarEl = document.getElementById('seCalendar');
+    calendarEl.innerHTML = '';
+    const loadingEl = document.getElementById('seCalLoading');
+
+    seCalendarInstance = new FullCalendar.Calendar(calendarEl, {
+      initialView:  'dayGridMonth',
+      height:       400,
+      eventDisplay: 'block',
+      dayMaxEvents: false,
+      headerToolbar: { left: 'prev,next today', center: 'title', right: '' },
+
+      // FullCalendar passes start/end so the month refetches like the schedules tab.
+      events: {
+        url:     SE_SCHEDULE_API,
+        method:  'GET',
+        failure: function () { showToast('Failed to load schedules.', 'danger'); },
+      },
+
+      loading: function (isLoading) {
+        if (loadingEl) loadingEl.style.display = isLoading ? 'block' : 'none';
+      },
+
+      // Mirror the schedules tab: shift label + time for day/night, label only for rejected.
+      eventContent: function (arg) {
+        const p  = arg.event.extendedProps;
+        const st = p.shift_type;
+        if ((st === 'day' || st === 'night') && p.timeInStr && p.timeOutStr) {
+          return { html:
+            '<div class="fc-admin-inner">' +
+              '<span class="fc-admin-label">' + arg.event.title + '</span>' +
+              '<span class="fc-admin-time">' + p.timeInStr + ' – ' + p.timeOutStr + '</span>' +
+            '</div>'
+          };
         }
+        if (st === 'leave_rejected' || st === 'ob_rejected') {
+          return { html: '<div class="fc-admin-inner"><span class="fc-admin-label">' + arg.event.title + '</span></div>' };
+        }
+        return true;
+      },
 
-        list.innerHTML = '';
+      eventDidMount: function (info) {
+        info.el.classList.add(seIsEditable(info.event) ? 'se-ev-editable' : 'se-ev-locked');
+      },
 
-        schedules.forEach(s => {
-          const hasPending = s.edit_status === 'pending';
-          const startFmt   = s.scheduled_start ? fmtTimeFromDT(s.scheduled_start) : '—';
-          const endFmt     = s.scheduled_end   ? fmtTimeFromDT(s.scheduled_end)   : '—';
-          const dateObj    = new Date(s.schedule_date + 'T00:00:00');
-          const dayName    = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
-          const dateFull   = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      // Grey out past / today cells — no future shift can land there.
+      dayCellDidMount: function (info) {
+        if (localDateStr(info.date) <= todayStr()) info.el.classList.add('fc-day-dimmed');
+      },
 
-          const startHour  = s.scheduled_start ? new Date(s.scheduled_start).getHours() : 8;
-          const isNight    = startHour >= 18 || startHour < 6;
-          const shiftLabel = isNight ? 'Night Shift' : 'Day Shift';
-          const labelColor = isNight ? '#4da3ff' : '#97be41';
+      eventClick: function (info) {
+        info.jsEvent.preventDefault();
+        seTryEdit(info.event);
+      },
+    });
 
-          const row = document.createElement('div');
-          row.className = 'se-schedule-row ' + (hasPending ? 'has-pending' : 'can-edit');
-
-          row.innerHTML = `
-            <div class="se-row-date">
-              <span class="se-date-full">${dateFull}</span>
-              <span class="se-date-dow">${dayName}</span>
-            </div>
-            <div class="se-event-card">
-              <span class="se-shift-label" style="background:${labelColor}">${shiftLabel}</span>
-              <span class="se-shift-time">${startFmt} – ${endFmt}</span>
-            </div>
-            ${hasPending
-              ? '<span class="se-pending-pill"><i class="bi bi-hourglass-split me-1"></i>Pending</span>'
-              : '<i class="bi bi-chevron-right se-row-chevron"></i>'
-            }
-          `;
-
-          if (!hasPending) {
-            row.addEventListener('click', () => {
-              seGoToStep2(s.id, s.schedule_date, startFmt, endFmt, shiftLabel, labelColor);
-            });
-          }
-
-          list.appendChild(row);
-        });
-      })
-      .catch(() => showToast('Failed to load schedules.', 'danger'));
+    seCalendarInstance.render();
   }
 
-  function fmtTimeFromDT(dtStr) {
-    const d = new Date(dtStr);
-    return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+  function seTryEdit(ev) {
+    const p  = ev.extendedProps || {};
+    const st = p.shift_type;
+
+    if (st !== 'day' && st !== 'night') return;   // leave / OB / rest / continuation — not editable
+    if (!ev.startStr || ev.startStr <= todayStr()) {
+      showToast('You can only request edits for future schedules.', 'warning');
+      return;
+    }
+    if (p.editStatus === 'pending') {
+      showToast('You already have a pending edit request for this schedule.', 'warning');
+      return;
+    }
+
+    seOpenEditPopup(p.schedId, ev.startStr, {
+      label:    ev.title,
+      color:    st === 'night' ? '#4da3ff' : '#97be41',
+      startFmt: p.timeInStr,
+      endFmt:   (p.timeOutStr || '').replace(' ↪', ''),
+      inVal:    p.schedInVal,
+      outVal:   p.schedOutVal,
+    });
   }
 
-  function seGoToStep2(id, date, startFmt, endFmt, shiftLabel, labelColor) {
+  function seOpenEditPopup(id, date, shift) {
     seSelectedScheduleId   = id;
     seSelectedScheduleDate = date;
 
     document.getElementById('seSelectedDate').textContent   = modalFmtDate(date);
-    document.getElementById('seCurrentTimes').textContent   = startFmt + ' – ' + endFmt;
+    document.getElementById('seCurrentTimes').textContent   = shift.startFmt + ' – ' + shift.endFmt;
     const badge = document.getElementById('seShiftLabelBadge');
-    badge.textContent       = shiftLabel || 'Day Shift';
-    badge.style.background  = labelColor || '#97be41';
-    document.getElementById('seNewTimeIn').value  = '';
-    document.getElementById('seNewTimeOut').value = '';
+    badge.textContent       = shift.label || 'Day Shift';
+    badge.style.background  = shift.color || '#97be41';
+    // Pre-fill the inputs with the schedule's current times.
+    document.getElementById('seNewTimeIn').value  = shift.inVal  || '';
+    document.getElementById('seNewTimeOut').value = shift.outVal || '';
     document.getElementById('seReason').value     = '';
 
-    document.getElementById('seStep1').style.display       = 'none';
-    document.getElementById('seStep2').style.display       = 'block';
-    document.getElementById('seFooterStep1').style.display = 'none';
-    document.getElementById('seFooterStep2').style.display = 'flex';
+    // Close the calendar, then open the edit modal (one modal visible at a time).
+    seSwapModal('scheduleEditModal', 'seEditModal');
   }
 
-  function seBackToStep1() {
-    seSelectedScheduleId   = null;
-    seSelectedScheduleDate = null;
+  // Hide one modal and, once it's fully hidden, show the other — avoids a
+  // leftover backdrop from briefly stacking two modals.
+  function seSwapModal(hideId, showId) {
+    const hideEl   = document.getElementById(hideId);
+    const showEl   = document.getElementById(showId);
+    const hideInst = bootstrap.Modal.getInstance(hideEl);
+    if (hideInst) {
+      hideEl.addEventListener('hidden.bs.modal', function onHidden() {
+        hideEl.removeEventListener('hidden.bs.modal', onHidden);
+        bootstrap.Modal.getOrCreateInstance(showEl).show();
+      });
+      hideInst.hide();
+    } else {
+      bootstrap.Modal.getOrCreateInstance(showEl).show();
+    }
+  }
 
-    document.getElementById('seStep1').style.display       = 'block';
-    document.getElementById('seStep2').style.display       = 'none';
-    document.getElementById('seFooterStep1').style.display = 'flex';
-    document.getElementById('seFooterStep2').style.display = 'none';
+  // Back from the edit modal → reopen the calendar.
+  function seBackToCalendar() {
+    seSwapModal('seEditModal', 'scheduleEditModal');
   }
 
   function submitScheduleEditRequest() {
@@ -1346,8 +1413,8 @@
       .then(data => {
         if (data.success) {
           showToast(data.message, 'success');
-          const modal = bootstrap.Modal.getInstance(document.getElementById('scheduleEditModal'));
-          setTimeout(() => modal && modal.hide(), 1800);
+          // Calendar is already closed; just close the edit modal.
+          bootstrap.Modal.getInstance(document.getElementById('seEditModal'))?.hide();
         } else {
           showToast(data.message, 'danger');
           btn.disabled  = false;
