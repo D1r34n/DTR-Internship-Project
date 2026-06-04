@@ -577,7 +577,7 @@ hr {
 .empRole-employee{
     background: var(--employee-bg) !important;
     border-color: var(--employee-border) !important;
-    color: var(--employee) !important;
+    color: var(--text-light) !important;
     pointer-events: none;
 }
 
@@ -585,14 +585,14 @@ hr {
 .request-overtime {
     background: var(--workforce-bg) !important;
     border-color: var(--workforce-border) !important;
-    color: var(--workforce) !important;
+    color: var(--text-light) !important;
     pointer-events: none;
 }
 
 .empRole-admin {
     background: var(--admin-bg) !important;
     border-color: var(--admin-border) !important;
-    color: var(--admin) !important;
+    color: var(--text-light) !important;
     pointer-events: none;
 }
 
@@ -600,7 +600,7 @@ hr {
 .request-log-edit {
     background: var(--manager-bg) !important;
     border-color: var(--manager-border) !important;
-    color: var(--manager) !important;
+    color: var(--text-light) !important;
     pointer-events: none;
 }
 
@@ -608,7 +608,7 @@ hr {
 .request-official-business{
     background: var(--superadmin-bg) !important;
     border-color: var(--superadmin-border) !important;
-    color: var(--superadmin) !important;
+    color: var(--text-light) !important;
     pointer-events: none;
 }
 
@@ -619,26 +619,26 @@ hr {
 .status-approved {
     background: var(--status-success-bg) !important;
     border-color: var(--status-success-border) !important;
-    color: var(--status-success-color) !important;
+    color: var(--text-light) !important;
 }
 
 .status-pending,
 .request-leave {
     background: var(--status-warning-bg) !important;
     border-color: var(--status-warning-border) !important;
-    color: var(--status-warning-color) !important;
+    color: var(--text-light) !important;
 }
 
 .status-rejected {
     background: var(--status-danger-bg) !important;
     border-color: var(--status-danger-border) !important;
-    color: var(--status-danger-color) !important;
+    color: var(--text-light) !important;
 }
 
 .status-info {
     background: var(--status-info-bg) !important;
     border-color: var(--status-info-border) !important;
-    color: var(--status-info-color) !important;
+    color: var(--text-light) !important;
 }
 
 /* ------------------------------------------------
@@ -816,7 +816,7 @@ button.btn-sm {
 
 .btn-success,
 .btn.btn-success {
-    color: var(--status-success-color) !important;
+    color: var(--text-light) !important;
     background: var(--status-success-bg) linear-gradient(
         to right,
         rgba(255, 255, 255, 0.10) 0%,
@@ -902,7 +902,7 @@ button.btn-sm {
 
 .btn-danger,
 .btn.btn-danger {
-    color: var(--status-danger-color) !important;
+    color: var(--text-light) !important;
     background: var(--status-danger-bg) linear-gradient(
         to right,
         rgba(255, 255, 255, 0.10) 0%,
