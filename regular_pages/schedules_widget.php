@@ -1035,6 +1035,9 @@ swCalendar = new FullCalendar.Calendar(calEl, {
         if ((st === 'day' || st === 'night') && props.timeInStr && props.timeOutStr) {
             return { html: '<div class="fc-admin-inner"><span class="fc-admin-label">' + arg.event.title + '</span><span class="fc-admin-time">' + props.timeInStr + ' – ' + props.timeOutStr + '</span></div>' };
         }
+        if (st === 'leave_rejected' || st === 'ob_rejected') {
+            return { html: '<div class="fc-admin-inner"><span class="fc-admin-label">' + arg.event.title + '</span></div>' };
+        }
         return true;
     },
 
@@ -1324,6 +1327,9 @@ swCalendar = new FullCalendar.Calendar(calEl, {
         const props = arg.event.extendedProps;
         if ((st === 'day' || st === 'night') && props.timeInStr && props.timeOutStr) {
             return { html: '<div class="fc-admin-inner"><span class="fc-admin-label">' + arg.event.title + '</span><span class="fc-admin-time">' + props.timeInStr + ' – ' + props.timeOutStr + '</span></div>' };
+        }
+        if (st === 'leave_rejected' || st === 'ob_rejected') {
+            return { html: '<div class="fc-admin-inner"><span class="fc-admin-label">' + arg.event.title + '</span></div>' };
         }
         return true;
     },

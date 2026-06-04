@@ -1,9 +1,12 @@
 /* ================================================
    SCHEDULES PAGE
    ================================================
-   Page-specific styles for the employee dashboard.
+   Page-specific styles for schedules_page.php.
+   Loaded alongside schedules_widget.css — do not
+   duplicate classes already defined there.
    Depends on: root.css, typography.css,
-               components.css, navbars.css
+               components.css, navbars.css,
+               schedules_widget.css
    ================================================ */
 
 /* ============================================================
@@ -18,31 +21,21 @@ body::before {
     z-index: -2;
 }
 
-/* ------------------------------------------------
-   BODY BASE
-   ------------------------------------------------ */
+/* ---- Body base ---- */
 
-html {
-    height: 100%;
-}
+html { height: 100%; }
 
 body {
     display: flex;
     min-height: 100vh;
     margin: 0;
-
     font-family: 'Poppins', sans-serif;
-
-    /* keep horizontal clean, allow vertical scroll */
     overflow-x: hidden;
-
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
 }
 
-/* =========================
-   LAYOUT
-========================= */
+/* ---- Layout ---- */
 
 #main-wrapper {
     display: flex;
@@ -53,54 +46,7 @@ body {
     overflow: hidden;
 }
 
-/* =========================
-   CARD WRAPPER
-========================= */
-
-.schedules-card {
-    flex: 1;
-    min-height: 0;
-    margin: 0.5rem 1rem 1rem;
-    overflow: visible !important;
-}
-
-.schedules-card-body {
-    padding: 1.5rem;
-    height: 100%;
-    overflow: visible;
-}
-
-/* =========================
-   LOADING OVERLAY
-========================= */
-
-#calendar-wrapper {
-    position: relative;
-    flex: 1;
-    min-height: 0;
-}
-
-#calendar-loading {
-    display: none;
-    position: absolute;
-    inset: 0;
-    z-index: 10;
-    background: rgba(0, 0, 0, 0.35);
-    backdrop-filter: blur(3px);
-    border-radius: 8px;
-    align-items: center;
-    justify-content: center;
-}
-
-#calendar-loading.show {
-    display: flex;
-}
-
-#calendar-loading .spinner-border {
-    width: 2.5rem;
-    height: 2.5rem;
-    color: var(--primary-color);
-}
+/* ---- Summary card strip ---- */
 
 .d-flex.overflow-auto {
     scroll-snap-type: x mandatory;
@@ -110,79 +56,17 @@ body {
 .d-flex.overflow-auto > div {
     scroll-snap-align: start;
     flex-shrink: 0;
-    width: calc((100% - (3 * 0.5rem)) / 4); /* 4 cards, 3 gaps of gap-2 (0.5rem each) */
+    width: calc((100% - (3 * 0.5rem)) / 4);
 }
 
 /* ============================================================
-   SHIFT TYPE LEGEND
+   ADDITIONAL SHIFT LEGEND DOT VARIANTS
+   (base .shiftLegendDot rules are in schedules_widget.css)
    ============================================================ */
-.shiftLegend {
-    display: flex;
-    gap: 1.5rem;
-    align-items: center;
-    padding: 0.5rem 0 1rem;
-    flex-wrap: wrap;
-}
 
-.shiftLegendItem {
-    display: flex;
-    align-items: center;
-    gap: 0.4rem;
-    font-size: 0.75rem;
-    color: var(--text-light);
-}
-
-.shiftLegendDot {
-    width: 12px;
-    height: 12px;
-    border-radius: 3px;
-    flex-shrink: 0;
-}
-
-.shiftLegendDot.day {
-    background: var(--primary-color);
-}
-
-.shiftLegendDot.night {
-    background: var(--shift-night);
-}
-
-.shiftLegendDot.night-cont {
-    background: var(--shift-night-bg);
-    border: 2px dashed var(--shift-night);
-}
-
-.shiftLegendDot.rest {
-    background: var(--shift-rest);
-}
-
-.shiftLegendDot.leave-approved {
-    background: var(--shift-leave-approved);
-}
-
-.shiftLegendDot.leave-pending {
-    background: var(--shift-leave-pending);
-}
-
-.shiftLegendDot.leave-rejected {
-    background: var(--shift-leave-rejected);
-}
-
-.shiftLegendDot.ob-approved {
-    background: var(--shift-ob-approved);
-}
-
-.shiftLegendDot.ob-pending {
-    background: var(--shift-ob-pending);
-}
-
-.shiftLegendDot.ob-rejected {
-    background: var(--shift-ob-rejected);
-}
-
-.shiftLegendDot.birthday {
-    background: #8b5cf6;
-}
+.shiftLegendDot.ob-pending  { background: var(--shift-ob-pending); }
+.shiftLegendDot.ob-rejected { background: var(--shift-ob-rejected); }
+.shiftLegendDot.birthday    { background: #8b5cf6; }
 
 .shiftLegendDot.event-holiday      { background: #ef4444; }
 .shiftLegendDot.event-party        { background: #ec4899; }
@@ -190,56 +74,12 @@ body {
 .shiftLegendDot.event-announcement { background: #f59e0b; }
 .shiftLegendDot.event-other        { background: #6b7280; }
 
-.schedule-filter-select {
-    appearance: auto;
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    color: var(--text-light);
-    font-size: 0.75rem;
-    font-weight: 500;
-    padding: 4px 10px;
-    border-radius: 20px;
-    cursor: pointer;
-    transition: border-color 0.2s, background 0.2s;
-}
-
-.schedule-filter-select:focus {
-    outline: none;
-    border-color: rgba(255, 255, 255, 0.3);
-    background: rgba(255, 255, 255, 0.1);
-}
-
-.schedule-filter-select option {
-    background: #1e1e2e;
-    color: #fff;
-}
-
-.btn-add-event {
-    background: rgba(13, 110, 253, 0.15);
-    color: #6ea8fe;
-    border: 1px solid rgba(13, 110, 253, 0.3);
-    font-size: 0.75rem;
-    font-weight: 600;
-    padding: 4px 12px;
-    border-radius: 20px;
-    transition: background 0.2s, color 0.2s;
-    white-space: nowrap;
-}
-
-.btn-add-event:hover {
-    background: #0d6efd;
-    color: #fff;
-    border-color: #0d6efd;
-}
-
 /* ============================================================
-   FULLCALENDAR HEADER TOOLBAR
+   FULLCALENDAR GLOBAL OVERRIDES
+   (these apply to any FC on the page, not just #sw-calendar)
    ============================================================ */
 
-.fc-header-toolbar {
-    flex-wrap: nowrap !important;
-    align-items: center !important;
-}
+.fc-header-toolbar { flex-wrap: nowrap !important; align-items: center !important; }
 
 .fc-header-toolbar .fc-toolbar-chunk {
     display: flex;
@@ -254,75 +94,11 @@ body {
     text-overflow: ellipsis;
 }
 
-/* ============================================================
-   COMPACT DAY CELLS
-   ============================================================ */
+/* ---- Compact day cells ---- */
 
-.fc .fc-daygrid-day-frame {
-    min-height: 32px !important;
-}
-
-.fc .fc-daygrid-day-top {
-    padding: 2px 4px 0;
-}
-
-.fc .fc-daygrid-day-number {
-    font-size: 0.75rem;
-    padding: 2px 4px;
-}
-
-.fc .fc-daygrid-event {
-    font-size: 0.7rem;
-    padding: 1px 4px;
-    margin-bottom: 1px;
-}
-
-.fc .fc-col-header-cell {
-    padding: 3px 0;
-    font-size: 0.72rem;
-}
-
-.fc .fc-daygrid-day-events {
-    margin-bottom: 2px;
-}
-
-/* ---- Empty-day add overlay (plus icon on hover, admin only) ---- */
-
-#calendar .fc-daygrid-day { position: relative; }
-
-.es-day-add-overlay {
-    position:        absolute;
-    inset:           0;
-    display:         flex;
-    align-items:     center;
-    justify-content: center;
-    font-size:       1.4rem;
-    color:           var(--primary-color);
-    opacity:         0;
-    transition:      opacity 0.15s;
-    pointer-events:  none;
-    z-index:         1;
-}
-
-#calendar .fc-daygrid-day:not(.fc-day-has-events):hover .es-day-add-overlay {
-    opacity: 1;
-}
-
-/* ============================================================
-   LIGHT THEME OVERRIDES
-   ============================================================ */
-
-[data-theme="light"] .schedule-filter-select {
-    background: rgba(0, 0, 0, 0.05);
-    border-color: rgba(0, 0, 0, 0.15);
-}
-
-[data-theme="light"] .schedule-filter-select:focus {
-    border-color: rgba(0, 0, 0, 0.30);
-    background: rgba(0, 0, 0, 0.08);
-}
-
-[data-theme="light"] .schedule-filter-select option {
-    background: #ffffff;
-    color: var(--text-lightest);
-}
+.fc .fc-daygrid-day-frame   { min-height: 32px !important; }
+.fc .fc-daygrid-day-top     { padding: 2px 4px 0; }
+.fc .fc-daygrid-day-number  { font-size: 0.75rem; padding: 2px 4px; }
+.fc .fc-daygrid-event       { font-size: 0.7rem; padding: 1px 4px; margin-bottom: 1px; }
+.fc .fc-col-header-cell     { padding: 3px 0; font-size: 0.72rem; }
+.fc .fc-daygrid-day-events  { margin-bottom: 2px; }

@@ -6,7 +6,7 @@
    Depends on: root.css, components.css
    ================================================ */
 
-/* ---- Page card wrapper (used by schedules_page.php) ---- */
+/* ---- Page card wrapper ---- */
 .schedules-card {
     flex: 1;
     min-height: 0;
@@ -105,7 +105,7 @@
 .shiftLegendDot.leave-rejected { background: var(--shift-leave-rejected); }
 .shiftLegendDot.ob-approved    { background: var(--shift-ob-approved); }
 
-/* ---- Filter select + Add Event button (admin global view) ---- */
+/* ---- Filter select + Add Event button ---- */
 .schedule-filter-select {
     appearance: auto;
     background: rgba(255, 255, 255, 0.06);
@@ -176,37 +176,25 @@
 
 #sw-calendar .fc-day-today .fc-daygrid-day-number { color: var(--primary-color); font-weight: 600; }
 
-/* Compact cells (employee/admin global view) */
-#sw-calendar .fc-header-toolbar { flex-wrap: nowrap !important; align-items: center !important; }
+#sw-calendar .fc-header-toolbar                   { flex-wrap: nowrap !important; align-items: center !important; }
 #sw-calendar .fc-header-toolbar .fc-toolbar-chunk { display: flex; align-items: center; flex-shrink: 0; white-space: nowrap; }
-#sw-calendar .fc-daygrid-event      { font-size: 0.7rem; padding: 1px 4px; margin-bottom: 1px; }
-#sw-calendar .fc-col-header-cell    { padding: 3px 0; font-size: 0.72rem; }
-#sw-calendar .fc-daygrid-day-events { margin-bottom: 2px; }
-#sw-calendar .fc-daygrid-day        { position: relative; }
-
-/* Scoped admin view */
+#sw-calendar .fc-daygrid-event                    { font-size: 0.7rem; padding: 1px 4px; margin-bottom: 1px; }
+#sw-calendar .fc-col-header-cell                  { padding: 3px 0; font-size: 0.72rem; }
+#sw-calendar .fc-daygrid-day-events               { margin-bottom: 2px; }
+#sw-calendar .fc-daygrid-day                      { position: relative; }
 #sw-calendar .fc-daygrid-day:not(.fc-day-other):hover { background: var(--glass-bg); cursor: pointer; }
-#sw-calendar .fc-daygrid-day-frame  { min-height: 80px; position: relative; }
+#sw-calendar .fc-daygrid-day-frame                { min-height: 80px; position: relative; }
 
 #sw-calendar .fc-event {
-    box-shadow:    none        !important;
+    box-shadow:    none !important;
     font-family:   'Poppins', sans-serif;
     margin-bottom: 1px;
+    z-index:       1 !important;
 }
 
-/* ---- Unified event-type base colors (all views) ---- */
-#sw-calendar .fc-ev-day              { background-color: #97be41                  !important; border-color: #7fae2f !important; color: #fff    !important; }
-#sw-calendar .fc-ev-night            { background-color: #4da3ff                  !important; border-color: #2e8fe8 !important; color: #fff    !important; }
-#sw-calendar .fc-ev-night-cont       { background-color: rgba(77,163,255,0.12)    !important; border:       2px dashed #4da3ff  !important; color: #4da3ff !important; border-radius: 4px !important; }
-#sw-calendar .fc-ev-rest             { background-color: rgba(251,191,36,0.12)    !important; border-color: #f59e0b !important; color: #f59e0b !important; }
-#sw-calendar .fc-ev-on-leave         { background-color: #fd7e14                  !important; border-color: #e8610a !important; color: #fff    !important; }
-#sw-calendar .fc-ev-leave-pending    { background-color: #f0ad4e                  !important; border-color: #d99a3a !important; color: #fff    !important; }
-#sw-calendar .fc-ev-leave-rejected   { background-color: #dc3545                  !important; border-color: #b02a37 !important; color: #fff    !important; }
-#sw-calendar .fc-ev-on-ob            { background-color: #6f42c1                  !important; border-color: #59359a !important; color: #fff    !important; }
-#sw-calendar .fc-ev-ob-pending       { background-color: #f0ad4e                  !important; border-color: #d99a3a !important; color: #fff    !important; }
-#sw-calendar .fc-ev-pending-schedule { background-color: rgba(245,158,11,0.12)    !important; border-color: #f59e0b !important; color: #f59e0b !important; }
+/* ---- Event-type colors ---- */
 
-/* ---- Scoped admin: highlight label pill only for shift events ---- */
+/* Day/night: background is transparent — shift type is conveyed by the label pill below */
 #sw-calendar .fc-ev-day,
 #sw-calendar .fc-ev-night {
     background-color: transparent !important;
@@ -214,13 +202,32 @@
     color:            var(--text-muted) !important;
 }
 
+#sw-calendar .fc-ev-night-cont       { background-color: rgba(77,163,255,0.12)  !important; border: 2px dashed #4da3ff !important; color: #4da3ff !important; border-radius: 4px !important; }
+#sw-calendar .fc-ev-rest             { background-color: rgba(251,191,36,0.12)  !important; border-color: #f59e0b !important; color: #f59e0b !important; }
+#sw-calendar .fc-ev-on-leave         { background-color: #fd7e14                !important; border-color: #e8610a !important; color: #fff    !important; }
+#sw-calendar .fc-ev-leave-rejected {
+    background-color: transparent !important;
+    border-color:     transparent !important;
+    color:            var(--text-muted) !important;
+}
+
+#sw-calendar .fc-ev-leave-rejected .fc-admin-label { background: #dc3545; color: #fff; border-radius: 4px; padding: 1px 6px; }
+#sw-calendar .fc-ev-leave-rejected .fc-admin-time  { background: transparent; }
+#sw-calendar .fc-ev-on-ob            { background-color: #6f42c1                !important; border-color: #59359a !important; color: #fff    !important; }
+#sw-calendar .fc-ev-pending-schedule { background-color: rgba(245,158,11,0.12)  !important; border-color: #f59e0b !important; color: #f59e0b !important; }
+
+/* Leave pending and OB pending share the same amber style */
+#sw-calendar .fc-ev-leave-pending,
+#sw-calendar .fc-ev-ob-pending       { background-color: #f0ad4e                !important; border-color: #d99a3a !important; color: #fff    !important; }
+
+/* ---- Day / night label pills ---- */
 #sw-calendar .fc-ev-day   .fc-admin-label { background: #97be41; color: #fff; border-radius: 4px; padding: 1px 6px; }
 #sw-calendar .fc-ev-night .fc-admin-label { background: #4da3ff; color: #fff; border-radius: 4px; padding: 1px 6px; }
 
 #sw-calendar .fc-ev-day   .fc-admin-time,
-#sw-calendar .fc-ev-night .fc-admin-time { background: transparent; }
+#sw-calendar .fc-ev-night .fc-admin-time  { background: transparent; }
 
-/* ---- Scoped admin event inner ---- */
+/* ---- Admin event inner layout ---- */
 .fc-admin-inner { display: flex; flex-direction: column; padding: 2px 4px; gap: 2px; }
 
 .fc-admin-label {
@@ -247,29 +254,13 @@
     color:         inherit;
 }
 
-/* Transparent-background events get a subtler time chip */
+/* Transparent-bg events get a subtler time chip */
 #sw-calendar .fc-ev-night-cont       .fc-admin-time,
 #sw-calendar .fc-ev-rest             .fc-admin-time,
 #sw-calendar .fc-ev-pending-schedule .fc-admin-time { background: rgba(255,255,255,0.1); }
 
-/* ---- Add overlay (admin: empty day) ---- */
-.sw-day-add-overlay {
-    position:        absolute;
-    inset:           0;
-    display:         flex;
-    align-items:     center;
-    justify-content: center;
-    font-size:       1.4rem;
-    color:           var(--primary-color);
-    opacity:         0;
-    transition:      opacity 0.15s;
-    pointer-events:  none;
-    z-index:         1;
-}
-
-#sw-calendar .fc-daygrid-day:not(.fc-day-has-events):hover .sw-day-add-overlay { opacity: 1; }
-
-/* Same overlay for employee/admin global view */
+/* ---- Add overlay (empty day, shared by all views) ---- */
+.sw-day-add-overlay,
 .es-day-add-overlay {
     position:        absolute;
     inset:           0;
@@ -284,6 +275,7 @@
     z-index:         1;
 }
 
+#sw-calendar .fc-daygrid-day:not(.fc-day-has-events):hover .sw-day-add-overlay,
 #sw-calendar .fc-daygrid-day:not(.fc-day-has-events):hover .es-day-add-overlay { opacity: 1; }
 
 /* ---- Event action buttons (scoped admin: edit/delete on hover) ---- */
@@ -298,30 +290,28 @@
     z-index:    10;
 }
 
-#sw-calendar .fc-event { z-index: 1 !important; }
-
 #sw-calendar .fc-daygrid-day:hover .sw-ev-actions { opacity: 1; }
 
 .sched-cal-action-btn {
-    width:         22px;
-    height:        22px;
-    border:        none;
-    border-radius: 5px;
-    cursor:        pointer;
-    font-size:     0.6rem;
-    display:       inline-flex;
-    align-items:   center;
+    width:           22px;
+    height:          22px;
+    border:          none;
+    border-radius:   5px;
+    cursor:          pointer;
+    font-size:       0.6rem;
+    display:         inline-flex;
+    align-items:     center;
     justify-content: center;
-    transition:    background 0.2s;
+    transition:      background 0.2s;
 }
 
-.sched-cal-action-btn.edit        { background: var(--info-glass);   color: var(--info-color); }
-.sched-cal-action-btn.edit:hover  { background: var(--info-color);   color: var(--text-lightest); }
-.sched-cal-action-btn.delete      { background: var(--danger-glass);  color: var(--danger-color); }
-.sched-cal-action-btn.delete:hover { background: var(--danger-color); color: var(--text-lightest); }
+.sched-cal-action-btn.edit         { background: var(--info-glass);   color: var(--info-color); }
+.sched-cal-action-btn.edit:hover   { background: var(--info-color);   color: var(--text-lightest); }
+.sched-cal-action-btn.delete       { background: var(--danger-glass);  color: var(--danger-color); }
+.sched-cal-action-btn.delete:hover { background: var(--danger-color);  color: var(--text-lightest); }
 
 /* ============================================================
-   MODALS (glass style — for both scoped and global admin)
+   MODALS (glass style)
    ============================================================ */
 
 .glass-modal {
@@ -403,20 +393,20 @@
 .preset-sched-dropdown-wrap { position: relative; }
 
 .preset-sched-trigger {
-    width:         100%;
-    display:       flex;
-    align-items:   center;
+    width:           100%;
+    display:         flex;
+    align-items:     center;
     justify-content: space-between;
-    gap:           0.5rem;
-    background:    var(--neutral-glass);
-    border:        1px solid var(--neutral-border);
-    color:         var(--text-muted);
-    border-radius: 8px;
-    padding:       0.5rem 0.85rem;
-    font-size:     0.85rem;
-    cursor:        pointer;
-    text-align:    left;
-    transition:    border-color 0.18s, background 0.18s, color 0.18s;
+    gap:             0.5rem;
+    background:      var(--neutral-glass);
+    border:          1px solid var(--neutral-border);
+    color:           var(--text-muted);
+    border-radius:   8px;
+    padding:         0.5rem 0.85rem;
+    font-size:       0.85rem;
+    cursor:          pointer;
+    text-align:      left;
+    transition:      border-color 0.18s, background 0.18s, color 0.18s;
 }
 
 .preset-sched-trigger:hover {
@@ -426,18 +416,18 @@
 }
 
 .preset-sched-menu {
-    position:      absolute;
-    top:           calc(100% + 4px);
-    left:          0;
-    right:         0;
-    background:    #1a1a22;
-    border:        1px solid var(--neutral-border);
+    position:   absolute;
+    top:        calc(100% + 4px);
+    left:       0;
+    right:      0;
+    background: #1a1a22;
+    border:     1px solid var(--neutral-border);
     border-radius: 8px;
-    box-shadow:    0 8px 24px rgba(0, 0, 0, 0.6);
-    z-index:       1060;
-    display:       none;
-    max-height:    220px;
-    overflow-y:    auto;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+    z-index:    1060;
+    display:    none;
+    max-height: 220px;
+    overflow-y: auto;
 }
 
 .preset-sched-menu.open { display: block; }

@@ -165,7 +165,10 @@
             <p class="se-summary-label">Selected Date</p>
             <p class="se-summary-value" id="seSelectedDate"></p>
             <p class="se-summary-label mt-2">Current Schedule</p>
-            <p class="se-summary-value highlight" id="seCurrentTimes"></p>
+            <div class="se-summary-shift-row">
+              <span class="se-shift-label" id="seShiftLabelBadge"></span>
+              <span class="se-shift-time" id="seCurrentTimes"></span>
+            </div>
           </div>
 
           <div class="mb-3">
@@ -1227,31 +1230,39 @@
         list.innerHTML = '';
 
         schedules.forEach(s => {
-          const hasPending  = s.edit_status === 'pending';
-          const startFmt    = s.scheduled_start ? fmtTimeFromDT(s.scheduled_start) : '—';
-          const endFmt      = s.scheduled_end   ? fmtTimeFromDT(s.scheduled_end)   : '—';
-          const dateObj     = new Date(s.schedule_date + 'T00:00:00');
-          const dayName     = dateObj.toLocaleDateString('en-US', { weekday: 'short' });
-          const dateFull    = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+          const hasPending = s.edit_status === 'pending';
+          const startFmt   = s.scheduled_start ? fmtTimeFromDT(s.scheduled_start) : '—';
+          const endFmt     = s.scheduled_end   ? fmtTimeFromDT(s.scheduled_end)   : '—';
+          const dateObj    = new Date(s.schedule_date + 'T00:00:00');
+          const dayName    = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
+          const dateFull   = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+          const startHour  = s.scheduled_start ? new Date(s.scheduled_start).getHours() : 8;
+          const isNight    = startHour >= 18 || startHour < 6;
+          const shiftLabel = isNight ? 'Night Shift' : 'Day Shift';
+          const labelColor = isNight ? '#4da3ff' : '#97be41';
 
           const row = document.createElement('div');
           row.className = 'se-schedule-row ' + (hasPending ? 'has-pending' : 'can-edit');
 
           row.innerHTML = `
-            <div class="se-schedule-row-date">
-              <div class="se-date-main">${dateFull}</div>
-              <div class="se-date-sub">${dayName}</div>
+            <div class="se-row-date">
+              <span class="se-date-full">${dateFull}</span>
+              <span class="se-date-dow">${dayName}</span>
             </div>
-            <div class="se-schedule-row-times">${startFmt} – ${endFmt}</div>
+            <div class="se-event-card">
+              <span class="se-shift-label" style="background:${labelColor}">${shiftLabel}</span>
+              <span class="se-shift-time">${startFmt} – ${endFmt}</span>
+            </div>
             ${hasPending
-              ? '<span class="se-schedule-row-badge se-badge-pending"><i class="bi bi-hourglass-split me-1"></i>Pending</span>'
-              : '<span class="se-schedule-row-badge se-badge-edit"><i class="bi bi-pencil me-1"></i>Edit</span>'
+              ? '<span class="se-pending-pill"><i class="bi bi-hourglass-split me-1"></i>Pending</span>'
+              : '<i class="bi bi-chevron-right se-row-chevron"></i>'
             }
           `;
 
           if (!hasPending) {
             row.addEventListener('click', () => {
-              seGoToStep2(s.id, s.schedule_date, startFmt, endFmt);
+              seGoToStep2(s.id, s.schedule_date, startFmt, endFmt, shiftLabel, labelColor);
             });
           }
 
@@ -1266,12 +1277,15 @@
     return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
   }
 
-  function seGoToStep2(id, date, startFmt, endFmt) {
+  function seGoToStep2(id, date, startFmt, endFmt, shiftLabel, labelColor) {
     seSelectedScheduleId   = id;
     seSelectedScheduleDate = date;
 
-    document.getElementById('seSelectedDate').textContent = modalFmtDate(date);
-    document.getElementById('seCurrentTimes').textContent = startFmt + ' – ' + endFmt;
+    document.getElementById('seSelectedDate').textContent   = modalFmtDate(date);
+    document.getElementById('seCurrentTimes').textContent   = startFmt + ' – ' + endFmt;
+    const badge = document.getElementById('seShiftLabelBadge');
+    badge.textContent       = shiftLabel || 'Day Shift';
+    badge.style.background  = labelColor || '#97be41';
     document.getElementById('seNewTimeIn').value  = '';
     document.getElementById('seNewTimeOut').value = '';
     document.getElementById('seReason').value     = '';

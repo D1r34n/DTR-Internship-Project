@@ -5,7 +5,7 @@
 /* ---------- Step 1 — Schedule List ---------- */
 
 .se-step-hint {
-    color: rgba(255, 255, 255, 0.6);
+    color: var(--text-muted);
     font-size: 0.85rem;
     margin-bottom: 1rem;
 }
@@ -13,11 +13,11 @@
 #seScheduleList {
     display: flex;
     flex-direction: column;
-    gap: 0.6rem;
+    gap: 0.5rem;
 }
 
 .se-loading {
-    color: #aaa;
+    color: var(--text-muted);
     text-align: center;
     padding: 1.5rem 0;
 }
@@ -27,104 +27,139 @@
 .se-schedule-row {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
-    padding: 0.75rem 1rem;
-    border-radius: 10px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    cursor: pointer;
+    gap: 0.85rem;
+    padding: 0.6rem 0.85rem;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
     transition: background 0.15s, border-color 0.15s;
 }
 
 .se-schedule-row.can-edit {
-    border-color: rgba(151, 190, 65, 0.2);
+    cursor: pointer;
 }
 
 .se-schedule-row.can-edit:hover {
-    background: rgba(151, 190, 65, 0.07);
-    border-color: rgba(151, 190, 65, 0.4);
+    background: rgba(255, 255, 255, 0.04);
+    border-color: rgba(255, 255, 255, 0.12);
 }
 
 .se-schedule-row.has-pending {
     cursor: default;
-    opacity: 0.6;
-    border-color: rgba(240, 173, 78, 0.25);
+    opacity: 0.55;
 }
 
-.se-schedule-row-date {
-    min-width: 6.5rem;
+/* ---- Date column ---- */
+
+.se-row-date {
+    min-width: 5.5rem;
     flex-shrink: 0;
 }
 
-.se-date-main {
-    font-size: 0.875rem;
-    color: rgba(255, 255, 255, 0.85);
-    font-weight: 500;
-}
-
-.se-date-sub {
-    font-size: 0.72rem;
-    color: #aaa;
-}
-
-.se-schedule-row-times {
-    flex: 1;
+.se-date-full {
+    display: block;
     font-size: 0.82rem;
-    color: rgba(255, 255, 255, 0.6);
+    font-weight: 500;
+    color: var(--text-light);
 }
 
-.se-schedule-row-badge {
-    font-size: 0.72rem;
-    padding: 0.2rem 0.55rem;
-    border-radius: 20px;
-    white-space: nowrap;
-}
-
-.se-badge-pending {
-    background: rgba(240, 173, 78, 0.15);
-    color: #f0ad4e;
-    border: 1px solid rgba(240, 173, 78, 0.3);
-}
-
-.se-badge-edit {
-    background: rgba(151, 190, 65, 0.15);
-    color: #97be41;
-    border: 1px solid rgba(151, 190, 65, 0.3);
+.se-date-dow {
+    display: block;
     font-size: 0.7rem;
+    color: var(--text-muted);
 }
 
-/* ---------- Step 2 — Edit Form ---------- */
+/* ---- Event card (mirrors fc-admin-inner + fc-admin-label / fc-admin-time) ---- */
+
+.se-event-card {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    flex: 1;
+}
+
+.se-shift-label {
+    display: inline-block;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: #fff;
+    border-radius: 4px;
+    padding: 1px 7px;
+    line-height: 1.5;
+    align-self: flex-start;
+}
+
+.se-shift-time {
+    display: inline-block;
+    font-size: 0.7rem;
+    font-weight: 500;
+    padding: 1px 6px;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-muted);
+    white-space: nowrap;
+    align-self: flex-start;
+}
+
+/* ---- Row indicators ---- */
+
+.se-row-chevron {
+    color: var(--text-muted);
+    font-size: 0.7rem;
+    flex-shrink: 0;
+    opacity: 0;
+    transition: opacity 0.15s;
+}
+
+.se-schedule-row.can-edit:hover .se-row-chevron { opacity: 1; }
+
+.se-pending-pill {
+    font-size: 0.7rem;
+    padding: 1px 8px;
+    border-radius: 20px;
+    background: rgba(240, 173, 78, 0.12);
+    color: #f0ad4e;
+    border: 1px solid rgba(240, 173, 78, 0.25);
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+/* ---------- Step 2 — Summary + Form ---------- */
 
 .se-summary-card {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 10px;
-    padding: 1rem;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    padding: 0.85rem 1rem;
     margin-bottom: 1.25rem;
 }
 
 .se-summary-label {
-    color: #aaa;
-    font-size: 0.8rem;
-    margin: 0 0 0.25rem;
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    margin: 0 0 0.2rem;
 }
 
 .se-summary-value {
-    color: #fff;
+    color: var(--text-light);
     font-weight: 600;
     margin: 0;
-    font-size: 0.9rem;
+    font-size: 0.875rem;
 }
 
-.se-summary-value.highlight {
-    color: #97be41;
+/* Shift label + time chip row in step 2 summary */
+.se-summary-shift-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 0.2rem;
 }
 
 .se-field-label {
-    color: rgba(255, 255, 255, 0.7);
-    font-size: 0.85rem;
-    font-weight: 600;
+    color: var(--text-light);
+    font-size: 0.83rem;
+    font-weight: 500;
     display: block;
-    margin-bottom: 0.4rem;
+    margin-bottom: 0.35rem;
 }
 
 /* ---------- Footer ---------- */
@@ -145,48 +180,20 @@
    LIGHT THEME OVERRIDES
    ============================================================ */
 
-[data-theme="light"] .se-step-hint {
-    color: var(--text-muted);
-}
-
 [data-theme="light"] .se-schedule-row {
-    border-color: rgba(0, 0, 0, 0.08);
-}
-
-[data-theme="light"] .se-schedule-row.can-edit {
-    border-color: rgba(80, 130, 20, 0.2);
+    border-color: rgba(0, 0, 0, 0.06);
 }
 
 [data-theme="light"] .se-schedule-row.can-edit:hover {
-    background: rgba(80, 130, 20, 0.05);
-    border-color: rgba(80, 130, 20, 0.35);
+    background: rgba(0, 0, 0, 0.03);
+    border-color: rgba(0, 0, 0, 0.12);
 }
 
-[data-theme="light"] .se-date-main {
-    color: var(--text-light);
-}
-
-[data-theme="light"] .se-date-sub {
-    color: var(--text-muted);
-}
-
-[data-theme="light"] .se-schedule-row-times {
-    color: var(--text-muted);
+[data-theme="light"] .se-shift-time {
+    background: rgba(0, 0, 0, 0.07);
 }
 
 [data-theme="light"] .se-summary-card {
-    background: rgba(0, 0, 0, 0.04);
-    border-color: rgba(0, 0, 0, 0.1);
-}
-
-[data-theme="light"] .se-summary-label {
-    color: var(--text-muted);
-}
-
-[data-theme="light"] .se-summary-value {
-    color: var(--text-lightest);
-}
-
-[data-theme="light"] .se-field-label {
-    color: var(--text-muted);
+    background: rgba(0, 0, 0, 0.03);
+    border-color: rgba(0, 0, 0, 0.08);
 }
