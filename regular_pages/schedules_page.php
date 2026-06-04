@@ -184,6 +184,7 @@ $schedInitialDate   = date('Y-m-01');
                             <div class="d-flex flex-column ms-auto text-end">
                                 <div class="stats-number" id="sched-stat-day">—</div>
                                 <div class="text-meta">Day Shifts</div>
+                                <small class="text-meta-secondary sched-month-label">This <?= date('F') ?></small>
                             </div>
                         </div>
                     </div>
@@ -199,6 +200,7 @@ $schedInitialDate   = date('Y-m-01');
                             <div class="d-flex flex-column ms-auto text-end">
                                 <div class="stats-number" id="sched-stat-night">—</div>
                                 <div class="text-meta">Night Shifts</div>
+                                <small class="text-meta-secondary sched-month-label">This <?= date('F') ?></small>
                             </div>
                         </div>
                     </div>
@@ -214,6 +216,7 @@ $schedInitialDate   = date('Y-m-01');
                             <div class="d-flex flex-column ms-auto text-end">
                                 <div class="stats-number" id="sched-stat-rest">—</div>
                                 <div class="text-meta">Rest Days</div>
+                                <small class="text-meta-secondary sched-month-label">This <?= date('F') ?></small>
                             </div>
                         </div>
                     </div>
@@ -229,6 +232,7 @@ $schedInitialDate   = date('Y-m-01');
                             <div class="d-flex flex-column ms-auto text-end">
                                 <div class="stats-number" id="sched-stat-leave">—</div>
                                 <div class="text-meta">On Leave</div>
+                                <small class="text-meta-secondary sched-month-label">This <?= date('F') ?></small>
                             </div>
                         </div>
                     </div>
@@ -244,6 +248,7 @@ $schedInitialDate   = date('Y-m-01');
                             <div class="d-flex flex-column ms-auto text-end">
                                 <div class="stats-number" id="sched-stat-ob">—</div>
                                 <div class="text-meta">On OB</div>
+                                <small class="text-meta-secondary sched-month-label">This <?= date('F') ?></small>
                             </div>
                         </div>
                     </div>
@@ -258,7 +263,8 @@ $schedInitialDate   = date('Y-m-01');
                             </div>
                             <div class="d-flex flex-column ms-auto text-end">
                                 <div class="stats-number"><?= $statEventsMonth ?></div>
-                                <div class="text-meta">Events This Month</div>
+                                <div class="text-meta">Events</div>
+                                <small class="text-meta-secondary">This <?= date('F') ?></small>
                             </div>
                         </div>
                     </div>
@@ -273,7 +279,8 @@ $schedInitialDate   = date('Y-m-01');
                             </div>
                             <div class="d-flex flex-column ms-auto text-end">
                                 <div class="stats-number"><?= $statUpcomingWeek ?></div>
-                                <div class="text-meta">Upcoming This Week</div>
+                                <div class="text-meta">Upcoming Events</div>
+                                <small class="text-meta-secondary">This Week</small>
                             </div>
                         </div>
                     </div>
@@ -288,7 +295,8 @@ $schedInitialDate   = date('Y-m-01');
                             </div>
                             <div class="d-flex flex-column ms-auto text-end">
                                 <div class="stats-number"><?= $statBirthdays ?></div>
-                                <div class="text-meta">Birthdays This Month</div>
+                                <div class="text-meta">Birthdays</div>
+                                <small class="text-meta-secondary">This <?= date('F') ?></small>
                             </div>
                         </div>
                     </div>

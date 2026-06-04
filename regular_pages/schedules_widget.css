@@ -127,6 +127,13 @@
 
 .schedule-filter-select option { background: #1e1e2e; color: #fff; }
 
+#swEvtTypeDropdownBtn {
+    text-align: left !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+}
+
 .btn-add-event {
     background: rgba(13, 110, 253, 0.15);
     color: #6ea8fe;
@@ -259,24 +266,32 @@
 #sw-calendar .fc-ev-rest             .fc-admin-time,
 #sw-calendar .fc-ev-pending-schedule .fc-admin-time { background: rgba(255,255,255,0.1); }
 
-/* ---- Add overlay (empty day, shared by all views) ---- */
+/* ---- Add overlay (all cells, shared by all views) ---- */
 .sw-day-add-overlay,
 .es-day-add-overlay {
-    position:        absolute;
-    inset:           0;
-    display:         flex;
-    align-items:     center;
-    justify-content: center;
-    font-size:       1.4rem;
-    color:           var(--primary-color);
-    opacity:         0;
-    transition:      opacity 0.15s;
-    pointer-events:  none;
-    z-index:         1;
+    position:         absolute;
+    inset:            0;
+    display:          flex;
+    align-items:      center;
+    justify-content:  center;
+    font-size:        1.4rem;
+    color:            var(--primary-color);
+    opacity:          0;
+    transition:       opacity 0.15s;
+    pointer-events:   none;
+    z-index:          3;
+    background:       rgba(0, 0, 0, 0.5);
+    border-radius:    2px;
 }
 
-#sw-calendar .fc-daygrid-day:not(.fc-day-has-events):hover .sw-day-add-overlay,
-#sw-calendar .fc-daygrid-day:not(.fc-day-has-events):hover .es-day-add-overlay { opacity: 1; }
+/* Modifying color and background for days that already have an existing shift */
+.sw-day-add-overlay.is-edit-mode {
+    color: var(--info-color);
+    background: rgba(0, 0, 0, 0.65);
+}
+
+#sw-calendar .fc-daygrid-day:not(.fc-day-other):hover:not(:has(.fc-event:hover)) .sw-day-add-overlay,
+#sw-calendar .fc-daygrid-day:not(.fc-day-other):hover:not(:has(.fc-event:hover)) .es-day-add-overlay { opacity: 1; }
 
 /* ---- Event action buttons (scoped admin: edit/delete on hover) ---- */
 .sw-ev-actions {

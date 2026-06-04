@@ -122,8 +122,8 @@ if ($scopedToEmployee) {
         if ($isNightCont) {
             $originSched = $schedMap[$nightContDates[$dateStr]] ?? null;
             $contTimeStr = $originSched
-                ? 'until ' . date('g:i A', strtotime($originSched['scheduled_end']))
-                : 'Night (cont.)';
+                ? '↪ until ' . date('g:i A', strtotime($originSched['scheduled_end']))
+                : '↪ Night (cont.)';
             $events[] = [
                 'id' => 'night-cont-' . $dateStr, 'title' => $contTimeStr,
                 'start' => $dateStr, 'allDay' => true,
@@ -396,12 +396,26 @@ foreach ($schedules as $row) {
             'classNames'    => ['fc-ev-day'],
             'extendedProps' => [
                 'is_rest_day'  => false,
-                'is_overnight' => false,
+                'is_overnight' => $isOvernight,
                 'shift_type'   => 'day',
                 'timeInStr'    => $startTimeStr,
-                'timeOutStr'   => $endTimeStr,
+                'timeOutStr'   => $endTimeStr . ($isOvernight ? ' ↪' : ''),
             ],
         ];
+
+        if ($isOvernight && $endDate <= $end) {
+            $events[] = [
+                'title'         => '↪ until ' . $endTimeStr,
+                'start'         => $endDate,
+                'allDay'        => true,
+                'classNames'    => ['fc-ev-night-cont'],
+                'extendedProps' => [
+                    'is_rest_day'  => false,
+                    'is_overnight' => true,
+                    'shift_type'   => 'night_continuation',
+                ],
+            ];
+        }
     }
 }
 

@@ -26,6 +26,8 @@ $schedEventApiPath   ??= 'schedules_page.php';
 $schedCurrentMonth   ??= date('Y-m');
 $schedInitialDate    ??= date('Y-m-01');
 
+$schedStatsApiPath   ??= '../get_schedule_stats.php';
+
 $schedEmployeeId     ??= null;
 $schedEmpUrlId       ??= null;
 $schedCalApiPath     ??= '../get_schedule.php';
@@ -67,7 +69,7 @@ $isScoped = $schedEmployeeId !== null;
     <?php elseif ($isAdmin): ?>
     <!-- ── Admin global header: btn moved into FC toolbar by JS ── -->
     <div class="shiftLegend" style="display:none">
-        <button id="sw-add-event-btn" class="btn btn-sm btn-add-event"
+        <button id="sw-add-event-btn" class="btn btn-sm btn-success btn-add-event"
                 data-bs-toggle="modal"
                 data-bs-target="#swAddEventModal"
                 style="display:none">
@@ -153,7 +155,6 @@ $isScoped = $schedEmployeeId !== null;
 
                 <div class="modal-body">
 
-                    <!-- Preset Schedule -->
                     <div class="preset-sched-dropdown-wrap mb-3">
                         <label class="form-label">Preset Schedule</label>
                         <button type="button" class="preset-sched-trigger" id="swPresetSchedTrigger">
@@ -204,7 +205,7 @@ $isScoped = $schedEmployeeId !== null;
                         </div>
                     </div>
 
-                    <div class="mb-3">
+                    <div class="mb-3" id="swSelectDatesSection">
                         <label class="form-label">Select Dates</label>
                         <input type="text" id="swAddSchedDatePicker" class="form-control"
                                placeholder="Click to select dates…" readonly>
@@ -231,13 +232,19 @@ $isScoped = $schedEmployeeId !== null;
                         </div>
                     </div>
 
-                </div><!-- .modal-body -->
+                </div>
 
-                <div class="modal-footer">
-                    <button type="submit" class="btn btn-success w-100">
-                        <i class="bi bi-check-circle-fill me-1"></i>
-                        <?= $isWorkforce ? 'Submit for Approval' : 'Save Schedule' ?>
+                <div class="modal-footer d-flex justify-content-between">
+                    <button type="button" id="swDeleteSchedBtn" class="btn btn-danger" style="display:none;">
+                        <i class="bi bi-trash-fill me-1"></i>Delete Schedule
                     </button>
+                    <div class="ms-auto d-flex gap-2">
+                        <button type="button" class="btn btn-secondary border border-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-success">
+                            <i class="bi bi-check-circle-fill me-1"></i>
+                            <?= $isWorkforce ? 'Submit for Approval' : 'Save Schedule' ?>
+                        </button>
+                    </div>
                 </div>
             </form>
 
@@ -327,27 +334,39 @@ $isScoped = $schedEmployeeId !== null;
                 </div>
                 <div class="mb-3">
                     <label class="form-label">Event Type</label>
-                    <select id="swEvtType" class="form-select">
-                        <option value="holiday">Holiday</option>
-                        <option value="party">Party</option>
-                        <option value="meeting">Meeting</option>
-                        <option value="announcement">Announcement</option>
-                        <option value="other" selected>Other</option>
-                    </select>
+                    <input type="hidden" id="swEvtType" value="other">
+                    
+                    <div class="dropdown w-100">
+                        <button class="btn btn-outline-secondary dropdown-toggle w-100 form-control bg-transparent text-start" 
+                                type="button" 
+                                id="swEvtTypeDropdownBtn" 
+                                data-bs-toggle="dropdown" 
+                                aria-expanded="false"
+                                >
+                            <span id="swEvtTypeDropdownLabel">Other</span>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-dark w-100" aria-labelledby="swEvtTypeDropdownBtn">
+                            <li><a class="dropdown-item" href="#" data-value="holiday">Holiday</a></li>
+                            <li><a class="dropdown-item" href="#" data-value="party">Party</a></li>
+                            <li><a class="dropdown-item" href="#" data-value="meeting">Meeting</a></li>
+                            <li><a class="dropdown-item" href="#" data-value="announcement">Announcement</a></li>
+                            <li><a class="dropdown-item" href="#" data-value="other">Other</a></li>
+                        </ul>
+                    </div>
                 </div>
                 <div class="mb-3">
                     <label class="form-label">Select Date <span class="text-danger">*</span></label>
                     <input type="text" id="swEvtDate" class="form-control" placeholder="Select date" readonly>
                 </div>
                 <div class="mb-3">
-                    <label class="form-label">Description <small class="text-muted">(optional)</small></label>
+                    <label class="form-label">Description <small class="text-meta">(optional)</small></label>
                     <textarea id="swEvtDescription" class="form-control" rows="2"
                               placeholder="Short description…"></textarea>
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" id="swSaveEventBtn">
+                <button type="button" class="btn btn-neutral" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-success" id="swSaveEventBtn">
                     <i class="bi bi-check-lg me-1"></i>Save Event
                 </button>
             </div>
@@ -380,11 +399,33 @@ $isScoped = $schedEmployeeId !== null;
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                 <button type="button" class="btn btn-warning" id="swViewEvtEditBtn">
                     <i class="bi bi-pencil me-1"></i>Edit
                 </button>
                 <button type="button" class="btn btn-danger" id="swViewEvtDeleteBtn">
+                    <i class="bi bi-trash me-1"></i>Delete
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     DELETE EVENT CONFIRM MODAL  (admin global view)
+════════════════════════════════════════════════════ -->
+<div class="modal fade" id="swDeleteEventConfirmModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-trash me-2"></i>Delete Event</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-0">Delete this event? This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="swDeleteEventConfirmBtn">
                     <i class="bi bi-trash me-1"></i>Delete
                 </button>
             </div>
@@ -462,14 +503,15 @@ $isScoped = $schedEmployeeId !== null;
 const SW_IS_ADMIN     = <?= $isAdmin ? 'true' : 'false' ?>;
 const SW_IS_SCOPED    = <?= $isScoped ? 'true' : 'false' ?>;
 const SW_IS_WORKFORCE = <?= $isWorkforce ? 'true' : 'false' ?>;
-const SW_EMP_ID    = <?= $isScoped ? (int)$schedEmployeeId : 'null' ?>;
+const SW_EMP_ID     = <?= $isScoped ? (int)$schedEmployeeId : 'null' ?>;
 const SW_EMP_URL_ID = <?= $isScoped ? json_encode($schedEmpUrlId) : 'null' ?>;
-const SW_CAL_API   = <?= json_encode($schedCalApiPath) ?>;
-const SW_SAVE_API  = <?= json_encode($schedSaveApiPath) ?>;
-const SW_EVENT_API = <?= json_encode($schedEventApiPath) ?>;
+const SW_CAL_API    = <?= json_encode($schedCalApiPath) ?>;
+const SW_SAVE_API   = <?= json_encode($schedSaveApiPath) ?>;
+const SW_EVENT_API  = <?= json_encode($schedEventApiPath) ?>;
 const SW_CAL_EVENTS = <?= json_encode($schedCalEvents) ?>;
 const SW_BIRTHDAY_EVENTS = <?= json_encode($schedBirthdayEvents) ?>;
-const SW_SCHED_API = <?= json_encode($schedApiPath) ?>;
+const SW_SCHED_API  = <?= json_encode($schedApiPath) ?>;
+const SW_STATS_API  = <?= json_encode($schedStatsApiPath) ?>;
 
 let swCalendar   = null;
 let _swSuppressDatesSet = false;
@@ -495,7 +537,7 @@ window.swGotoMonth  = function (ym) {
 document.addEventListener('DOMContentLoaded', function () {
     /* Move modals to <body> so backdrop-filter on ancestor cards
        doesn't create a stacking context that buries them behind .modal-backdrop */
-    ['swManageScheduleModal','swEditSchedModal','swAddEventModal','swViewEventModal','swDeleteSchedModal'].forEach(function(id) {
+    ['swManageScheduleModal','swEditSchedModal','swAddEventModal','swViewEventModal','swDeleteSchedModal','swDeleteEventConfirmModal'].forEach(function(id) {
         const el = document.getElementById(id);
         if (el) document.body.appendChild(el);
     });
@@ -513,7 +555,11 @@ let swSelectedRestDays = [];
 let swFpEdit  = null;
 let swFpAdd   = null;
 let swScheduledDates = new Set();
-let _swSkipDateClick = false;
+/* FIX Bug 4 — track the schedule_id of the date being deleted */
+let _swPendingDeleteDate = null;
+let _swPendingDeleteId   = null;
+let _swDeleteInProgress  = false;
+let _swSkipDateClick     = false;
 
 swCalendar = new FullCalendar.Calendar(calEl, {
     initialView:  'dayGridMonth',
@@ -523,6 +569,33 @@ swCalendar = new FullCalendar.Calendar(calEl, {
     initialDate:  <?= json_encode($schedInitialDate) ?>,
     dayMaxEvents: false,
     eventDisplay: 'block',
+    
+    // ADD THIS DATECLICK PATTERN HERE AS WELL:
+    dateClick: function(info) {
+        // Capture clicked string values safely
+        const dateStr = info.dateStr; 
+        
+        // Check if day already has an active entry sequence
+        if (swScheduledDates.has(dateStr)) {
+            // Logic to transition cleanly into Edit Mode instead
+            document.getElementById('swIsEditMode').value = "1";
+            document.getElementById('swSchedModalTitle').textContent = "Edit Schedule - " + dateStr;
+            // ... trigger your Edit Modal sequence
+        } else {
+            // Fresh Schedule Setup Sequence
+            document.getElementById('swIsEditMode').value = "0";
+            
+            // Push values directly to your custom DatePickers or Input buffers
+            const singleDatePicker = document.getElementById('swEditSchedDatePicker');
+            if (singleDatePicker) {
+                singleDatePicker.value = dateStr;
+            }
+            
+            // Pop the specific management wizard modal wrapper visible
+            const manageModal = bootstrap.Modal.getOrCreateInstance(document.getElementById('swManageScheduleModal'));
+            manageModal.show();
+        }
+    },
 
     eventOrder: function (a, b) {
         const aIsCont = a.extendedProps.type === 'night-cont';
@@ -530,6 +603,11 @@ swCalendar = new FullCalendar.Calendar(calEl, {
         if (aIsCont && !bIsCont) return -1;
         if (!aIsCont && bIsCont) return  1;
         return 0;
+    },
+
+    loading: function (isLoading) {
+        const ov = document.getElementById('sw-cal-loading');
+        if (ov) ov.classList.toggle('show', isLoading);
     },
 
     events: {
@@ -549,6 +627,8 @@ swCalendar = new FullCalendar.Calendar(calEl, {
     },
 
     eventsSet: function (events) {
+        /* FIX Bug 5 — defer overlay icon update so dayCellDidMount has finished
+           painting all cells before we try to query them */
         swScheduledDates = new Set(
             events.filter(e => ['day', 'night', 'rest'].includes(e.extendedProps.type))
                   .map(e => e.startStr)
@@ -557,9 +637,23 @@ swCalendar = new FullCalendar.Calendar(calEl, {
         const chip  = document.getElementById('sw-chip-sched-count');
         if (chip) chip.textContent = count + ' scheduled day' + (count !== 1 ? 's' : '');
 
-        const eventDates = new Set(events.map(e => e.startStr));
-        document.querySelectorAll('#sw-calendar .fc-daygrid-day').forEach(cell => {
-            cell.classList.toggle('fc-day-has-events', eventDates.has(cell.dataset.date));
+        requestAnimationFrame(function () {
+            const eventDates = new Set(events.map(e => e.startStr));
+            document.querySelectorAll('#sw-calendar .fc-daygrid-day').forEach(function (cell) {
+                const dateStr = cell.dataset.date;
+                cell.classList.toggle('fc-day-has-events', eventDates.has(dateStr));
+
+                const overlay = cell.querySelector('.sw-day-add-overlay');
+                if (overlay) {
+                    if (swScheduledDates.has(dateStr)) {
+                        overlay.classList.add('is-edit-mode');
+                        overlay.innerHTML = '<i class="bi bi-pencil-fill"></i>';
+                    } else {
+                        overlay.classList.remove('is-edit-mode');
+                        overlay.innerHTML = '<i class="bi bi-plus-circle"></i>';
+                    }
+                }
+            });
         });
     },
 
@@ -584,69 +678,99 @@ swCalendar = new FullCalendar.Calendar(calEl, {
     },
 
     eventDidMount: function (info) {
-        const props   = info.event.extendedProps;
-        const type    = props.type;
-        const canEdit = !props.hasActiveLeaveOrOB && props.hasSchedule &&
-                        ['day', 'night', 'rest', 'leave-rejected', 'pending-schedule'].includes(type);
-        const canDel  = ['day', 'night', 'rest', 'pending-schedule'].includes(type);
-        if (!canEdit && !canDel) return;
+        const props = info.event.extendedProps;
+        const type  = props.type;
 
-        const cell  = info.el.closest('.fc-daygrid-day');
-        const frame = cell ? cell.querySelector('.fc-daygrid-day-frame') : null;
-        if (!frame || frame.querySelector('.sw-ev-actions')) return;
+        if (['day', 'night', 'rest'].includes(type) || props.isRestDay) {
+            info.el.style.setProperty('background-color', 'transparent', 'important');
+            info.el.style.setProperty('border-color',     'transparent', 'important');
+            info.el.style.setProperty('box-shadow',       'none',        'important');
 
-        const wrap = document.createElement('div');
-        wrap.className = 'sw-ev-actions';
+            const timeEl = info.el.querySelector('.fc-event-time');
+            if (timeEl) {
+                timeEl.style.setProperty('background-color', 'transparent', 'important');
+                timeEl.style.setProperty('padding',          '0 2px',       'important');
+                timeEl.style.setProperty('color',            'var(--text-color, #fff)', 'important');
+            }
 
-        if (canEdit) {
-            const btn = document.createElement('button');
-            btn.className = 'sched-cal-action-btn edit';
-            btn.title = 'Edit';
-            btn.innerHTML = '<i class="bi bi-pencil"></i>';
-            btn.addEventListener('click', e => {
-                e.stopPropagation();
-                _swSkipDateClick = true;
-                setTimeout(() => { _swSkipDateClick = false; }, 100);
-                if (props.type === 'rest' || props.isRestDay) swOpenRestDayEditModal(props.dateStr);
-                else swOpenEditModal(props.dateStr, props.schedInVal || '', props.schedOutVal || '');
-            });
-            wrap.appendChild(btn);
+            const titleEl = info.el.querySelector('.fc-event-title');
+            if (titleEl) {
+                titleEl.style.setProperty('padding',      '2px 6px',     'important');
+                titleEl.style.setProperty('border-radius','4px',         'important');
+                titleEl.style.setProperty('display',      'inline-block','important');
+                titleEl.style.setProperty('color',        '#ffffff',     'important');
+
+                if (type === 'rest' || props.isRestDay) {
+                    titleEl.style.setProperty('background-color', 'var(--bs-gray-600)',    'important');
+                } else if (type === 'night') {
+                    titleEl.style.setProperty('background-color', 'var(--indigo)',         'important');
+                } else if (type === 'day') {
+                    titleEl.style.setProperty('background-color', 'var(--primary-color)',  'important');
+                }
+            }
         }
-        if (canDel) {
-            const btn = document.createElement('button');
-            btn.className = 'sched-cal-action-btn delete';
-            btn.title = 'Delete';
-            btn.innerHTML = '<i class="bi bi-trash"></i>';
-            btn.addEventListener('click', e => {
-                e.stopPropagation();
-                _swSkipDateClick = true;
-                setTimeout(() => { _swSkipDateClick = false; }, 100);
-                swDeleteSchedule(props.dateStr);
-            });
-            wrap.appendChild(btn);
-        }
-        frame.appendChild(wrap);
     },
 
+    /* FIX Bug 2 — dateClick was empty; now actually opens the correct modal */
     dateClick: function (info) {
         if (_swSkipDateClick) return;
-        swOpenManageModalWithDate(info.dateStr);
+        const dateStr = info.dateStr;
+
+        if (swScheduledDates.has(dateStr)) {
+            /* --- EDIT MODE --- */
+            /* Find the matching event to get its current time values and id */
+            const existing = swCalendar.getEvents().find(function (e) {
+                return e.startStr === dateStr &&
+                       ['day', 'night', 'rest'].includes(e.extendedProps.type);
+            });
+
+            document.getElementById('swDeleteSchedBtn').style.display = 'block';
+
+            if (existing) {
+                const props = existing.extendedProps;
+                /* FIX Bug 4 — store schedule id alongside date so delete can use it */
+                _swPendingDeleteId = existing.id || null;
+                swOpenManageModalAsEdit(
+                    dateStr,
+                    props.timeInRaw  || '',
+                    props.timeOutRaw || '',
+                    props.type === 'rest' || !!props.isRestDay
+                );
+            } else {
+                _swPendingDeleteId = null;
+                swOpenManageModalWithDate(dateStr);
+            }
+        } else {
+            /* --- ADD MODE --- */
+            document.getElementById('swDeleteSchedBtn').style.display = 'none';
+            _swPendingDeleteId   = null;
+            _swPendingDeleteDate = null;
+            swOpenManageModalWithDate(dateStr);
+        }
     },
 });
 
 swCalendar.render();
 
-/* ---- Resize for sidebar / window (keep calendar correctly sized) ---- */
+/* ---- Resize for sidebar / window ---- */
 const swScopedSidebar = document.getElementById('sidebar');
-if (swScopedSidebar) new ResizeObserver(() => { swCalendar.updateSize(); }).observe(swScopedSidebar);
-window.addEventListener('resize', () => { swCalendar.updateSize(); });
+if (swScopedSidebar) new ResizeObserver(function () { swCalendar.updateSize(); }).observe(swScopedSidebar);
+window.addEventListener('resize', function () { swCalendar.updateSize(); });
+
+/* ---- Delete button in manage modal footer ---- */
+/* FIX Bug 1 — was trying to submit the add-form inline; now delegates to swDoDeleteConfirm
+   which properly uses _swPendingDeleteDate / _swPendingDeleteId and shows the confirm modal */
+document.getElementById('swDeleteSchedBtn').addEventListener('click', function () {
+    if (!_swPendingDeleteDate) return;
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('swDeleteSchedModal')).show();
+});
 
 /* ---- Flatpickr ---- */
 swFpEdit = flatpickr('#swEditSchedDatePicker', {
-    mode: 'range',
+    mode:       'range',
     dateFormat: 'Y-m-d',
-    appendTo: document.body,
-    onChange(dates) {
+    appendTo:   document.body,
+    onChange: function (dates) {
         if (dates.length < 2) {
             swSelectedDates = dates.length === 1
                 ? [`${dates[0].getFullYear()}-${swPad(dates[0].getMonth()+1)}-${swPad(dates[0].getDate())}`]
@@ -665,10 +789,10 @@ swFpEdit = flatpickr('#swEditSchedDatePicker', {
 });
 
 swFpAdd = flatpickr('#swAddSchedDatePicker', {
-    mode: 'range',
+    mode:       'range',
     dateFormat: 'Y-m-d',
-    appendTo: document.body,
-    onChange(dates) {
+    appendTo:   document.body,
+    onChange: function (dates) {
         if (dates.length < 2) {
             swSelectedDatesAdd = dates.length === 1
                 ? [`${dates[0].getFullYear()}-${swPad(dates[0].getMonth()+1)}-${swPad(dates[0].getDate())}`]
@@ -690,12 +814,12 @@ swFpAdd = flatpickr('#swAddSchedDatePicker', {
 document.getElementById('sw-btn-manage-schedule').addEventListener('click', swOpenManageModal);
 
 /* ---- Rest day toggles ---- */
-document.querySelectorAll('#swRestDayToggles .rest-day-toggle').forEach(btn => {
-    btn.addEventListener('click', () => {
+document.querySelectorAll('#swRestDayToggles .rest-day-toggle').forEach(function (btn) {
+    btn.addEventListener('click', function () {
         const dow = parseInt(btn.dataset.dow);
         if (btn.classList.contains('active')) {
             btn.classList.remove('active');
-            swSelectedRestDays = swSelectedRestDays.filter(d => d !== dow);
+            swSelectedRestDays = swSelectedRestDays.filter(function (d) { return d !== dow; });
         } else {
             if (swSelectedRestDays.length >= 2) return;
             btn.classList.add('active');
@@ -703,6 +827,17 @@ document.querySelectorAll('#swRestDayToggles .rest-day-toggle').forEach(btn => {
         }
         document.getElementById('swRestDaysDirty').value = '1';
     });
+});
+
+/* FIX Bug 3 — wire up the single-date rest day checkbox so the time fields react */
+document.getElementById('swIsSingleRestDay').addEventListener('change', function () {
+    const isRest = this.checked;
+    const timeRow = document.querySelector('#swManageScheduleModal .row.g-3.mb-3');
+    if (timeRow) timeRow.style.display = isRest ? 'none' : '';
+    if (!isRest) {
+        document.getElementById('swAddModalTimeIn').value  = '';
+        document.getElementById('swAddModalTimeOut').value = '';
+    }
 });
 
 /* ---- Manage Schedule form submit ---- */
@@ -722,7 +857,7 @@ document.getElementById('swAddSchedForm').addEventListener('submit', function (e
     }
 
     if (hasDates) {
-        const conflicts = datesToSchedule.filter(d => swScheduledDates.has(d));
+        const conflicts = datesToSchedule.filter(function (d) { return swScheduledDates.has(d); });
         if (conflicts.length > 0) {
             const msg = conflicts.length === 1
                 ? `A schedule for ${conflicts[0]} already exists. Replace it?`
@@ -736,14 +871,14 @@ document.getElementById('swAddSchedForm').addEventListener('submit', function (e
     document.getElementById('swSingleRestDatesInput').value  = JSON.stringify(singleRestDates);
 
     fetch(this.getAttribute('action'), { method: 'POST', body: new FormData(this) })
-        .then(r => {
+        .then(function (r) {
             if (!r.ok && r.status !== 200) throw new Error('save failed');
             bootstrap.Modal.getInstance(document.getElementById('swManageScheduleModal'))?.hide();
             const msg = SW_IS_WORKFORCE ? 'Schedule submitted for approval.' : 'Schedule saved successfully.';
             if (typeof showToast === 'function') showToast(msg, 'success');
             if (swCalendar) swCalendar.refetchEvents();
         })
-        .catch(() => {
+        .catch(function () {
             if (typeof showToast === 'function') showToast('Failed to save schedule. Please try again.', 'danger');
         });
 });
@@ -753,8 +888,8 @@ document.getElementById('swEditSchedForm').addEventListener('submit', function (
     e.preventDefault();
     if (!swPrepareEditSubmit()) return;
     fetch(this.getAttribute('action'), { method: 'POST', body: new FormData(this) })
-        .then(r => r.text())
-        .then(text => {
+        .then(function (r) { return r.text(); })
+        .then(function (text) {
             try {
                 const data = JSON.parse(text);
                 if (data.error === 'already_pending') {
@@ -767,7 +902,7 @@ document.getElementById('swEditSchedForm').addEventListener('submit', function (
             if (typeof showToast === 'function') showToast(msg, 'success');
             if (swCalendar) swCalendar.refetchEvents();
         })
-        .catch(() => {
+        .catch(function () {
             if (typeof showToast === 'function') showToast('Failed to save schedule. Please try again.', 'danger');
         });
 });
@@ -785,18 +920,18 @@ document.getElementById('swModalRestDayCheck').addEventListener('change', functi
 (function () {
     const trigger = document.getElementById('swPresetSchedTrigger');
     const menu    = document.getElementById('swPresetSchedMenu');
-    trigger.addEventListener('click', e => { e.stopPropagation(); menu.classList.toggle('open'); });
-    document.querySelectorAll('#swPresetSchedMenu .preset-sched-item').forEach(item => {
-        item.addEventListener('click', () => {
+    trigger.addEventListener('click', function (e) { e.stopPropagation(); menu.classList.toggle('open'); });
+    document.querySelectorAll('#swPresetSchedMenu .preset-sched-item').forEach(function (item) {
+        item.addEventListener('click', function () {
             document.getElementById('swAddModalTimeIn').value  = item.dataset.in;
             document.getElementById('swAddModalTimeOut').value = item.dataset.out;
-            document.querySelectorAll('#swPresetSchedMenu .preset-sched-item').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('#swPresetSchedMenu .preset-sched-item').forEach(function (el) { el.classList.remove('active'); });
             item.classList.add('active');
             document.getElementById('swPresetSchedDisplay').textContent = item.textContent;
             menu.classList.remove('open');
         });
     });
-    document.addEventListener('click', () => menu.classList.remove('open'));
+    document.addEventListener('click', function () { menu.classList.remove('open'); });
 })();
 
 /* ---- Helper functions (scoped mode) ---- */
@@ -819,7 +954,7 @@ function swUpdateRestDaySection() {
     const single = swSelectedDatesAdd.length === 1;
     document.getElementById('swRestDaySection').style.display           = single ? 'none' : '';
     document.getElementById('swSingleDateRestDaySection').style.display = single ? ''     : 'none';
-    if (!single) document.getElementById('swIsSingleRestDay').checked   = false;
+    if (!single) document.getElementById('swIsSingleRestDay').checked = false;
 }
 
 function swClearDateSelectionAdd() {
@@ -848,33 +983,92 @@ function swClearDateSelection() {
 }
 
 function swOpenManageModal() {
+    document.querySelector('#swManageScheduleModal .modal-title').innerHTML =
+        '<i class="bi bi-calendar-week me-2"></i>Manage Schedule';
+    document.getElementById('swAddSchedForm').querySelector('button[type="submit"]').innerHTML =
+        `<i class="bi bi-check-circle-fill me-1"></i>${SW_IS_WORKFORCE ? 'Submit for Approval' : 'Save Schedule'}`;
+
+    /* Show date picker section (hidden in edit mode) */
+    document.getElementById('swSelectDatesSection').style.display = '';
+
     document.getElementById('swAddModalTimeIn').value  = '';
     document.getElementById('swAddModalTimeOut').value = '';
-    document.querySelectorAll('#swPresetSchedMenu .preset-sched-item').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('#swPresetSchedMenu .preset-sched-item').forEach(function (el) { el.classList.remove('active'); });
     document.getElementById('swPresetSchedDisplay').textContent = 'Select a preset schedule…';
     document.getElementById('swPresetSchedMenu').classList.remove('open');
+
+    /* FIX Bug 3 — also reset time-row visibility when opening fresh */
+    const timeRow = document.querySelector('#swManageScheduleModal .row.g-3.mb-3');
+    if (timeRow) timeRow.style.display = '';
+
     swSelectedDatesAdd = [];
     swRenderDateTagsAdd();
     if (swFpAdd) swFpAdd.clear();
     swSelectedRestDays = [];
-    document.querySelectorAll('#swRestDayToggles .rest-day-toggle').forEach(btn => btn.classList.remove('active'));
-    document.getElementById('swRestDaysDirty').value             = '0';
-    document.getElementById('swIsSingleRestDay').checked         = false;
+    document.querySelectorAll('#swRestDayToggles .rest-day-toggle').forEach(function (btn) { btn.classList.remove('active'); });
+
+    document.getElementById('swRestDaysDirty').value          = '0';
+    document.getElementById('swIsSingleRestDay').checked      = false;
     document.getElementById('swSingleDateRestDaySection').style.display = 'none';
-    document.getElementById('swRestDaySection').style.display           = '';
+    document.getElementById('swRestDaySection').style.display            = '';
+
+    document.getElementById('swAddSchedForm').querySelector('input[name="action"]').value = 'save_combined';
+
+    /* FIX Bug 1 — clear pending delete context when opening modal fresh */
+    _swPendingDeleteDate = null;
+    _swPendingDeleteId   = null;
+    document.getElementById('swDeleteSchedBtn').style.display = 'none';
+
     bootstrap.Modal.getOrCreateInstance(document.getElementById('swManageScheduleModal')).show();
 }
 
 function swOpenManageModalWithDate(dateStr) {
     swOpenManageModal();
-    swSelectedDatesAdd = [dateStr];
+    swSelectedDatesAdd  = [dateStr];
+    _swPendingDeleteDate = dateStr;
     if (swFpAdd) swFpAdd.setDate([dateStr, dateStr], false);
     swRenderDateTagsAdd();
 }
 
+function swOpenManageModalAsEdit(dateStr, timeIn, timeOut, isRestDay) {
+    swOpenManageModal();
+
+    /* Format dateStr (YYYY-MM-DD) → "Month Day, Year" for the title */
+    const _d = new Date(dateStr + 'T00:00:00');
+    const _formatted = _d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+
+    document.querySelector('#swManageScheduleModal .modal-title').innerHTML =
+        `<i class="bi bi-pencil-square me-2"></i>Edit Schedule for ${_formatted}`;
+    document.getElementById('swAddSchedForm').querySelector('button[type="submit"]').innerHTML =
+        `<i class="bi bi-check-circle-fill me-1"></i>${SW_IS_WORKFORCE ? 'Submit Edit for Approval' : 'Update Schedule'}`;
+
+    /* Hide the date picker — date is already conveyed in the title */
+    document.getElementById('swSelectDatesSection').style.display = 'none';
+
+    document.getElementById('swAddSchedForm').querySelector('input[name="action"]').value = 'save_schedule';
+
+    swSelectedDatesAdd   = [dateStr];
+    _swPendingDeleteDate = dateStr;
+    if (swFpAdd) swFpAdd.setDate([dateStr, dateStr], false);
+    swRenderDateTagsAdd();
+
+    const restDayCheck = document.getElementById('swIsSingleRestDay');
+    if (isRestDay) {
+        restDayCheck.checked = true;
+    } else {
+        restDayCheck.checked = false;
+        document.getElementById('swAddModalTimeIn').value  = timeIn;
+        document.getElementById('swAddModalTimeOut').value = timeOut;
+    }
+    /* Trigger change listener so time-row visibility updates */
+    restDayCheck.dispatchEvent(new Event('change'));
+}
+
 function swOpenRestDayEditModal(dateStr) {
     swOpenManageModalWithDate(dateStr);
-    document.getElementById('swIsSingleRestDay').checked = true;
+    const cb = document.getElementById('swIsSingleRestDay');
+    cb.checked = true;
+    cb.dispatchEvent(new Event('change'));
 }
 
 function swOpenEditModal(date, timeIn, timeOut) {
@@ -907,9 +1101,6 @@ function swPrepareEditSubmit() {
     return true;
 }
 
-let _swDeleteInProgress = false;
-let _swPendingDeleteDate = null;
-
 function swDeleteSchedule(date) {
     if (_swDeleteInProgress) return;
     _swPendingDeleteDate = date;
@@ -921,12 +1112,17 @@ window.swDoDeleteConfirm = function () {
     if (!date) return;
 
     bootstrap.Modal.getInstance(document.getElementById('swDeleteSchedModal'))?.hide();
+    /* Also close the manage modal if it was open */
+    bootstrap.Modal.getInstance(document.getElementById('swManageScheduleModal'))?.hide();
+
     _swDeleteInProgress = true;
 
     const base = SW_SAVE_API.replace(/\?.*$/, '');
-    fetch(`${base}?employee_id=${SW_EMP_URL_ID}&ajax_delete=1&emp=${SW_EMP_ID}&date=${date}`)
-        .then(r => r.text())
-        .then(text => {
+    /* FIX Bug 4 — include schedule_id in delete request when available */
+    const idParam = _swPendingDeleteId ? `&schedule_id=${encodeURIComponent(_swPendingDeleteId)}` : '';
+    fetch(`${base}?employee_id=${SW_EMP_URL_ID}&ajax_delete=1&emp=${SW_EMP_ID}&date=${date}${idParam}`)
+        .then(function (r) { return r.text(); })
+        .then(function (text) {
             let data;
             try { data = JSON.parse(text); } catch (e) {
                 if (typeof showToast === 'function') showToast('Something went wrong. Please try again.', 'danger');
@@ -943,14 +1139,15 @@ window.swDoDeleteConfirm = function () {
             }
             if (typeof showToast === 'function') showToast('Schedule deleted successfully.', 'success');
             if (swCalendar) swCalendar.refetchEvents();
-            document.dispatchEvent(new CustomEvent('scheduleDeleted', { detail: { date } }));
+            document.dispatchEvent(new CustomEvent('scheduleDeleted', { detail: { date: date } }));
         })
-        .catch(() => {
+        .catch(function () {
             if (typeof showToast === 'function') showToast('Something went wrong. Please try again.', 'danger');
         })
-        .finally(() => {
-            _swDeleteInProgress = false;
+        .finally(function () {
+            _swDeleteInProgress  = false;
             _swPendingDeleteDate = null;
+            _swPendingDeleteId   = null;
         });
 };
 
@@ -997,12 +1194,50 @@ if (swFilterEl) {
     });
 }
 
+/* ================================================================
+   MODE: ADMIN GLOBAL (Calendar Setup Snippet)
+   ================================================================ */
 swCalendar = new FullCalendar.Calendar(calEl, {
-    initialView:  'dayGridMonth',
-    initialDate:  <?= json_encode($schedInitialDate) ?>,
-    eventDisplay: 'block',
-    dayMaxEvents: false,
-    height:       '100%',
+    initialView:   'dayGridMonth',
+    firstDay:      0,
+    editable:      false,
+    selectable:    true, // Enables clickable cell overlays
+    
+    dateClick: function (info) {
+        // Look for the specific Flatpickr instance for your events modal
+        // (Usually called swFpEvtDate or similar where you initialize flatpickr('#swEvtDate'))
+        const dateInput = document.getElementById('swEvtDate');
+        
+        if (window.swFpEvtDate) {
+            window.swFpEvtDate.setDate(info.dateStr, true);
+        } else if (dateInput && dateInput._flatpickr) {
+            // Fallback if it is tied directly onto the element's instance properties
+            dateInput._flatpickr.setDate(info.dateStr, true);
+        } else if (dateInput) {
+            dateInput.value = info.dateStr;
+        }
+
+        // Reset standard clean form fields
+        document.getElementById('swEvtId').value = '';
+        document.getElementById('swEvtTitle').value = '';
+        document.getElementById('swEvtDescription').value = '';
+        document.getElementById('swAddEventError').classList.add('d-none');
+        
+        document.getElementById('swEvtType').value = 'other';
+        document.getElementById('swEvtTypeDropdownLabel').textContent = 'Other';
+        document.getElementById('swAddEventModalTitleText').textContent = 'Add Event';
+
+        const modalEl = document.getElementById('swAddEventModal');
+        bootstrap.Modal.getOrCreateInstance(modalEl).show();
+    },
+
+    eventOrder: function (a, b) {
+        const aIsCont = a.extendedProps.shift_type === 'night_continuation';
+        const bIsCont = b.extendedProps.shift_type === 'night_continuation';
+        if (aIsCont && !bIsCont) return -1;
+        if (!aIsCont && bIsCont) return  1;
+        return 0;
+    },
 
     customButtons: {
         refresh: {
@@ -1035,7 +1270,7 @@ swCalendar = new FullCalendar.Calendar(calEl, {
         if ((st === 'day' || st === 'night') && props.timeInStr && props.timeOutStr) {
             return { html: '<div class="fc-admin-inner"><span class="fc-admin-label">' + arg.event.title + '</span><span class="fc-admin-time">' + props.timeInStr + ' – ' + props.timeOutStr + '</span></div>' };
         }
-        if (st === 'leave_rejected' || st === 'ob_rejected') {
+        if (st && st !== 'cal_event' && st !== 'birthday') {
             return { html: '<div class="fc-admin-inner"><span class="fc-admin-label">' + arg.event.title + '</span></div>' };
         }
         return true;
@@ -1061,6 +1296,7 @@ swCalendar = new FullCalendar.Calendar(calEl, {
                 const icon = iconMap[info.event.extendedProps.event_type] || 'bi-pin-fill';
                 tEl.innerHTML = `<i class="bi ${icon}"></i> ` + info.event.title;
             }
+            info.el.style.cursor = 'pointer';
         }
     },
 
@@ -1098,22 +1334,39 @@ swCalendar = new FullCalendar.Calendar(calEl, {
 
     dayCellWillUnmount: function (info) { bootstrap.Tooltip.getInstance(info.el)?.dispose(); },
 
+    datesSet: function (info) {
+        const d     = info.view.currentStart;
+        const year  = d.getFullYear();
+        const month = d.getMonth() + 1;
+        const start = `${year}-${swPad(month)}-01`;
+        const end   = `${year}-${swPad(month)}-${swPad(new Date(year, month, 0).getDate())}`;
+        const monthName = d.toLocaleDateString('en-US', { month: 'long' });
+
+        document.querySelectorAll('.sched-month-label').forEach(function (el) {
+            el.textContent = 'This ' + monthName;
+        });
+
+        fetch(`${SW_STATS_API}?start=${start}&end=${end}`)
+            .then(function (r) { return r.json(); })
+            .then(function (s) {
+                [['sched-stat-day', s.day], ['sched-stat-night', s.night],
+                 ['sched-stat-rest', s.rest], ['sched-stat-leave', s.leave],
+                 ['sched-stat-ob', s.ob]].forEach(function ([id, val]) {
+                    const el = document.getElementById(id);
+                    if (el) el.textContent = val ?? '—';
+                });
+            })
+            .catch(function () {});
+    },
+
     eventsSet: function (events) {
-        const eventDates = new Set(events.map(e => e.startStr));
-        document.querySelectorAll('#sw-calendar .fc-daygrid-day').forEach(cell => {
+        const eventDates = new Set(events.map(function (e) { return e.startStr; }));
+        document.querySelectorAll('#sw-calendar .fc-daygrid-day').forEach(function (cell) {
             const hasEvent = eventDates.has(cell.dataset.date);
             cell.classList.toggle('fc-day-has-events', hasEvent);
             const tip = bootstrap.Tooltip.getInstance(cell);
             if (tip) { if (hasEvent) tip.disable(); else tip.enable(); }
         });
-    },
-
-    dateClick: function (info) {
-        const cell = document.querySelector(`#sw-calendar .fc-daygrid-day[data-date="${info.dateStr}"]`);
-        if (cell && cell.classList.contains('fc-day-has-events')) return;
-        swPendingDate = info.dateStr;
-        swEditPayload = null;
-        bootstrap.Modal.getOrCreateInstance(document.getElementById('swAddEventModal')).show();
     },
 });
 
@@ -1138,20 +1391,51 @@ if (swAddEventBtn && swRightChunk) {
 /* ---- Resize observer for sidebar ---- */
 const swSidebar = document.getElementById('sidebar');
 if (swSidebar) {
-    new ResizeObserver(() => { swCalendar.updateSize(); }).observe(swSidebar);
+    new ResizeObserver(function () { swCalendar.updateSize(); }).observe(swSidebar);
 }
-window.addEventListener('resize', () => { swCalendar.updateSize(); });
+window.addEventListener('resize', function () { swCalendar.updateSize(); });
 
 /* ---- Custom refresh button icon ---- */
 const swRefreshBtn = calEl.querySelector('.fc-refresh-button');
 if (swRefreshBtn) swRefreshBtn.innerHTML = '<i class="bi bi-arrow-clockwise"></i>';
 
-/* ---- Flatpickr for event date ---- */
-swFpEvtDate = flatpickr('#swEvtDate', {
-    dateFormat:        'Y-m-d',
-    monthSelectorType: 'dropdown',
-    disableMobile:     true,
-    appendTo:          document.body,
+// Initialize Flatpickr for the Add Event date input field
+window.swFpEvtDate = flatpickr("#swEvtDate", {
+    altInput: true,                  // Show a hidden, formatted input to the user
+    altFormat: "F j, Y",             // Human-readable format: Month Day, Year (e.g., June 4, 2026)
+    dateFormat: "Y-m-01" < "Y-m-d" ? "Y-m-d" : "Y-m-d", // Keeps underlying backend value as YYYY-MM-DD
+    allowInput: false
+});
+// ==========================================================
+// BOOTSTRAP DROPDOWN VALUE INTERCEPTOR (EVENT TYPE)
+// ==========================================================
+document.querySelectorAll('#swAddEventModal .dropdown-item').forEach(function (item) {
+    item.addEventListener('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        const selectedValue = this.getAttribute('data-value');
+        const selectedText  = this.textContent.trim();
+        
+        // Update the hidden input element so the form serializes perfectly
+        const hiddenInput = document.getElementById('swEvtType');
+        if (hiddenInput) {
+            hiddenInput.value = selectedValue;
+        }
+        
+        // Update the human-readable visible text on the button label
+        const visualLabel = document.getElementById('swEvtTypeDropdownLabel');
+        if (visualLabel) {
+            visualLabel.textContent = selectedText;
+        }
+
+        // PROGRAMMATICALLY COLLAPSE THE DROPDOWN CONTAINER SAFELY
+        const dropdownBtn = document.getElementById('swEvtTypeDropdownBtn');
+        if (dropdownBtn) {
+            const bsDropdown = bootstrap.Dropdown.getOrCreateInstance(dropdownBtn);
+            bsDropdown.hide();
+        }
+    });
 });
 
 /* ---- Add Event Modal: populate on show ---- */
@@ -1159,22 +1443,30 @@ document.getElementById('swAddEventModal').addEventListener('show.bs.modal', fun
     document.getElementById('swAddEventError').classList.add('d-none');
     if (swEditPayload) {
         document.getElementById('swAddEventModalTitleText').textContent = 'Edit Event';
-        document.getElementById('swEvtId').value          = swEditPayload.id;
-        document.getElementById('swEvtTitle').value       = swEditPayload.title;
-        document.getElementById('swEvtType').value        = swEditPayload.event_type;
+        document.getElementById('swEvtId').value = swEditPayload.id;
+        document.getElementById('swEvtTitle').value = swEditPayload.title;
+        document.getElementById('swEvtType').value = swEditPayload.event_type;
         document.getElementById('swEvtDescription').value = swEditPayload.description;
         if (swFpEvtDate) swFpEvtDate.setDate(swEditPayload.date, false);
+
+        // SYNC BOOTSTRAP DROPDOWN LABEL TEXT ON EDIT
+        const currentType = swEditPayload.event_type || 'other';
+        const matchingItem = document.querySelector(`#swAddEventModal .dropdown-item[data-value="${currentType}"]`);
+        document.getElementById('swEvtTypeDropdownLabel').textContent = matchingItem ? matchingItem.textContent : 'Other';
+
     } else {
         document.getElementById('swAddEventModalTitleText').textContent = 'Add Event';
-        document.getElementById('swEvtId').value          = '';
-        document.getElementById('swEvtTitle').value       = '';
-        document.getElementById('swEvtType').value        = 'other';
+        document.getElementById('swEvtId').value = '';
+        document.getElementById('swEvtTitle').value = '';
+        document.getElementById('swEvtType').value = 'other';
         document.getElementById('swEvtDescription').value = '';
-        if (swFpEvtDate && swPendingDate) swFpEvtDate.setDate(swPendingDate, false);
-        else if (swFpEvtDate) swFpEvtDate.clear();
+        if (!document.getElementById('swEvtDate').value) {
+            swFpEvtDate.clear();
+        }
+
+        // RESET BOOTSTRAP DROPDOWN LABEL TEXT ON ADD NEW
+        document.getElementById('swEvtTypeDropdownLabel').textContent = 'Other';
     }
-    swEditPayload = null;
-    swPendingDate = null;
 });
 
 /* ---- Save Event ---- */
@@ -1199,6 +1491,7 @@ document.getElementById('swSaveEventBtn').addEventListener('click', async functi
         const payload = {
             action:      id ? 'update' : 'create',
             title,
+            // LOOK HERE: Grabs your hidden form parameter value seamlessly!
             event_type:  document.getElementById('swEvtType').value,
             start_date:  date,
             description: document.getElementById('swEvtDescription').value.trim(),
@@ -1238,9 +1531,24 @@ document.getElementById('swViewEvtEditBtn').addEventListener('click', function (
 });
 
 /* ---- View modal: Delete button ---- */
-document.getElementById('swViewEvtDeleteBtn').addEventListener('click', async function () {
+let _swPendingDeleteEvtId = null;
+
+document.getElementById('swViewEvtDeleteBtn').addEventListener('click', function () {
     const id = this.dataset.id;
-    if (!id || !confirm('Delete this event? This cannot be undone.')) return;
+    if (!id) return;
+    _swPendingDeleteEvtId = id;
+    bootstrap.Modal.getInstance(document.getElementById('swViewEventModal'))?.hide();
+    document.getElementById('swViewEventModal').addEventListener('hidden.bs.modal', function openConfirm() {
+        this.removeEventListener('hidden.bs.modal', openConfirm);
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('swDeleteEventConfirmModal')).show();
+    });
+});
+
+document.getElementById('swDeleteEventConfirmBtn').addEventListener('click', async function () {
+    const id = _swPendingDeleteEvtId;
+    if (!id) return;
+    _swPendingDeleteEvtId = null;
+    bootstrap.Modal.getInstance(document.getElementById('swDeleteEventConfirmModal'))?.hide();
     try {
         const res  = await fetch(SW_EVENT_API, {
             method:  'POST',
@@ -1249,10 +1557,11 @@ document.getElementById('swViewEvtDeleteBtn').addEventListener('click', async fu
         });
         const data = await res.json();
         if (data.success) {
-            bootstrap.Modal.getInstance(document.getElementById('swViewEventModal')).hide();
             window.location.reload();
         }
-    } catch (e) { alert('Network error. Please try again.'); }
+    } catch (e) {
+        if (typeof showToast === 'function') showToast('Network error. Please try again.', 'danger');
+    }
 });
 
 } /* end admin global block */
@@ -1292,10 +1601,19 @@ if (swFilterEl) {
 
 swCalendar = new FullCalendar.Calendar(calEl, {
     initialView:  'dayGridMonth',
+    firstDay:     0,
     initialDate:  <?= json_encode($schedInitialDate) ?>,
     eventDisplay: 'block',
     dayMaxEvents: false,
     height:       '100%',
+
+    eventOrder: function (a, b) {
+        const aIsCont = a.extendedProps.shift_type === 'night_continuation';
+        const bIsCont = b.extendedProps.shift_type === 'night_continuation';
+        if (aIsCont && !bIsCont) return -1;
+        if (!aIsCont && bIsCont) return  1;
+        return 0;
+    },
 
     customButtons: {
         refresh: {
@@ -1328,7 +1646,7 @@ swCalendar = new FullCalendar.Calendar(calEl, {
         if ((st === 'day' || st === 'night') && props.timeInStr && props.timeOutStr) {
             return { html: '<div class="fc-admin-inner"><span class="fc-admin-label">' + arg.event.title + '</span><span class="fc-admin-time">' + props.timeInStr + ' – ' + props.timeOutStr + '</span></div>' };
         }
-        if (st === 'leave_rejected' || st === 'ob_rejected') {
+        if (st && st !== 'cal_event' && st !== 'birthday') {
             return { html: '<div class="fc-admin-inner"><span class="fc-admin-label">' + arg.event.title + '</span></div>' };
         }
         return true;
@@ -1363,11 +1681,11 @@ swCalendar = new FullCalendar.Calendar(calEl, {
         const c = { day: 0, night: 0, rest: 0, leave: 0, ob: 0 };
         events.forEach(function (e) {
             const st = e.extendedProps.shift_type;
-            if      (st === 'day')           c.day++;
-            else if (st === 'night')         c.night++;
-            else if (st === 'rest')          c.rest++;
+            if      (st === 'day')            c.day++;
+            else if (st === 'night')          c.night++;
+            else if (st === 'rest')           c.rest++;
             else if (st === 'leave_approved') c.leave++;
-            else if (st === 'ob_approved')   c.ob++;
+            else if (st === 'ob_approved')    c.ob++;
         });
         [['sched-stat-day', c.day], ['sched-stat-night', c.night],
          ['sched-stat-rest', c.rest], ['sched-stat-leave', c.leave],
@@ -1383,11 +1701,11 @@ swCalendar = new FullCalendar.Calendar(calEl, {
 
         if (props.shift_type === 'birthday') {
             const dateStr = info.event.start ? info.event.start.toLocaleDateString('en-CA') : '—';
-            document.getElementById('swEmpViewEvtTitle').textContent    = info.event.title;
-            document.getElementById('swEmpViewEvtTypeBadge').innerHTML  = '<i class="bi bi-cake me-1"></i>Birthday';
+            document.getElementById('swEmpViewEvtTitle').textContent     = info.event.title;
+            document.getElementById('swEmpViewEvtTypeBadge').innerHTML   = '<i class="bi bi-cake me-1"></i>Birthday';
             document.getElementById('swEmpViewEvtTypeBadge').style.color = '#8b5cf6';
-            document.getElementById('swEmpViewEvtDate').textContent     = dateStr;
-            document.getElementById('swEmpViewEvtDesc').textContent     = '';
+            document.getElementById('swEmpViewEvtDate').textContent      = dateStr;
+            document.getElementById('swEmpViewEvtDesc').textContent      = '';
             bootstrap.Modal.getOrCreateInstance(document.getElementById('swEmpViewEventModal')).show();
             return;
         }
@@ -1401,11 +1719,11 @@ swCalendar = new FullCalendar.Calendar(calEl, {
         const color = colorMap[et] || '#6b7280';
         const dateStr = info.event.start ? info.event.start.toLocaleDateString('en-CA') : '—';
 
-        document.getElementById('swEmpViewEvtTitle').textContent    = info.event.title;
-        document.getElementById('swEmpViewEvtTypeBadge').innerHTML  = `<i class="bi ${icon} me-1"></i>${et.charAt(0).toUpperCase()+et.slice(1)}`;
+        document.getElementById('swEmpViewEvtTitle').textContent     = info.event.title;
+        document.getElementById('swEmpViewEvtTypeBadge').innerHTML   = `<i class="bi ${icon} me-1"></i>${et.charAt(0).toUpperCase()+et.slice(1)}`;
         document.getElementById('swEmpViewEvtTypeBadge').style.color = color;
-        document.getElementById('swEmpViewEvtDate').textContent     = dateStr;
-        document.getElementById('swEmpViewEvtDesc').textContent     = props.description || '—';
+        document.getElementById('swEmpViewEvtDate').textContent      = dateStr;
+        document.getElementById('swEmpViewEvtDesc').textContent      = props.description || '—';
 
         bootstrap.Modal.getOrCreateInstance(document.getElementById('swEmpViewEventModal')).show();
     },
@@ -1432,8 +1750,8 @@ if (swRefreshBtn) swRefreshBtn.innerHTML = '<i class="bi bi-arrow-clockwise"></i
 
 /* ---- Resize for sidebar ---- */
 const swSidebar = document.getElementById('sidebar');
-if (swSidebar) new ResizeObserver(() => { swCalendar.updateSize(); }).observe(swSidebar);
-window.addEventListener('resize', () => { swCalendar.updateSize(); });
+if (swSidebar) new ResizeObserver(function () { swCalendar.updateSize(); }).observe(swSidebar);
+window.addEventListener('resize', function () { swCalendar.updateSize(); });
 
 } /* end employee block */
 

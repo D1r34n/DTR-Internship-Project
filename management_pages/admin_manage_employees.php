@@ -340,132 +340,119 @@ $initialDeptFilter = isset($_GET['dept']) ? (int)$_GET['dept'] : 0;
 
         <!-- Employee List -->
         <div class="card card-neutral employee-list-card">
-            <div class="card-body d-flex flex-column employee-list-card-body">
+            <div class="card-header manage-employees-header">
 
-            <!-- Filter Section -->
-            <div class="filter-wrapper">
+                <div class="dropdown">
+                    <button class="btn dropdown-toggle" type="button"
+                            data-bs-toggle="dropdown" aria-expanded="false">
+                        <span id="roleBtnLabel">All Roles</span>
+                    </button>
 
-                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 w-100">
-
-                    <!-- LEFT SIDE -->
-                    <div class="d-flex gap-3 align-items-center flex-wrap">
-
-                        <!-- Role filter -->
-                        <div class="dropdown">
-                            <button class="btn btn-sm dropdown-toggle" type="button"
-                                    data-bs-toggle="dropdown" aria-expanded="false">
-                                <span id="roleBtnLabel">All Roles</span>
+                    <ul class="dropdown-menu">
+                        <li>
+                            <button class="dropdown-item" type="button"
+                                    onclick="selectFilter('role','','All Roles')">
+                                All Roles
                             </button>
+                        </li>
 
-                            <ul class="dropdown-menu">
-                                <li>
-                                    <button class="dropdown-item" type="button"
-                                            onclick="selectFilter('role','','All Roles')">
-                                        All Roles
-                                    </button>
-                                </li>
+                        <?php foreach ($roles as $r): ?>
+                        <li>
+                            <button class="dropdown-item" type="button"
+                                    onclick="selectFilter('role','<?= $r['role_key'] ?>','<?= $r['role_name'] ?>')">
+                                <?= $r['role_name'] ?>
+                            </button>
+                        </li>
+                        <?php endforeach; ?>
+                    </ul>
+                </div>
 
-                                <?php foreach ($roles as $r): ?>
-                                <li>
-                                    <button class="dropdown-item" type="button"
-                                            onclick="selectFilter('role','<?= $r['role_key'] ?>','<?= $r['role_name'] ?>')">
-                                        <?= $r['role_name'] ?>
-                                    </button>
-                                </li>
-                                <?php endforeach; ?>
+                <input type="hidden" id="role-filter" value="">
+
+                <div class="dropdown">
+                    <button class="btn dropdown-toggle"
+                            type="button"
+                            data-bs-toggle="dropdown"
+                            data-bs-auto-close="outside"
+                            aria-expanded="false"
+                            id="deptFilterBtn">
+                        <span id="deptFilterLabel">All Departments</span>
+                    </button>
+
+                    <div class="dropdown-menu p-2" style="min-width:220px;">
+                        <div class="vstack gap-2">
+                            <input type="text"
+                                class="form-control form-control-sm"
+                                id="deptFilterSearch"
+                                placeholder="Search...">
+
+                            <ul class="list-unstyled mb-0"
+                                id="deptFilterList"
+                                style="max-height:200px; overflow-y:auto;">
                             </ul>
                         </div>
-
-                        <input type="hidden" id="role-filter" value="">
-
-                        <!-- Department filter -->
-                        <div class="dropdown">
-                            <button class="btn btn-sm dropdown-toggle"
-                                    type="button"
-                                    data-bs-toggle="dropdown"
-                                    data-bs-auto-close="outside"
-                                    aria-expanded="false"
-                                    id="deptFilterBtn">
-                                <span id="deptFilterLabel">All Departments</span>
-                            </button>
-
-                            <div class="dropdown-menu p-2" style="min-width:220px;">
-                                <input type="text"
-                                    class="form-control form-control-sm mb-2"
-                                    id="deptFilterSearch"
-                                    placeholder="Search...">
-
-                                <ul class="list-unstyled mb-0"
-                                    id="deptFilterList"
-                                    style="max-height:200px; overflow-y:auto;">
-                                </ul>
-                            </div>
-                        </div>
-
-                        <input type="hidden" id="dept-filter" value="">
-
-                        <!-- Search -->
-                        <div class="input-group input-group-sm" style="max-width:200px;">
-                            <span class="input-group-text">
-                                <i class="bi bi-search"></i>
-                            </span>
-
-                            <input type="text"
-                                id="empSearch"
-                                class="form-control"
-                                placeholder="Search...">
-                        </div>
-
                     </div>
+                </div>
 
-                    <!-- RIGHT SIDE -->
-                    <div class="dropdown">
-                        <button class="btn btn-sm btn-success dropdown-toggle"
-                                type="button"
-                                data-bs-toggle="dropdown"
-                                aria-expanded="false">
-                            <i class="bi bi-plus-lg"></i> Manage
-                        </button>
+                <input type="hidden" id="dept-filter" value="">
 
-                        <ul class="dropdown-menu dropdown-menu-end">
+                <div class="input-group" style="max-width:200px;">
+                    <span class="input-group-text">
+                        <i class="bi bi-search"></i>
+                    </span>
+                    <input type="text"
+                        id="empSearch"
+                        class="form-control"
+                        placeholder="Search...">
+                </div>
 
-                            <?php if (!in_array($_SESSION['user_role'], ['manager', 'workforce'])): ?>
-                            <li>
-                                <a class="dropdown-item"
-                                href="#"
-                                data-bs-toggle="modal"
-                                data-bs-target="#empModal">
-                                    <i class="bi bi-person-plus"></i> Add Employee
-                                </a>
-                            </li>
+                <div class="dropdown">
+                    <button class="btn btn-success dropdown-toggle"
+                            type="button"
+                            data-bs-toggle="dropdown"
+                            aria-expanded="false">
+                        <i class="bi bi-plus-lg"></i> Manage
+                    </button>
 
-                            <li><hr class="dropdown-divider"></li>
-                            <?php endif; ?>
+                    <ul class="dropdown-menu dropdown-menu-end">
 
-                            <li>
-                                <a class="dropdown-item"
-                                href="#"
-                                data-bs-toggle="modal"
-                                data-bs-target="#import-schedule-modal">
-                                    <i class="bi bi-download"></i> Import Schedule
-                                </a>
-                            </li>
+                        <?php if (!in_array($_SESSION['user_role'], ['manager', 'workforce'])): ?>
+                        <li>
+                            <a class="dropdown-item"
+                            href="#"
+                            data-bs-toggle="modal"
+                            data-bs-target="#empModal">
+                                <i class="bi bi-person-plus"></i> Add Employee
+                            </a>
+                        </li>
 
-                            <li>
-                                <a class="dropdown-item"
-                                href="#"
-                                data-bs-toggle="modal"
-                                data-bs-target="#import-leaves-modal">
-                                    <i class="bi bi-download"></i> Import Leaves
-                                </a>
-                            </li>
+                        <li><hr class="dropdown-divider"></li>
+                        <?php endif; ?>
 
-                        </ul>
-                    </div>
+                        <li>
+                            <a class="dropdown-item"
+                            href="#"
+                            data-bs-toggle="modal"
+                            data-bs-target="#import-schedule-modal">
+                                <i class="bi bi-download"></i> Import Schedule
+                            </a>
+                        </li>
 
+                        <li>
+                            <a class="dropdown-item"
+                            href="#"
+                            data-bs-toggle="modal"
+                            data-bs-target="#import-leaves-modal">
+                                <i class="bi bi-download"></i> Import Leaves
+                            </a>
+                        </li>
+
+                    </ul>
                 </div>
 
             </div>
+
+            <div class="card-body d-flex flex-column employee-list-card-body">
 
                 <!-- Table -->
                 <div class="table-scroll-wrapper">
@@ -550,10 +537,9 @@ $initialDeptFilter = isset($_GET['dept']) ? (int)$_GET['dept'] : 0;
                     </table>
                 </div><!-- .table-scroll-wrapper -->
 
-                <!-- Pagination -->
-                <div id="empPagination" class="empPagination"></div>
-
             </div>
+
+            <div class="card-footer empPaginationFooter" id="empPagination"></div>
         </div>
 
         <!-- Gantt Tooltip -->
