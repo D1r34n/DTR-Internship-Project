@@ -110,6 +110,27 @@
     margin-top: 0.2rem;
 }
 
+.se-shift-label {
+    display: inline-block;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: #fff;
+    border-radius: 4px;
+    padding: 1px 7px;
+    line-height: 1.5;
+}
+
+.se-shift-time {
+    display: inline-block;
+    font-size: 0.7rem;
+    font-weight: 500;
+    padding: 1px 6px;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+
 .se-field-label {
     color: var(--text-light);
     font-size: 0.83rem;
@@ -121,15 +142,6 @@
 /* ============================================================
    LIGHT THEME OVERRIDES
    ============================================================ */
-
-[data-theme="light"] .se-schedule-row {
-    border-color: rgba(0, 0, 0, 0.06);
-}
-
-[data-theme="light"] .se-schedule-row.can-edit:hover {
-    background: rgba(0, 0, 0, 0.03);
-    border-color: rgba(0, 0, 0, 0.12);
-}
 
 [data-theme="light"] .se-shift-time {
     background: rgba(0, 0, 0, 0.07);

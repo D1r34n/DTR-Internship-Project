@@ -33,6 +33,7 @@ $logsEmployeeId ??= null;
                     <li><a class="dropdown-item" href="#" data-value="REQUEST_LEAVE">Request Leave</a></li>
                     <li><a class="dropdown-item" href="#" data-value="REQUEST_OB">Request OB</a></li>
                     <li><a class="dropdown-item" href="#" data-value="REQUEST_LOG_EDIT">Request Log Edit</a></li>
+                    <li><a class="dropdown-item" href="#" data-value="REQUEST_CHANGE_SCHEDULE">Request Schedule Edit</a></li>
                     <li><hr class="dropdown-divider"></li>
                     <li><a class="dropdown-item" href="#" data-value="ADD_EMPLOYEE">Added Employee</a></li>
                     <li><a class="dropdown-item" href="#" data-value="EDIT_EMPLOYEE">Edited Employee</a></li>
@@ -246,7 +247,7 @@ const LOG_TYPE_LABEL = {
     REQUEST_LEAVE:           'Request Leave',
     REQUEST_OB:              'Request OB',
     REQUEST_LOG_EDIT:        'Request Log Edit',
-    REQUEST_CHANGE_SCHEDULE: 'Request Change Schedule',
+    REQUEST_CHANGE_SCHEDULE: 'Request Schedule Edit',
     ADD_EMPLOYEE:            'Added Employee',
     EDIT_EMPLOYEE:           'Edited Employee',
     DELETE_EMPLOYEE:         'Deleted Employee',
