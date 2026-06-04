@@ -1380,10 +1380,15 @@ body {
     border-radius: 20px;
 }
 
-.log-type-badge.in        { background: var(--primary-soft);  color: var(--text-light); }
-.log-type-badge.out       { background: var(--danger-soft);   color: var(--text-light); }
-.log-type-badge.break-in  { background: var(--warning-bg);    color: var(--text-light); }
-.log-type-badge.break-out { background: var(--info-bg);       color: var(--text-light); }
+.log-type-badge.in        { background: var(--primary-soft);  color: var(--primary-color); }
+.log-type-badge.out       { background: var(--danger-soft);   color: var(--danger-color); }
+.log-type-badge.break-in  { background: var(--warning-bg);    color: var(--warning); }
+.log-type-badge.break-out { background: var(--info-bg);       color: var(--info); }
+
+[data-theme="light"] .log-type-badge.in,
+[data-theme="light"] .log-type-badge.out,
+[data-theme="light"] .log-type-badge.break-in,
+[data-theme="light"] .log-type-badge.break-out { color: var(--text-light); }
 
 /* ------------------------------------------------
    TAB SHARED HEADER

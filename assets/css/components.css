@@ -577,7 +577,7 @@ hr {
 .empRole-employee{
     background: var(--employee-bg) !important;
     border-color: var(--employee-border) !important;
-    color: var(--text-light) !important;
+    color: var(--employee) !important;
     pointer-events: none;
 }
 
@@ -585,14 +585,14 @@ hr {
 .request-overtime {
     background: var(--workforce-bg) !important;
     border-color: var(--workforce-border) !important;
-    color: var(--text-light) !important;
+    color: var(--workforce) !important;
     pointer-events: none;
 }
 
 .empRole-admin {
     background: var(--admin-bg) !important;
     border-color: var(--admin-border) !important;
-    color: var(--text-light) !important;
+    color: var(--admin) !important;
     pointer-events: none;
 }
 
@@ -600,7 +600,7 @@ hr {
 .request-log-edit {
     background: var(--manager-bg) !important;
     border-color: var(--manager-border) !important;
-    color: var(--text-light) !important;
+    color: var(--manager) !important;
     pointer-events: none;
 }
 
@@ -608,7 +608,7 @@ hr {
 .request-official-business{
     background: var(--superadmin-bg) !important;
     border-color: var(--superadmin-border) !important;
-    color: var(--text-light) !important;
+    color: var(--superadmin) !important;
     pointer-events: none;
 }
 
@@ -619,26 +619,26 @@ hr {
 .status-approved {
     background: var(--status-success-bg) !important;
     border-color: var(--status-success-border) !important;
-    color: var(--text-light) !important;
+    color: var(--status-success-color) !important;
 }
 
 .status-pending,
 .request-leave {
     background: var(--status-warning-bg) !important;
     border-color: var(--status-warning-border) !important;
-    color: var(--text-light) !important;
+    color: var(--status-warning-color) !important;
 }
 
 .status-rejected {
     background: var(--status-danger-bg) !important;
     border-color: var(--status-danger-border) !important;
-    color: var(--text-light) !important;
+    color: var(--status-danger-color) !important;
 }
 
 .status-info {
     background: var(--status-info-bg) !important;
     border-color: var(--status-info-border) !important;
-    color: var(--text-light) !important;
+    color: var(--status-info-color) !important;
 }
 
 /* ------------------------------------------------
@@ -650,6 +650,26 @@ hr {
 [class*="empRole-"]:hover {
     transform: scale(1.04) !important;
     background: var(--neutral-glass-hover) !important;
+}
+
+/* ------------------------------------------------
+   LIGHT MODE — near-black text on all pill variants
+   ------------------------------------------------ */
+
+[data-theme="light"] .empRole-employee,
+[data-theme="light"] .empRole-workforce,
+[data-theme="light"] .request-overtime,
+[data-theme="light"] .empRole-admin,
+[data-theme="light"] .empRole-manager,
+[data-theme="light"] .request-log-edit,
+[data-theme="light"] .empRole-superadmin,
+[data-theme="light"] .request-official-business,
+[data-theme="light"] .status-approved,
+[data-theme="light"] .status-pending,
+[data-theme="light"] .request-leave,
+[data-theme="light"] .status-rejected,
+[data-theme="light"] .status-info {
+    color: var(--text-light) !important;
 }
 
 /* ================================================
@@ -816,7 +836,7 @@ button.btn-sm {
 
 .btn-success,
 .btn.btn-success {
-    color: var(--text-light) !important;
+    color: var(--status-success-color) !important;
     background: var(--status-success-bg) linear-gradient(
         to right,
         rgba(255, 255, 255, 0.10) 0%,
@@ -845,10 +865,15 @@ button.btn-sm {
     box-shadow: 0 4px 16px var(--status-success-glow) !important;
 }
 
+[data-theme="light"] .btn-success,
+[data-theme="light"] .btn.btn-success {
+    color: var(--text-light) !important;
+}
+
 [data-theme="light"] .btn-success:hover,
 [data-theme="light"] .btn-success:focus,
 [data-theme="light"] .btn-success:focus-visible {
-    color: var(--text-darkest) !important;
+    color: var(--text-light) !important;
 }
 
 /* ================================================
@@ -902,7 +927,7 @@ button.btn-sm {
 
 .btn-danger,
 .btn.btn-danger {
-    color: var(--text-light) !important;
+    color: var(--status-danger-color) !important;
     background: var(--status-danger-bg) linear-gradient(
         to right,
         rgba(255, 255, 255, 0.10) 0%,
@@ -934,11 +959,17 @@ button.btn-sm {
     box-shadow: 0 4px 16px var(--status-danger-glow) !important;
 }
 
+[data-theme="light"] .btn-danger,
+[data-theme="light"] .btn.btn-danger {
+    color: var(--text-light) !important;
+}
+
 [data-theme="light"] .btn-danger:hover,
 [data-theme="light"] .btn-danger:focus,
 [data-theme="light"] .btn-danger:focus-visible {
-    color: var(--text-darkest) !important;
+    color: var(--text-light) !important;
 }
+
 
 
 

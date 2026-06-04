@@ -625,6 +625,26 @@ const lockBreakBtn = btn => {
 };
 
 /* -------------------------------------------------------
+   TAP ERROR → HUMAN-READABLE MESSAGE
+------------------------------------------------------- */
+const tapErrorMessage = (data) => {
+    if (data && data.message) return data.message;
+    const map = {
+        log_corrupted:    'Your attendance record has a conflict. Please contact your administrator.',
+        unauthorized:     'Your session has expired. Please refresh the page and log in again.',
+        missing_location: 'Location data is missing. Make sure GPS is enabled and try again.',
+        server_error:     'A server error occurred. Please try again or contact your administrator.',
+    };
+    return (data && map[data.error]) || 'An unexpected error occurred. Please try again.';
+};
+
+const fetchErrorMessage = (err) => {
+    if (err instanceof TypeError) return "Can't reach the server — please check your connection.";
+    if (err instanceof SyntaxError) return 'The server returned an unexpected response. Please try again.';
+    return 'An unexpected error occurred. Please try again.';
+};
+
+/* -------------------------------------------------------
    TIME IN / OUT
 ------------------------------------------------------- */
 const handleTimeIn = async () => {
@@ -685,7 +705,7 @@ const handleTimeIn = async () => {
                 reset();
                 if (data.error && data.error !== 'too_fast' && data.error !== 'shift_ended') {
                     console.error('Attendance tap error:', data.error);
-                    showToast('Something went wrong. Please try again.', 'danger');
+                    showToast(tapErrorMessage(data), 'danger');
                 }
                 return;
             }
@@ -696,7 +716,7 @@ const handleTimeIn = async () => {
 
         } catch (err) {
             console.error(err);
-            showToast('Something went wrong. Please try again.', 'danger');
+            showToast(fetchErrorMessage(err), 'danger');
             reset();
         } finally {
             isProcessing = false;
@@ -773,7 +793,7 @@ const handleBreak = async () => {
 
         } catch (err) {
             console.error(err);
-            showToast('Something went wrong. Please try again.', 'danger');
+            showToast(fetchErrorMessage(err), 'danger');
             reset();
         } finally {
             isBreakProcessing = false;
