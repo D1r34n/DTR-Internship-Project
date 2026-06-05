@@ -14,7 +14,7 @@ try {
 /* ------------------------------------------------
    Session Timeout — 30 minutes of inactivity
    ------------------------------------------------ */
-define('SESSION_TIMEOUT', 180);  // 30 minutes
+define('SESSION_TIMEOUT', 1800);  // 30 minutes
 
 if (session_status() === PHP_SESSION_ACTIVE && isset($_SESSION['user_id'])) {
     if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity']) > SESSION_TIMEOUT) {
