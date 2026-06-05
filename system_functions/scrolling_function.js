@@ -49,6 +49,8 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         zone.addEventListener('wheel', function (e) {
+            if (e.target.closest('.dropdown-menu')) return;
+
             const hasH = wrapper.scrollWidth > wrapper.clientWidth;
             const hasV = wrapper.scrollHeight > wrapper.clientHeight;
 

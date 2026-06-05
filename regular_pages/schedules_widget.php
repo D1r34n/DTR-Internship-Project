@@ -69,7 +69,7 @@ $isScoped = $schedEmployeeId !== null;
     <?php elseif ($isAdmin): ?>
     <!-- ── Admin global header: btn moved into FC toolbar by JS ── -->
     <div class="shiftLegend" style="display:none">
-        <button id="sw-add-event-btn" class="btn btn-sm btn-success btn-add-event"
+        <button id="sw-add-event-btn" class="btn btn-success btn-add-event"
                 data-bs-toggle="modal"
                 data-bs-target="#swAddEventModal"
                 style="display:none">
@@ -77,19 +77,23 @@ $isScoped = $schedEmployeeId !== null;
         </button>
     </div>
 
-    <!-- filter select; moved into FC toolbar by JS after render -->
-    <select id="sw-schedule-filter" class="schedule-filter-select" style="display:none">
-        <option value="all">All</option>
-        <option value="events">All Events</option>
-        <option value="leave">On Leave</option>
-        <option value="ob">On OB</option>
-        <option value="birthday">Birthday</option>
-        <option value="holiday">Holiday</option>
-        <option value="meeting">Meeting</option>
-        <option value="announcement">Announcement</option>
-        <option value="party">Party</option>
-        <option value="other">Other</option>
-    </select>
+    <!-- filter dropdown; moved into FC toolbar by JS after render -->
+    <div id="sw-schedule-filter" class="dropdown" style="display:none">
+        <button class="btn sw-filter-btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">All</button>
+        <ul class="dropdown-menu">
+            <li><button class="dropdown-item active" type="button" data-sw-filter="all">All</button></li>
+            <li><button class="dropdown-item" type="button" data-sw-filter="leave">On Leave</button></li>
+            <li><button class="dropdown-item" type="button" data-sw-filter="ob">On OB</button></li>
+            <li><button class="dropdown-item" type="button" data-sw-filter="birthday">Birthday</button></li>
+            <li><button class="dropdown-item" type="button" data-sw-filter="events">All Events</button></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><button class="dropdown-item" type="button" data-sw-filter="holiday">Holiday</button></li>
+            <li><button class="dropdown-item" type="button" data-sw-filter="meeting">Meeting</button></li>
+            <li><button class="dropdown-item" type="button" data-sw-filter="announcement">Announcement</button></li>
+            <li><button class="dropdown-item" type="button" data-sw-filter="party">Party</button></li>
+            <li><button class="dropdown-item" type="button" data-sw-filter="other">Other</button></li>
+        </ul>
+    </div>
 
     <?php else: ?>
     <!-- ── Employee header: shift legend ── -->
@@ -104,19 +108,22 @@ $isScoped = $schedEmployeeId !== null;
         <div class="shiftLegendItem"><div class="shiftLegendDot leave-rejected"></div> Leave/OB Rejected</div>
     </div>
 
-    <!-- filter select; moved into FC toolbar by JS after render -->
-    <select id="sw-schedule-filter" class="schedule-filter-select" style="display:none">
-        <option value="all">All</option>
-        <option value="events">All Events</option>
-        <option value="leave">On Leave</option>
-        <option value="ob">On OB</option>
-        <option value="birthday">Birthday</option>
-        <option value="holiday">Holiday</option>
-        <option value="meeting">Meeting</option>
-        <option value="announcement">Announcement</option>
-        <option value="party">Party</option>
-        <option value="other">Other</option>
-    </select>
+    <!-- filter dropdown; moved into FC toolbar by JS after render -->
+    <div id="sw-schedule-filter" class="dropdown" style="display:none">
+        <button class="btn sw-filter-btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">All</button>
+        <ul class="dropdown-menu">
+            <li><button class="dropdown-item active" type="button" data-sw-filter="all">All</button></li>
+            <li><button class="dropdown-item" type="button" data-sw-filter="leave">On Leave</button></li>
+            <li><button class="dropdown-item" type="button" data-sw-filter="ob">On OB</button></li>
+            <li><button class="dropdown-item" type="button" data-sw-filter="events">All Events</button></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><button class="dropdown-item" type="button" data-sw-filter="holiday">Holiday</button></li>
+            <li><button class="dropdown-item" type="button" data-sw-filter="meeting">Meeting</button></li>
+            <li><button class="dropdown-item" type="button" data-sw-filter="announcement">Announcement</button></li>
+            <li><button class="dropdown-item" type="button" data-sw-filter="party">Party</button></li>
+            <li><button class="dropdown-item" type="button" data-sw-filter="other">Other</button></li>
+        </ul>
+    </div>
     <?php endif; ?>
 
     <!-- ── Calendar ── -->
@@ -563,6 +570,50 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     const calEl = document.getElementById('sw-calendar');
+
+    let swCurrentFilter = 'all';
+    let swIsRefreshing  = false;
+
+    function swMatchesFilter(el) {
+        if (swCurrentFilter === 'all') return true;
+        const st = el.dataset.st;
+        const et = el.dataset.et;
+        if (swCurrentFilter === 'leave')    return st && st.startsWith('leave_');
+        if (swCurrentFilter === 'ob')       return st && st.startsWith('ob_');
+        <?php if ($isAdmin && !$isScoped): ?>
+        if (swCurrentFilter === 'birthday') return st === 'birthday';
+        <?php endif; ?>
+        if (swCurrentFilter === 'events')   return st === 'cal_event';
+        return st === 'cal_event' && et === swCurrentFilter;
+    }
+
+    function swApplyFilter(el) { el.style.display = swMatchesFilter(el) ? '' : 'none'; }
+
+    const swFilterEl = document.getElementById('sw-schedule-filter');
+    if (swFilterEl) {
+        const swFilterBtn = swFilterEl.querySelector('.sw-filter-btn');
+
+        function swSetFilter(value) {
+            const item = swFilterEl.querySelector(`[data-sw-filter="${value}"]`);
+            if (!item) return;
+            swCurrentFilter = value;
+            if (swFilterBtn) swFilterBtn.textContent = item.textContent.trim();
+            swFilterEl.querySelectorAll('[data-sw-filter]').forEach(el =>
+                el.classList.toggle('active', el.dataset.swFilter === value)
+            );
+            document.querySelectorAll('#sw-calendar .fc-event').forEach(swApplyFilter);
+        }
+
+        const urlFilter = new URLSearchParams(window.location.search).get('filter');
+        if (urlFilter && swFilterEl.querySelector(`[data-sw-filter="${urlFilter}"]`)) {
+            swSetFilter(urlFilter);
+        }
+
+        swFilterEl.addEventListener('click', function (e) {
+            const item = e.target.closest('[data-sw-filter]');
+            if (item) swSetFilter(item.dataset.swFilter);
+        });
+    }
 
 <?php if ($isScoped): ?>
 {
@@ -1198,37 +1249,9 @@ window.swToday = function () { if (swCalendar) swCalendar.today(); };
 /* ================================================================
    MODE: ADMIN GLOBAL  (full calendar with events + birthdays)
 ================================================================ */
-let swCurrentFilter = 'all';
-let swIsRefreshing  = false;
 let swPendingDate   = null;
 let swEditPayload   = null;
 let swFpEvtDate     = null;
-
-function swMatchesFilter(el) {
-    if (swCurrentFilter === 'all') return true;
-    const st = el.dataset.st;
-    const et = el.dataset.et;
-    if (swCurrentFilter === 'leave')    return st && st.startsWith('leave_');
-    if (swCurrentFilter === 'ob')       return st && st.startsWith('ob_');
-    if (swCurrentFilter === 'birthday') return st === 'birthday';
-    if (swCurrentFilter === 'events')   return st === 'cal_event';
-    return st === 'cal_event' && et === swCurrentFilter;
-}
-
-function swApplyFilter(el) { el.style.display = swMatchesFilter(el) ? '' : 'none'; }
-
-const swFilterEl = document.getElementById('sw-schedule-filter');
-if (swFilterEl) {
-    const urlFilter = new URLSearchParams(window.location.search).get('filter');
-    if (urlFilter && swFilterEl.querySelector(`option[value="${urlFilter}"]`)) {
-        swFilterEl.value = urlFilter;
-        swCurrentFilter  = urlFilter;
-    }
-    swFilterEl.addEventListener('change', function () {
-        swCurrentFilter = this.value;
-        document.querySelectorAll('#sw-calendar .fc-event').forEach(swApplyFilter);
-    });
-}
 
 /* ================================================================
    MODE: ADMIN GLOBAL (Calendar Setup Snippet)
@@ -1607,34 +1630,6 @@ document.getElementById('swDeleteEventConfirmBtn').addEventListener('click', asy
 /* ================================================================
    MODE: EMPLOYEE  (personal schedule, read-only)
 ================================================================ */
-let swIsRefreshing  = false;
-let swCurrentFilter = 'all';
-
-function swMatchesFilter(el) {
-    if (swCurrentFilter === 'all') return true;
-    const st = el.dataset.st;
-    const et = el.dataset.et;
-    if (swCurrentFilter === 'leave')  return st && st.startsWith('leave_');
-    if (swCurrentFilter === 'ob')     return st && st.startsWith('ob_');
-    if (swCurrentFilter === 'events') return st === 'cal_event';
-    return st === 'cal_event' && et === swCurrentFilter;
-}
-
-function swApplyFilter(el) { el.style.display = swMatchesFilter(el) ? '' : 'none'; }
-
-const swFilterEl = document.getElementById('sw-schedule-filter');
-if (swFilterEl) {
-    const urlFilter = new URLSearchParams(window.location.search).get('filter');
-    if (urlFilter && swFilterEl.querySelector(`option[value="${urlFilter}"]`)) {
-        swFilterEl.value = urlFilter;
-        swCurrentFilter  = urlFilter;
-    }
-    swFilterEl.addEventListener('change', function () {
-        swCurrentFilter = this.value;
-        document.querySelectorAll('#sw-calendar .fc-event').forEach(swApplyFilter);
-    });
-}
-
 swCalendar = new FullCalendar.Calendar(calEl, {
     initialView:  'dayGridMonth',
     firstDay:     0,

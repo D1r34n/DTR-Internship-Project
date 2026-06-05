@@ -384,15 +384,9 @@ function _selectRange(start, end, btnLabel, rangeLabel) {
 }
 
 function formatMinutes(mins) {
-    if (mins === null || mins === undefined) return '<span class="text-muted">-</span>';
-    mins = parseInt(mins, 10);
-    if (isNaN(mins)) return '<span class="text-muted">-</span>';
-    if (mins === 0)  return '0m';
-    const h = Math.floor(mins / 60);
-    const m = mins % 60;
-    if (h > 0 && m > 0) return `${h}h ${m}m`;
-    if (h > 0)           return `${h}h`;
-    return `${m}m`;
+    if (mins === null || mins === undefined || isNaN(parseInt(mins, 10)))
+        return '<span class="text-muted">-</span>';
+    return _fmtMins(mins);
 }
 
 function renderPaginationControls(totalPages) {
