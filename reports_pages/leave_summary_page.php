@@ -127,7 +127,7 @@ $currentYear = (int)date('Y');
                     </nav>
                     <div class="d-flex align-items-center gap-1" id="page-jump-wrapper">
                         <small class="text-meta text-nowrap">Go to:</small>
-                        <input type="number" id="page-jump-input" class="form-control form-control-sm text-center px-1" min="1" style="width: 45px; height: 28px;" placeholder="Go">
+                        <input type="number" id="page-jump-input" class="text-center pag-jump-input" min="1" style="width: 45px; height: 28px;" placeholder="Go">
                     </div>
                 </div>
 

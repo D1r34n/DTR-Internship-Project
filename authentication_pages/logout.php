@@ -15,6 +15,7 @@ if (ini_get("session.use_cookies")) {
 
 session_destroy();
 
-header("Location: login.php");
+$redirect = isset($_GET['timeout']) ? 'login.php?timeout=1' : 'login.php';
+header("Location: $redirect");
 exit();
 ?>

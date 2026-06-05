@@ -822,6 +822,11 @@
 .sidebar-sub-link.active {
     background: rgba(255, 255, 255, 0.1);
     color: var(--text-lightest);
+    font-weight: 400;
+}
+
+.sidebar-sub-link.active i {
+    color: var(--primary-color);
 }
 
 /* ------------------------------------------------

@@ -539,7 +539,7 @@ if ($deptScoped) {
                         <nav><ul class="pagination pagination-sm mb-0">${pageLinks}</ul></nav>
                         ${totalPages>1?`<div class="d-flex align-items-center gap-1 pag-jump-wrapper">
                             <small class="text-meta text-nowrap">Go to:</small>
-                            <input type="number" id="srPageJumpInput" class="form-control form-control-sm text-center px-1 pag-jump-input"
+                            <input type="number" id="srPageJumpInput" class="text-center pag-jump-input"
                                 min="1" max="${totalPages}" value="${srCurrentPage}"
                                 style="width:45px;height:28px;" placeholder="Go"></div>`:''}
                     </div>

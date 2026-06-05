@@ -660,7 +660,7 @@ $totalLogEdit  = $pendingLogEdit + $approvedLogEdit + $rejectedLogEdit;
                         <nav><ul class="pagination pagination-sm mb-0">${pageLinks}</ul></nav>
                         ${totalPages>1?`<div class="d-flex align-items-center gap-1 pag-jump-wrapper">
                             <small class="text-meta text-nowrap">Go to:</small>
-                            <input type="number" class="form-control form-control-sm text-center px-1 pag-jump-input pag-jump-req"
+                            <input type="number" class="text-center pag-jump-input pag-jump-req"
                                 data-tab="${tabId}" min="1" max="${totalPages}" value="${cur}"
                                 style="width:45px;height:28px;" placeholder="Go"></div>`:''}
                     </div>

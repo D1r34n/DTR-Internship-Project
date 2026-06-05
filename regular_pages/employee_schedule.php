@@ -234,13 +234,14 @@ if ($isAdmin) {
                 el.style.display = matchesFilter(el) ? '' : 'none';
             }
 
+            // Read URL ?filter= param for all users — must happen before events mount
+            const urlFilter = new URLSearchParams(window.location.search).get('filter');
+            if (urlFilter) currentFilter = urlFilter;
+
             const filterEl = document.getElementById('scheduleFilter');
             if (filterEl) {
-                // Pre-select filter from URL param
-                const urlFilter = new URLSearchParams(window.location.search).get('filter');
                 if (urlFilter && filterEl.querySelector(`option[value="${urlFilter}"]`)) {
                     filterEl.value = urlFilter;
-                    currentFilter  = urlFilter;
                 }
 
                 filterEl.addEventListener('change', function () {

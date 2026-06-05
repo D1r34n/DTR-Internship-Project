@@ -240,11 +240,41 @@
     --datepicker-input-bg:     rgba(0, 0, 0, 0.3);
     --flatpickr-month-bg:      rgba(0, 0, 0, 0.6);
     --flatpickr-option-bg:     #1a1a1a;
+
+    /* LIGHT SURFACE TEXT */
+    --text-body:        #111111;
+    --text-label:       #444444;
+    --text-caption:     #666666;
+    --text-subtle:      #999999;
+    --text-footnote:    #aaaaaa;
+    --text-placeholder: #bbbbbb;
+
+    /* LIGHT SURFACE BACKGROUNDS */
+    --bg-page: #f0f2f5;
+
+    /* LIGHT SURFACE BORDERS */
+    --border-input: rgba(0, 0, 0, 0.13);
+    --border-fine:  rgba(0, 0, 0, 0.08);
+
+    /* INK OVERLAYS — dark semi-transparent layers for light surfaces and image overlays */
+    --ink-faintest: rgba(0, 0, 0, 0.06);
+    --ink-light:    rgba(0, 0, 0, 0.10);
+    --ink-soft:     rgba(0, 0, 0, 0.12);
+    --ink-medium:   rgba(0, 0, 0, 0.20);
+    --ink-strong:   rgba(0, 0, 0, 0.45);
+    --ink-heavy:    rgba(0, 0, 0, 0.58);
+    --ink-deep:     rgba(0, 0, 0, 0.75);
+
+    /* OVERLAY TEXT — legible text on dark/image backgrounds */
+    --text-overlay-dim: rgba(255, 255, 255, 0.65);
+
+    /* FOCUS RING */
+    --focus-ring-primary: rgba(151, 190, 65, 0.25);
 }
 
 [data-theme="light"] {
     /* FROSTED GLASS — UI SURFACES (cards, modals, dropdowns) */
-    --frosted-bg:        rgba(255, 255, 255, 0.7);
+    --frosted-bg:        rgba(255, 255, 255, 0.5);
     --frosted-border:    rgba(0, 0, 0, 0.09);
     --frosted-blur:      blur(36px) saturate(160%) brightness(1.05);
     --frosted-shadow:    0 12px 48px rgba(0, 0, 0, 0.12),

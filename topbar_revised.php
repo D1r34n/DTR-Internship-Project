@@ -1108,3 +1108,112 @@ function saveProfileImage() {
 
 </script>
 <script src="../system_functions/scrolling_function.js" defer></script>
+
+<!-- ── Session Timeout Warning Modal ────────────────────── -->
+<div class="modal fade" id="sessionTimeoutModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content text-center">
+            <div class="modal-body py-4 px-4">
+                <i class="bi bi-clock-history fs-1 text-warning mb-3 d-block"></i>
+                <h6 class="mb-1">Session Expiring Soon</h6>
+                <p class="text-meta mb-3" style="font-size:0.82rem;">
+                    You'll be logged out in <strong id="session-countdown">2:00</strong> due to inactivity.
+                </p>
+                <button type="button" class="btn btn-success w-100" id="session-extend-btn">
+                    <i class="bi bi-arrow-clockwise me-1"></i> Stay Logged In
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+(function () {
+    const TIMEOUT     = <?= SESSION_TIMEOUT ?>; // seconds (from db.php)
+    const WARN_BEFORE = 120;                    // show warning 2 min before expiry
+    const KEEPALIVE   = '../system_functions/keepalive.php';
+    const LOGIN_URL   = '../authentication_pages/logout.php?timeout=1';
+
+    let lastActivity  = Date.now();
+    let warningShown  = false;
+    let logoutTimer   = null;
+    let countdownInterval = null;
+
+    const modal       = new bootstrap.Modal(document.getElementById('sessionTimeoutModal'), { backdrop: 'static' });
+    const countdownEl = document.getElementById('session-countdown');
+    const extendBtn   = document.getElementById('session-extend-btn');
+
+    // Reset inactivity timer on user interaction
+    ['mousemove', 'keydown', 'mousedown', 'touchstart', 'scroll'].forEach(evt =>
+        document.addEventListener(evt, onActivity, { passive: true })
+    );
+
+    function onActivity() {
+        if (warningShown) return;
+        lastActivity = Date.now();
+        ping();
+    }
+
+    function ping() {
+        fetch(KEEPALIVE, { headers: { 'X-Keepalive': '1' } })
+            .then(r => r.json())
+            .then(d => { if (d.expired) window.location.href = LOGIN_URL; })
+            .catch(() => {});
+    }
+
+    // Send keepalive every 5 minutes while active
+    setInterval(() => {
+        if (!warningShown && (Date.now() - lastActivity) < (TIMEOUT - WARN_BEFORE) * 1000) {
+            ping();
+        }
+    }, 5 * 60 * 1000);
+
+    // Check every second whether to show warning or force logout
+    setInterval(() => {
+        const idleSeconds = (Date.now() - lastActivity) / 1000;
+        const remaining   = TIMEOUT - idleSeconds;
+
+        if (remaining <= 0) {
+            clearInterval(countdownInterval);
+            window.location.href = LOGIN_URL;
+            return;
+        }
+
+        if (remaining <= WARN_BEFORE && !warningShown) {
+            warningShown = true;
+            modal.show();
+            startCountdown(Math.floor(remaining));
+        }
+
+        if (warningShown && remaining > WARN_BEFORE) {
+            // User moved — close warning
+            dismissWarning();
+        }
+    }, 1000);
+
+    function startCountdown(secs) {
+        clearInterval(countdownInterval);
+        let s = secs;
+        function tick() {
+            if (s <= 0) { window.location.href = LOGIN_URL; return; }
+            const m = Math.floor(s / 60);
+            countdownEl.textContent = `${m}:${String(s % 60).padStart(2, '0')}`;
+            s--;
+        }
+        tick();
+        countdownInterval = setInterval(tick, 1000);
+    }
+
+    function dismissWarning() {
+        clearInterval(countdownInterval);
+        warningShown = false;
+        modal.hide();
+        ping();
+    }
+
+    extendBtn.addEventListener('click', () => {
+        lastActivity = Date.now();
+        dismissWarning();
+    });
+})();
+</script>

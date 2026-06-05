@@ -87,7 +87,7 @@ $logsEmployeeId ??= null;
             <div class="d-flex align-items-center gap-1 pag-jump-wrapper" id="logsPageJumpWrapper" style="display:none !important;">
                 <small class="text-meta text-nowrap">Go to:</small>
                 <input type="number" id="logsPageJumpInput"
-                       class="form-control form-control-sm text-center px-1 pag-jump-input"
+                       class="text-center pag-jump-input"
                        min="1" style="width:45px;height:28px;" placeholder="Go">
             </div>
         </div>
