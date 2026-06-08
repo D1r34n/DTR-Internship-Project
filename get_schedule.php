@@ -130,6 +130,7 @@ if ($scopedToEmployee) {
                 'classNames' => ['fc-ev-night-cont'],
                 'extendedProps' => [
                     'type' => 'night-cont', 'dateStr' => $dateStr,
+                    'originDate' => $nightContDates[$dateStr],
                     'hasSchedule' => false, 'hasActiveLeaveOrOB' => false,
                     'timeInStr' => null, 'timeOutStr' => null,
                     'schedInVal' => null, 'schedOutVal' => null, 'isRestDay' => false,

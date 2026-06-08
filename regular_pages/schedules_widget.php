@@ -628,6 +628,12 @@ let swFpAdd   = null;
 let swScheduledDates = new Set();
 /* Dates that are On Leave / On OB — not editable as schedules (no add/edit) */
 let swLeaveOrOBDates = new Set();
+/* Night-shift continuation days → the originating schedule date (so the
+   "↪ until …" marker can be hover-edited; it edits the night shift it belongs to) */
+let swNightContOrigin = new Map();
+/* Leave/OB Rejected days that still have an underlying schedule (the rejected
+   request doesn't remove the shift, so it stays editable) */
+let swRejectedSchedDates = new Set();
 /* FIX Bug 4 — track the schedule_id of the date being deleted */
 let _swPendingDeleteDate = null;
 let _swPendingDeleteId   = null;
@@ -710,6 +716,14 @@ swCalendar = new FullCalendar.Calendar(calEl, {
             events.filter(e => ['on-leave', 'on-ob'].includes(e.extendedProps.type))
                   .map(e => e.startStr)
         );
+        swNightContOrigin = new Map();
+        events.filter(e => e.extendedProps.type === 'night-cont').forEach(function (e) {
+            swNightContOrigin.set(e.startStr, e.extendedProps.originDate || _swPrevDay(e.startStr));
+        });
+        swRejectedSchedDates = new Set(
+            events.filter(e => e.extendedProps.type === 'leave-rejected' && e.extendedProps.hasSchedule)
+                  .map(e => e.startStr)
+        );
         const count = swScheduledDates.size;
         const chip  = document.getElementById('sw-chip-sched-count');
         if (chip) chip.textContent = count + ' scheduled day' + (count !== 1 ? 's' : '');
@@ -722,7 +736,12 @@ swCalendar = new FullCalendar.Calendar(calEl, {
 
                 const overlay = cell.querySelector('.sw-day-add-overlay');
                 if (overlay) {
-                    if (swScheduledDates.has(dateStr)) {
+                    // A scheduled day, or a night-shift continuation day (which edits
+                    // the originating shift), both get the edit pencil.
+                    const isEditable = swScheduledDates.has(dateStr) ||
+                        swRejectedSchedDates.has(dateStr) ||
+                        (swNightContOrigin.has(dateStr) && !swLeaveOrOBDates.has(dateStr));
+                    if (isEditable) {
                         overlay.classList.add('is-edit-mode');
                         overlay.innerHTML = '<i class="bi bi-pencil-fill"></i>';
                     } else {
@@ -799,41 +818,58 @@ swCalendar = new FullCalendar.Calendar(calEl, {
     eventClick: function (info) {
         if (_swSkipDateClick) return;
         const props = info.event.extendedProps;
-        if (!['day', 'night', 'rest'].includes(props.type) && !props.isRestDay) return;
+        /* The "↪ until …" continuation pill edits its originating night shift */
+        if (props.type === 'night-cont') {
+            info.jsEvent.preventDefault();
+            swHandleSchedClick(props.originDate || _swPrevDay(info.event.startStr.slice(0, 10)));
+            return;
+        }
+        const editable = ['day', 'night', 'rest', 'leave-rejected'].includes(props.type) || props.isRestDay;
+        if (!editable) return;
         info.jsEvent.preventDefault();
         swHandleSchedClick(info.event.startStr.slice(0, 10));
     },
 });
+
+/* YYYY-MM-DD of the day before the given date string */
+function _swPrevDay(dateStr) {
+    const d = new Date(dateStr + 'T00:00:00');
+    d.setDate(d.getDate() - 1);
+    return `${d.getFullYear()}-${swPad(d.getMonth() + 1)}-${swPad(d.getDate())}`;
+}
 
 /* Shared add/edit entry point used by both dateClick and eventClick */
 function swHandleSchedClick(dateStr) {
     /* On Leave / On OB days aren't schedules — clicking does nothing */
     if (swLeaveOrOBDates.has(dateStr)) return;
 
-    if (swScheduledDates.has(dateStr)) {
+    /* A night-shift continuation day with no schedule of its own edits the
+       originating night shift instead of trying to add a new one. */
+    if (!swScheduledDates.has(dateStr) && swNightContOrigin.has(dateStr)) {
+        dateStr = swNightContOrigin.get(dateStr);
+    }
+
+    /* Find an event on this date that carries an editable schedule: a normal
+       day/night/rest shift, or a rejected leave/OB whose underlying shift stands. */
+    const existing = swCalendar.getEvents().find(function (e) {
+        if (e.startStr !== dateStr) return false;
+        const p = e.extendedProps;
+        return ['day', 'night', 'rest'].includes(p.type) || p.isRestDay ||
+               (p.type === 'leave-rejected' && p.hasSchedule);
+    });
+
+    if (existing) {
         /* --- EDIT MODE --- */
-        /* Find the matching event to get its current time values and id */
-        const existing = swCalendar.getEvents().find(function (e) {
-            return e.startStr === dateStr &&
-                   ['day', 'night', 'rest'].includes(e.extendedProps.type);
-        });
-
+        const props = existing.extendedProps;
         document.getElementById('swDeleteSchedBtn').style.display = 'block';
-
-        if (existing) {
-            const props = existing.extendedProps;
-            /* FIX Bug 4 — store schedule id alongside date so delete can use it */
-            _swPendingDeleteId = existing.id || null;
-            swOpenManageModalAsEdit(
-                dateStr,
-                props.timeInRaw  || '',
-                props.timeOutRaw || '',
-                props.type === 'rest' || !!props.isRestDay
-            );
-        } else {
-            _swPendingDeleteId = null;
-            swOpenManageModalWithDate(dateStr);
-        }
+        /* store schedule id alongside date so delete can use it */
+        _swPendingDeleteId = existing.id || null;
+        swOpenManageModalAsEdit(
+            dateStr,
+            props.schedInVal  || '',
+            props.schedOutVal || '',
+            props.type === 'rest' || !!props.isRestDay
+        );
     } else {
         /* --- ADD MODE --- */
         document.getElementById('swDeleteSchedBtn').style.display = 'none';
