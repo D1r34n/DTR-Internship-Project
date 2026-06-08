@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jun 02, 2026 at 01:42 AM
+-- Generation Time: Jun 02, 2026 at 12:33 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -53,7 +53,8 @@ CREATE TABLE `attendances` (
 --
 
 INSERT INTO `attendances` (`id`, `employee_id`, `schedule_id`, `work_date`, `scheduled_start`, `scheduled_end`, `actual_time_in`, `actual_time_out`, `total_work_minutes`, `late_minutes`, `undertime_minutes`, `overtime_minutes`, `break_minutes`, `status`, `overtime_status`, `missed_time_out`, `created_at`, `updated_at`) VALUES
-(0, 22, 619, '2026-06-01', '2026-06-01 08:30:00', '2026-06-01 17:30:00', '2026-06-02 07:36:01', NULL, 0, 0, 0, 0, 0, 'incomplete', 'none', 0, '2026-06-01 23:36:01', '2026-06-01 23:36:01');
+(15, 22, 626, '2026-06-01', '2026-06-01 08:30:00', '2026-06-01 17:30:00', NULL, NULL, 0, 0, 0, 0, 0, 'absent', 'none', 0, '2026-06-01 23:31:55', '2026-06-01 23:31:55'),
+(16, 22, 636, '2026-06-02', '2026-06-02 08:30:00', '2026-06-02 17:30:00', '2026-06-02 07:31:55', '2026-06-02 18:32:25', 661, 0, 0, 62, 0, 'present', 'none', 0, '2026-06-01 23:31:55', '2026-06-02 10:32:25');
 
 -- --------------------------------------------------------
 
@@ -192,7 +193,7 @@ INSERT INTO `employee_leave_balances` (`employee_id`, `buffer_leave`, `total_buf
 (15, 5, 0, 10.00, 0.00, 4, 7, 0, 1, 1, '2026-05-11', '2026-05-11 07:41:20', '2026-05-11 09:22:01'),
 (19, 0, 0, 0.00, 0.00, 4, 7, 90, 1, 1, '2026-05-11', '2026-05-11 07:41:20', '2026-05-11 09:05:02'),
 (20, 5, 0, 0.00, 0.00, 4, 7, 90, 1, 1, '2026-05-11', '2026-05-11 07:41:20', '2026-05-28 09:01:39'),
-(22, 0, 0, 1.00, 0.00, 0, 7, 90, 1, 1, '2026-05-11', '2026-05-11 07:41:20', '2026-05-29 07:48:29'),
+(22, 0, 0, 0.00, 0.00, 0, 7, 90, 1, 1, '2026-05-11', '2026-05-11 07:41:20', '2026-06-03 19:28:11'),
 (23, 0, 0, 0.00, 0.00, 4, 7, 90, 1, 1, '2026-05-15', '2026-05-15 01:15:26', '2026-05-15 01:15:26'),
 (25, 0, 0, 0.00, 0.00, 4, 7, 90, 1, 1, '2026-05-15', '2026-05-15 01:15:26', '2026-05-15 01:15:26'),
 (37, 0, 0, 0.00, 0.00, 4, 7, 90, 1, 1, '2026-05-15', '2026-05-15 01:15:26', '2026-05-15 01:15:26'),
@@ -250,6 +251,15 @@ CREATE TABLE `leave_requests` (
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
   `approved_by` int(11) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `leave_requests`
+--
+
+INSERT INTO `leave_requests` (`id`, `employee_id`, `leave_type_id`, `start_date`, `end_date`, `selected_dates`, `reason`, `client_name`, `status`, `created_at`, `updated_at`, `approved_by`) VALUES
+(28, 22, 2, '2026-06-05', '2026-06-05', '[\"2026-06-05\"]', 'Me sick with covid', NULL, 'approved', '2026-06-03 19:28:01', '2026-06-03 19:28:11', 39),
+(29, 22, 3, '2026-06-04', '2026-06-04', '[\"2026-06-04\"]', 'borthday', NULL, 'rejected', '2026-06-03 19:28:41', '2026-06-03 19:29:22', 39),
+(30, 22, 2, '2026-06-06', '2026-06-06', '[\"2026-06-06\"]', 'lib', NULL, 'approved', '2026-06-03 19:29:00', '2026-06-03 19:29:32', 39);
 
 -- --------------------------------------------------------
 
@@ -309,7 +319,8 @@ CREATE TABLE `logs` (
 --
 
 INSERT INTO `logs` (`id`, `employee_id`, `schedule_id`, `log_type`, `log_time`, `longitude`, `latitude`, `accuracy`, `is_within_office`, `distance_meters`, `photo_path`, `created_at`, `original_log_time`, `schedule_request_id`, `edit_reason`, `edit_requested_by`) VALUES
-(948, 22, 620, 'IN', '2026-06-02 07:36:01', 120.9955016, 14.5842488, 55, 1, 22.8963, 'cap_22_20260602_073601.jpg', '2026-06-01 23:36:01', NULL, NULL, NULL, NULL);
+(975, 22, 636, 'IN', '2026-06-02 07:31:55', 120.9955146, 14.5842380, 55, 1, 23.1262, 'cap_22_20260602_073155.jpg', '2026-06-01 23:31:55', NULL, NULL, NULL, NULL),
+(976, 22, 636, 'OUT', '2026-06-02 18:32:25', 120.9955146, 14.5842380, 55, 1, 23.1262, 'cap_22_20260602_183225.jpg', '2026-06-02 10:32:25', NULL, NULL, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -339,7 +350,8 @@ INSERT INTO `log_edit_requests` (`id`, `log_id`, `employee_id`, `original_log_ti
 (1, 891, 19, '2026-05-25 09:51:49', '2026-05-25 08:30:00', 'No reason provided', 39, 'approved', '2026-05-25 01:51:49', '2026-05-29 01:59:18', NULL),
 (2, 892, 39, '2026-05-25 10:23:29', '2026-05-25 07:23:00', 'No reason provided', 39, 'approved', '2026-05-25 02:23:29', '2026-05-29 01:59:18', NULL),
 (4, 896, 39, '2026-05-29 10:00:15', '2026-05-29 07:30:00', 'No reason provided', 39, 'approved', '2026-05-29 02:01:49', '2026-05-29 02:01:49', NULL),
-(5, 906, 22, '2026-05-29 11:50:22', '2026-05-29 22:50:00', 'No reason provided', 39, 'approved', '2026-05-29 03:50:53', '2026-05-29 03:50:53', NULL);
+(5, 906, 22, '2026-05-29 11:50:22', '2026-05-29 22:50:00', 'No reason provided', 39, 'approved', '2026-05-29 03:50:53', '2026-05-29 03:50:53', NULL),
+(6, 970, 22, '2026-06-04 03:25:14', '2026-06-04 05:31:00', 'No reason provided', 22, 'approved', '2026-06-03 19:31:18', '2026-06-03 19:31:44', 39);
 
 -- --------------------------------------------------------
 
@@ -367,7 +379,9 @@ CREATE TABLE `overtime_requests` (
 INSERT INTO `overtime_requests` (`id`, `employee_id`, `date`, `time_in`, `time_out`, `reason`, `status`, `created_at`, `updated_at`, `approved_by`) VALUES
 (17, 22, '2026-05-12', '17:30:00', '18:22:00', 'PLSSS BATO I NEED THIS', 'approved', '2026-05-12 08:24:42', '2026-05-29 06:14:42', NULL),
 (18, 22, '2026-05-19', '19:30:00', '20:00:00', 'OT pls', 'approved', '2026-05-20 07:20:09', '2026-05-29 06:14:42', NULL),
-(19, 22, '2026-05-22', '17:30:00', '18:00:00', 'I NEED THIS', 'approved', '2026-05-22 08:01:05', '2026-05-29 06:14:42', NULL);
+(19, 22, '2026-05-22', '17:30:00', '18:00:00', 'I NEED THIS', 'approved', '2026-05-22 08:01:05', '2026-05-29 06:14:42', NULL),
+(20, 22, '2026-06-03', '02:30:00', '03:25:14', '67', 'approved', '2026-06-03 19:25:54', '2026-06-03 19:25:59', 39),
+(21, 22, '2026-06-02', '17:30:00', '18:44:50', ':)', 'rejected', '2026-06-03 19:26:48', '2026-06-03 19:26:59', 39);
 
 -- --------------------------------------------------------
 
@@ -464,13 +478,13 @@ CREATE TABLE `schedules` (
 --
 
 INSERT INTO `schedules` (`id`, `employee_id`, `schedule_date`, `scheduled_start`, `scheduled_end`, `is_rest_day`, `pending_delete`, `updated_at`, `is_archived`, `request_type`, `batch_id`, `orig_is_rest_day`, `orig_scheduled_start`, `orig_scheduled_end`) VALUES
-(619, 22, '2026-06-01', '2026-06-01 08:30:00', '2026-06-01 17:30:00', 0, 0, NULL, 0, 'added', '707d8f6956e28652', NULL, NULL, NULL),
-(620, 22, '2026-06-02', '2026-06-02 08:30:00', '2026-06-02 17:30:00', 0, 0, NULL, 0, 'added', '707d8f6956e28652', NULL, NULL, NULL),
-(621, 22, '2026-06-03', '2026-06-03 08:30:00', '2026-06-03 17:30:00', 0, 0, NULL, 0, 'added', '707d8f6956e28652', NULL, NULL, NULL),
-(622, 22, '2026-06-04', '2026-06-04 08:30:00', '2026-06-04 17:30:00', 0, 0, NULL, 0, 'added', '707d8f6956e28652', NULL, NULL, NULL),
-(623, 22, '2026-06-05', '2026-06-05 08:30:00', '2026-06-05 17:30:00', 0, 0, NULL, 0, 'added', '707d8f6956e28652', NULL, NULL, NULL),
-(624, 22, '2026-06-06', '2026-06-06 08:30:00', '2026-06-06 17:30:00', 1, 0, NULL, 0, 'added', '707d8f6956e28652', NULL, NULL, NULL),
-(625, 22, '2026-06-07', '2026-06-07 08:30:00', '2026-06-07 17:30:00', 1, 0, NULL, 0, 'added', '707d8f6956e28652', NULL, NULL, NULL);
+(626, 22, '2026-06-01', '2026-06-01 08:30:00', '2026-06-01 17:30:00', 0, 0, NULL, 0, 'added', '05f3aeaf2b6e3c19', NULL, NULL, NULL),
+(629, 22, '2026-06-04', '2026-06-04 08:30:00', '2026-06-04 17:30:00', 0, 0, NULL, 0, 'added', '05f3aeaf2b6e3c19', NULL, NULL, NULL),
+(630, 22, '2026-06-05', '2026-06-05 08:30:00', '2026-06-05 17:30:00', 0, 0, NULL, 0, 'added', '05f3aeaf2b6e3c19', NULL, NULL, NULL),
+(631, 22, '2026-06-06', '2026-06-06 08:30:00', '2026-06-06 17:30:00', 1, 0, NULL, 0, 'added', '05f3aeaf2b6e3c19', NULL, NULL, NULL),
+(632, 22, '2026-06-07', '2026-06-07 08:30:00', '2026-06-07 17:30:00', 1, 0, NULL, 0, 'added', '05f3aeaf2b6e3c19', NULL, NULL, NULL),
+(635, 22, '2026-06-03', '2026-06-03 17:30:00', '2026-06-04 02:30:00', 0, 0, NULL, 0, 'added', 'b840940dfab9a4e2', NULL, NULL, NULL),
+(636, 22, '2026-06-02', '2026-06-02 08:30:00', '2026-06-02 17:30:00', 0, 0, NULL, 0, 'added', 'a264f317f6f98050', NULL, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -656,7 +670,7 @@ ALTER TABLE `system_state`
 -- AUTO_INCREMENT for table `attendances`
 --
 ALTER TABLE `attendances`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=18;
 
 --
 -- AUTO_INCREMENT for table `cutoffs`
@@ -680,13 +694,13 @@ ALTER TABLE `employees`
 -- AUTO_INCREMENT for table `events`
 --
 ALTER TABLE `events`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
 
 --
 -- AUTO_INCREMENT for table `leave_requests`
 --
 ALTER TABLE `leave_requests`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=28;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=31;
 
 --
 -- AUTO_INCREMENT for table `leave_types`
@@ -698,19 +712,19 @@ ALTER TABLE `leave_types`
 -- AUTO_INCREMENT for table `logs`
 --
 ALTER TABLE `logs`
-  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=949;
+  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=977;
 
 --
 -- AUTO_INCREMENT for table `log_edit_requests`
 --
 ALTER TABLE `log_edit_requests`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT for table `overtime_requests`
 --
 ALTER TABLE `overtime_requests`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=20;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=22;
 
 --
 -- AUTO_INCREMENT for table `password_setup_tokens`
@@ -728,7 +742,7 @@ ALTER TABLE `roles`
 -- AUTO_INCREMENT for table `schedules`
 --
 ALTER TABLE `schedules`
-  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=626;
+  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=637;
 
 --
 -- AUTO_INCREMENT for table `schedule_edit_requests`

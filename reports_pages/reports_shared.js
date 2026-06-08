@@ -8,7 +8,8 @@ function parseDateString(dateStr) {
 
 function parseTimeString(timeStr) {
     if (!timeStr) return '<span class="text-meta">-</span>';
-    const parts = timeStr.split(':');
+    const timePart = timeStr.includes(' ') ? timeStr.split(' ')[1] : timeStr;
+    const parts = timePart.split(':');
     if (parts.length < 2) return '<span class="text-meta">-</span>';
     let hrs = parseInt(parts[0], 10);
     const mins = parts[1];
