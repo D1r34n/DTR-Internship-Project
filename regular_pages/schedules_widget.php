@@ -626,6 +626,8 @@ let swSelectedRestDays = [];
 let swFpEdit  = null;
 let swFpAdd   = null;
 let swScheduledDates = new Set();
+/* Dates that are On Leave / On OB — not editable as schedules (no add/edit) */
+let swLeaveOrOBDates = new Set();
 /* FIX Bug 4 — track the schedule_id of the date being deleted */
 let _swPendingDeleteDate = null;
 let _swPendingDeleteId   = null;
@@ -702,6 +704,10 @@ swCalendar = new FullCalendar.Calendar(calEl, {
            painting all cells before we try to query them */
         swScheduledDates = new Set(
             events.filter(e => ['day', 'night', 'rest'].includes(e.extendedProps.type))
+                  .map(e => e.startStr)
+        );
+        swLeaveOrOBDates = new Set(
+            events.filter(e => ['on-leave', 'on-ob'].includes(e.extendedProps.type))
                   .map(e => e.startStr)
         );
         const count = swScheduledDates.size;
@@ -785,41 +791,57 @@ swCalendar = new FullCalendar.Calendar(calEl, {
     /* FIX Bug 2 — dateClick was empty; now actually opens the correct modal */
     dateClick: function (info) {
         if (_swSkipDateClick) return;
-        const dateStr = info.dateStr;
+        swHandleSchedClick(info.dateStr);
+    },
 
-        if (swScheduledDates.has(dateStr)) {
-            /* --- EDIT MODE --- */
-            /* Find the matching event to get its current time values and id */
-            const existing = swCalendar.getEvents().find(function (e) {
-                return e.startStr === dateStr &&
-                       ['day', 'night', 'rest'].includes(e.extendedProps.type);
-            });
-
-            document.getElementById('swDeleteSchedBtn').style.display = 'block';
-
-            if (existing) {
-                const props = existing.extendedProps;
-                /* FIX Bug 4 — store schedule id alongside date so delete can use it */
-                _swPendingDeleteId = existing.id || null;
-                swOpenManageModalAsEdit(
-                    dateStr,
-                    props.timeInRaw  || '',
-                    props.timeOutRaw || '',
-                    props.type === 'rest' || !!props.isRestDay
-                );
-            } else {
-                _swPendingDeleteId = null;
-                swOpenManageModalWithDate(dateStr);
-            }
-        } else {
-            /* --- ADD MODE --- */
-            document.getElementById('swDeleteSchedBtn').style.display = 'none';
-            _swPendingDeleteId   = null;
-            _swPendingDeleteDate = null;
-            swOpenManageModalWithDate(dateStr);
-        }
+    /* Clicking a shift pill (Day/Night/Rest) doesn't fire dateClick in FullCalendar,
+       so handle it here too — opens the same add/edit modal as clicking the cell. */
+    eventClick: function (info) {
+        if (_swSkipDateClick) return;
+        const props = info.event.extendedProps;
+        if (!['day', 'night', 'rest'].includes(props.type) && !props.isRestDay) return;
+        info.jsEvent.preventDefault();
+        swHandleSchedClick(info.event.startStr.slice(0, 10));
     },
 });
+
+/* Shared add/edit entry point used by both dateClick and eventClick */
+function swHandleSchedClick(dateStr) {
+    /* On Leave / On OB days aren't schedules — clicking does nothing */
+    if (swLeaveOrOBDates.has(dateStr)) return;
+
+    if (swScheduledDates.has(dateStr)) {
+        /* --- EDIT MODE --- */
+        /* Find the matching event to get its current time values and id */
+        const existing = swCalendar.getEvents().find(function (e) {
+            return e.startStr === dateStr &&
+                   ['day', 'night', 'rest'].includes(e.extendedProps.type);
+        });
+
+        document.getElementById('swDeleteSchedBtn').style.display = 'block';
+
+        if (existing) {
+            const props = existing.extendedProps;
+            /* FIX Bug 4 — store schedule id alongside date so delete can use it */
+            _swPendingDeleteId = existing.id || null;
+            swOpenManageModalAsEdit(
+                dateStr,
+                props.timeInRaw  || '',
+                props.timeOutRaw || '',
+                props.type === 'rest' || !!props.isRestDay
+            );
+        } else {
+            _swPendingDeleteId = null;
+            swOpenManageModalWithDate(dateStr);
+        }
+    } else {
+        /* --- ADD MODE --- */
+        document.getElementById('swDeleteSchedBtn').style.display = 'none';
+        _swPendingDeleteId   = null;
+        _swPendingDeleteDate = null;
+        swOpenManageModalWithDate(dateStr);
+    }
+}
 
 swCalendar.render();
 
@@ -927,7 +949,11 @@ document.getElementById('swAddSchedForm').addEventListener('submit', function (e
         return;
     }
 
-    if (hasDates) {
+    /* In edit mode the date picker is hidden and we're intentionally editing the
+       one existing date, so skip the redundant "already exists, replace?" confirm. */
+    const isEditMode = document.getElementById('swSelectDatesSection').style.display === 'none';
+
+    if (hasDates && !isEditMode) {
         const conflicts = datesToSchedule.filter(function (d) { return swScheduledDates.has(d); });
         if (conflicts.length > 0) {
             const msg = conflicts.length === 1
@@ -1131,7 +1157,11 @@ function swOpenManageModalAsEdit(dateStr, timeIn, timeOut, isRestDay) {
     /* Hide the date picker — date is already conveyed in the title */
     document.getElementById('swSelectDatesSection').style.display = 'none';
 
-    document.getElementById('swAddSchedForm').querySelector('input[name="action"]').value = 'save_schedule';
+    /* Keep the form's native 'save_combined' action (set in swOpenManageModal).
+       That handler updates existing rows in place and processes both selected_dates
+       (schedule) and single_rest_dates (rest day), so rest⇄schedule edits both save.
+       The old 'save_schedule' override ignored single_rest_dates, breaking the
+       "scheduled day → rest day" conversion. */
 
     swSelectedDatesAdd   = [dateStr];
     _swPendingDeleteDate = dateStr;

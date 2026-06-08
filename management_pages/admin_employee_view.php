@@ -358,7 +358,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' &&
                 $existing = $existsStmt->fetch(PDO::FETCH_ASSOC);
                 $isStale  = $existing && ($existing['is_archived'] || $existing['status'] === 'rejected');
                 if ($existing && !$isStale) {
-                    $updRest->execute([$restDayStatus, $_SESSION['user_id'], 'edit', $batchId, $postEmpId, $date]);
+                    $updRest->execute(['edit', $batchId, $postEmpId, $date]);
                 } else {
                     $insRest->execute([$postEmpId, $date, $batchId]);
                 }
@@ -464,7 +464,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save_
             $chkRow  = $chkStmt->fetch(PDO::FETCH_ASSOC);
             $isStale = $chkRow && ($chkRow['is_archived'] || $chkRow['status'] === 'rejected');
             if ($chkRow && !$isStale) {
-                $updRest->execute([$restDayStatus, $_SESSION['user_id'], 'edit', $batchId, $postEmpId, $date]);
+                $updRest->execute(['edit', $batchId, $postEmpId, $date]);
             } else {
                 $insRest->execute([$postEmpId, $date, $batchId]);
             }
