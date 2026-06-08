@@ -961,16 +961,6 @@ button.btn-sm {
     background: var(--status-danger-bg) !important;
 }
 
-.btn.show,
-.show > .btn {
-    background: var(--neutral-glass-hover) !important;
-    box-shadow: none !important;
-}
-
-.btn:focus {
-    outline: none !important;
-}
-
 /* ------------------------------------------------
    DISABLED
    ------------------------------------------------ */
@@ -1309,11 +1299,6 @@ button.btn-sm {
 [data-theme="light"] .dropdown-divider {
     border-color: var(--text-muted) !important;
     opacity: 0.5 !important;
-}
-
-/* Topbar user dropdown toggle name text is always white */
-.topbar .btn.dropdown-toggle:not(.dropdown-toggle-split) {
-    color: #ffffff !important;
 }
 
 .dropdown-menu .btn {

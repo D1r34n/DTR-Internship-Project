@@ -306,8 +306,8 @@ if (isset($_SESSION['last_attendance_tap'])) {
                     <li>
                         <div class="dropdown-item d-flex align-items-center justify-content-between w-100 gap-3" id="theme-toggle-container">
                             <div class="d-flex align-items-center gap-2">
-                                <i id="theme-icon" class="bi bi-moon-stars-fill" style="font-size:0.85rem;color:var(--text-light)"></i>
-                                <span id="theme-label" class="text-secondary">Dark Mode</span>
+                                <i id="theme-icon" class="bi bi-moon-stars-fill"></i>
+                                <span id="theme-label">Dark Mode</span>
                             </div>
                             <div class="theme-pill-wrapper">
                                 <input type="checkbox" id="themeCheckbox" hidden onchange="toggleTheme(this.checked)">
@@ -485,11 +485,8 @@ const startCooldown = (secs) => {
         if (!g.isConnected) return;
         g.classList.remove('btn-cooldown');
         g.style.removeProperty('--cooldown-duration');
-        const btn = g.querySelector('.btn-success:not(.dropdown-toggle-split), .btn-danger:not(.dropdown-toggle-split)');
-        if (btn) {
-            btn.classList.add('btn-ready');
-            btn.addEventListener('animationend', () => btn.classList.remove('btn-ready'), { once: true });
-        }
+        g.classList.add('btn-ready');
+        g.addEventListener('animationend', () => g.classList.remove('btn-ready'), { once: true });
     }, secs * 1000);
 };
 

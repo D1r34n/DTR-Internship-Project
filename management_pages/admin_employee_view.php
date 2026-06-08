@@ -919,7 +919,7 @@ $leaveTypes = [
                             No leave balance record found for this employee.
                         </div>
                     <?php else: ?>
-                        <div class="leave-cards-grid">
+                        <div class="card card-neutral leave-cards-grid">
                             <?php foreach ($leaveTypes as $lt):
                                 $isDecimal = $lt['key'] === 'vacation_leave';
                                 $rawCur    = $leaveBalance[$lt['key']] ?? 0;
