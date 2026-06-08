@@ -178,10 +178,10 @@ $isScoped = $schedEmployeeId !== null;
                             <label class="form-label">Preset schedule</label>
                             <div class="dropdown">
                                 <button type="button" class="btn dropdown-toggle w-100 sw-preset-bs-btn text-start"
-                                        id="swPresetSchedTrigger" data-bs-toggle="dropdown" aria-expanded="false">
+                                        id="swPresetSchedTrigger" aria-expanded="false">
                                     <span id="swPresetSchedDisplay">Select a preset schedule…</span>
                                 </button>
-                                <ul class="dropdown-menu w-100 sw-preset-bs-menu" id="swPresetSchedMenu" aria-labelledby="swPresetSchedTrigger"></ul>
+                                <ul class="dropdown-menu sw-preset-bs-menu" id="swPresetSchedMenu" aria-labelledby="swPresetSchedTrigger"></ul>
                             </div>
                             <small class="text-muted mt-1 d-block">Choose from saved schedules. Time in, time out and rest days will be filled automatically.</small>
                             <script>
@@ -1013,17 +1013,80 @@ document.getElementById('swModalRestDayCheck').addEventListener('change', functi
     document.getElementById('swModalTimeOut').required          = !isRest;
 });
 
-/* ---- Preset schedule (Bootstrap dropdown) ---- */
-document.getElementById('swPresetSchedMenu').addEventListener('click', function (e) {
-    const item = e.target.closest('.sw-preset-item');
-    if (!item) return;
-    e.preventDefault();
-    document.getElementById('swAddModalTimeIn').value  = item.dataset.in;
-    document.getElementById('swAddModalTimeOut').value = item.dataset.out;
-    document.querySelectorAll('#swPresetSchedMenu .sw-preset-item').forEach(function (el) { el.classList.remove('active'); });
-    item.classList.add('active');
-    document.getElementById('swPresetSchedDisplay').textContent = item.textContent;
-});
+/* ---- Preset schedule (custom tooltip-style popover) ----
+   The menu is portaled to <body> and fixed-positioned so it escapes the modal's
+   backdrop-filter containing block (otherwise it gets clipped inside the modal). */
+(function () {
+    const trigger = document.getElementById('swPresetSchedTrigger');
+    const menu    = document.getElementById('swPresetSchedMenu');
+    if (!trigger || !menu) return;
+
+    let swPresetOpen = false;
+
+    function positionPresetMenu() {
+        const r = trigger.getBoundingClientRect();
+        menu.style.position  = 'fixed';
+        menu.style.top       = (r.bottom + 6) + 'px';
+        menu.style.left      = r.left + 'px';
+        /* setProperty with priority so a stale .w-100 (width:100% !important) can't win */
+        menu.style.setProperty('width', r.width + 'px', 'important');
+        /* Cap height to the space below the trigger so it scrolls instead of
+           overflowing. Use !important to beat the global
+           `.dropdown-menu { overflow: visible !important }` rule in components.css. */
+        const avail = window.innerHeight - r.bottom - 16;
+        menu.style.setProperty('max-height', Math.max(140, Math.min(240, avail)) + 'px', 'important');
+        menu.style.setProperty('overflow-y', 'auto', 'important');
+        menu.style.setProperty('overflow-x', 'hidden', 'important');
+    }
+
+    function openPresetMenu() {
+        document.body.appendChild(menu);          // portal out of the modal
+        menu.classList.add('show', 'sw-preset-tooltip');
+        positionPresetMenu();
+        swPresetOpen = true;
+        trigger.setAttribute('aria-expanded', 'true');
+        trigger.classList.add('show');
+    }
+
+    function closePresetMenu() {
+        menu.classList.remove('show', 'sw-preset-tooltip');
+        swPresetOpen = false;
+        trigger.setAttribute('aria-expanded', 'false');
+        trigger.classList.remove('show');
+    }
+    window.swClosePresetMenu = closePresetMenu;
+
+    trigger.addEventListener('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        swPresetOpen ? closePresetMenu() : openPresetMenu();
+    });
+
+    // Close when clicking outside the menu/trigger
+    document.addEventListener('click', function (e) {
+        if (swPresetOpen && !menu.contains(e.target) && !trigger.contains(e.target)) closePresetMenu();
+    });
+
+    // Keep it anchored while open
+    window.addEventListener('scroll', function () { if (swPresetOpen) positionPresetMenu(); }, true);
+    window.addEventListener('resize', function () { if (swPresetOpen) positionPresetMenu(); });
+
+    // Close when the modal is dismissed
+    document.getElementById('swManageScheduleModal')?.addEventListener('hidden.bs.modal', closePresetMenu);
+
+    // Select a preset
+    menu.addEventListener('click', function (e) {
+        const item = e.target.closest('.sw-preset-item');
+        if (!item) return;
+        e.preventDefault();
+        document.getElementById('swAddModalTimeIn').value  = item.dataset.in;
+        document.getElementById('swAddModalTimeOut').value = item.dataset.out;
+        menu.querySelectorAll('.sw-preset-item').forEach(function (el) { el.classList.remove('active'); });
+        item.classList.add('active');
+        document.getElementById('swPresetSchedDisplay').textContent = item.textContent;
+        closePresetMenu();
+    });
+})();
 
 /* ---- Tab switcher ---- */
 function swSwitchTab(tab) {

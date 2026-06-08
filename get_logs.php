@@ -818,10 +818,11 @@ if ($showAddSchedule) {
             l.edit_requested_by AS initiated_by_id,
             CONCAT(e_init.first_name, ' ', e_init.last_name) AS initiator_name,
             r_init.role_key AS initiator_role,
-            (SELECT MIN(s.schedule_date)   FROM schedules s WHERE s.employee_id = l.employee_id AND s.batch_id = ser.batch_id AND ser.batch_id IS NOT NULL) AS sched_min_date,
-            (SELECT MAX(s.schedule_date)   FROM schedules s WHERE s.employee_id = l.employee_id AND s.batch_id = ser.batch_id AND ser.batch_id IS NOT NULL) AS sched_max_date,
-            (SELECT MIN(s.scheduled_start) FROM schedules s WHERE s.employee_id = l.employee_id AND s.batch_id = ser.batch_id AND ser.batch_id IS NOT NULL) AS sched_start,
-            (SELECT MIN(s.scheduled_end)   FROM schedules s WHERE s.employee_id = l.employee_id AND s.batch_id = ser.batch_id AND ser.batch_id IS NOT NULL) AS sched_end
+            (SELECT MIN(s.schedule_date)   FROM schedules s WHERE s.employee_id = l.employee_id AND s.batch_id = COALESCE(ser.batch_id, l.edit_reason) AND COALESCE(ser.batch_id, l.edit_reason) IS NOT NULL) AS sched_min_date,
+            (SELECT MAX(s.schedule_date)   FROM schedules s WHERE s.employee_id = l.employee_id AND s.batch_id = COALESCE(ser.batch_id, l.edit_reason) AND COALESCE(ser.batch_id, l.edit_reason) IS NOT NULL) AS sched_max_date,
+            (SELECT MIN(s.scheduled_start) FROM schedules s WHERE s.employee_id = l.employee_id AND s.batch_id = COALESCE(ser.batch_id, l.edit_reason) AND COALESCE(ser.batch_id, l.edit_reason) IS NOT NULL) AS sched_start,
+            (SELECT MIN(s.scheduled_end)   FROM schedules s WHERE s.employee_id = l.employee_id AND s.batch_id = COALESCE(ser.batch_id, l.edit_reason) AND COALESCE(ser.batch_id, l.edit_reason) IS NOT NULL) AS sched_end,
+            (SELECT MAX(s.is_rest_day)     FROM schedules s WHERE s.employee_id = l.employee_id AND s.batch_id = COALESCE(ser.batch_id, l.edit_reason) AND COALESCE(ser.batch_id, l.edit_reason) IS NOT NULL) AS sched_is_rest
         FROM logs l
         LEFT JOIN employees e ON l.employee_id = e.id
         LEFT JOIN roles r ON r.id = e.role_id
@@ -850,10 +851,14 @@ if ($showAddSchedule) {
             $minFmt      = date('M j, Y', strtotime($minDate));
             $maxFmt      = date('M j, Y', strtotime($maxDate));
             $dateStr     = ($minDate === $maxDate) ? $minFmt : "$minFmt – $maxFmt";
-            $timeStr     = ($schedStart && $schedEnd)
-                ? date('g:i A', strtotime($schedStart)) . ' - ' . date('g:i A', strtotime($schedEnd))
-                : '';
-            $schedDetails = "Schedule assigned:\n$dateStr" . ($timeStr ? "\n\nTime:\n$timeStr" : '');
+            if (!empty($row['sched_is_rest']) && !$schedStart) {
+                $schedDetails = "Rest day assigned:\n$dateStr";
+            } else {
+                $timeStr     = ($schedStart && $schedEnd)
+                    ? date('g:i A', strtotime($schedStart)) . ' - ' . date('g:i A', strtotime($schedEnd))
+                    : '';
+                $schedDetails = "Schedule assigned:\n$dateStr" . ($timeStr ? "\n\nTime:\n$timeStr" : '');
+            }
         } else {
             $schedDetails = 'Schedule assigned';
         }
@@ -902,12 +907,14 @@ if ($showEditSchedule) {
             l.edit_requested_by AS initiated_by_id,
             CONCAT(e_init.first_name, ' ', e_init.last_name) AS initiator_name,
             r_init.role_key AS initiator_role,
-            (SELECT MIN(s.schedule_date)        FROM schedules s WHERE s.employee_id = l.employee_id AND s.batch_id = ser.batch_id AND ser.batch_id IS NOT NULL) AS sched_min_date,
-            (SELECT MAX(s.schedule_date)        FROM schedules s WHERE s.employee_id = l.employee_id AND s.batch_id = ser.batch_id AND ser.batch_id IS NOT NULL) AS sched_max_date,
-            (SELECT MIN(s.orig_scheduled_start) FROM schedules s WHERE s.employee_id = l.employee_id AND s.batch_id = ser.batch_id AND ser.batch_id IS NOT NULL) AS orig_sched_start,
-            (SELECT MIN(s.orig_scheduled_end)   FROM schedules s WHERE s.employee_id = l.employee_id AND s.batch_id = ser.batch_id AND ser.batch_id IS NOT NULL) AS orig_sched_end,
-            (SELECT MIN(s.scheduled_start)      FROM schedules s WHERE s.employee_id = l.employee_id AND s.batch_id = ser.batch_id AND ser.batch_id IS NOT NULL) AS sched_start,
-            (SELECT MIN(s.scheduled_end)        FROM schedules s WHERE s.employee_id = l.employee_id AND s.batch_id = ser.batch_id AND ser.batch_id IS NOT NULL) AS sched_end
+            (SELECT MIN(s.schedule_date)        FROM schedules s WHERE s.employee_id = l.employee_id AND s.batch_id = COALESCE(ser.batch_id, l.edit_reason) AND COALESCE(ser.batch_id, l.edit_reason) IS NOT NULL) AS sched_min_date,
+            (SELECT MAX(s.schedule_date)        FROM schedules s WHERE s.employee_id = l.employee_id AND s.batch_id = COALESCE(ser.batch_id, l.edit_reason) AND COALESCE(ser.batch_id, l.edit_reason) IS NOT NULL) AS sched_max_date,
+            (SELECT MIN(s.orig_scheduled_start) FROM schedules s WHERE s.employee_id = l.employee_id AND s.batch_id = COALESCE(ser.batch_id, l.edit_reason) AND COALESCE(ser.batch_id, l.edit_reason) IS NOT NULL) AS orig_sched_start,
+            (SELECT MIN(s.orig_scheduled_end)   FROM schedules s WHERE s.employee_id = l.employee_id AND s.batch_id = COALESCE(ser.batch_id, l.edit_reason) AND COALESCE(ser.batch_id, l.edit_reason) IS NOT NULL) AS orig_sched_end,
+            (SELECT MIN(s.scheduled_start)      FROM schedules s WHERE s.employee_id = l.employee_id AND s.batch_id = COALESCE(ser.batch_id, l.edit_reason) AND COALESCE(ser.batch_id, l.edit_reason) IS NOT NULL) AS sched_start,
+            (SELECT MIN(s.scheduled_end)        FROM schedules s WHERE s.employee_id = l.employee_id AND s.batch_id = COALESCE(ser.batch_id, l.edit_reason) AND COALESCE(ser.batch_id, l.edit_reason) IS NOT NULL) AS sched_end,
+            (SELECT MAX(s.orig_is_rest_day)     FROM schedules s WHERE s.employee_id = l.employee_id AND s.batch_id = COALESCE(ser.batch_id, l.edit_reason) AND COALESCE(ser.batch_id, l.edit_reason) IS NOT NULL) AS orig_is_rest,
+            (SELECT MAX(s.is_rest_day)          FROM schedules s WHERE s.employee_id = l.employee_id AND s.batch_id = COALESCE(ser.batch_id, l.edit_reason) AND COALESCE(ser.batch_id, l.edit_reason) IS NOT NULL) AS now_is_rest
         FROM logs l
         LEFT JOIN employees e ON l.employee_id = e.id
         LEFT JOIN roles r ON r.id = e.role_id
@@ -937,14 +944,18 @@ if ($showEditSchedule) {
             $minFmt      = date('M j, Y', strtotime($minDate));
             $maxFmt      = date('M j, Y', strtotime($maxDate));
             $dateStr     = ($minDate === $maxDate) ? $minFmt : "$minFmt – $maxFmt";
+            // Render each side as a rest day or a time range (rest⇄schedule conversions included)
+            $beforeStr = !empty($row['orig_is_rest'])
+                ? 'Rest Day'
+                : (($origSchedStart && $origSchedEnd) ? date('g:i A', strtotime($origSchedStart)) . ' - ' . date('g:i A', strtotime($origSchedEnd)) : null);
+            $afterStr  = !empty($row['now_is_rest'])
+                ? 'Rest Day'
+                : (($schedStart && $schedEnd) ? date('g:i A', strtotime($schedStart)) . ' - ' . date('g:i A', strtotime($schedEnd)) : null);
             $schedDetails = "Schedule updated:\n$dateStr";
-            if ($origSchedStart && $origSchedEnd && $schedStart && $schedEnd) {
-                $beforeTime    = date('g:i A', strtotime($origSchedStart)) . ' - ' . date('g:i A', strtotime($origSchedEnd));
-                $afterTime     = date('g:i A', strtotime($schedStart))     . ' - ' . date('g:i A', strtotime($schedEnd));
-                $schedDetails .= "\n\nBefore:\n$beforeTime\nNow:\n$afterTime";
-            } elseif ($schedStart && $schedEnd) {
-                $afterTime     = date('g:i A', strtotime($schedStart)) . ' - ' . date('g:i A', strtotime($schedEnd));
-                $schedDetails .= "\nTime:\n$afterTime";
+            if ($beforeStr && $afterStr) {
+                $schedDetails .= "\n\nBefore:\n$beforeStr\nNow:\n$afterStr";
+            } elseif ($afterStr) {
+                $schedDetails .= "\n\nNow:\n$afterStr";
             }
         } else {
             $schedDetails = 'Schedule updated';

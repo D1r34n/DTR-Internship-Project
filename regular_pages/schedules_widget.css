@@ -529,6 +529,19 @@
 .sw-preset-bs-menu .sw-preset-item:hover  { background: var(--neutral-glass-hover); }
 .sw-preset-bs-menu .sw-preset-item.active { background: var(--primary-glass); color: var(--primary-color); font-weight: 600; }
 
+/* Floating tooltip-style state: menu is portaled to <body> and fixed-positioned
+   so it escapes the modal and can overflow past it; scrolls when tall. */
+.sw-preset-bs-menu.sw-preset-tooltip {
+    display:            block;
+    z-index:            2000;            /* above the modal (~1055/1065) */
+    margin:             0;
+    padding:            0.35rem;
+    max-height:         260px;
+    overflow-y:         auto;
+    overscroll-behavior: contain;
+}
+.sw-preset-bs-menu.sw-preset-tooltip .sw-preset-item { border-radius: 6px; }
+
 /* ---- Preset schedule dropdown (legacy, kept for compatibility) ---- */
 .preset-sched-dropdown-wrap { position: relative; }
 
