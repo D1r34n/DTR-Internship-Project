@@ -656,7 +656,7 @@ $leaveTypes = [
     ['key' => 'vacation_leave',    'label' => 'Vacation Leave',    'icon' => 'bi-umbrella-fill',    'color' => '#4da3ff',              'default' => 0,  'has_total' => false],
     ['key' => 'sick_leave',        'label' => 'Sick Leave',        'icon' => 'bi-heart-pulse-fill', 'color' => '#ff6b7a',              'default' => 4,  'has_total' => true],
     ['key' => 'birthday_leave',    'label' => 'Birthday Leave',    'icon' => 'bi-gift-fill',        'color' => '#f0ad4e',              'default' => 1,  'has_total' => true],
-    ['key' => 'paternity_leave',   'label' => 'Paternity Leave',   'icon' => 'bi-person-fill',      'color' => '#7dd9a8',              'default' => 7,  'has_total' => true],
+    ['key' => 'paternity_leave',   'label' => 'Paternity Leave',   'icon' => 'bi-person-hearts',      'color' => '#7dd9a8',              'default' => 7,  'has_total' => true],
     ['key' => 'maternity_leave',   'label' => 'Maternity Leave',   'icon' => 'bi-person-hearts',    'color' => '#fd7e14',              'default' => 90, 'has_total' => true],
     ['key' => 'solo_parent_leave', 'label' => 'Solo Parent Leave', 'icon' => 'bi-people-fill',      'color' => '#a07de0',              'default' => 1,  'has_total' => true],
     ['key' => 'buffer_leave',      'label' => 'Buffer Leave',      'icon' => 'bi-shield-fill',      'color' => 'var(--primary-color)', 'default' => 0,  'has_total' => false],
@@ -840,7 +840,7 @@ $leaveTypes = [
     <?php endif; ?>
 
     <!-- Tabs -->
-    <div class="ev-tabs card-neutral">
+    <div class="ev-tabs">
         <div class="card-header p-0">
             <ul class="nav nav-tabs card-header-tabs" id="myTab" role="tablist">
 
@@ -874,7 +874,7 @@ $leaveTypes = [
         <div class="card-body">
             <div class="tab-content">
                 <!-- Tab 1: Schedules -->
-                <div class="tab-pane fade show active" id="tab1" role="tabpanel">
+                <div class="tab-pane card-neutral fade show active" id="tab1" role="tabpanel">
 
                     <?php
                     $schedEmployeeId   = $employeeId;
@@ -912,14 +912,14 @@ $leaveTypes = [
                 </div>
 
                 <!-- Tab 4: Leave Balance -->
-                <div class="tab-pane fade" id="tab4" role="tabpanel">
+                <div class="tab-pane card-neutral fade" id="tab4" role="tabpanel">
                     <?php if (empty($leaveBalance)): ?>
                         <div class="sched-cal-empty">
                             <div class="sched-cal-empty-icon"><i class="bi bi-exclamation-circle"></i></div>
                             No leave balance record found for this employee.
                         </div>
                     <?php else: ?>
-                        <div class="card card-neutral leave-cards-grid">
+                        <div class="leave-cards-grid">
                             <?php foreach ($leaveTypes as $lt):
                                 $isDecimal = $lt['key'] === 'vacation_leave';
                                 $rawCur    = $leaveBalance[$lt['key']] ?? 0;
@@ -934,9 +934,9 @@ $leaveTypes = [
                                         <button class="leave-card-btn leave-reset-btn" title="Reset to default (<?= $lt['default'] ?>)">
                                             <i class="bi bi-arrow-counterclockwise"></i>
                                         </button>
-                                        <span class="leave-card-btn leave-edit-icon">
+                                        <button type="button" class="leave-card-btn leave-edit-icon" title="Edit">
                                             <i class="bi bi-pencil"></i>
-                                        </span>
+                                        </button>
                                     </div>
                                     <div class="leave-card-icon" style="color:<?= $lt['color'] ?>">
                                         <i class="bi <?= $lt['icon'] ?>"></i>
@@ -1583,6 +1583,16 @@ document.addEventListener('click', e => {
         curEl.textContent   = isDecimal ? def.toFixed(2) : def;
         curEl.dataset.value = def;
         saveLeaveBalance(card.dataset.key, curEl, def, card.dataset.emp);
+        return;
+    }
+
+    // Click on edit icon → edit current value
+    const editBtn = e.target.closest('.leave-edit-icon');
+    if (editBtn) {
+        e.stopPropagation();
+        const card  = editBtn.closest('.leave-card');
+        const curEl = card.querySelector('.leave-card-current');
+        if (curEl) inlineEditLeave(curEl, card.dataset.key, card.dataset.emp);
         return;
     }
 

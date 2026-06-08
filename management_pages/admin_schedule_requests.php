@@ -214,6 +214,9 @@ if ($deptScoped) {
 
     <link rel="stylesheet" href="admin_requests.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+
+    <!-- Bootstrap JS — must be in <head> so the topbar session-timeout IIFE can call bootstrap.Modal on parse -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </head>
 <body>
 
@@ -353,7 +356,6 @@ if ($deptScoped) {
 
     <?php include '../system_functions/show_toast.php'; ?>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script>
         const MY_USER_ID_SR  = <?= (int)$_SESSION['user_id'] ?>;

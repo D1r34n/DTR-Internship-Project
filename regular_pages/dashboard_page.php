@@ -697,7 +697,10 @@ for ($i = 0; $i < 7; $i++) {
 
                                 <div class="list-scroll">
                                     <?php if (empty($birthdaysThisMonth)): ?>
-                                        <small class="text-muted">No birthdays this month</small>
+                                        <div class="dash-empty">
+                                            <i class="bi bi-balloon"></i>
+                                            <div class="text-meta">No birthdays this month</div>
+                                        </div>
                                     <?php else: ?>
                                         <ul class="list-unstyled mb-0 dash-list">
                                             <?php foreach ($birthdaysThisMonth as $b): ?>
@@ -764,7 +767,10 @@ for ($i = 0; $i < 7; $i++) {
 
                                 <div class="list-scroll">
                                     <?php if (empty($upcomingEvents)): ?>
-                                        <small class="text-muted">No events</small>
+                                        <div class="dash-empty">
+                                            <i class="bi bi-calendar-x"></i>
+                                            <div class="text-meta">No upcoming events</div>
+                                        </div>
                                     <?php else: ?>
                                         <ul class="list-unstyled mb-0 dash-list">
                                             <?php foreach ($upcomingEvents as $h): ?>
@@ -964,7 +970,10 @@ for ($i = 0; $i < 7; $i++) {
                                 </div>
                                 <div class="list-scroll">
                                     <?php if (empty($birthdaysThisMonth)): ?>
-                                        <small class="text-muted">No birthdays this month</small>
+                                        <div class="dash-empty">
+                                            <i class="bi bi-balloon"></i>
+                                            <div class="text-meta">No birthdays this month</div>
+                                        </div>
                                     <?php else: ?>
                                         <ul class="list-unstyled mb-0 dash-list">
                                             <?php foreach ($birthdaysThisMonth as $b):
@@ -1013,7 +1022,10 @@ for ($i = 0; $i < 7; $i++) {
                                 </div>
                                 <div class="list-scroll">
                                     <?php if (empty($upcomingEvents)): ?>
-                                        <small class="text-muted">No events</small>
+                                        <div class="dash-empty">
+                                            <i class="bi bi-calendar-x"></i>
+                                            <div class="text-meta">No upcoming events</div>
+                                        </div>
                                     <?php else: ?>
                                         <ul class="list-unstyled mb-0 dash-list">
                                             <?php foreach ($upcomingEvents as $h):

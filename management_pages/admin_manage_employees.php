@@ -247,6 +247,9 @@ $initialDeptFilter = isset($_GET['dept']) ? (int)$_GET['dept'] : 0;
             color: #fff !important;
         }
     </style>
+
+    <!-- Bootstrap JS — must be in <head> so the topbar session-timeout IIFE runs after it -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
 </head>
 <body>
 
@@ -929,7 +932,6 @@ $initialDeptFilter = isset($_GET['dept']) ? (int)$_GET['dept'] : 0;
 
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
     <script src="../system_functions/gantt.js"></script>
     <script>

@@ -80,9 +80,11 @@ body {
     flex-direction: column;
 }
 
-.ev-tabs .card-header {
-    background: rgba(255, 255, 255, 0.04);
-    border-bottom: 1px solid var(--glass-border);
+.ev-tabs > .card-header {
+    background: var(--frosted-bg);
+    border-bottom: 1px solid var(--frosted-border);
+    backdrop-filter: var(--frosted-blur);
+    -webkit-backdrop-filter: var(--frosted-blur);
     position: relative;
     z-index: 2;
 }
@@ -1429,8 +1431,8 @@ body {
 }
 
 .leave-card {
-    background: var(--glass-bg);
-    border: 1px solid var(--glass-border);
+    background: var(--frosted-bg);
+    border: 1px solid var(--frosted-border);
     border-radius: 12px;
     padding: 1.25rem 1rem 1.25rem;
     display: flex;
@@ -1444,7 +1446,7 @@ body {
 }
 
 .leave-card:hover {
-    background: var(--glass-hover);
+    background: var(--frosted-highlight);
     border-color: var(--primary-border);
 }
 
@@ -1477,8 +1479,8 @@ body {
     transition: background 0.15s, color 0.15s;
 }
 
-.leave-card-btn:hover { background: var(--primary-bg); color: var(--primary-color); }
-.leave-reset-btn:hover { background: var(--warning-soft); color: var(--warning-color); }
+.leave-card-btn:hover        { background: var(--info-glass);   color: var(--info-color);     }
+.leave-reset-btn:hover       { background: var(--warning-soft); color: var(--warning-color);  }
 
 .leave-card-icon {
     font-size: 1.5rem;
@@ -1814,6 +1816,11 @@ body {
    LIGHT THEME OVERRIDES
    ============================================================ */
 
+[data-theme="light"] .ev-tabs > .card-header .nav-tabs .nav-link.active {
+    color: var(--primary-text);
+    border-bottom-color: var(--primary-text);
+}
+
 [data-theme="light"] .manage-sched-card-header {
     background: rgba(0, 0, 0, 0.04);
     border-bottom-color: rgba(0, 0, 0, 0.08);
@@ -1824,6 +1831,3 @@ body {
     text-shadow: none;
 }
 
-[data-theme="light"] .ev-tabs .card-header {
-    background: rgba(0, 0, 0, 0.03);
-}
