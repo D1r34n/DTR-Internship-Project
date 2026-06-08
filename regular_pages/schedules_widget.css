@@ -325,7 +325,15 @@
     background: rgba(0, 0, 0, 0.65);
 }
 
-#sw-calendar .fc-daygrid-day:not(.fc-day-other):hover:not(:has(.fc-event:hover)) .sw-day-add-overlay,
+/* Scoped admin: show the add/edit overlay whenever the cell is hovered —
+   including over the shift label/time — so the whole day is clickable to edit. */
+#sw-calendar .fc-daygrid-day:not(.fc-day-other):hover .sw-day-add-overlay { opacity: 1; }
+
+/* On Leave / On OB days aren't schedules — never show the add/edit overlay there. */
+#sw-calendar .fc-daygrid-day:has(.fc-ev-on-leave, .fc-ev-on-ob) .sw-day-add-overlay { opacity: 0 !important; }
+
+/* Admin global: keep the Add overlay hidden while hovering an event, since events
+   have their own click action and shouldn't be covered by the Add overlay. */
 #sw-calendar .fc-daygrid-day:not(.fc-day-other):hover:not(:has(.fc-event:hover)) .es-day-add-overlay { opacity: 1; }
 
 /* ---- Event action buttons (scoped admin: edit/delete on hover) ---- */
@@ -520,6 +528,19 @@
 
 .sw-preset-bs-menu .sw-preset-item:hover  { background: var(--neutral-glass-hover); }
 .sw-preset-bs-menu .sw-preset-item.active { background: var(--primary-glass); color: var(--primary-color); font-weight: 600; }
+
+/* Floating tooltip-style state: menu is portaled to <body> and fixed-positioned
+   so it escapes the modal and can overflow past it; scrolls when tall. */
+.sw-preset-bs-menu.sw-preset-tooltip {
+    display:            block;
+    z-index:            2000;            /* above the modal (~1055/1065) */
+    margin:             0;
+    padding:            0.35rem;
+    max-height:         260px;
+    overflow-y:         auto;
+    overscroll-behavior: contain;
+}
+.sw-preset-bs-menu.sw-preset-tooltip .sw-preset-item { border-radius: 6px; }
 
 /* ---- Preset schedule dropdown (legacy, kept for compatibility) ---- */
 .preset-sched-dropdown-wrap { position: relative; }

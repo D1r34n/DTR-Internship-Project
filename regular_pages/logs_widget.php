@@ -231,7 +231,7 @@ const LOG_TYPE_CLASS = {
     ADD_EMPLOYEE:            'status-approved',
     EDIT_EMPLOYEE:           'status-info',
     DELETE_EMPLOYEE:         'status-rejected',
-    ADD_SCHEDULE:            'status-info',
+    ADD_SCHEDULE:            'status-approved',
     EDIT_SCHEDULE:           'status-info',
     DELETE_SCHEDULE:         'status-rejected',
     ADD_DEPARTMENT:          'status-approved',

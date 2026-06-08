@@ -358,7 +358,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' &&
                 $existing = $existsStmt->fetch(PDO::FETCH_ASSOC);
                 $isStale  = $existing && ($existing['is_archived'] || $existing['status'] === 'rejected');
                 if ($existing && !$isStale) {
-                    $updRest->execute([$restDayStatus, $_SESSION['user_id'], 'edit', $batchId, $postEmpId, $date]);
+                    $updRest->execute(['edit', $batchId, $postEmpId, $date]);
                 } else {
                     $insRest->execute([$postEmpId, $date, $batchId]);
                 }
@@ -464,11 +464,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save_
             $chkRow  = $chkStmt->fetch(PDO::FETCH_ASSOC);
             $isStale = $chkRow && ($chkRow['is_archived'] || $chkRow['status'] === 'rejected');
             if ($chkRow && !$isStale) {
-                $updRest->execute([$restDayStatus, $_SESSION['user_id'], 'edit', $batchId, $postEmpId, $date]);
+                // Existing schedule converted to a rest day → this is an EDIT
+                $updRest->execute(['edit', $batchId, $postEmpId, $date]);
+                $hasEdit = true;
             } else {
+                // Brand-new rest day → this is an ADD
                 $insRest->execute([$postEmpId, $date, $batchId]);
+                $hasRestDay = true;
             }
-            $hasRestDay = true;
         }
     }
 
@@ -507,18 +510,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save_
             }
         }
     }
-    $schedLogStatus = in_array($_SESSION['user_role'], ['superadmin', 'admin']) ? 'approved' : 'pending';
     if ($hasNew || $hasRestDay) {
         $pdo->prepare("
-        INSERT INTO logs (employee_id, log_type, log_time, longitude, latitude, is_within_office, edit_status, edit_requested_by, edit_reason)
-        VALUES (?, 'ADD_SCHEDULE', NOW(), 0, 0, 0, ?, ?, ?)
-        ")->execute([$postEmpId, $schedLogStatus, $_SESSION['user_id'], $batchId]);
+        INSERT INTO logs (employee_id, log_type, log_time, longitude, latitude, is_within_office, edit_requested_by, edit_reason)
+        VALUES (?, 'ADD_SCHEDULE', NOW(), 0, 0, 0, ?, ?)
+        ")->execute([$postEmpId, $_SESSION['user_id'], $batchId]);
     }
     if ($hasEdit) {
         $pdo->prepare("
-        INSERT INTO logs (employee_id, log_type, log_time, longitude, latitude, is_within_office, edit_status, edit_requested_by, edit_reason)
-        VALUES (?, 'EDIT_SCHEDULE', NOW(), 0, 0, 0, ?, ?, ?)
-        ")->execute([$postEmpId, $schedLogStatus, $_SESSION['user_id'], $batchId]);
+        INSERT INTO logs (employee_id, log_type, log_time, longitude, latitude, is_within_office, edit_requested_by, edit_reason)
+        VALUES (?, 'EDIT_SCHEDULE', NOW(), 0, 0, 0, ?, ?)
+        ")->execute([$postEmpId, $_SESSION['user_id'], $batchId]);
     }
 
     header("Location: admin_employee_view.php?employee_id=$urlEmpId");
