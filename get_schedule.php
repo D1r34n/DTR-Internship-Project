@@ -538,13 +538,15 @@ if (($_SESSION['user_role'] ?? '') === 'superadmin') {
             }
         }
 
+        $leaveTypeLabel = ucwords($leave['leave_type'] ?? '');
         foreach ($datesToShow as $d) {
+            $ep = ['employee_name' => $name, 'leave_type' => $leaveTypeLabel];
             if ($leave['status'] === 'approved') {
-                $events[] = ['title' => $name . ' – On Leave',       'start' => $d, 'allDay' => true, 'classNames' => ['fc-ev-on-leave'],      'extendedProps' => ['shift_type' => 'leave_approved']];
+                $events[] = ['title' => $name . ' – On Leave',       'start' => $d, 'allDay' => true, 'classNames' => ['fc-ev-on-leave'],      'extendedProps' => ['shift_type' => 'leave_approved']  + $ep];
             } elseif ($leave['status'] === 'pending') {
-                $events[] = ['title' => $name . ' – Leave Pending',  'start' => $d, 'allDay' => true, 'classNames' => ['fc-ev-leave-pending'], 'extendedProps' => ['shift_type' => 'leave_pending']];
+                $events[] = ['title' => $name . ' – Leave Pending',  'start' => $d, 'allDay' => true, 'classNames' => ['fc-ev-leave-pending'], 'extendedProps' => ['shift_type' => 'leave_pending']   + $ep];
             } elseif ($leave['status'] === 'rejected') {
-                $events[] = ['title' => $name . ' – Leave Rejected', 'start' => $d, 'allDay' => true, 'classNames' => ['fc-ev-leave-rejected'],'extendedProps' => ['shift_type' => 'leave_rejected']];
+                $events[] = ['title' => $name . ' – Leave Rejected', 'start' => $d, 'allDay' => true, 'classNames' => ['fc-ev-leave-rejected'],'extendedProps' => ['shift_type' => 'leave_rejected']  + $ep];
             }
         }
     }
@@ -562,12 +564,13 @@ if (($_SESSION['user_role'] ?? '') === 'superadmin') {
     foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $ob) {
         $name   = $ob['full_name'];
         $d      = $ob['ob_date'];
+        $ep     = ['employee_name' => $name, 'leave_type' => 'Official Business'];
         if ($ob['status'] === 'approved') {
-            $events[] = ['title' => $name . ' – On OB',       'start' => $d, 'allDay' => true, 'classNames' => ['fc-ev-on-ob'],         'extendedProps' => ['shift_type' => 'ob_approved']];
+            $events[] = ['title' => $name . ' – On OB',       'start' => $d, 'allDay' => true, 'classNames' => ['fc-ev-on-ob'],         'extendedProps' => ['shift_type' => 'ob_approved']  + $ep];
         } elseif ($ob['status'] === 'pending') {
-            $events[] = ['title' => $name . ' – OB Pending',  'start' => $d, 'allDay' => true, 'classNames' => ['fc-ev-ob-pending'],    'extendedProps' => ['shift_type' => 'ob_pending']];
+            $events[] = ['title' => $name . ' – OB Pending',  'start' => $d, 'allDay' => true, 'classNames' => ['fc-ev-ob-pending'],    'extendedProps' => ['shift_type' => 'ob_pending']   + $ep];
         } elseif ($ob['status'] === 'rejected') {
-            $events[] = ['title' => $name . ' – OB Rejected', 'start' => $d, 'allDay' => true, 'classNames' => ['fc-ev-leave-rejected'],'extendedProps' => ['shift_type' => 'ob_rejected']];
+            $events[] = ['title' => $name . ' – OB Rejected', 'start' => $d, 'allDay' => true, 'classNames' => ['fc-ev-leave-rejected'],'extendedProps' => ['shift_type' => 'ob_rejected']  + $ep];
         }
     }
 }

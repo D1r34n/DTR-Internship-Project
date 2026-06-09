@@ -279,64 +279,6 @@ $isScoped = $schedEmployeeId !== null;
     </div>
 </div>
 
-<!-- ═══════════════════════════════════════════════════
-     EDIT SCHEDULE MODAL  (admin scoped view)
-════════════════════════════════════════════════════ -->
-<div class="modal fade" id="swEditSchedModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content glass-modal">
-
-            <div class="modal-header">
-                <h5 class="modal-title" id="swSchedModalTitle">Edit Schedule</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-
-            <form method="POST" action="<?= htmlspecialchars($schedSaveApiPath) ?>" id="swEditSchedForm">
-                <input type="hidden" name="action"         value="save_schedule">
-                <input type="hidden" name="employee_id"    id="swModalEmpId" value="<?= (int)$schedEmployeeId ?>">
-                <input type="hidden" name="selected_dates" id="swSelectedDatesInput">
-                <input type="hidden" name="is_edit"        id="swIsEditMode" value="0">
-                <input type="hidden" name="is_rest_day"    id="swModalIsRestDay" value="0">
-
-                <div class="modal-body">
-
-                    <div class="form-check mb-3" id="swRestDayCheckRow">
-                        <input class="form-check-input" type="checkbox" id="swModalRestDayCheck">
-                        <label class="form-check-label" for="swModalRestDayCheck">Mark as Rest Day</label>
-                    </div>
-
-                    <div id="swModalTimeFields" class="row g-3">
-                        <div class="col-md-6">
-                            <label class="form-label">Time In</label>
-                            <input type="time" name="time_in" id="swModalTimeIn" class="form-control" required>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Time Out <small class="text-muted">(next day if night)</small></label>
-                            <input type="time" name="time_out" id="swModalTimeOut" class="form-control" required>
-                        </div>
-                    </div>
-
-                    <div class="mt-3">
-                        <label class="form-label">Selected Date</label>
-                        <p class="text-muted small mb-2">Click to select a date.</p>
-                        <input type="text" id="swEditSchedDatePicker" class="form-control" readonly>
-                        <div id="swSelectedDatesList" class="mt-2"></div>
-                    </div>
-
-                </div><!-- .modal-body -->
-
-                <div class="modal-footer">
-                    <button type="submit" class="btn btn-success">
-                        <i class="bi bi-check-circle-fill"></i>
-                        <span id="swSchedSubmitLabel">Update Schedule</span>
-                    </button>
-                </div>
-            </form>
-
-        </div>
-    </div>
-</div>
-
 <?php elseif ($isAdmin): ?>
 <!-- ═══════════════════════════════════════════════════
      ADD / EDIT EVENT MODAL  (admin global view)
@@ -459,6 +401,18 @@ $isScoped = $schedEmployeeId !== null;
         </div>
     </div>
 </div>
+
+<!-- LEAVE / OB INFO POPOVER  (admin global view) — floating, anchored to the pill -->
+<div id="swLeaveInfoPopover" class="sw-leave-popover" style="display:none;">
+    <div class="sw-leave-popover-row">
+        <span class="sw-leave-popover-label">Employee</span>
+        <span class="sw-leave-popover-value" id="swLeaveInfoName">—</span>
+    </div>
+    <div class="sw-leave-popover-row">
+        <span class="sw-leave-popover-label" id="swLeaveInfoTypeLabel">Type of Leave</span>
+        <span class="sw-leave-popover-value" id="swLeaveInfoType">—</span>
+    </div>
+</div>
 <?php else: ?>
 <!-- ═══════════════════════════════════════════════════
      VIEW EVENT MODAL  (employee view — read-only)
@@ -564,7 +518,7 @@ window.swGotoMonth  = function (ym) {
 document.addEventListener('DOMContentLoaded', function () {
     /* Move modals to <body> so backdrop-filter on ancestor cards
        doesn't create a stacking context that buries them behind .modal-backdrop */
-    ['swManageScheduleModal','swEditSchedModal','swAddEventModal','swViewEventModal','swDeleteSchedModal','swDeleteEventConfirmModal'].forEach(function(id) {
+    ['swManageScheduleModal','swAddEventModal','swViewEventModal','swDeleteSchedModal','swDeleteEventConfirmModal'].forEach(function(id) {
         const el = document.getElementById(id);
         if (el) document.body.appendChild(el);
     });
@@ -620,10 +574,8 @@ document.addEventListener('DOMContentLoaded', function () {
 /* ================================================================
    MODE: ADMIN SCOPED  (employee-specific schedule calendar)
 ================================================================ */
-let swSelectedDates    = [];
 let swSelectedDatesAdd = [];
 let swSelectedRestDays = [];
-let swFpEdit  = null;
 let swFpAdd   = null;
 let swScheduledDates = new Set();
 /* Dates that are On Leave / On OB — not editable as schedules (no add/edit) */
@@ -637,8 +589,6 @@ let swRejectedSchedDates = new Set();
 /* FIX Bug 4 — track the schedule_id of the date being deleted */
 let _swPendingDeleteDate = null;
 let _swPendingDeleteId   = null;
-let _swDeleteInProgress  = false;
-let _swSkipDateClick     = false;
 
 swCalendar = new FullCalendar.Calendar(calEl, {
     initialView:  'dayGridMonth',
@@ -648,33 +598,6 @@ swCalendar = new FullCalendar.Calendar(calEl, {
     initialDate:  <?= json_encode($schedInitialDate) ?>,
     dayMaxEvents: false,
     eventDisplay: 'block',
-    
-    // ADD THIS DATECLICK PATTERN HERE AS WELL:
-    dateClick: function(info) {
-        // Capture clicked string values safely
-        const dateStr = info.dateStr; 
-        
-        // Check if day already has an active entry sequence
-        if (swScheduledDates.has(dateStr)) {
-            // Logic to transition cleanly into Edit Mode instead
-            document.getElementById('swIsEditMode').value = "1";
-            document.getElementById('swSchedModalTitle').textContent = "Edit Schedule - " + dateStr;
-            // ... trigger your Edit Modal sequence
-        } else {
-            // Fresh Schedule Setup Sequence
-            document.getElementById('swIsEditMode').value = "0";
-            
-            // Push values directly to your custom DatePickers or Input buffers
-            const singleDatePicker = document.getElementById('swEditSchedDatePicker');
-            if (singleDatePicker) {
-                singleDatePicker.value = dateStr;
-            }
-            
-            // Pop the specific management wizard modal wrapper visible
-            const manageModal = bootstrap.Modal.getOrCreateInstance(document.getElementById('swManageScheduleModal'));
-            manageModal.show();
-        }
-    },
 
     eventOrder: function (a, b) {
         const aIsCont = a.extendedProps.type === 'night-cont';
@@ -809,14 +732,12 @@ swCalendar = new FullCalendar.Calendar(calEl, {
 
     /* FIX Bug 2 — dateClick was empty; now actually opens the correct modal */
     dateClick: function (info) {
-        if (_swSkipDateClick) return;
         swHandleSchedClick(info.dateStr);
     },
 
     /* Clicking a shift pill (Day/Night/Rest) doesn't fire dateClick in FullCalendar,
        so handle it here too — opens the same add/edit modal as clicking the cell. */
     eventClick: function (info) {
-        if (_swSkipDateClick) return;
         const props = info.event.extendedProps;
         /* The "↪ until …" continuation pill edits its originating night shift */
         if (props.type === 'night-cont') {
@@ -895,28 +816,6 @@ document.getElementById('swDeleteSchedBtn').addEventListener('click', function (
 });
 
 /* ---- Flatpickr ---- */
-swFpEdit = flatpickr('#swEditSchedDatePicker', {
-    mode:       'range',
-    dateFormat: 'Y-m-d',
-    appendTo:   document.body,
-    onChange: function (dates) {
-        if (dates.length < 2) {
-            swSelectedDates = dates.length === 1
-                ? [`${dates[0].getFullYear()}-${swPad(dates[0].getMonth()+1)}-${swPad(dates[0].getDate())}`]
-                : [];
-        } else {
-            swSelectedDates = [];
-            const cur = new Date(dates[0].getTime());
-            const end = new Date(dates[1].getTime());
-            while (cur <= end) {
-                swSelectedDates.push(`${cur.getFullYear()}-${swPad(cur.getMonth()+1)}-${swPad(cur.getDate())}`);
-                cur.setDate(cur.getDate() + 1);
-            }
-        }
-        swRenderDateTags();
-    }
-});
-
 swFpAdd = flatpickr('#swAddSchedDatePicker', {
     mode:       'range',
     dateFormat: 'Y-m-d',
@@ -1014,39 +913,6 @@ document.getElementById('swAddSchedForm').addEventListener('submit', function (e
         .catch(function () {
             if (typeof showToast === 'function') showToast('Failed to save schedule. Please try again.', 'danger');
         });
-});
-
-/* ---- Edit Schedule form submit ---- */
-document.getElementById('swEditSchedForm').addEventListener('submit', function (e) {
-    e.preventDefault();
-    if (!swPrepareEditSubmit()) return;
-    fetch(this.getAttribute('action'), { method: 'POST', body: new FormData(this) })
-        .then(function (r) { return r.text(); })
-        .then(function (text) {
-            try {
-                const data = JSON.parse(text);
-                if (data.error === 'already_pending') {
-                    if (typeof showToast === 'function') showToast('Edit Already Pending', 'warning');
-                    return;
-                }
-            } catch(e) {}
-            swCloseEditModal();
-            const msg = SW_IS_WORKFORCE ? 'Schedule edit submitted for approval.' : 'Schedule saved successfully.';
-            if (typeof showToast === 'function') showToast(msg, 'success');
-            if (swCalendar) swCalendar.refetchEvents();
-        })
-        .catch(function () {
-            if (typeof showToast === 'function') showToast('Failed to save schedule. Please try again.', 'danger');
-        });
-});
-
-/* ---- Rest day checkbox in edit modal ---- */
-document.getElementById('swModalRestDayCheck').addEventListener('change', function () {
-    const isRest = this.checked;
-    document.getElementById('swModalIsRestDay').value           = isRest ? '1' : '0';
-    document.getElementById('swModalTimeFields').style.display  = isRest ? 'none' : '';
-    document.getElementById('swModalTimeIn').required           = !isRest;
-    document.getElementById('swModalTimeOut').required          = !isRest;
 });
 
 /* ---- Preset schedule (custom tooltip-style popover) ----
@@ -1174,25 +1040,6 @@ function swClearDateSelectionAdd() {
     swRenderDateTagsAdd();
 }
 
-function swRenderDateTags() {
-    const list = document.getElementById('swSelectedDatesList');
-    if (swSelectedDates.length === 0) { list.innerHTML = ''; return; }
-    if (swSelectedDates.length === 1) {
-        list.innerHTML = `<span class="selected-date-tag">${swSelectedDates[0]}
-            <span class="selected-date-remove" onclick="swClearDateSelection()">&times;</span></span>`;
-    } else {
-        const first = swSelectedDates[0], last = swSelectedDates[swSelectedDates.length - 1];
-        list.innerHTML = `<span class="selected-date-tag">${first} &rarr; ${last} &nbsp;(${swSelectedDates.length} days)
-            <span class="selected-date-remove" onclick="swClearDateSelection()">&times;</span></span>`;
-    }
-}
-
-function swClearDateSelection() {
-    swSelectedDates = [];
-    if (swFpEdit) swFpEdit.clear();
-    swRenderDateTags();
-}
-
 function swOpenManageModal() {
     document.querySelector('#swManageScheduleModal .modal-title').innerHTML =
         '<i class="bi bi-calendar-week me-2"></i>Manage Schedule';
@@ -1256,11 +1103,9 @@ function swOpenManageModalAsEdit(dateStr, timeIn, timeOut, isRestDay) {
     /* Hide the date picker — date is already conveyed in the title */
     document.getElementById('swSelectDatesSection').style.display = 'none';
 
-    /* Keep the form's native 'save_combined' action (set in swOpenManageModal).
-       That handler updates existing rows in place and processes both selected_dates
-       (schedule) and single_rest_dates (rest day), so rest⇄schedule edits both save.
-       The old 'save_schedule' override ignored single_rest_dates, breaking the
-       "scheduled day → rest day" conversion. */
+    /* Uses the form's native 'save_combined' action (set in swOpenManageModal),
+       which updates existing rows in place and handles both selected_dates
+       (schedule) and single_rest_dates (rest day), so rest⇄schedule edits save. */
 
     swSelectedDatesAdd   = [dateStr];
     _swPendingDeleteDate = dateStr;
@@ -1280,49 +1125,6 @@ function swOpenManageModalAsEdit(dateStr, timeIn, timeOut, isRestDay) {
     }
 }
 
-function swOpenRestDayEditModal(dateStr) {
-    swOpenManageModalWithDate(dateStr);
-    const cb = document.getElementById('swIsSingleRestDay');
-    cb.checked = true;
-    cb.dispatchEvent(new Event('change'));
-}
-
-function swOpenEditModal(date, timeIn, timeOut) {
-    document.getElementById('swSchedModalTitle').textContent  = 'Edit Schedule';
-    document.getElementById('swSchedSubmitLabel').textContent = SW_IS_WORKFORCE ? 'Submit for Approval' : 'Update Schedule';
-    document.getElementById('swIsEditMode').value             = '1';
-    document.getElementById('swModalIsRestDay').value         = '0';
-    document.getElementById('swModalRestDayCheck').checked    = false;
-    document.getElementById('swModalTimeIn').value            = timeIn;
-    document.getElementById('swModalTimeOut').value           = timeOut;
-    document.getElementById('swModalTimeFields').style.display = '';
-    document.getElementById('swModalTimeIn').required          = true;
-    document.getElementById('swModalTimeOut').required         = true;
-    swSelectedDates = [date];
-    swRenderDateTags();
-    if (swFpEdit) swFpEdit.setDate([date, date], false);
-    bootstrap.Modal.getOrCreateInstance(document.getElementById('swEditSchedModal')).show();
-}
-
-function swCloseEditModal() {
-    bootstrap.Modal.getOrCreateInstance(document.getElementById('swEditSchedModal')).hide();
-}
-
-function swPrepareEditSubmit() {
-    document.getElementById('swSelectedDatesInput').value = JSON.stringify(swSelectedDates);
-    if (swSelectedDates.length === 0) {
-        if (typeof showToast === 'function') showToast('Please select at least one date.', 'warning');
-        return false;
-    }
-    return true;
-}
-
-function swDeleteSchedule(date) {
-    if (_swDeleteInProgress) return;
-    _swPendingDeleteDate = date;
-    bootstrap.Modal.getOrCreateInstance(document.getElementById('swDeleteSchedModal')).show();
-}
-
 window.swDoDeleteConfirm = function () {
     const date = _swPendingDeleteDate;
     if (!date) return;
@@ -1330,8 +1132,6 @@ window.swDoDeleteConfirm = function () {
     bootstrap.Modal.getInstance(document.getElementById('swDeleteSchedModal'))?.hide();
     /* Also close the manage modal if it was open */
     bootstrap.Modal.getInstance(document.getElementById('swManageScheduleModal'))?.hide();
-
-    _swDeleteInProgress = true;
 
     const base = SW_SAVE_API.replace(/\?.*$/, '');
     /* FIX Bug 4 — include schedule_id in delete request when available */
@@ -1361,7 +1161,6 @@ window.swDoDeleteConfirm = function () {
             if (typeof showToast === 'function') showToast('Something went wrong. Please try again.', 'danger');
         })
         .finally(function () {
-            _swDeleteInProgress  = false;
             _swPendingDeleteDate = null;
             _swPendingDeleteId   = null;
         });
@@ -1378,9 +1177,7 @@ window.swToday = function () { if (swCalendar) swCalendar.today(); };
 /* ================================================================
    MODE: ADMIN GLOBAL  (full calendar with events + birthdays)
 ================================================================ */
-let swPendingDate   = null;
 let swEditPayload   = null;
-let swFpEvtDate     = null;
 
 /* ================================================================
    MODE: ADMIN GLOBAL (Calendar Setup Snippet)
@@ -1490,6 +1287,18 @@ swCalendar = new FullCalendar.Calendar(calEl, {
 
     eventClick: function (info) {
         const props = info.event.extendedProps;
+        /* On Leave / On OB (and pending/rejected) pills → show employee + type popup */
+        const st = props.shift_type || '';
+        if (st.startsWith('leave_') || st.startsWith('ob_')) {
+            info.jsEvent.preventDefault();
+            info.jsEvent.stopPropagation();
+            const isOB = st.startsWith('ob_');
+            document.getElementById('swLeaveInfoTypeLabel').textContent = isOB ? 'Type' : 'Type of Leave';
+            document.getElementById('swLeaveInfoName').textContent      = props.employee_name || info.event.title;
+            document.getElementById('swLeaveInfoType').textContent      = props.leave_type || (isOB ? 'Official Business' : '—');
+            swShowLeavePopover(info.el);
+            return;
+        }
         if (props.shift_type !== 'cal_event') return;
         info.jsEvent.preventDefault();
         const iconMap  = { holiday:'bi-umbrella-fill', party:'bi-balloon-fill', meeting:'bi-people-fill', announcement:'bi-megaphone-fill', other:'bi-pin-fill' };
@@ -1635,7 +1444,7 @@ document.getElementById('swAddEventModal').addEventListener('show.bs.modal', fun
         document.getElementById('swEvtTitle').value = swEditPayload.title;
         document.getElementById('swEvtType').value = swEditPayload.event_type;
         document.getElementById('swEvtDescription').value = swEditPayload.description;
-        if (swFpEvtDate) swFpEvtDate.setDate(swEditPayload.date, false);
+        if (window.swFpEvtDate) window.swFpEvtDate.setDate(swEditPayload.date, false);
 
         // SYNC BOOTSTRAP DROPDOWN LABEL TEXT ON EDIT
         const currentType = swEditPayload.event_type || 'other';
@@ -1649,7 +1458,7 @@ document.getElementById('swAddEventModal').addEventListener('show.bs.modal', fun
         document.getElementById('swEvtType').value = 'other';
         document.getElementById('swEvtDescription').value = '';
         if (!document.getElementById('swEvtDate').value) {
-            swFpEvtDate.clear();
+            window.swFpEvtDate?.clear();
         }
 
         // RESET BOOTSTRAP DROPDOWN LABEL TEXT ON ADD NEW
@@ -1751,6 +1560,39 @@ document.getElementById('swDeleteEventConfirmBtn').addEventListener('click', asy
         if (typeof showToast === 'function') showToast('Network error. Please try again.', 'danger');
     }
 });
+
+/* ---- Leave / OB info popover (floating, anchored to the clicked pill) ---- */
+const swLeavePopover = document.getElementById('swLeaveInfoPopover');
+if (swLeavePopover) {
+    document.body.appendChild(swLeavePopover);   // portal out so card overflow/filters don't clip it
+    let swLeavePopoverOpen = false;
+
+    window.swShowLeavePopover = function (anchorEl) {
+        swLeavePopover.style.display = 'block';
+        const a = anchorEl.getBoundingClientRect();
+        const p = swLeavePopover.getBoundingClientRect();
+        const gap = 6;
+        let left = a.left;
+        let top  = a.bottom + gap;                         // below the pill
+        if (left + p.width > window.innerWidth - 8)  left = window.innerWidth - p.width - 8;
+        if (left < 8) left = 8;
+        if (top + p.height > window.innerHeight - 8) top = a.top - p.height - gap;  // flip above
+        swLeavePopover.style.left = left + 'px';
+        swLeavePopover.style.top  = top + 'px';
+        swLeavePopoverOpen = true;
+    };
+
+    function swHideLeavePopover() {
+        swLeavePopover.style.display = 'none';
+        swLeavePopoverOpen = false;
+    }
+
+    document.addEventListener('click', function (e) {
+        if (swLeavePopoverOpen && !swLeavePopover.contains(e.target)) swHideLeavePopover();
+    });
+    window.addEventListener('scroll', function () { if (swLeavePopoverOpen) swHideLeavePopover(); }, true);
+    window.addEventListener('resize', function () { if (swLeavePopoverOpen) swHideLeavePopover(); });
+}
 
 } /* end admin global block */
 
