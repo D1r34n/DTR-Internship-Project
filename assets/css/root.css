@@ -165,6 +165,7 @@
        Uses the wallpaper as the blur source via backdrop-filter.
        Sidebar is excluded — it uses its own solid dark background. */
     --frosted-bg:     rgba(10, 10, 14, 0.72);
+    --frosted-bg-hover:  rgba(10, 10, 14, 0.82);
     --frosted-border: rgba(255, 255, 255, 0.08);
     --frosted-blur:   blur(36px) saturate(180%) brightness(0.72);
     --frosted-shadow: 0 12px 48px rgba(0, 0, 0, 0.60),

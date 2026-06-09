@@ -51,7 +51,7 @@ $currentPage = 'logs';
 
     <div id="main-wrapper">
         <?php include '../topbar_revised.php'; ?>
-        <div class="ms-3 mt-0 mb-3 me-3 d-flex flex-column flex-grow-1" style="min-height:0;">
+        <div id="logs-page-wrap" class="ms-3 mt-0 mb-3 me-3 d-flex flex-column flex-grow-1" style="min-height:0;">
             <?php include 'logs_widget.php'; ?>
         </div>
     </div><!-- #main-wrapper -->

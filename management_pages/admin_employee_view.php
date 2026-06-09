@@ -112,6 +112,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'edit_
     $lastName      = $nameParts[1] ?? '';
     $resetPassword = isset($_POST['reset_password']);
     $email         = trim($_POST['email'] ?? '');
+    $birthdate     = !empty($_POST['birthdate']) ? $_POST['birthdate'] : null;
     $roleKey       = $_POST['role'] ?? 'employee';
     $department    = !empty($_POST['department_id']) ? $_POST['department_id'] : null;
     $empRefId      = trim($_POST['employee_ref_id'] ?? '');
@@ -154,6 +155,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'edit_
         SELECT e.employee_id AS emp_ref_id,
                CONCAT(e.first_name, ' ', e.last_name) AS full_name,
                e.email,
+               e.birthdate,
                r.role_key,
                d.department_name
         FROM employees e
@@ -181,6 +183,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'edit_
             first_name = ?,
             last_name = ?,
             email = ?,
+            birthdate = ?,
             role_id = ?,
             department_id = ?
         WHERE id = ?
@@ -189,6 +192,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'edit_
         $firstName,
         $lastName,
         $email,
+        $birthdate,
         $roleId,
         $department,
         $employeeId
@@ -200,6 +204,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'edit_
         'Employee ID' => [$oldData['emp_ref_id'] ?? null, $empRefId !== '' ? $empRefId : null],
         'Name'        => [$oldData['full_name']   ?? null, $newName],
         'Email'       => [$oldData['email']       ?? null, $email],
+        'Birthday'    => [$oldData['birthdate']   ?? null, $birthdate],
         'Role'        => [$oldData['role_key']    ?? null, $newRoleKey],
         'Department'  => [$oldData['department_name'] ?? null, $newDeptName],
     ];
@@ -1015,17 +1020,9 @@ $leaveTypes = [
                         </div>
 
                         <div class="col-md-6">
-                            <div class="form-check mt-4">
-                                <input
-                                    class="form-check-input"
-                                    type="checkbox"
-                                    name="reset_password"
-                                    id="reset_password">
-
-                                <label class="form-check-label" for="reset_password">
-                                    Reset Password
-                                </label>
-                            </div>
+                            <label class="form-label">Birthday</label>
+                            <input type="date" name="birthdate" class="form-control"
+                                   value="<?= htmlspecialchars($emp['birthdate'] ?? '') ?>">
                         </div>
 
                         <div class="col-md-6">
@@ -1066,6 +1063,19 @@ $leaveTypes = [
                             </div>
                             <input type="hidden" name="department_id" id="edit-dept-id"
                                    value="<?= htmlspecialchars($emp['department_id'] ?? '') ?>">
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="form-check mt-4">
+                                <input
+                                    class="form-check-input"
+                                    type="checkbox"
+                                    name="reset_password"
+                                    id="reset_password">
+                                <label class="form-check-label" for="reset_password">
+                                    Reset Password
+                                </label>
+                            </div>
                         </div>
 
                     </div>

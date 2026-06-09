@@ -17,6 +17,12 @@ date_default_timezone_set('Asia/Manila');
 // ---- HANDLE ADD EMPLOYEE ----
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
+    if ($_SESSION['user_role'] !== 'superadmin') {
+        $_SESSION['error'] = "Unauthorized.";
+        header("Location: admin_manage_employees.php");
+        exit();
+    }
+
     if (empty($_POST['form_token']) || $_POST['form_token'] !== ($_SESSION['form_token'] ?? '')) {
         $_SESSION['error'] = "Duplicate submission detected. Please try again.";
         header("Location: admin_manage_employees.php");
@@ -409,7 +415,7 @@ $initialDeptFilter = isset($_GET['dept']) ? (int)$_GET['dept'] : 0;
                         placeholder="Search...">
                 </div>
 
-                <div class="dropdown">
+                <div class="dropdown ms-auto">
                     <button class="btn btn-success dropdown-toggle"
                             type="button"
                             data-bs-toggle="dropdown"
@@ -419,7 +425,7 @@ $initialDeptFilter = isset($_GET['dept']) ? (int)$_GET['dept'] : 0;
 
                     <ul class="dropdown-menu dropdown-menu-end">
 
-                        <?php if (!in_array($_SESSION['user_role'], ['manager', 'workforce'])): ?>
+                        <?php if ($_SESSION['user_role'] === 'superadmin'): ?>
                         <li>
                             <a class="dropdown-item"
                             href="#"
@@ -1258,7 +1264,7 @@ document.getElementById('empModal')
                     <div class="col-md d-flex align-items-center gap-2">
                         <span class="text-meta">Showing ${showing}</span>
                     </div>
-                    <div class="col-md d-flex justify-content-center">
+                    <div class="col-md d-flex justify-content-center align-items-center gap-3">
                         <ul class="pagination pagination-sm mb-0">
             `;
 
@@ -1289,6 +1295,11 @@ document.getElementById('empModal')
                     </button>
                 </li>
                         </ul>
+                        ${totalPages > 1 ? `
+                        <div class="d-flex align-items-center gap-1">
+                            <small class="text-meta text-nowrap">Go to:</small>
+                            <input type="number" id="empPageJumpInput" class="text-center pag-jump-input" min="1" max="${totalPages}" style="width:45px;height:28px;" placeholder="Go">
+                        </div>` : ''}
                     </div>
                     <div class="col-md d-flex justify-content-md-end align-items-center gap-2">
                         <span class="text-meta text-nowrap">Rows per page</span>
@@ -1308,6 +1319,15 @@ document.getElementById('empModal')
             `;
 
             pag.innerHTML = html;
+
+            const jumpInput = document.getElementById('empPageJumpInput');
+            if (jumpInput) {
+                jumpInput.addEventListener('keydown', e => {
+                    if (e.key !== 'Enter') return;
+                    const n = parseInt(jumpInput.value);
+                    if (n >= 1 && n <= totalPages) changePage(n);
+                });
+            }
         }
 
         function getPageNums(cur, tot) {

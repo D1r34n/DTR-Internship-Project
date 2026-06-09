@@ -1223,6 +1223,21 @@ button.btn-sm {
 .btn-group > .btn + .btn { margin-left: -1px !important; }
 .btn-group .btn:hover     { z-index: 1 !important; }
 
+/* ---- View-toggle variant (grid ↔ chart, etc.) ---- */
+.view-toggle .btn {
+    color: var(--text-muted) !important;
+}
+
+.view-toggle .btn.active {
+    background: var(--primary-glass) !important;
+    border-color: var(--primary-border) !important;
+    color: var(--primary-color) !important;
+}
+
+.view-toggle .btn:not(.active):hover {
+    color: var(--text-light) !important;
+}
+
 /* ================================================
    DROPDOWN — FROSTED GLASS
    ================================================ */

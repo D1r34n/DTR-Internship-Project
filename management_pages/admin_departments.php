@@ -95,7 +95,6 @@ $departmentList = $stmt2->fetchAll(PDO::FETCH_ASSOC);
 
     <!-- 4. Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://balkan.app/js/OrgChart.js"></script>
 </head>
 
 <body>
@@ -107,17 +106,19 @@ $departmentList = $stmt2->fetchAll(PDO::FETCH_ASSOC);
     <?php include '../topbar_revised.php'; ?>
 
     <div class="card card-neutral logs-card">
-        <div class="card-body d-flex flex-column logs-card-body">
+        <div class="card-header departments-header">
 
-            <!-- Filter Section -->
-            <div class="dept-header">
-                <span class="employee-title text-primary">
-                    <i class="bi bi-buildings"></i>
-                    Total Departments: <span id="emp-count"><?= count($departments) ?></span>
-                </span>
-                <div class="d-flex gap-2 align-items-center ms-auto flex-wrap">
+            <span class="employee-title text-primary">
+                <i class="bi bi-buildings"></i>
+                Total Departments: <span id="emp-count"><?= count($departments) ?></span>
+            </span>
 
-                    <!-- Sort dropdown -->
+
+            <div class="d-flex gap-2 align-items-center ms-auto flex-wrap">
+
+                <!-- Sort + Search (hidden in chart view) -->
+                <div id="grid-controls" class="d-flex gap-2 align-items-center">
+
                     <div class="dropdown w-30">
                         <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                             <span id="sort-btn-label">Name (A → Z)</span>
@@ -131,7 +132,6 @@ $departmentList = $stmt2->fetchAll(PDO::FETCH_ASSOC);
                     </div>
                     <input type="hidden" id="dept-sort-value" value="name_asc">
 
-                    <!-- Search -->
                     <div class="input-group" style="max-width: 220px;">
                         <span class="input-group-text">
                             <i class="bi bi-search"></i>
@@ -144,11 +144,35 @@ $departmentList = $stmt2->fetchAll(PDO::FETCH_ASSOC);
                             oninput="applyFilterSort()">
                     </div>
 
-                    <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#create-dept-modal">
-                        <i class="bi bi-plus-lg"></i> Add Department
+                </div>
+
+                <!-- View toggle -->
+                <div class="btn-group view-toggle" role="group">
+                    <button type="button" id="view-grid-btn" class="btn active"
+                            onclick="switchView('grid')"
+                            data-bs-toggle="popover"
+                            data-bs-trigger="hover focus"
+                            data-bs-content="Grid View"
+                            data-bs-placement="bottom">
+                        <i class="bi bi-grid-3x3-gap"></i>
+                    </button>
+                    <button type="button" id="view-chart-btn" class="btn"
+                            onclick="switchView('chart')"
+                            data-bs-toggle="popover"
+                            data-bs-trigger="hover focus"
+                            data-bs-content="Org Chart"
+                            data-bs-placement="bottom">
+                        <i class="bi bi-diagram-3"></i>
                     </button>
                 </div>
+
+                <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#create-dept-modal">
+                    <i class="bi bi-plus-lg"></i> Add Department
+                </button>
             </div>
+
+        </div>
+        <div class="card-body d-flex flex-column logs-card-body">
 
             <!-- GRID -->
             <div class="dept-grid">
@@ -170,7 +194,7 @@ $departmentList = $stmt2->fetchAll(PDO::FETCH_ASSOC);
                                 <?= htmlspecialchars($dept['department_code']) ?>
                             </div>
 
-                            <div class="dept-name">
+                            <div class="dept-name" title="<?= htmlspecialchars($dept['department_name']) ?>">
                                 <?= htmlspecialchars($dept['department_name']) ?>
                             </div>
                         </div>
@@ -181,9 +205,10 @@ $departmentList = $stmt2->fetchAll(PDO::FETCH_ASSOC);
                                 <?php if (!empty($dept['parent_name'])): ?>
                                     <button
                                         class="dept-parent-link"
-                                        onclick="viewParentDepartment(<?= $dept['parent_id'] ?>)">
+                                        onclick="viewParentDepartment(<?= $dept['parent_id'] ?>)"
+                                        title="Under <?= htmlspecialchars($dept['parent_name']) ?>">
                                         <i class="bi bi-diagram-3"></i>
-                                        Under <?= htmlspecialchars($dept['parent_name']) ?>
+                                        <span>Under <?= htmlspecialchars($dept['parent_name']) ?></span>
                                     </button>
                                 <?php endif; ?>
 
@@ -218,6 +243,12 @@ $departmentList = $stmt2->fetchAll(PDO::FETCH_ASSOC);
                     </div>
                 <?php endforeach; ?>
 
+            </div>
+
+            <!-- ORG CHART VIEW (hidden by default) -->
+            <div id="dept-chart-wrap" style="display:none; flex:1; min-height:0; overflow:hidden; padding-right:1.5rem;"
+                 oncontextmenu="return false">
+                <div id="dept-chart" style="width:100%; height:100%;"></div>
             </div>
 
         </div>
@@ -265,7 +296,7 @@ $departmentList = $stmt2->fetchAll(PDO::FETCH_ASSOC);
                                 <div class="mb-3">
                                     <label class="form-label">
                                         Parent Department
-                                        <small class="text-muted">(Optional)</small>
+                                        <small class="text-meta">(Optional)</small>
                                     </label>
                                     <div class="dropdown w-100">
                                         <button class="btn w-100 text-start dropdown-toggle"
@@ -352,7 +383,7 @@ $departmentList = $stmt2->fetchAll(PDO::FETCH_ASSOC);
                                 <div class="mb-3">
                                     <label class="form-label">
                                         Parent Department
-                                        <small class="text-muted">(Optional)</small>
+                                        <small class="text-meta">(Optional)</small>
                                     </label>
                                     <input type="hidden" name="parent_id" id="edit-parent-id" value="">
                                     <input type="text" class="form-control" id="edit-parent-input"
@@ -364,13 +395,13 @@ $departmentList = $stmt2->fetchAll(PDO::FETCH_ASSOC);
                                         <?php endforeach; ?>
                                     </datalist>
                                 </div>
-                                <div class="d-flex gap-2 flex-row">                      
-                                    <button type="submit" class="btn btn-success w-100">
-                                        <i class="bi bi-floppy"></i> Save
-                                    </button>
-
+                                <div class="d-flex gap-2 flex-row">          
                                     <button type="button" class="btn btn-danger w-100" onclick="deleteDept()">
                                         <i class="bi bi-trash"></i> Delete
+                                    </button>   
+
+                                    <button type="submit" class="btn btn-success w-100">
+                                        <i class="bi bi-floppy"></i> Save
                                     </button>
                                 </div>
                             </div>
@@ -419,6 +450,27 @@ $departmentList = $stmt2->fetchAll(PDO::FETCH_ASSOC);
                     <div id="sub-dept-list" class="sub-dept-list"></div>
                 </div>
 
+            </div>
+        </div>
+    </div>
+
+    <!-- DELETE CONFIRMATION MODAL -->
+    <div class="modal fade" id="delete-confirm-modal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Delete Department</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted mb-0">Delete <strong id="delete-dept-name" class="text-tertiary"></strong>? This cannot be undone.</p>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-sm btn-danger" id="delete-confirm-btn">
+                        <i class="bi bi-trash"></i> Delete
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -483,14 +535,57 @@ document.addEventListener('DOMContentLoaded', () => {
     editName.addEventListener('input',  updateEditPreview);
     editColor.addEventListener('input', updateEditPreview);
 
+    /* View toggle popovers */
+    document.querySelectorAll('.view-toggle [data-bs-toggle="popover"]').forEach(el => {
+        new bootstrap.Popover(el, { trigger: 'hover focus' });
+    });
+
 });
 
 const deptNameToId = <?= json_encode(array_column($departmentList, 'id', 'department_name')) ?>;
+const deptListAll  = <?= json_encode(array_values($departmentList)) ?>;
 
-document.getElementById('create-parent-input').addEventListener('input', function () {
-    document.getElementById('create-parent-id').value = deptNameToId[this.value.trim()] ?? '';
-});
+/* ---- Create-modal parent searchable dropdown ---- */
+(function () {
+    const search  = document.getElementById('create-parent-search');
+    const list    = document.getElementById('create-parent-list');
+    const hiddenId = document.getElementById('create-parent-id');
+    const label   = document.getElementById('create-parent-label');
 
+    function renderList(q) {
+        const filtered = q
+            ? deptListAll.filter(d => d.department_name.toLowerCase().includes(q.toLowerCase()))
+            : deptListAll;
+
+        list.innerHTML = filtered.length
+            ? filtered.map(d =>
+                `<li><button type="button" class="dropdown-item" data-id="${d.id}" data-name="${d.department_name.replace(/"/g,'&quot;')}">${d.department_name}</button></li>`
+              ).join('')
+            : '<li><span class="dropdown-item text-muted">No results</span></li>';
+    }
+
+    renderList('');
+
+    search.addEventListener('input', () => renderList(search.value));
+
+    list.addEventListener('click', function (e) {
+        const btn = e.target.closest('[data-id]');
+        if (!btn) return;
+        hiddenId.value = btn.dataset.id;
+        label.textContent = btn.dataset.name;
+        bootstrap.Dropdown.getInstance(document.getElementById('create-parent-btn'))?.hide();
+    });
+
+    // Clear selection when modal resets
+    document.getElementById('create-dept-modal').addEventListener('hidden.bs.modal', () => {
+        hiddenId.value  = '';
+        label.textContent = 'None';
+        search.value    = '';
+        renderList('');
+    });
+})();
+
+/* ---- Edit-modal parent text input ---- */
 document.getElementById('edit-parent-input').addEventListener('input', function () {
     document.getElementById('edit-parent-id').value = deptNameToId[this.value.trim()] ?? '';
 });
@@ -629,7 +724,7 @@ function viewParentDepartment(parentId) {
             }
 
             body.innerHTML = `
-                <div class="dept-list-item">
+                <div class="card-neutral dept-list-item">
                     <div class="dept-icon" style="background:${data.color || '#4e73df'}; color:${getContrastColor(data.color || '#4e73df')};">
                         ${data.department_code}
                     </div>
@@ -672,10 +767,12 @@ function viewSubDepartments(id, name) {
     new bootstrap.Modal(document.getElementById('sub-dept-modal')).show();
 }
 
-let currentEditId = null;
+let currentEditId   = null;
+let currentEditName = null;
 
 function openEditDept(dept) {
-    currentEditId = dept.id;
+    currentEditId   = dept.id;
+    currentEditName = dept.department_name;
 
     document.getElementById('edit-dept-id').value          = dept.id;
     document.getElementById('edit-input-code').value       = dept.department_code;
@@ -714,10 +811,12 @@ document.getElementById('edit-dept-form').addEventListener('submit', function(e)
 });
 
 function deleteDept() {
+    document.getElementById('delete-dept-name').textContent = currentEditName || 'this department';
+    new bootstrap.Modal(document.getElementById('delete-confirm-modal')).show();
+}
 
-    if (!confirm('Are you sure you want to delete this department? This cannot be undone.')) {
-        return;
-    }
+document.getElementById('delete-confirm-btn').addEventListener('click', function () {
+    bootstrap.Modal.getInstance(document.getElementById('delete-confirm-modal')).hide();
 
     fetch('department_api.php?action=delete', {
         method: 'POST',
@@ -725,13 +824,117 @@ function deleteDept() {
     })
     .then(res => res.json())
     .then(data => {
-
         if (data.success) {
-            alert('Department deleted');
             location.reload();
         } else {
-            alert(data.message);
+            document.getElementById('edit-msg').innerHTML =
+                `<span class="text-danger">${data.message}</span>`;
         }
+    });
+});
+
+/* -----------------------------------------------
+   VIEW TOGGLE  (Grid ↔ Org Chart)
+----------------------------------------------- */
+let chartInited = false;
+
+function switchView(view) {
+    const isChart = view === 'chart';
+    document.querySelector('.dept-grid').style.display        = isChart ? 'none' : '';
+    document.getElementById('dept-chart-wrap').style.display = isChart ? ''     : 'none';
+    document.getElementById('grid-controls').classList.toggle('d-none', isChart);
+    document.getElementById('view-grid-btn').classList.toggle('active',  !isChart);
+    document.getElementById('view-chart-btn').classList.toggle('active',  isChart);
+    localStorage.setItem('deptView', view);
+    if (isChart && !chartInited) loadOrgChart();
+}
+
+// Restore last view on page load
+(function () {
+    const saved = localStorage.getItem('deptView');
+    if (saved === 'chart') switchView('chart');
+})();
+
+function loadOrgChart() {
+    if (window.OrgChart) { initOrgChart(); return; }
+    const s   = document.createElement('script');
+    s.src     = 'https://balkan.app/js/OrgChart.js';
+    s.onload  = initOrgChart;
+    document.head.appendChild(s);
+}
+
+function initOrgChart() {
+    chartInited = true;
+
+    const depts = <?= json_encode(array_map(function($d) {
+        return [
+            'id'              => (int)$d['id'],
+            'pid'             => $d['parent_id'] ? (int)$d['parent_id'] : null,
+            'name'            => $d['department_name'],
+            'code'            => $d['department_code'],
+            'color'           => $d['color'] ?? '#4e73df',
+            'emp'             => (int)$d['employee_count'] . ' ' . ((int)$d['employee_count'] === 1 ? 'Employee' : 'Employees'),
+            // fields needed by openEditDept()
+            'department_name' => $d['department_name'],
+            'department_code' => $d['department_code'],
+            'parent_id'       => $d['parent_id'],
+            'parent_name'     => $d['parent_name'] ?? '',
+            'employee_count'  => (int)$d['employee_count'],
+        ];
+    }, $departments), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
+
+    // Base template
+    OrgChart.templates.deptCard = Object.assign({}, OrgChart.templates.base);
+    OrgChart.templates.deptCard.size       = [220, 90];
+    OrgChart.templates.deptCard.node       =
+        '<defs><clipPath id="nc-{id}"><rect x="90" y="20" width="122" height="28"/></clipPath></defs>' +
+        '<rect rx="12" x="0" y="0" height="90" width="220" fill="rgba(0,0,0,0.4)" stroke="rgba(255,255,255,0.08)" stroke-width="1" class="node-bkg"></rect>' +
+        '<text x="90" y="74" font-family="bootstrap-icons" font-size="12" dominant-baseline="central" class="node-emp-icon">&#xF4D0;</text>';
+    OrgChart.templates.deptCard.field_0    = '<circle cx="41" cy="41" r="26" fill="{val}"></circle>';
+    OrgChart.templates.deptCard.field_1    = '<text x="41" y="45" text-anchor="middle" style="font-size:9px;font-weight:700;font-family:Poppins,sans-serif;" fill="#ffffff">{val}</text>';
+    OrgChart.templates.deptCard.field_2    = '<text x="90" y="35" text-anchor="start" clip-path="url(#nc-{id})" style="font-size:12px;font-weight:500;font-family:Poppins,sans-serif;" class="node-text-name">{val}</text>';
+    OrgChart.templates.deptCard.field_3    = '<text x="105" y="74" text-anchor="start" dominant-baseline="central" style="font-size:10px;font-family:Poppins,sans-serif;" class="node-emp-text">{val}</text>';
+    OrgChart.templates.deptCard.editBtn    = '';
+    OrgChart.templates.deptCard.menuButton = '';
+
+    // Variant for light-colored dept circles — code text becomes black
+    OrgChart.templates.deptCardAlt = Object.assign({}, OrgChart.templates.deptCard);
+    OrgChart.templates.deptCardAlt.field_1 = '<text x="41" y="45" text-anchor="middle" style="font-size:9px;font-weight:700;font-family:Poppins,sans-serif;" fill="#000000">{val}</text>';
+
+    // Truncate long text and tag nodes that need dark circle text
+    const nodes = depts.map(d => ({
+        ...d,
+        shortName: d.name.length > 20 ? d.name.slice(0, 18) + '…' : d.name,
+        shortCode: d.code.length > 5  ? d.code.slice(0, 4)  + '…' : d.code,
+        tags: getContrastColor(d.color) === '#000000' ? ['alt'] : [],
+    }));
+
+    const chart = new OrgChart(document.getElementById('dept-chart'), {
+        template: 'deptCard',
+        tags: { alt: { template: 'deptCardAlt' } },
+        nodeBinding: {
+            field_0: 'color',
+            field_1: 'shortCode',
+            field_2: 'shortName',
+            field_3: 'emp',
+        },
+        nodes,
+        enableSearch: false,
+        editUI: false,
+        nodeMenu: null,
+        menu: null,
+        toolbar: { zoom: true, fit: true, expandAll: false },
+        scaleInitial: OrgChart.match.boundary,
+        layout: OrgChart.layout.normal,
+        linkType: 'curve',
+        zoom: { speed: 130, smooth: 10 },
+        mouseScrool: OrgChart.action.zoom,
+    });
+
+    chart.on('click', function(sender, args) {
+        const d = depts.find(n => n.id === args.node.id);
+        if (d) openEditDept(d);
+        return false;
     });
 }
 

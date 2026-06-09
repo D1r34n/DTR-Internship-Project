@@ -63,37 +63,13 @@ body {
     scrollbar-gutter: stable;
 }
 
-/* Department container */
-
-.dept-header {
+.departments-header {
     display: flex;
     align-items: center;
-    gap: 1rem;
-    padding-bottom: 1rem;
+    gap: 0.5rem;
     flex-wrap: wrap;
-    margin: 0.5rem 1.5rem 0rem 0.5rem;
-}
-
-/* LEFT GROUP */
-.dept-header-left {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    flex: 1;
-    flex-wrap: wrap;
-}
-
-/* RIGHT GROUP */
-.dept-header-right {
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-}
-
-.dept-search-wrapper {
     position: relative;
-    flex: 1;
-    max-width: 250px;
+    z-index: 2;
 }
 
 .dept-search-input {
@@ -250,24 +226,22 @@ body {
 
 .dept-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    grid-template-columns: repeat(auto-fill, 220px);
     gap: 20px;
     padding: 0 1.5rem 0 0;
-    
+
     flex: 1;
     overflow-y: auto;
 }
 
 .dept-card {
-    background: var(--glass-bg);
-    backdrop-filter: blur(32px) saturate(160%) brightness(0.3);
-    -webkit-backdrop-filter: blur(32px) saturate(160%) brightness(0.3);
-
-    border: 1px solid var(--glass-border);
-    border-radius: 16px;
-    padding: 20px;
+    background: var(--frosted-bg);
+    border: 1px solid var(--frosted-border);
+    border-radius: 12px;
+    padding: 1.25rem 1rem;
     position: relative;
-    aspect-ratio: 4/3;
+    width: 220px;
+    height: 200px;
 
     display: flex;
     flex-direction: column;
@@ -277,23 +251,17 @@ body {
 
     cursor: pointer;
 
-    transition:
-        background 0.25s ease,
-        border-color 0.25s ease,
-        color 0.25s ease,
-        transform 0.25s cubic-bezier(0.22, 1, 0.36, 1),
-        box-shadow 0.25s ease;
+    transition: background 0.2s, border-color 0.2s, transform 0.2s;
 }
 
 .dept-card:hover {
-    color: var(--text-lightest);
-    background: rgba(255, 255, 255, 0.12);
-    border-color: rgba(255, 255, 255, 0.25);
+    background: var(--frosted-highlight);
+    border-color: var(--primary-border);
     transform: translateY(-1px);
 }
 
 .dept-card:hover .dept-name {
-    color: var(--text-lightest);
+    color: var(--text-light);
 }
 
 .dept-card:hover .edit-dept-icon {
@@ -467,6 +435,10 @@ body {
     color: var(--text-light);
     text-align: left;
     align-items: center;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
 }
 
 
@@ -520,6 +492,7 @@ body {
     height: 36px;
     font-size: 0.65rem;
     flex-shrink: 0;
+    margin-bottom: 0;
 }
 
 .dept-list-item .dept-name {
@@ -539,6 +512,7 @@ body {
     display: inline-flex;
     align-items: center;
     gap: 6px;
+    max-width: 180px;
 
     background: var(--glass-bg);
     backdrop-filter: blur(32px) saturate(160%) brightness(0.3);
@@ -552,6 +526,16 @@ body {
     color: white;
     cursor: pointer;
     transition: 0.2s ease;
+}
+
+.dept-parent-link .bi {
+    flex-shrink: 0;
+}
+
+.dept-parent-link span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .dept-parent-link:hover {
@@ -616,4 +600,110 @@ body {
 .dept-meta--empty:hover {
     background: var(--glass-bg);
     color: white;
+}
+
+/* ============================================================
+   ORG CHART
+   ============================================================ */
+
+#dept-chart-wrap {
+    background-image: radial-gradient(circle, rgba(255,255,255,0.13) 1px, transparent 1px);
+    background-size: 22px 22px;
+    border-radius: 12px;
+}
+
+[data-theme="light"] #dept-chart-wrap {
+    background-image: radial-gradient(circle, rgba(0,0,0,0.28) 1px, transparent 1px);
+}
+
+#dept-chart {
+    background: transparent;
+}
+
+/* Node base — frosted card style */
+#dept-chart .node-bkg {
+    fill: var(--frosted-bg);
+    stroke: var(--frosted-border);
+    cursor: pointer;
+    transition: fill 0.2s ease, stroke 0.2s ease;
+}
+
+/* Node hover glow */
+#dept-chart .node {
+    transition: filter 0.2s ease;
+}
+
+#dept-chart .node:hover {
+    filter: drop-shadow(0 4px 14px rgba(0, 0, 0, 0.35));
+}
+
+#dept-chart .node:hover .node-bkg {
+    fill: rgba(255, 255, 255, 0.1) !important;
+    stroke: var(--primary-border) !important;
+}
+
+[data-theme="light"] #dept-chart .node:hover .node-bkg {
+    fill: rgba(0, 0, 0, 0.06) !important;
+}
+
+/* Node text */
+#dept-chart .node-text-name {
+    fill: var(--text-light);
+}
+
+/* Employee count row */
+#dept-chart .node-emp-icon,
+#dept-chart .node-emp-text {
+    fill: var(--text-muted);
+}
+
+/* Connector lines */
+#dept-chart svg path[fill="none"] {
+    stroke: rgba(255, 255, 255, 0.18) !important;
+    stroke-width: 1.5px !important;
+}
+
+[data-theme="light"] #dept-chart svg path[fill="none"] {
+    stroke: rgba(0, 0, 0, 0.15) !important;
+}
+
+/* Fit / zoom toolbar container */
+#dept-chart .oc-toolbar-container {
+    background: var(--frosted-bg) !important;
+    border: 1px solid var(--frosted-border) !important;
+    border-radius: 10px !important;
+    overflow: hidden !important;
+}
+
+/* Button background + borders */
+#dept-chart .oc-toolbar-container [data-tlbr] > svg {
+    background-color: var(--frosted-bg) !important;
+    border-color: var(--frosted-border) !important;
+}
+
+/* Icon strokes (circle, lines, fit-frame paths) */
+#dept-chart .oc-toolbar-container svg circle,
+#dept-chart .oc-toolbar-container svg line,
+#dept-chart .oc-toolbar-container svg path {
+    stroke: var(--text-light) !important;
+}
+
+/* Filled shapes (the dot in the fit button) */
+#dept-chart .oc-toolbar-container svg circle {
+    fill: var(--text-light) !important;
+}
+
+/* Hover */
+#dept-chart .oc-toolbar-container [data-tlbr]:hover > svg {
+    background-color: rgba(255,255,255,0.08) !important;
+}
+
+#dept-chart .oc-toolbar-container [data-tlbr]:hover svg circle,
+#dept-chart .oc-toolbar-container [data-tlbr]:hover svg line,
+#dept-chart .oc-toolbar-container [data-tlbr]:hover svg path {
+    stroke: var(--text-lightest) !important;
+}
+
+#dept-chart .oc-toolbar-container [data-tlbr]:hover svg circle {
+    fill: var(--text-lightest) !important;
 }
