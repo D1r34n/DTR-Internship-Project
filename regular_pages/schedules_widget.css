@@ -542,59 +542,32 @@
 }
 .sw-preset-bs-menu.sw-preset-tooltip .sw-preset-item { border-radius: 6px; }
 
-/* ---- Preset schedule dropdown (legacy, kept for compatibility) ---- */
-.preset-sched-dropdown-wrap { position: relative; }
-
-.preset-sched-trigger {
-    width:           100%;
-    display:         flex;
-    align-items:     center;
-    justify-content: space-between;
-    gap:             0.5rem;
-    background:      var(--neutral-glass);
-    border:          1px solid var(--neutral-border);
-    color:           var(--text-muted);
-    border-radius:   8px;
-    padding:         0.5rem 0.85rem;
-    font-size:       0.85rem;
-    cursor:          pointer;
-    text-align:      left;
-    transition:      border-color 0.18s, background 0.18s, color 0.18s;
+/* ---- Leave / OB info popover (admin global calendar) ---- */
+.sw-leave-popover {
+    position:      fixed;
+    z-index:       3000;
+    min-width:     190px;
+    max-width:     280px;
+    background:    #1a1a22;
+    border:        1px solid var(--neutral-border);
+    border-radius: 10px;
+    box-shadow:    0 10px 28px rgba(0, 0, 0, 0.55);
+    padding:       0.8rem 0.9rem;
+    font-family:   'Poppins', sans-serif;
 }
-
-.preset-sched-trigger:hover {
-    background:   var(--neutral-glass-hover);
-    border-color: var(--primary-border);
-    color:        var(--text-light);
+.sw-leave-popover-row { display: flex; flex-direction: column; gap: 2px; }
+.sw-leave-popover-row + .sw-leave-popover-row { margin-top: 0.65rem; }
+.sw-leave-popover-label {
+    font-size:      0.7rem;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    color:          var(--text-muted);
 }
-
-.preset-sched-menu {
-    position:   absolute;
-    top:        calc(100% + 4px);
-    left:       0;
-    right:      0;
-    background: #1a1a22;
-    border:     1px solid var(--neutral-border);
-    border-radius: 8px;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
-    z-index:    1060;
-    display:    none;
-    max-height: 220px;
-    overflow-y: auto;
+.sw-leave-popover-value {
+    font-size:   0.9rem;
+    font-weight: 600;
+    color:       var(--text-lightest);
 }
-
-.preset-sched-menu.open { display: block; }
-
-.preset-sched-item {
-    padding:    0.55rem 1rem;
-    font-size:  0.85rem;
-    color:      var(--text-light);
-    cursor:     pointer;
-    transition: background 0.14s;
-}
-
-.preset-sched-item:hover  { background: var(--neutral-glass-hover); }
-.preset-sched-item.active { background: var(--primary-glass); color: var(--primary-color); font-weight: 600; }
 
 /* ---- Selected date tags ---- */
 .selected-date-tag {
