@@ -266,7 +266,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'edit_
         );
     }
 
-    header("Location: admin_employee_view.php?employee_id=$urlEmpId");
+    header("Location: admin_employee_view.php?employee_id=$urlEmpId&edit_success=1");
     exit();
 }
 
@@ -757,6 +757,12 @@ $leaveTypes = [
     <script>
     document.addEventListener('DOMContentLoaded', () => {
         showToast(<?= json_encode($editErrorMessages[$editError]) ?>, 'danger');
+    });
+    </script>
+    <?php elseif (isset($_GET['edit_success'])): ?>
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        showToast('Employee updated successfully.', 'success');
     });
     </script>
     <?php endif; ?>
