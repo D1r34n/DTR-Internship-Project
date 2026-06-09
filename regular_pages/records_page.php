@@ -77,16 +77,16 @@ $recordsMonth = sprintf('%04d-%02d', $yr, $mn);
         <div class="container-fluid flex-shrink-0 px-3">
             <div class="row g-3">
 
-                <!-- PENDING -->
+                <!-- INCOMPLETE -->
                 <div class="col-12 col-sm-6 col-lg-4">
                     <div class="card card-neutral p-3 h-100">
                         <div class="card-body d-flex align-items-center gap-3 p-0">
                             <div class="icon-box icon-box-neutral">
-                                <i class="bi bi-hourglass-split fs-4"></i>
+                                <i class="bi bi-clock-history fs-4"></i>
                             </div>
                             <div class="d-flex flex-column ms-auto text-end">
                                 <div class="stats-number" id="stat-pending">—</div>
-                                <div class="text-meta">Upcoming</div>
+                                <div class="text-meta">Incomplete</div>
                             </div>
                         </div>
                     </div>

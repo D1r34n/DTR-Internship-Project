@@ -10,49 +10,53 @@ require_once 'db.php';
 date_default_timezone_set('Asia/Manila');
 header('Content-Type: application/json');
 
-$start = $_GET['start'] ?? date('Y-m-01');
-$end   = $_GET['end']   ?? date('Y-m-t');
+$start      = $_GET['start'] ?? date('Y-m-01');
+$end        = $_GET['end']   ?? date('Y-m-t');
+$employeeId = (int) $_SESSION['user_id'];
 
 if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $start) || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $end)) {
     echo json_encode(['error' => 'Invalid date format']);
     exit;
 }
 
-// Day shifts (scheduled_start hour 6–17)
+// Day shifts (scheduled_start hour 6–17) — scoped to the current user
 $stmt = $pdo->prepare("
     SELECT COUNT(*) FROM schedules
     WHERE is_rest_day = 0
     AND COALESCE(is_archived, 0) = 0
     AND pending_delete = 0
+    AND employee_id = ?
     AND schedule_date BETWEEN ? AND ?
     AND scheduled_start IS NOT NULL
     AND HOUR(scheduled_start) >= 6 AND HOUR(scheduled_start) < 18
 ");
-$stmt->execute([$start, $end]);
+$stmt->execute([$employeeId, $start, $end]);
 $day = (int) $stmt->fetchColumn();
 
-// Night shifts (scheduled_start hour 18–23 or 0–5)
+// Night shifts (scheduled_start hour 18–23 or 0–5) — scoped to the current user
 $stmt = $pdo->prepare("
     SELECT COUNT(*) FROM schedules
     WHERE is_rest_day = 0
     AND COALESCE(is_archived, 0) = 0
     AND pending_delete = 0
+    AND employee_id = ?
     AND schedule_date BETWEEN ? AND ?
     AND scheduled_start IS NOT NULL
     AND (HOUR(scheduled_start) >= 18 OR HOUR(scheduled_start) < 6)
 ");
-$stmt->execute([$start, $end]);
+$stmt->execute([$employeeId, $start, $end]);
 $night = (int) $stmt->fetchColumn();
 
-// Rest days
+// Rest days — scoped to the current user
 $stmt = $pdo->prepare("
     SELECT COUNT(*) FROM schedules
     WHERE is_rest_day = 1
     AND COALESCE(is_archived, 0) = 0
     AND pending_delete = 0
+    AND employee_id = ?
     AND schedule_date BETWEEN ? AND ?
 ");
-$stmt->execute([$start, $end]);
+$stmt->execute([$employeeId, $start, $end]);
 $rest = (int) $stmt->fetchColumn();
 
 // On Leave — count individual approved leave-days falling in range

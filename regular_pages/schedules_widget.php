@@ -1343,6 +1343,22 @@ swCalendar = new FullCalendar.Calendar(calEl, {
             el.textContent = 'This ' + monthName;
         });
 
+        const _elEvents = document.getElementById('sched-stat-events');
+        if (_elEvents) {
+            _elEvents.textContent = SW_CAL_EVENTS.filter(function (e) {
+                const d = e.start ? String(e.start).substring(0, 10) : '';
+                return d >= start && d <= end;
+            }).length;
+        }
+
+        const _elBdays = document.getElementById('sched-stat-birthdays');
+        if (_elBdays) {
+            _elBdays.textContent = SW_BIRTHDAY_EVENTS.filter(function (e) {
+                const d = e.start ? String(e.start).substring(0, 10) : '';
+                return d >= start && d <= end;
+            }).length;
+        }
+
         fetch(`${SW_STATS_API}?start=${start}&end=${end}`)
             .then(function (r) { return r.json(); })
             .then(function (s) {
