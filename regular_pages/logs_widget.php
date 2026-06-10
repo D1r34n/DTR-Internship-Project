@@ -919,8 +919,10 @@ function renderLogsPagination(totalPages) {
 
     if (totalPages <= 1) {
         jumpWrapper?.style.setProperty('display', 'none', 'important');
+        list.closest('nav')?.style.setProperty('display', 'none', 'important');
         return;
     }
+    list.closest('nav')?.style.removeProperty('display');
     jumpWrapper?.setAttribute('style', 'display:flex !important');
 
     if (jumpInput) { jumpInput.max = totalPages; jumpInput.value = logsCurrentPage; }

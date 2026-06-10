@@ -206,7 +206,7 @@ $loadCutoff    = null;
 
     <?php else: ?>
             <div class="dropdown">
-                <button class="btn btn-sm dropdown-toggle" id="month-picker-btn" type="button">
+                <button class="btn dropdown-toggle" id="month-picker-btn" type="button">
                     <i class="bi bi-calendar3"></i>
                     <span id="dateRangeLabel">Loading…</span>
                 </button>

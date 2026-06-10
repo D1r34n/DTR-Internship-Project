@@ -438,6 +438,19 @@ $initialDeptFilter = isset($_GET['dept']) ? (int)$_GET['dept'] : 0;
                         <li><hr class="dropdown-divider"></li>
                         <?php endif; ?>
 
+                        <?php if ($_SESSION['user_role'] === 'superadmin'): ?>
+                        <li>
+                            <a class="dropdown-item"
+                            href="#"
+                            data-bs-toggle="modal"
+                            data-bs-target="#import-employees-modal">
+                                <i class="bi bi-people-fill"></i> Import Employees
+                            </a>
+                        </li>
+
+                        <li><hr class="dropdown-divider"></li>
+                        <?php endif; ?>
+
                         <li>
                             <a class="dropdown-item"
                             href="#"
@@ -926,6 +939,110 @@ $initialDeptFilter = isset($_GET['dept']) ? (int)$_GET['dept'] : 0;
                 </div>
             </div>
         </div>
+        <!-- Bulk Import Employees Modal -->
+        <?php if ($_SESSION['user_role'] === 'superadmin'): ?>
+        <div class="modal fade" id="import-employees-modal" tabindex="-1">
+            <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+                <div class="modal-content">
+
+                    <div class="modal-header">
+                        <h5 class="modal-title">Import Employees</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+
+                    <form id="import-employees-form"
+                          action="bulk_importing_api.php?action=import_employees"
+                          method="POST"
+                          enctype="multipart/form-data">
+
+                        <div class="modal-body">
+
+                            <div class="mb-3">
+                                <label class="form-label">Upload Excel File</label>
+
+                                <label for="employees-file-input" class="schedule-dropzone w-100">
+                                    <div class="schedule-dropzone-icon">
+                                        <i class="bi bi-cloud-arrow-up-fill"></i>
+                                    </div>
+                                    <div class="schedule-dropzone-title">
+                                        Drag &amp; Drop your .xlsx file here
+                                    </div>
+                                    <div class="schedule-dropzone-subtitle">
+                                        or click to browse files
+                                    </div>
+                                    <div class="schedule-dropzone-meta mt-3">
+                                        Accepted format: <strong>.xlsx</strong>
+                                    </div>
+                                    <input type="file"
+                                        name="employees_file"
+                                        id="employees-file-input"
+                                        accept=".xlsx"
+                                        hidden>
+                                </label>
+
+                                <small class="text-secondary d-block mt-2">
+                                    Preview will appear below after selecting file.
+                                </small>
+                            </div>
+
+                            <div id="employees-file-preview" class="mt-3" style="display:none;">
+                                <div class="rounded p-2"
+                                     style="background:var(--frosted-bg);border:1px solid var(--frosted-border);">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <strong style="color:var(--text-lightest);">File Preview</strong>
+                                        <span id="employees-file-name" class="small" style="color:var(--text-muted);"></span>
+                                    </div>
+                                    <div class="table-responsive">
+                                        <table class="table table-sm table-bordered mb-0">
+                                            <thead>
+                                                <tr>
+                                                    <th>Employee ID</th>
+                                                    <th>First Name</th>
+                                                    <th>Last Name</th>
+                                                    <th>Email</th>
+                                                    <th>Birthdate</th>
+                                                    <th>Role</th>
+                                                    <th>Department</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="employees-preview-body"></tbody>
+                                        </table>
+                                    </div>
+                                    <small class="d-block mt-2" style="color:var(--text-muted);">
+                                        Showing first 5 rows only
+                                    </small>
+                                </div>
+                            </div>
+
+                            <div class="d-flex justify-content-between align-items-center rounded p-3 mt-3"
+                                 style="background:var(--frosted-bg);border:1px solid var(--frosted-border);">
+                                <div>
+                                    <small class="d-block" style="color:var(--text-muted);">
+                                        Download the official Excel template to ensure correct format.
+                                    </small>
+                                </div>
+                                <a href="bulk_importing_api.php?action=download_employee_template"
+                                   onclick="showToast('Downloading template...', 'info')"
+                                   class="btn btn-sm ms-3">
+                                    <i class="bi bi-download"></i> Template
+                                </a>
+                            </div>
+
+                        </div>
+
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <button type="submit" class="btn btn-success">
+                                <i class="bi bi-people-fill"></i> Import Employees
+                            </button>
+                        </div>
+
+                    </form>
+                </div>
+            </div>
+        </div>
+        <?php endif; ?>
+
         <?php if (!empty($_SESSION['error'])): ?>
         <script>document.addEventListener('DOMContentLoaded', () => showToast('<?= addslashes(htmlspecialchars($_SESSION['error'])) ?>', 'danger'));</script>
         <?php unset($_SESSION['error']); ?>
@@ -1063,7 +1180,17 @@ document.getElementById('empModal')
                 fileNameId:    'leaves-file-name',
                 previewBodyId: 'leaves-preview-body',
                 cols: 9,
-            });                                 
+            });
+
+            initImportModal({
+                modalId:       'import-employees-modal',
+                formId:        'import-employees-form',
+                fileInputId:   'employees-file-input',
+                previewId:     'employees-file-preview',
+                fileNameId:    'employees-file-name',
+                previewBodyId: 'employees-preview-body',
+                cols: 7,
+            });
         });
 
         /* -------------------------------------------------------

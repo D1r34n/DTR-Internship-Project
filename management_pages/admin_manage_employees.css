@@ -892,6 +892,60 @@ body {
 .empRow { cursor: pointer; }
 
 /* ============================================================
+   MODAL THEME
+   ============================================================ */
+
+.modal-content {
+    background: var(--frosted-bg);
+    border-color: var(--frosted-border);
+}
+
+.modal-header {
+    background: var(--frosted-bg);
+    border-bottom-color: var(--frosted-border);
+}
+
+.modal-footer {
+    background: var(--frosted-bg);
+    border-top-color: var(--frosted-border);
+}
+
+.modal-title {
+    color: var(--text-lightest);
+}
+
+/* ============================================================
+   IMPORT FILE PREVIEW TABLES
+   ============================================================ */
+
+#schedule-file-preview .table,
+#leaves-file-preview .table,
+#employees-file-preview .table {
+    color: var(--text-light);
+    border-color: var(--frosted-border);
+}
+
+#schedule-file-preview .table thead th,
+#leaves-file-preview .table thead th,
+#employees-file-preview .table thead th {
+    background: var(--frosted-bg);
+    color: var(--text-muted);
+    border-color: var(--frosted-border);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+}
+
+#schedule-file-preview .table td,
+#leaves-file-preview .table td,
+#employees-file-preview .table td {
+    background: transparent;
+    border-color: var(--frosted-border);
+    font-size: 0.85rem;
+}
+
+/* ============================================================
    LIGHT THEME OVERRIDES
    ============================================================ */
 

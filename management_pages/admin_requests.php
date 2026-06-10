@@ -659,7 +659,7 @@ $totalLogEdit  = $pendingLogEdit + $approvedLogEdit + $rejectedLogEdit;
                     <div class="small text-meta text-nowrap flex-sm-fill w-sm-100 text-sm-start text-center order-1">
                         Showing ${start+1} to ${end} of ${total} entries</div>
                     <div class="d-flex align-items-center justify-content-center flex-wrap gap-3 flex-sm-fill w-sm-100 order-2">
-                        <nav><ul class="pagination pagination-sm mb-0">${pageLinks}</ul></nav>
+                        ${totalPages>1?`<nav><ul class="pagination pagination-sm mb-0">${pageLinks}</ul></nav>`:''}
                         ${totalPages>1?`<div class="d-flex align-items-center gap-1 pag-jump-wrapper">
                             <small class="text-meta text-nowrap">Go to:</small>
                             <input type="number" class="text-center pag-jump-input pag-jump-req"

@@ -487,6 +487,206 @@ if ($action === 'import_leaves') {
 }
 
 /* =========================================================
+   DOWNLOAD EMPLOYEE TEMPLATE
+========================================================= */
+
+if ($action === 'download_employee_template') {
+    if ($myRole !== 'superadmin') respond(['status' => 'error', 'message' => 'Unauthorized.'], 403);
+    ob_end_clean();
+
+    $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+    $sheet       = $spreadsheet->getActiveSheet();
+
+    $headers = [
+        'A' => 'Employee ID',
+        'B' => 'First Name',
+        'C' => 'Last Name',
+        'D' => 'Email',
+        'E' => 'Birthdate',
+        'F' => 'Role',
+        'G' => 'Department Code',
+    ];
+
+    $notes = [
+        'A' => 'Enter numeric employee IDs. Excel will automatically display leading zeros (e.g. 1 → 000001). Must be exactly 6 digits and unique.',
+        'B' => 'Employee first name (required).',
+        'C' => 'Employee last name (required).',
+        'D' => 'Unique email address (required).',
+        'E' => 'Format: YYYY-MM-DD (e.g. 1995-04-25). Required.',
+        'F' => 'Role key: employee, manager, workforce, admin (required).',
+        'G' => 'Department code as shown in the Departments page (optional).',
+    ];
+
+    foreach ($headers as $col => $label) {
+        $sheet->setCellValue($col . '1', $label);
+    }
+
+    applyHeaderStyle($sheet, 'A1:G1');
+    $sheet->getRowDimension(1)->setRowHeight(22);
+
+    foreach ($notes as $col => $note) {
+        $comment = $sheet->getComment($col . '1');
+        $comment->getText()->createTextRun($note);
+        $comment->setWidth('240pt')->setHeight('65pt');
+    }
+
+    // Employee ID leading-zero format
+    $sheet->getStyle('A2:A1000')
+        ->getNumberFormat()
+        ->setFormatCode('000000');
+
+    // Sample rows
+    $sheet->setCellValue('A2', 1);
+    $sheet->fromArray(['Juan', 'Dela Cruz', 'juan.delacruz@company.com', '1995-04-25', 'employee', 'HR'], null, 'B2');
+
+    $sheet->setCellValue('A3', 2);
+    $sheet->fromArray(['Maria', 'Santos', 'maria.santos@company.com', '1990-11-12', 'manager', 'IT'], null, 'B3');
+
+    applySampleRowStyle($sheet, 'A2:G2');
+    applySampleRowStyle($sheet, 'A3:G3', true);
+
+    $sheet->freezePane('A2');
+
+    foreach (array_keys($headers) as $c) {
+        $sheet->getColumnDimension($c)->setAutoSize(true);
+    }
+
+    header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    header('Content-Disposition: attachment; filename="employee_import_template.xlsx"');
+    header('Cache-Control: max-age=0');
+
+    (new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet))->save('php://output');
+    exit;
+}
+
+/* =========================================================
+   IMPORT EMPLOYEES
+========================================================= */
+
+if ($action === 'import_employees') {
+    if ($myRole !== 'superadmin') respond(['status' => 'error', 'message' => 'Unauthorized.'], 403);
+
+    try {
+        if (empty($_FILES['employees_file']) || $_FILES['employees_file']['error'] !== UPLOAD_ERR_OK) {
+            respond(['status' => 'error', 'message' => 'No file uploaded or upload failed.'], 400);
+        }
+
+        $rows = IOFactory::load($_FILES['employees_file']['tmp_name'])
+            ->getActiveSheet()->toArray();
+        array_shift($rows); // remove header
+
+        // Pre-load all role keys → IDs
+        $roleMap = [];
+        foreach ($pdo->query("SELECT id, role_key FROM roles")->fetchAll(PDO::FETCH_ASSOC) as $r) {
+            $roleMap[strtolower($r['role_key'])] = (int)$r['id'];
+        }
+
+        // Pre-load all department codes → IDs
+        $deptMap = [];
+        foreach ($pdo->query("SELECT id, department_code FROM departments")->fetchAll(PDO::FETCH_ASSOC) as $d) {
+            $deptMap[strtoupper(trim($d['department_code']))] = (int)$d['id'];
+        }
+
+        $insertStmt = $pdo->prepare("
+            INSERT INTO employees
+                (employee_id, first_name, last_name, email, role_id, department_id,
+                 birthdate, hired_date, profile_image, password)
+            VALUES
+                (?, ?, ?, ?, ?, ?, ?, CURDATE(), 'default_profile.png', 'HSN.123')
+        ");
+
+        $leaveStmt = $pdo->prepare("INSERT INTO employee_leave_balances (employee_id) VALUES (?)");
+
+        $logStmt = $pdo->prepare("
+            INSERT INTO logs (employee_id, log_type, log_time, longitude, latitude, is_within_office, edit_requested_by)
+            VALUES (?, 'ADD_EMPLOYEE', NOW(), 0, 0, 0, ?)
+        ");
+
+        $pdo->beginTransaction();
+
+        $inserted = 0;
+        $errors   = [];
+
+        foreach ($rows as $i => $row) {
+            $rowNum = $i + 2;
+
+            if (empty(array_filter(array_map('trim', array_map('strval', $row))))) continue;
+
+            $employeeId  = str_pad(trim((string)($row[0] ?? '')), 6, '0', STR_PAD_LEFT);
+            $firstName   = trim((string)($row[1] ?? ''));
+            $lastName    = trim((string)($row[2] ?? ''));
+            $email       = trim((string)($row[3] ?? ''));
+            $birthdate   = parseExcelDate($row[4] ?? null);
+            $roleKey     = strtolower(trim((string)($row[5] ?? '')));
+            $deptCode    = strtoupper(trim((string)($row[6] ?? '')));
+
+            // Validate required fields
+            if ($employeeId === '000000' || $firstName === '' || $lastName === '' || $email === '') {
+                $errors[] = ['row' => $rowNum, 'message' => 'Missing required fields (ID, First Name, Last Name, Email)'];
+                continue;
+            }
+
+            if ($birthdate === null) {
+                $errors[] = ['row' => $rowNum, 'message' => 'Invalid or missing birthdate (use YYYY-MM-DD)'];
+                continue;
+            }
+
+            if (!preg_match('/^\d{6}$/', $employeeId)) {
+                $errors[] = ['row' => $rowNum, 'message' => "Employee ID \"$employeeId\" must be exactly 6 digits"];
+                continue;
+            }
+
+            if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                $errors[] = ['row' => $rowNum, 'message' => "Invalid email address \"$email\""];
+                continue;
+            }
+
+            if (!isset($roleMap[$roleKey])) {
+                $errors[] = ['row' => $rowNum, 'message' => "Unknown role \"$roleKey\". Valid roles: " . implode(', ', array_keys($roleMap))];
+                continue;
+            }
+
+            // Duplicate employee ID check
+            $dupId = $pdo->prepare("SELECT id FROM employees WHERE employee_id = ?");
+            $dupId->execute([$employeeId]);
+            if ($dupId->fetchColumn()) {
+                $errors[] = ['row' => $rowNum, 'message' => "Employee ID $employeeId already exists"];
+                continue;
+            }
+
+            // Duplicate email check
+            $dupEmail = $pdo->prepare("SELECT id FROM employees WHERE LOWER(email) = LOWER(?)");
+            $dupEmail->execute([$email]);
+            if ($dupEmail->fetchColumn()) {
+                $errors[] = ['row' => $rowNum, 'message' => "Email \"$email\" already exists"];
+                continue;
+            }
+
+            $roleId = $roleMap[$roleKey];
+            $deptId = ($deptCode !== '' && isset($deptMap[$deptCode])) ? $deptMap[$deptCode] : null;
+
+            $insertStmt->execute([
+                $employeeId, $firstName, $lastName, $email,
+                $roleId, $deptId, $birthdate,
+            ]);
+
+            $newId = (int)$pdo->lastInsertId();
+            $leaveStmt->execute([$newId]);
+            $logStmt->execute([$newId, $_SESSION['user_id']]);
+
+            $inserted++;
+        }
+
+        $pdo->commit();
+        respond(['status' => 'success', 'inserted' => $inserted, 'errors' => $errors]);
+
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction()) $pdo->rollBack();
+        respond(['status' => 'error', 'message' => $e->getMessage()], 500);
+    }
+}
+
+/* =========================================================
    CUTOFF CRUD  (superadmin only)
 ========================================================= */
 
