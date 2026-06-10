@@ -276,7 +276,7 @@ $departmentList = $stmt2->fetchAll(PDO::FETCH_ASSOC);
                                 <div class="create-dept-preview-name" id="preview-name">Department Name</div>
                                 <label class="color-pick-wrapper">
                                     <input type="color" class="color-pick-input" name="color" id="color-picker" value="#4e73df">
-                                    <span id="color-hex-display">#4e73df</span>
+                                    <span id="color-hex-display" class="text-meta">#4e73df</span>
                                 </label>
                             </div>
 
