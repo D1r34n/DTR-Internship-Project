@@ -62,7 +62,9 @@ body {
 }
 
 .row-min-h {
+    flex: 1 1 0;
     min-height: 0;
+    flex-wrap: nowrap;
 }
 
 /* ------------------------------------------------
@@ -84,10 +86,10 @@ body {
    ============================================================ */
 
 .cutoff-table-scroll {
-    flex: 1;
+    flex: 1 1 0;
     min-height: 0;
-    overflow: auto;
-    position: relative;
+    overflow-y: auto;
+    overflow-x: hidden;
 }
 
 .cutoff-table-scroll table {
@@ -257,6 +259,54 @@ body {
 
 .fc .fc-view-harness {
     padding: 1rem;
+}
+
+/* ============================================================
+   MODAL THEME
+   ============================================================ */
+
+.modal-content {
+    background: var(--frosted-bg);
+    border-color: var(--frosted-border);
+}
+
+.modal-header {
+    background: var(--frosted-bg);
+    border-bottom-color: var(--frosted-border);
+}
+
+.modal-footer {
+    background: var(--frosted-bg);
+    border-top-color: var(--frosted-border);
+}
+
+.modal-title {
+    color: var(--text-lightest);
+}
+
+/* ============================================================
+   FILE PREVIEW TABLE
+   ============================================================ */
+
+#cutoff-file-preview .table {
+    color: var(--text-light);
+    border-color: var(--frosted-border);
+}
+
+#cutoff-file-preview .table thead th {
+    background: var(--frosted-bg);
+    color: var(--text-muted);
+    border-color: var(--frosted-border);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+}
+
+#cutoff-file-preview .table td {
+    background: transparent;
+    border-color: var(--frosted-border);
+    font-size: 0.85rem;
 }
 
 /* ============================================================

@@ -609,9 +609,8 @@ document.addEventListener('DOMContentLoaded', function () {
                         const extra  = data.errors.length > 3 ? ` +${data.errors.length - 3} more` : '';
                         msg += ` ${data.errors.length} skipped — ${shown}${extra}.`;
                     }
-                    resultEl.textContent = msg;
-                    resultEl.className   = `mt-2 small ${data.errors?.length ? 'text-warning' : 'text-success'}`;
                     await loadCutoffs();
+                    bootstrap.Modal.getInstance(document.getElementById('importCutoffModal'))?.hide();
                     showToast(msg, data.errors?.length ? 'warning' : 'success');
                 } else {
                     resultEl.textContent = data.message || 'Import failed.';

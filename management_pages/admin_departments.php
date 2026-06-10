@@ -595,36 +595,34 @@ document.getElementById('edit-parent-input').addEventListener('input', function 
 form.addEventListener('submit', function(e) {
     e.preventDefault();
 
+    const btn      = form.querySelector('[type="submit"]');
+    const origHTML = btn.innerHTML;
+    btn.disabled   = true;
+    btn.innerHTML  = '<span class="spinner-border spinner-border-sm" role="status"></span>';
+
     fetch('department_api.php?action=create', {
         method: 'POST',
         body: new FormData(form)
     })
     .then(res => res.json())
     .then(data => {
-
         if (data.success) {
-
-            msg.innerHTML = `<span class="text-success">${data.message}</span>`;
             form.reset();
 
-            const div = document.createElement('div');
-            div.className = 'dept-card';
-
             const color = data.color || '#4e73df';
-
+            const div   = document.createElement('div');
+            div.className = 'dept-card';
             div.innerHTML = `
                 <div class="dept-actions">
                     <i class="bi bi-pencil-square edit-dept-icon"
                         onclick='openEditDept(${JSON.stringify(data)})'></i>
                 </div>
-
                 <div class="dept-identity">
                     <div class="dept-icon" style="background:${color}; color:${getContrastColor(color)};">
                         ${data.department_code}
                     </div>
                     <div class="dept-name">${data.department_name}</div>
                 </div>
-
                 ${data.parent_id && data.parent_name ? `
                     <div class="dept-pills">
                         <button class="dept-parent-link" onclick="viewParentDepartment(${data.parent_id})">
@@ -633,34 +631,27 @@ form.addEventListener('submit', function(e) {
                         </button>
                     </div>
                 ` : ''}
-
                 <a class="dept-meta" href="admin_manage_employees.php?dept=${data.id}">
                     <i class="bi bi-people"></i>
                     0 Employees
                 </a>
             `;
-
             grid.appendChild(div);
 
-            setTimeout(() => {
-                bootstrap.Modal.getInstance(document.getElementById('create-dept-modal')).hide();
-                msg.innerHTML = '';
-            }, 800);
-
+            bootstrap.Modal.getInstance(document.getElementById('create-dept-modal')).hide();
+            showToast('Department created successfully.', 'success');
         } else {
-            msg.innerHTML = `<span class="text-danger">${data.message}</span>`;
-
             form.department_code.classList.remove('is-invalid');
             form.department_name.classList.remove('is-invalid');
-
-            if (data.message.toLowerCase().includes('code')) {
-                form.department_code.classList.add('is-invalid');
-            }
-
-            if (data.message.toLowerCase().includes('name')) {
-                form.department_name.classList.add('is-invalid');
-            }
+            if (data.message.toLowerCase().includes('code')) form.department_code.classList.add('is-invalid');
+            if (data.message.toLowerCase().includes('name')) form.department_name.classList.add('is-invalid');
+            showToast(data.message, 'danger');
         }
+    })
+    .catch(() => showToast('Something went wrong. Please try again.', 'danger'))
+    .finally(() => {
+        btn.disabled  = false;
+        btn.innerHTML = origHTML;
     });
 });
 
@@ -794,21 +785,31 @@ function openEditDept(dept) {
 document.getElementById('edit-dept-form').addEventListener('submit', function(e) {
     e.preventDefault();
 
+    const btn      = this.querySelector('[type="submit"]');
+    const origHTML = btn.innerHTML;
+    btn.disabled   = true;
+    btn.innerHTML  = '<span class="spinner-border spinner-border-sm" role="status"></span>';
+
     fetch('department_api.php?action=update', {
         method: 'POST',
         body: new FormData(this)
     })
     .then(res => res.json())
     .then(data => {
-
-        const msg = document.getElementById('edit-msg');
-
         if (data.success) {
-            msg.innerHTML = `<span class="text-success">${data.message}</span>`;
-            setTimeout(() => location.reload(), 600);
+            bootstrap.Modal.getInstance(document.getElementById('edit-dept-modal'))?.hide();
+            showToast('Department updated successfully.', 'success');
+            setTimeout(() => location.reload(), 800);
         } else {
-            msg.innerHTML = `<span class="text-danger">${data.message}</span>`;
+            showToast(data.message, 'danger');
+            btn.disabled  = false;
+            btn.innerHTML = origHTML;
         }
+    })
+    .catch(() => {
+        showToast('Something went wrong. Please try again.', 'danger');
+        btn.disabled  = false;
+        btn.innerHTML = origHTML;
     });
 });
 
@@ -953,5 +954,6 @@ function getContrastColor(hex) {
 }
 </script>
 
+<?php include __DIR__ . '/../system_functions/show_toast.php'; ?>
 </body>
 </html>
