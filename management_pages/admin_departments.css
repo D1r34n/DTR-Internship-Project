@@ -266,7 +266,6 @@ body {
 
 .dept-card:hover .edit-dept-icon {
     opacity: 1;
-    transform: scale(1.1);
 }
 
 .dept-icon {
@@ -300,10 +299,16 @@ body {
 }
 
 .edit-dept-icon {
+    color: var(--text-light);
     cursor: pointer;
     font-size: 1.1rem;
     opacity: 0;
     transition: 0.2s;
+}
+
+.edit-dept-icon:hover {
+    color: var(--info-hover);
+    transform: scale(1.1);
 }
 
 .dept-identity {

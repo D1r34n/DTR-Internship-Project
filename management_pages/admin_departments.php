@@ -12,7 +12,7 @@ require_once '../db.php';
 
 date_default_timezone_set('Asia/Manila');
 
-function getContrastColor($hex) {
+function getContrastColor(string $hex): string {
     $hex = str_replace('#', '', $hex);
 
     $r = hexdec(substr($hex, 0, 2));
@@ -276,7 +276,7 @@ $departmentList = $stmt2->fetchAll(PDO::FETCH_ASSOC);
                                 <div class="create-dept-preview-name" id="preview-name">Department Name</div>
                                 <label class="color-pick-wrapper">
                                     <input type="color" class="color-pick-input" name="color" id="color-picker" value="#4e73df">
-                                    Color
+                                    <span id="color-hex-display">#4e73df</span>
                                 </label>
                             </div>
 
@@ -363,7 +363,7 @@ $departmentList = $stmt2->fetchAll(PDO::FETCH_ASSOC);
                                 <div class="create-dept-preview-name" id="edit-preview-name">Department Name</div>
                                 <label class="color-pick-wrapper">
                                     <input type="color" class="color-pick-input" name="color" id="edit-color-picker" value="#4e73df">
-                                    Color
+                                    <span id="edit-color-hex-display" class="text-meta">#4e73df</span>
                                 </label>
                             </div>
 
@@ -503,6 +503,7 @@ document.addEventListener('DOMContentLoaded', () => {
         previewIcon.style.background = color;
         previewIcon.style.color      = getContrastColor(color);
         previewName.textContent      = name;
+        document.getElementById('color-hex-display').textContent = color.toUpperCase();
     }
 
     inputCode.addEventListener('input',   updatePreview);
@@ -529,6 +530,7 @@ document.addEventListener('DOMContentLoaded', () => {
         editIcon.style.background = color;
         editIcon.style.color      = getContrastColor(color);
         editPrev.textContent      = name;
+        document.getElementById('edit-color-hex-display').textContent = color.toUpperCase();
     }
 
     editCode.addEventListener('input',  updateEditPreview);
