@@ -12,10 +12,9 @@ header('Content-Type: application/json; charset=utf-8');
 
 require '../vendor/autoload.php';
 require '../db.php';
+require_once '../send_mail.php';
 
 use PhpOffice\PhpSpreadsheet\IOFactory;
-use PhpOffice\PhpSpreadsheet\Cell\DataType;
-use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
 
 /* =========================================================
    HELPERS
@@ -109,6 +108,28 @@ $pdo->exec("CREATE TABLE IF NOT EXISTS `cutoffs` (
 
 $action = $_GET['action'] ?? '';
 $method = $_SERVER['REQUEST_METHOD'];
+
+/* =========================================================
+   HEADER VALIDATION (shared by all importers)
+========================================================= */
+
+/**
+ * Checks that the first row of the uploaded sheet matches expected column headers.
+ * Returns an error message string on mismatch, or null if the headers are correct.
+ */
+function validateSheetHeaders(array $headerRow, array $expected): ?string
+{
+    foreach ($expected as $i => $label) {
+        $actual = trim((string)($headerRow[$i] ?? ''));
+        if (strcasecmp($actual, $label) !== 0) {
+            $col = chr(65 + $i);
+            $got = $actual !== '' ? "\"$actual\"" : '(empty)';
+            return "Wrong template: column $col should be \"$label\" but got $got. "
+                 . 'Please download and use the correct template.';
+        }
+    }
+    return null;
+}
 
 /* =========================================================
    BATCH-VALIDATE EMPLOYEE IDs (shared by schedule & leaves)
@@ -235,9 +256,13 @@ if ($action === 'import_schedule') {
             respond(['status' => 'error', 'message' => 'No file uploaded or upload failed.'], 400);
         }
 
-        $rows = IOFactory::load($_FILES['schedule_file']['tmp_name'])
+        $rows   = IOFactory::load($_FILES['schedule_file']['tmp_name'])
             ->getActiveSheet()->toArray();
-        array_shift($rows);
+        $header = array_shift($rows);
+
+        if ($err = validateSheetHeaders($header, ['Employee ID', 'Employee Name', 'Start Date', 'End Date', 'Time'])) {
+            respond(['status' => 'error', 'message' => $err], 422);
+        }
 
         $validIds = fetchValidEmployeeIds(
             $pdo,
@@ -288,7 +313,12 @@ if ($action === 'import_schedule') {
             $end     = strtotime($endDate);
 
             if (!$current || !$end) {
-                $errors[] = ['row' => $rowNum, 'message' => 'Invalid date'];
+                $errors[] = ['row' => $rowNum, 'message' => 'Invalid date (use YYYY-MM-DD)'];
+                continue;
+            }
+
+            if ($current > $end) {
+                $errors[] = ['row' => $rowNum, 'message' => "Start date $startDate is after end date $endDate"];
                 continue;
             }
 
@@ -298,6 +328,12 @@ if ($action === 'import_schedule') {
             }
 
             [$startTime, $endTime] = array_map('trim', explode('-', $time, 2));
+
+            if (!preg_match('/^\d{2}:\d{2}$/', $startTime) || !preg_match('/^\d{2}:\d{2}$/', $endTime)) {
+                $errors[] = ['row' => $rowNum, 'message' => "Invalid time \"$time\" — use HH:MM-HH:MM (e.g. 08:00-17:00)"];
+                continue;
+            }
+
             $isOvernight = $endTime < $startTime;
 
             while ($current <= $end) {
@@ -408,9 +444,17 @@ if ($action === 'import_leaves') {
             respond(['status' => 'error', 'message' => 'No file uploaded or upload failed.'], 400);
         }
 
-        $rows = IOFactory::load($_FILES['schedule_file']['tmp_name'])
+        $rows   = IOFactory::load($_FILES['schedule_file']['tmp_name'])
             ->getActiveSheet()->toArray();
-        array_shift($rows);
+        $header = array_shift($rows);
+
+        if ($err = validateSheetHeaders($header, [
+            'Employee ID', 'Employee Name',
+            'Buffer Leave', 'Vacation Leave', 'Sick Leave',
+            'Paternity Leave', 'Maternity Leave', 'Solo Parent Leave', 'Birthday Leave',
+        ])) {
+            respond(['status' => 'error', 'message' => $err], 422);
+        }
 
         $validIds = fetchValidEmployeeIds(
             $pdo,
@@ -441,7 +485,7 @@ if ($action === 'import_leaves') {
         $inserted = 0;
         $errors   = [];
         $toInt    = fn($v, $default) => is_numeric(trim((string)$v))
-            ? (int)trim((string)$v)
+            ? max(0, (int)trim((string)$v))
             : $default;
 
         foreach ($rows as $i => $row) {
@@ -571,20 +615,27 @@ if ($action === 'import_employees') {
             respond(['status' => 'error', 'message' => 'No file uploaded or upload failed.'], 400);
         }
 
-        $rows = IOFactory::load($_FILES['employees_file']['tmp_name'])
+        $rows   = IOFactory::load($_FILES['employees_file']['tmp_name'])
             ->getActiveSheet()->toArray();
-        array_shift($rows); // remove header
+        $header = array_shift($rows);
+
+        if ($err = validateSheetHeaders($header, [
+            'Employee ID', 'First Name', 'Last Name',
+            'Email', 'Birthdate', 'Role', 'Department Code',
+        ])) {
+            respond(['status' => 'error', 'message' => $err], 422);
+        }
 
         // Pre-load all role keys → IDs
         $roleMap = [];
-        foreach ($pdo->query("SELECT id, role_key FROM roles")->fetchAll(PDO::FETCH_ASSOC) as $r) {
-            $roleMap[strtolower($r['role_key'])] = (int)$r['id'];
+        foreach ($pdo->query("SELECT id, role_key, role_name FROM roles")->fetchAll(PDO::FETCH_ASSOC) as $r) {
+            $roleMap[strtolower($r['role_key'])] = ['id' => (int)$r['id'], 'name' => $r['role_name']];
         }
 
-        // Pre-load all department codes → IDs
+        // Pre-load all department codes → IDs + names
         $deptMap = [];
-        foreach ($pdo->query("SELECT id, department_code FROM departments")->fetchAll(PDO::FETCH_ASSOC) as $d) {
-            $deptMap[strtoupper(trim($d['department_code']))] = (int)$d['id'];
+        foreach ($pdo->query("SELECT id, department_code, department_name FROM departments")->fetchAll(PDO::FETCH_ASSOC) as $d) {
+            $deptMap[strtoupper(trim($d['department_code']))] = ['id' => (int)$d['id'], 'name' => $d['department_name']];
         }
 
         $insertStmt = $pdo->prepare("
@@ -602,10 +653,16 @@ if ($action === 'import_employees') {
             VALUES (?, 'ADD_EMPLOYEE', NOW(), 0, 0, 0, ?)
         ");
 
+        // Prepare duplicate-check statements once, outside the loop
+        $dupIdStmt    = $pdo->prepare("SELECT id FROM employees WHERE employee_id = ?");
+        $dupEmailStmt = $pdo->prepare("SELECT id FROM employees WHERE LOWER(email) = LOWER(?)");
+
         $pdo->beginTransaction();
 
-        $inserted = 0;
-        $errors   = [];
+        $inserted          = 0;
+        $errors            = [];
+        $insertedEmployees = [];
+        $validRoles        = implode(', ', array_keys($roleMap));
 
         foreach ($rows as $i => $row) {
             $rowNum = $i + 2;
@@ -620,14 +677,9 @@ if ($action === 'import_employees') {
             $roleKey     = strtolower(trim((string)($row[5] ?? '')));
             $deptCode    = strtoupper(trim((string)($row[6] ?? '')));
 
-            // Validate required fields
+            // Required field presence
             if ($employeeId === '000000' || $firstName === '' || $lastName === '' || $email === '') {
                 $errors[] = ['row' => $rowNum, 'message' => 'Missing required fields (ID, First Name, Last Name, Email)'];
-                continue;
-            }
-
-            if ($birthdate === null) {
-                $errors[] = ['row' => $rowNum, 'message' => 'Invalid or missing birthdate (use YYYY-MM-DD)'];
                 continue;
             }
 
@@ -637,33 +689,43 @@ if ($action === 'import_employees') {
             }
 
             if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-                $errors[] = ['row' => $rowNum, 'message' => "Invalid email address \"$email\""];
+                $errors[] = ['row' => $rowNum, 'message' => "Invalid email \"$email\""];
+                continue;
+            }
+
+            if ($birthdate === null) {
+                $errors[] = ['row' => $rowNum, 'message' => 'Invalid or missing birthdate (use YYYY-MM-DD)'];
+                continue;
+            }
+
+            if ($roleKey === '') {
+                $errors[] = ['row' => $rowNum, 'message' => "Role is required. Valid roles: $validRoles"];
                 continue;
             }
 
             if (!isset($roleMap[$roleKey])) {
-                $errors[] = ['row' => $rowNum, 'message' => "Unknown role \"$roleKey\". Valid roles: " . implode(', ', array_keys($roleMap))];
+                $errors[] = ['row' => $rowNum, 'message' => "Unknown role \"$roleKey\". Valid roles: $validRoles"];
                 continue;
             }
 
-            // Duplicate employee ID check
-            $dupId = $pdo->prepare("SELECT id FROM employees WHERE employee_id = ?");
-            $dupId->execute([$employeeId]);
-            if ($dupId->fetchColumn()) {
+            // Duplicate employee ID check (sees own-transaction inserts too)
+            $dupIdStmt->execute([$employeeId]);
+            if ($dupIdStmt->fetchColumn()) {
                 $errors[] = ['row' => $rowNum, 'message' => "Employee ID $employeeId already exists"];
                 continue;
             }
 
             // Duplicate email check
-            $dupEmail = $pdo->prepare("SELECT id FROM employees WHERE LOWER(email) = LOWER(?)");
-            $dupEmail->execute([$email]);
-            if ($dupEmail->fetchColumn()) {
+            $dupEmailStmt->execute([$email]);
+            if ($dupEmailStmt->fetchColumn()) {
                 $errors[] = ['row' => $rowNum, 'message' => "Email \"$email\" already exists"];
                 continue;
             }
 
-            $roleId = $roleMap[$roleKey];
-            $deptId = ($deptCode !== '' && isset($deptMap[$deptCode])) ? $deptMap[$deptCode] : null;
+            $roleId   = $roleMap[$roleKey]['id'];
+            $roleName = $roleMap[$roleKey]['name'];
+            $deptId   = ($deptCode !== '' && isset($deptMap[$deptCode])) ? $deptMap[$deptCode]['id']   : null;
+            $deptName = ($deptCode !== '' && isset($deptMap[$deptCode])) ? $deptMap[$deptCode]['name'] : '';
 
             $insertStmt->execute([
                 $employeeId, $firstName, $lastName, $email,
@@ -671,19 +733,73 @@ if ($action === 'import_employees') {
             ]);
 
             $newId = (int)$pdo->lastInsertId();
+
             $leaveStmt->execute([$newId]);
             $logStmt->execute([$newId, $_SESSION['user_id']]);
+
+            $insertedEmployees[] = [
+                'id'              => $newId,
+                'employee_id'     => $employeeId,
+                'first_name'      => $firstName,
+                'last_name'       => $lastName,
+                'email'           => $email,
+                'role'            => $roleKey,
+                'role_name'       => $roleName,
+                'department_id'   => $deptId ?? '',
+                'department_name' => $deptName,
+            ];
 
             $inserted++;
         }
 
         $pdo->commit();
-        respond(['status' => 'success', 'inserted' => $inserted, 'errors' => $errors]);
+        respond(['status' => 'success', 'inserted' => $inserted, 'errors' => $errors, 'inserted_employees' => $insertedEmployees]);
 
     } catch (Throwable $e) {
         if ($pdo->inTransaction()) $pdo->rollBack();
         respond(['status' => 'error', 'message' => $e->getMessage()], 500);
     }
+}
+
+/* =========================================================
+   SEND WELCOME EMAILS  (called async after import_employees)
+========================================================= */
+
+if ($action === 'send_welcome_emails') {
+    if ($myRole !== 'superadmin') respond(['status' => 'error', 'message' => 'Unauthorized.'], 403);
+
+    ignore_user_abort(true);
+
+    $ids = array_values(array_filter(array_map('intval', (array)($_POST['ids'] ?? []))));
+
+    if (empty($ids)) respond(['status' => 'success', 'sent' => 0]);
+
+    $placeholders = implode(',', array_fill(0, count($ids), '?'));
+    $stmt = $pdo->prepare(
+        "SELECT first_name, last_name, email FROM employees WHERE id IN ($placeholders)"
+    );
+    $stmt->execute($ids);
+
+    $recipients = [];
+    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $emp) {
+        $fullName = "{$emp['first_name']} {$emp['last_name']}";
+        $email    = $emp['email'];
+        $recipients[] = [
+            'email' => $email,
+            'name'  => $fullName,
+            'body'  => "
+                <p>Hi " . htmlspecialchars($fullName) . ",</p>
+                <p>Your account has been created in the HSN DTR System.</p>
+                <p><strong>Email:</strong> " . htmlspecialchars($email) . "<br>
+                <strong>Password:</strong> HSN.123</p>
+                <p>Please log in and change your password.</p>
+                <p>— HSN DTR System</p>
+            ",
+        ];
+    }
+
+    $sent = sendMailBulk($recipients, 'Your HSN DTR Account');
+    respond(['status' => 'success', 'sent' => $sent]);
 }
 
 /* =========================================================
@@ -747,8 +863,8 @@ if ($action === 'download_cutoff_template') {
 if ($action === 'import_cutoffs' && $method === 'POST') {
     if ($myRole !== 'superadmin') respond(['status' => 'error', 'message' => 'Unauthorized.'], 403);
 
-    if (empty($_FILES['cutoff_file']['tmp_name'])) {
-        respond(['status' => 'error', 'message' => 'No file uploaded.'], 422);
+    if (empty($_FILES['cutoff_file']) || $_FILES['cutoff_file']['error'] !== UPLOAD_ERR_OK) {
+        respond(['status' => 'error', 'message' => 'No file uploaded or upload failed.'], 422);
     }
 
     try {
@@ -756,6 +872,11 @@ if ($action === 'import_cutoffs' && $method === 'POST') {
             ->getActiveSheet()->toArray(null, false, false);
     } catch (\Exception) {
         respond(['status' => 'error', 'message' => 'Could not read file.'], 422);
+        $rows = []; // unreachable — respond() exits; satisfies static analysis
+    }
+
+    if ($err = validateSheetHeaders($rows[0] ?? [], ['Start Date', 'End Date'])) {
+        respond(['status' => 'error', 'message' => $err], 422);
     }
 
     $inserted = 0;

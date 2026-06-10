@@ -1190,6 +1190,60 @@ document.getElementById('empModal')
                 fileNameId:    'employees-file-name',
                 previewBodyId: 'employees-preview-body',
                 cols: 7,
+                onSuccess: (data) => {
+                    const employees = data.inserted_employees ?? [];
+                    if (!employees.length) return;
+
+                    showToast(`Sending welcome emails to ${employees.length} employee(s)...`, 'info');
+                    const fd = new FormData();
+                    employees.forEach(e => fd.append('ids[]', e.id));
+                    fetch('bulk_importing_api.php?action=send_welcome_emails', { method: 'POST', body: fd });
+
+                    const esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+                    const tbody = document.getElementById('empList');
+                    tbody.querySelectorAll('.emptyRow').forEach(r => r.remove());
+
+                    employees.forEach(emp => {
+                        const fullName = `${emp.first_name} ${emp.last_name}`;
+                        const deptName = emp.department_name || 'No Department';
+                        const tr = document.createElement('tr');
+                        tr.className = 'empRow';
+                        tr.dataset.id         = emp.id;
+                        tr.dataset.employeeId = emp.employee_id;
+                        tr.dataset.firstName  = emp.first_name;
+                        tr.dataset.lastName   = emp.last_name;
+                        tr.dataset.email      = emp.email;
+                        tr.dataset.role       = emp.role;
+                        tr.dataset.roleName   = emp.role_name;
+                        tr.dataset.dept       = emp.department_id ?? '';
+                        tr.dataset.deptName   = emp.department_name ?? '';
+                        tr.innerHTML = `
+                            <td><div class="copy-cell">
+                                <button class="copy-btn" data-copy="${esc(emp.employee_id)}" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Copy ID"><i class="bi bi-copy"></i></button>
+                                ${esc(emp.employee_id)}
+                            </div></td>
+                            <td><div class="copy-cell gap-2">
+                                <button class="copy-btn" data-copy="${esc(fullName)}" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Copy name"><i class="bi bi-copy"></i></button>
+                                <img src="../assets/user_profiles/default_profile.png" class="employee-avatar" alt="avatar">
+                                <span>${esc(fullName)}</span>
+                            </div></td>
+                            <td>${esc(emp.email)}</td>
+                            <td><span class="empRoleBadge empRole-${esc(emp.role)}">${esc(emp.role_name)}</span></td>
+                            <td>${esc(deptName)}</td>
+                            <td class="text-end">
+                                <a class="btn btn-sm btn-success d-flex align-items-center gap-2"
+                                   href="admin_employee_view.php?employee_id=${esc(emp.employee_id)}">
+                                    <i class="bi bi-eye-fill"></i> View
+                                </a>
+                            </td>`;
+                        tbody.appendChild(tr);
+                        tr.querySelectorAll('.copy-btn').forEach(el =>
+                            bootstrap.Tooltip.getOrCreateInstance(el, { trigger: 'hover focus' })
+                        );
+                        allRows.push(tr);
+                    });
+                    applyFilters();
+                },
             });
         });
 
@@ -1482,7 +1536,7 @@ document.getElementById('empModal')
         BULK SCHEDULE FUNCTIONS
         ------------------------------------------------------- */
 
-        function initImportModal({ modalId, formId, fileInputId, previewId, fileNameId, previewBodyId, cols }) {
+        function initImportModal({ modalId, formId, fileInputId, previewId, fileNameId, previewBodyId, cols, onSuccess = null }) {
 
             const form      = document.getElementById(formId);
             const fileInput = document.getElementById(fileInputId);
@@ -1583,6 +1637,7 @@ document.getElementById('empModal')
 
                         showToast(msg, data.errors?.length ? 'warning' : 'success');
                         bootstrap.Modal.getInstance(document.getElementById(modalId))?.hide();
+                        if (onSuccess && data.inserted > 0) onSuccess(data);
                     } else {
                         showToast(data.message || 'Import failed.', 'danger');
                     }
