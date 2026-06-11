@@ -50,7 +50,7 @@ function parseExcelDate(mixed $value): ?string
                 ->format('Y-m-d');
         } catch (\Exception) { return null; }
     }
-    $v = trim((string)$value);
+    $v = ltrim(trim((string)$value), "'");
     if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $v)) return $v;
     try { return (new \DateTime($v))->format('Y-m-d'); } catch (\Exception) { return null; }
 }
@@ -184,9 +184,9 @@ if ($action === 'download_schedule_template') {
     $notes = [
         'A' => 'Enter numeric employee IDs. Excel will automatically display leading zeros (e.g. 1 → 000001).',
         'B' => 'Optional — for reference only.',
-        'C' => 'Format: YYYY-MM-DD (e.g. 2026-05-01).',
-        'D' => 'Format: YYYY-MM-DD. Same as Start Date for a single day.',
-        'E' => 'Format: HH:MM-HH:MM (e.g. 08:00-17:00).',
+        'C' => 'Format: DD-Mon-YYYY (e.g. 01-May-2026).',
+        'D' => 'Format: DD-Mon-YYYY. Same as Start Date for a single day.',
+        'E' => 'Format: HH:MM-HH:MM (e.g. 08:00-17:00). Use EMPTY to clear/remove the schedule for that date range.',
     ];
 
     // ===== HEADERS =====
@@ -210,18 +210,23 @@ if ($action === 'download_schedule_template') {
         ->getNumberFormat()
         ->setFormatCode('000000');
 
+    // ===== DATE COLUMNS: force text so Excel won't convert to serial numbers =====
+    $sheet->getStyle('C2:D1000')
+        ->getNumberFormat()
+        ->setFormatCode('@');
+
     // ===== SAMPLE ROWS =====
     $sheet->setCellValue('A2', 1);
     $sheet->setCellValue('B2', 'John Doe');
-    $sheet->setCellValue('C2', '2026-05-01');
-    $sheet->setCellValue('D2', '2026-05-01');
+    $sheet->setCellValue('C2', '01-May-2026');
+    $sheet->setCellValue('D2', '01-May-2026');
     $sheet->setCellValue('E2', '08:00-17:00');
 
     $sheet->setCellValue('A3', 2);
     $sheet->setCellValue('B3', 'Jane Doe');
-    $sheet->setCellValue('C3', '2026-05-02');
-    $sheet->setCellValue('D3', '2026-05-02');
-    $sheet->setCellValue('E3', '');
+    $sheet->setCellValue('C3', '02-May-2026');
+    $sheet->setCellValue('D3', '02-May-2026');
+    $sheet->setCellValue('E3', 'EMPTY');
 
     // ===== SAMPLE ROW STYLES =====
     applySampleRowStyle($sheet, 'A2:E2');
@@ -244,6 +249,90 @@ if ($action === 'download_schedule_template') {
         ->save('php://output');
 
     exit;
+}
+
+/* =========================================================
+   CHECK SCHEDULE CONFLICTS (pre-import dry-run)
+========================================================= */
+
+if ($action === 'check_schedule_conflicts') {
+    if (empty($_FILES['schedule_file']) || $_FILES['schedule_file']['error'] !== UPLOAD_ERR_OK) {
+        respond(['status' => 'error', 'message' => 'No file uploaded.'], 400);
+    }
+
+    $rows   = IOFactory::load($_FILES['schedule_file']['tmp_name'])
+        ->getActiveSheet()->toArray();
+    $header = array_shift($rows);
+
+    if ($err = validateSheetHeaders($header, ['Employee ID', 'Employee Name', 'Start Date', 'End Date', 'Time'])) {
+        respond(['status' => 'error', 'message' => $err], 422);
+    }
+
+    $validIds = fetchValidEmployeeIds(
+        $pdo,
+        array_filter(array_unique(array_column($rows, 0))),
+        $deptScoped,
+        $myDeptId
+    );
+
+    $checkStmt = $pdo->prepare("
+        SELECT scheduled_start, scheduled_end, is_rest_day
+        FROM schedules
+        WHERE employee_id = ? AND schedule_date = ? AND is_archived = 0
+    ");
+
+    $conflicts = [];
+    $total     = 0;
+    $MAX_SHOW  = 50;
+
+    foreach ($rows as $row) {
+        if (empty(array_filter(array_map('trim', array_map('strval', $row))))) continue;
+
+        $employeeId = str_pad(trim((string)($row[0] ?? '')), 6, '0', STR_PAD_LEFT);
+        $empName    = trim((string)($row[1] ?? ''));
+        $startDate  = parseExcelDate($row[2] ?? null);
+        $endDate    = parseExcelDate($row[3] ?? null);
+        $time       = trim((string)($row[4] ?? ''));
+        $newTime    = strtoupper($time) === 'EMPTY' ? '(clear)' : $time;
+
+        if (!isset($validIds[$employeeId]) || $startDate === null || $endDate === null) continue;
+
+        $empDbId = $validIds[$employeeId];
+        $current = strtotime($startDate);
+        $end     = strtotime($endDate);
+
+        while ($current <= $end) {
+            $date = date('Y-m-d', $current);
+            $checkStmt->execute([$empDbId, $date]);
+            $existing = $checkStmt->fetch(PDO::FETCH_ASSOC);
+
+            if ($existing) {
+                $total++;
+                if (count($conflicts) < $MAX_SHOW) {
+                    if ($existing['is_rest_day']) {
+                        $existingTime = 'Rest Day';
+                    } elseif ($existing['scheduled_start']) {
+                        $existingTime = date('H:i', strtotime($existing['scheduled_start']))
+                            . '-' . date('H:i', strtotime($existing['scheduled_end']));
+                    } else {
+                        $existingTime = '—';
+                    }
+
+                    $conflicts[] = [
+                        'employee_id'   => $employeeId,
+                        'employee_name' => $empName,
+                        'date'          => date('d-M-Y', $current),
+                        'existing'      => $existingTime,
+                        'new'           => $newTime,
+                    ];
+                }
+            }
+
+            $current = strtotime('+1 day', $current);
+        }
+    }
+
+    respond(['status' => 'success', 'conflicts' => $conflicts, 'total' => $total]);
 }
 
 /* =========================================================
@@ -282,9 +371,14 @@ if ($action === 'import_schedule') {
                 request_type    = 'edit'
         ");
 
+        $deleteStmt = $pdo->prepare(
+            "DELETE FROM schedules WHERE employee_id = ? AND schedule_date = ?"
+        );
+
         $pdo->beginTransaction();
 
         $inserted = 0;
+        $cleared  = 0;
         $errors   = [];
 
         foreach ($rows as $i => $row) {
@@ -293,12 +387,12 @@ if ($action === 'import_schedule') {
             if (empty(array_filter(array_map('trim', array_map('strval', $row))))) continue;
 
             $employeeId = str_pad(trim((string)($row[0] ?? '')), 6, '0', STR_PAD_LEFT);
-            $startDate  = trim((string)($row[2] ?? ''));
-            $endDate    = trim((string)($row[3] ?? ''));
+            $startDate  = parseExcelDate($row[2] ?? null);
+            $endDate    = parseExcelDate($row[3] ?? null);
             $time       = trim((string)($row[4] ?? ''));
 
-            if ($employeeId === '000000' || $startDate === '' || $endDate === '') {
-                $errors[] = ['row' => $rowNum, 'message' => 'Missing required fields'];
+            if ($employeeId === '000000' || $startDate === null || $endDate === null) {
+                $errors[] = ['row' => $rowNum, 'message' => 'Missing or invalid date (use DD-Mon-YYYY, e.g. 07-Jan-2026)'];
                 continue;
             }
 
@@ -312,51 +406,58 @@ if ($action === 'import_schedule') {
             $current = strtotime($startDate);
             $end     = strtotime($endDate);
 
-            if (!$current || !$end) {
-                $errors[] = ['row' => $rowNum, 'message' => 'Invalid date (use YYYY-MM-DD)'];
-                continue;
-            }
-
             if ($current > $end) {
                 $errors[] = ['row' => $rowNum, 'message' => "Start date $startDate is after end date $endDate"];
                 continue;
             }
 
-            if (empty($time) || !str_contains($time, '-')) {
-                $errors[] = ['row' => $rowNum, 'message' => 'Invalid or missing time format (use HH:MM-HH:MM)'];
-                continue;
+            $isClear     = (strtoupper($time) === 'EMPTY');
+            $isOvernight = false;
+
+            if (!$isClear) {
+                if (!str_contains($time, '-')) {
+                    $errors[] = ['row' => $rowNum, 'message' => 'Invalid time format — use HH:MM-HH:MM, or EMPTY to clear'];
+                    continue;
+                }
+
+                [$startTime, $endTime] = array_map('trim', explode('-', $time, 2));
+
+                if (!preg_match('/^\d{2}:\d{2}$/', $startTime) || !preg_match('/^\d{2}:\d{2}$/', $endTime)) {
+                    $errors[] = ['row' => $rowNum, 'message' => "Invalid time \"$time\" — use HH:MM-HH:MM (e.g. 08:00-17:00)"];
+                    continue;
+                }
+
+                $isOvernight = $endTime < $startTime;
             }
-
-            [$startTime, $endTime] = array_map('trim', explode('-', $time, 2));
-
-            if (!preg_match('/^\d{2}:\d{2}$/', $startTime) || !preg_match('/^\d{2}:\d{2}$/', $endTime)) {
-                $errors[] = ['row' => $rowNum, 'message' => "Invalid time \"$time\" — use HH:MM-HH:MM (e.g. 08:00-17:00)"];
-                continue;
-            }
-
-            $isOvernight = $endTime < $startTime;
 
             while ($current <= $end) {
-                $date    = date('Y-m-d', $current);
-                $startDT = $date . ' ' . $startTime . ':00';
-                $endDT   = $isOvernight
-                    ? date('Y-m-d', strtotime('+1 day', $current)) . ' ' . $endTime . ':00'
-                    : $date . ' ' . $endTime . ':00';
+                $date = date('Y-m-d', $current);
 
-                $upsertStmt->execute([
-                    ':employee_id'   => $validIds[$employeeId],
-                    ':schedule_date' => $date,
-                    ':start'         => $startDT,
-                    ':end'           => $endDT,
-                ]);
+                if ($isClear) {
+                    $deleteStmt->execute([$validIds[$employeeId], $date]);
+                    if ($deleteStmt->rowCount() > 0) $cleared++;
+                } else {
+                    $startDT = $date . ' ' . $startTime . ':00';
+                    $endDT   = $isOvernight
+                        ? date('Y-m-d', strtotime('+1 day', $current)) . ' ' . $endTime . ':00'
+                        : $date . ' ' . $endTime . ':00';
 
-                $inserted++;
+                    $upsertStmt->execute([
+                        ':employee_id'   => $validIds[$employeeId],
+                        ':schedule_date' => $date,
+                        ':start'         => $startDT,
+                        ':end'           => $endDT,
+                    ]);
+
+                    $inserted++;
+                }
+
                 $current = strtotime('+1 day', $current);
             }
         }
 
         $pdo->commit();
-        respond(['status' => 'success', 'inserted' => $inserted, 'errors' => $errors]);
+        respond(['status' => 'success', 'inserted' => $inserted, 'cleared' => $cleared, 'errors' => $errors]);
 
     } catch (Throwable $e) {
         if ($pdo->inTransaction()) $pdo->rollBack();
@@ -556,7 +657,7 @@ if ($action === 'download_employee_template') {
         'B' => 'Employee first name (required).',
         'C' => 'Employee last name (required).',
         'D' => 'Unique email address (required).',
-        'E' => 'Format: YYYY-MM-DD (e.g. 1995-04-25). Required.',
+        'E' => 'Format: DD-Mon-YYYY (e.g. 25-Apr-1995). Required.',
         'F' => 'Role key: employee, manager, workforce, admin (required).',
         'G' => 'Department code as shown in the Departments page (optional).',
     ];
@@ -579,12 +680,17 @@ if ($action === 'download_employee_template') {
         ->getNumberFormat()
         ->setFormatCode('000000');
 
+    // Birthdate column: force text so Excel won't convert to serial numbers
+    $sheet->getStyle('E2:E1000')
+        ->getNumberFormat()
+        ->setFormatCode('@');
+
     // Sample rows
     $sheet->setCellValue('A2', 1);
-    $sheet->fromArray(['Juan', 'Dela Cruz', 'juan.delacruz@company.com', '1995-04-25', 'employee', 'HR'], null, 'B2');
+    $sheet->fromArray(['Juan', 'Dela Cruz', 'juan.delacruz@company.com', '25-Apr-1995', 'employee', 'HR'], null, 'B2');
 
     $sheet->setCellValue('A3', 2);
-    $sheet->fromArray(['Maria', 'Santos', 'maria.santos@company.com', '1990-11-12', 'manager', 'IT'], null, 'B3');
+    $sheet->fromArray(['Maria', 'Santos', 'maria.santos@company.com', '12-Nov-1990', 'manager', 'IT'], null, 'B3');
 
     applySampleRowStyle($sheet, 'A2:G2');
     applySampleRowStyle($sheet, 'A3:G3', true);
@@ -694,7 +800,7 @@ if ($action === 'import_employees') {
             }
 
             if ($birthdate === null) {
-                $errors[] = ['row' => $rowNum, 'message' => 'Invalid or missing birthdate (use YYYY-MM-DD)'];
+                $errors[] = ['row' => $rowNum, 'message' => 'Invalid or missing birthdate (use DD-Mon-YYYY, e.g. 25-Apr-1995)'];
                 continue;
             }
 
@@ -837,6 +943,11 @@ if ($action === 'download_cutoff_template') {
         $comment->getText()->createTextRun($note);
         $comment->setWidth('200pt')->setHeight('50pt');
     }
+
+    // Date columns: force text so Excel won't convert to serial numbers
+    $sheet->getStyle('A2:B1000')
+        ->getNumberFormat()
+        ->setFormatCode('@');
 
     $sheet->setCellValue('A2', '01-May-2026');
     $sheet->setCellValue('B2', '15-May-2026');

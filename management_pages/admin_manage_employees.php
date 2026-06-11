@@ -689,13 +689,23 @@ $initialDeptFilter = isset($_GET['dept']) ? (int)$_GET['dept'] : 0;
                                         <!-- Department -->
                                         <div class="col-md-12">
                                             <label class="form-label">Department</label>
-                                            <div class="dropdown w-100 dept-pop dept-pop-up">
-                                                <div class="input-group">
-                                                    <span class="input-group-text"><i class="bi bi-search"></i></span>
-                                                    <input type="text" id="deptModalSearch" class="form-control"
-                                                           placeholder="Select Department" autocomplete="off">
+                                            <div class="dropdown w-100">
+                                                <button class="btn w-100 text-start dropdown-toggle"
+                                                        type="button"
+                                                        data-bs-toggle="dropdown"
+                                                        data-bs-auto-close="outside"
+                                                        aria-expanded="false"
+                                                        id="deptModalBtn">
+                                                    <span id="deptModalLabel">Select Department</span>
+                                                </button>
+                                                <div class="dropdown-menu p-2 w-100">
+                                                    <div class="vstack gap-2">
+                                                        <input type="text" class="form-control form-control-sm"
+                                                               id="deptModalSearch" placeholder="Search..." autocomplete="off">
+                                                        <ul class="list-unstyled mb-0" id="dept-modal-menu"
+                                                            style="max-height:200px; overflow-y:auto;"></ul>
+                                                    </div>
                                                 </div>
-                                                <ul class="dropdown-menu p-2 w-100 dept-tooltip-menu" id="dept-modal-menu"></ul>
                                             </div>
                                             <input type="hidden" name="department_id" id="deptInput">
                                         </div>
@@ -824,6 +834,43 @@ $initialDeptFilter = isset($_GET['dept']) ? (int)$_GET['dept'] : 0;
                         </div>
 
                     </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Schedule Conflicts Confirmation Modal -->
+        <div class="modal fade" id="schedule-conflicts-modal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">
+                            <i class="bi bi-exclamation-triangle-fill text-warning me-2"></i>Replace Existing Schedules?
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p id="conflicts-summary" class="text-light mb-3"></p>
+                        <div class="table-responsive">
+                            <table class="table table-sm table-bordered mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Employee</th>
+                                        <th>Current</th>
+                                        <th>New</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="conflicts-tbody"></tbody>
+                            </table>
+                        </div>
+                        <p id="conflicts-more" class="mt-2 small" style="color:var(--text-muted);"></p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" id="conflicts-cancel-btn" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-warning" id="conflicts-confirm-btn">
+                            <i class="bi bi-arrow-repeat"></i> Replace Anyway
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1123,27 +1170,20 @@ $initialDeptFilter = isset($_GET['dept']) ? (int)$_GET['dept'] : 0;
                     renderDeptList(deptItems.filter(d => d.label.toLowerCase().includes(q)), 'filter');
                 });
 
-            const deptSearch = document.getElementById('deptModalSearch');
-            const deptMenu   = document.getElementById('dept-modal-menu');
-            deptSearch?.addEventListener('click', () => deptMenu.classList.add('show'));
-            deptSearch?.addEventListener('input', function () {
-                const q = this.value.toLowerCase();
-                renderDeptList(
-                    deptItems.filter(d => d.value !== '' && d.label.toLowerCase().includes(q)),
-                    'modal'
-                );
-                deptMenu.classList.add('show');
-            });
-            document.addEventListener('click', e => {
-                if (!e.target.closest('#dept-modal-menu') && !e.target.closest('#deptModalSearch'))
-                    deptMenu?.classList.remove('show');
-            });
+            document.getElementById('deptModalSearch')
+                ?.addEventListener('input', function () {
+                    const q = this.value.toLowerCase();
+                    renderDeptList(
+                        deptItems.filter(d => d.value !== '' && d.label.toLowerCase().includes(q)),
+                        'modal'
+                    );
+                });
 
 document.getElementById('empModal')
                 ?.addEventListener('show.bs.modal', () => {
-                    document.getElementById('deptModalSearch').value = '';
-                    document.getElementById('deptInput').value       = '';
-                    document.getElementById('dept-modal-menu').classList.remove('show');
+                    document.getElementById('deptModalLabel').textContent = 'Select Department';
+                    document.getElementById('deptModalSearch').value      = '';
+                    document.getElementById('deptInput').value            = '';
                     renderDeptList(deptItems.filter(d => d.value !== ''), 'modal');
                     document.getElementById('roleLabel').textContent = 'Select Role';
                     document.getElementById('roleInput').value      = '';
@@ -1170,6 +1210,23 @@ document.getElementById('empModal')
                 fileNameId:   'schedule-file-name',
                 previewBodyId:'schedule-preview-body',
                 cols: 5,
+                preSubmit: async (form) => {
+                    try {
+                        const res  = await fetch('bulk_importing_api.php?action=check_schedule_conflicts', {
+                            method: 'POST', body: new FormData(form)
+                        });
+                        const data = await res.json();
+                        if (data.status !== 'success') {
+                            showToast(data.message || 'Could not check for conflicts.', 'danger');
+                            return false;
+                        }
+                        if (!data.total) return true;
+                        return showScheduleConflictsModal(data.conflicts, data.total);
+                    } catch {
+                        showToast('Could not check for conflicts.', 'danger');
+                        return false;
+                    }
+                },
             });
 
             initImportModal({
@@ -1306,9 +1363,12 @@ document.getElementById('empModal')
             } else if (target === 'modal') {
                 listId   = 'dept-modal-menu';
                 onSelect = item => {
-                    document.getElementById('deptModalSearch').value = item.label;
-                    document.getElementById('deptInput').value       = item.value;
-                    document.getElementById('dept-modal-menu').classList.remove('show');
+                    document.getElementById('deptModalLabel').textContent = item.label;
+                    document.getElementById('deptModalSearch').value      = '';
+                    document.getElementById('deptInput').value            = item.value;
+                    bootstrap.Dropdown.getInstance(
+                        document.getElementById('deptModalBtn')
+                    )?.hide();
                 };
             } else {
                 return;
@@ -1536,7 +1596,41 @@ document.getElementById('empModal')
         BULK SCHEDULE FUNCTIONS
         ------------------------------------------------------- */
 
-        function initImportModal({ modalId, formId, fileInputId, previewId, fileNameId, previewBodyId, cols, onSuccess = null }) {
+        function showScheduleConflictsModal(conflicts, total) {
+            return new Promise(resolve => {
+                const modal   = document.getElementById('schedule-conflicts-modal');
+                const tbody   = document.getElementById('conflicts-tbody');
+                const summary = document.getElementById('conflicts-summary');
+                const more    = document.getElementById('conflicts-more');
+
+                summary.textContent = `${total} existing schedule${total !== 1 ? 's' : ''} will be replaced.`;
+                tbody.innerHTML = '';
+                conflicts.forEach(c => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `<td>${c.date}</td><td>${c.employee_id} — ${c.employee_name}</td><td>${c.existing}</td><td>${c.new}</td>`;
+                    tbody.appendChild(tr);
+                });
+                more.textContent = total > conflicts.length
+                    ? `+${total - conflicts.length} more not shown.` : '';
+
+                const bsModal    = bootstrap.Modal.getOrCreateInstance(modal);
+                const confirmBtn = document.getElementById('conflicts-confirm-btn');
+                const cancelBtn  = document.getElementById('conflicts-cancel-btn');
+
+                function cleanup() {
+                    confirmBtn.removeEventListener('click', onConfirm);
+                    modal.removeEventListener('hidden.bs.modal', onHide);
+                }
+                function onConfirm() { cleanup(); bsModal.hide(); resolve(true); }
+                function onHide()    { cleanup(); resolve(false); }
+
+                confirmBtn.addEventListener('click', onConfirm);
+                modal.addEventListener('hidden.bs.modal', onHide, { once: true });
+                bsModal.show();
+            });
+        }
+
+        function initImportModal({ modalId, formId, fileInputId, previewId, fileNameId, previewBodyId, cols, onSuccess = null, preSubmit = null }) {
 
             const form      = document.getElementById(formId);
             const fileInput = document.getElementById(fileInputId);
@@ -1572,14 +1666,24 @@ document.getElementById('empModal')
                 reader.onload = function (e) {
                     try {
                         const data     = new Uint8Array(e.target.result);
-                        const workbook = XLSX.read(data, { type: 'array' });
+                        const workbook = XLSX.read(data, { type: 'array', cellDates: true });
                         const sheet    = workbook.Sheets[workbook.SheetNames[0]];
-                        const rows     = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+                        const rows     = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: true });
                         const dataRows = rows.slice(1, 6);
 
                         const tbody      = document.getElementById(previewBodyId);
                         const fileNameEl = document.getElementById(fileNameId);
                         const preview    = document.getElementById(previewId);
+
+                        const fmtCell = v => {
+                            if (v instanceof Date) {
+                                const y = v.getFullYear();
+                                const m = String(v.getMonth() + 1).padStart(2, '0');
+                                const d = String(v.getDate()).padStart(2, '0');
+                                return `${y}-${m}-${d}`;
+                            }
+                            return (v === null || v === undefined || v === '') ? '—' : String(v);
+                        };
 
                         fileNameEl.textContent = file.name;
                         tbody.innerHTML = '';
@@ -1591,7 +1695,7 @@ document.getElementById('empModal')
                                 const tr = document.createElement('tr');
                                 for (let i = 0; i < cols; i++) {
                                     const td = document.createElement('td');
-                                    td.textContent = row[i] ?? '—';
+                                    td.textContent = fmtCell(row[i]);
                                     tr.appendChild(td);
                                 }
                                 tbody.appendChild(tr);
@@ -1617,6 +1721,18 @@ document.getElementById('empModal')
 
                 const submitBtn = this.querySelector('[type="submit"]');
                 const origHTML  = submitBtn.innerHTML;
+
+                if (preSubmit) {
+                    submitBtn.disabled  = true;
+                    submitBtn.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Checking...`;
+                    let proceed;
+                    try { proceed = await preSubmit(this); } finally {
+                        submitBtn.disabled  = false;
+                        submitBtn.innerHTML = origHTML;
+                    }
+                    if (!proceed) return;
+                }
+
                 submitBtn.disabled  = true;
                 submitBtn.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Importing...`;
 
@@ -1625,7 +1741,10 @@ document.getElementById('empModal')
                     const data = await res.json();
 
                     if (data.status === 'success') {
-                        let msg = `Imported ${data.inserted} record${data.inserted !== 1 ? 's' : ''}.`;
+                        const parts = [];
+                        if (data.inserted > 0) parts.push(`${data.inserted} imported`);
+                        if (data.cleared  > 0) parts.push(`${data.cleared} cleared`);
+                        let msg = parts.length ? parts.join(', ') + '.' : 'No changes.';
 
                         if (data.errors?.length) {
                             const MAX_SHOWN = 3;

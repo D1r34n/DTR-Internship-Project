@@ -463,7 +463,7 @@ $departmentList = $stmt2->fetchAll(PDO::FETCH_ASSOC);
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <p class="text-muted mb-0">Delete <strong id="delete-dept-name" class="text-tertiary"></strong>? This cannot be undone.</p>
+                    <p class="text-light mb-0">Delete <strong id="delete-dept-name" class="text-tertiary"></strong>? This cannot be undone.</p>
                 </div>
                 <div class="modal-footer border-0 pt-0">
                     <button type="button" class="btn btn-sm" data-bs-dismiss="modal">Cancel</button>

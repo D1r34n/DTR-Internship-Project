@@ -475,6 +475,33 @@ $isScoped = $schedEmployeeId !== null;
         </div>
     </div>
 </div>
+
+<div class="modal fade" id="swReplaceConflictsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content glass-modal">
+
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-exclamation-triangle me-2"></i>Replace Existing Schedules?
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body">
+                <p class="mb-2 text-light">The following dates already have schedules and will be replaced:</p>
+                <ul id="swConflictDatesList" class="mb-0 text-light ps-3"></ul>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-warning" id="swReplaceAnywayBtn">
+                    <i class="bi bi-arrow-repeat me-1"></i>Replace Anyway
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>
 <?php endif; ?>
 
 <script>
@@ -518,7 +545,7 @@ window.swGotoMonth  = function (ym) {
 document.addEventListener('DOMContentLoaded', function () {
     /* Move modals to <body> so backdrop-filter on ancestor cards
        doesn't create a stacking context that buries them behind .modal-backdrop */
-    ['swManageScheduleModal','swAddEventModal','swViewEventModal','swDeleteSchedModal','swDeleteEventConfirmModal'].forEach(function(id) {
+    ['swManageScheduleModal','swAddEventModal','swViewEventModal','swDeleteSchedModal','swDeleteEventConfirmModal','swReplaceConflictsModal'].forEach(function(id) {
         const el = document.getElementById(id);
         if (el) document.body.appendChild(el);
     });
@@ -677,12 +704,10 @@ swCalendar = new FullCalendar.Calendar(calEl, {
     },
 
     dayCellDidMount: function (info) {
-        const frame = info.el.querySelector('.fc-daygrid-day-frame');
-        if (!frame) return;
         const ov = document.createElement('div');
         ov.className = 'sw-day-add-overlay';
         ov.innerHTML = '<i class="bi bi-plus-circle"></i>';
-        frame.appendChild(ov);
+        info.el.appendChild(ov);
     },
 
     eventContent: function (arg) {
@@ -868,8 +893,35 @@ document.getElementById('swIsSingleRestDay').addEventListener('change', function
     }
 });
 
+/* ---- Replace-conflicts confirmation modal ---- */
+function showSwReplaceModal(conflicts) {
+    return new Promise(function (resolve) {
+        const modal   = document.getElementById('swReplaceConflictsModal');
+        const list    = document.getElementById('swConflictDatesList');
+        const btn     = document.getElementById('swReplaceAnywayBtn');
+        const bsModal = bootstrap.Modal.getOrCreateInstance(modal);
+
+        list.innerHTML = conflicts.map(function (d) { return '<li>' + d + '</li>'; }).join('');
+
+        let resolved = false;
+        function done(val) {
+            if (resolved) return;
+            resolved = true;
+            btn.removeEventListener('click', onReplace);
+            modal.removeEventListener('hidden.bs.modal', onHide);
+            resolve(val);
+        }
+        function onReplace() { bsModal.hide(); done(true); }
+        function onHide()    { done(false); }
+
+        btn.addEventListener('click', onReplace);
+        modal.addEventListener('hidden.bs.modal', onHide, { once: true });
+        bsModal.show();
+    });
+}
+
 /* ---- Manage Schedule form submit ---- */
-document.getElementById('swAddSchedForm').addEventListener('submit', function (e) {
+document.getElementById('swAddSchedForm').addEventListener('submit', async function (e) {
     e.preventDefault();
     const isSingleRest    = swSelectedDatesAdd.length === 1 && document.getElementById('swIsSingleRestDay').checked;
     const datesToSchedule = isSingleRest ? [] : [...swSelectedDatesAdd];
@@ -891,10 +943,8 @@ document.getElementById('swAddSchedForm').addEventListener('submit', function (e
     if (hasDates && !isEditMode) {
         const conflicts = datesToSchedule.filter(function (d) { return swScheduledDates.has(d); });
         if (conflicts.length > 0) {
-            const msg = conflicts.length === 1
-                ? `A schedule for ${conflicts[0]} already exists. Replace it?`
-                : `Schedules for ${conflicts.length} selected dates already exist. Replace them?`;
-            if (!confirm(msg)) return;
+            const confirmed = await showSwReplaceModal(conflicts);
+            if (!confirmed) return;
         }
     }
 

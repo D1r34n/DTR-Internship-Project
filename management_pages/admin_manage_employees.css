@@ -920,14 +920,16 @@ body {
 
 #schedule-file-preview .table,
 #leaves-file-preview .table,
-#employees-file-preview .table {
+#employees-file-preview .table,
+#schedule-conflicts-modal .table {
     color: var(--text-light);
     border-color: var(--frosted-border);
 }
 
 #schedule-file-preview .table thead th,
 #leaves-file-preview .table thead th,
-#employees-file-preview .table thead th {
+#employees-file-preview .table thead th,
+#schedule-conflicts-modal .table thead th {
     background: var(--frosted-bg);
     color: var(--text-muted);
     border-color: var(--frosted-border);
@@ -939,7 +941,8 @@ body {
 
 #schedule-file-preview .table td,
 #leaves-file-preview .table td,
-#employees-file-preview .table td {
+#employees-file-preview .table td,
+#schedule-conflicts-modal .table td {
     background: transparent;
     border-color: var(--frosted-border);
     font-size: 0.85rem;

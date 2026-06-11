@@ -973,14 +973,23 @@ $leaveTypes = [
 
                         <div class="col-md-6">
                             <label class="form-label">Department</label>
-                            <div class="dropdown w-100 dept-pop dept-pop-up">
-                                <div class="input-group">
-                                    <span class="input-group-text"><i class="bi bi-search"></i></span>
-                                    <input type="text" id="edit-dept-search" class="form-control"
-                                           value="<?= htmlspecialchars($emp['department_name'] ?? '') ?>"
-                                           placeholder="Select Department" autocomplete="off">
+                            <div class="dropdown w-100">
+                                <button class="btn w-100 text-start dropdown-toggle"
+                                        type="button"
+                                        data-bs-toggle="dropdown"
+                                        data-bs-auto-close="outside"
+                                        aria-expanded="false"
+                                        id="editDeptBtn">
+                                    <span id="editDeptLabel"><?= htmlspecialchars($emp['department_name'] ?: 'Select Department') ?></span>
+                                </button>
+                                <div class="dropdown-menu p-2 w-100">
+                                    <div class="vstack gap-2">
+                                        <input type="text" class="form-control form-control-sm"
+                                               id="edit-dept-search" placeholder="Search..." autocomplete="off">
+                                        <ul class="list-unstyled mb-0" id="edit-dept-menu"
+                                            style="max-height:200px; overflow-y:auto;"></ul>
+                                    </div>
                                 </div>
-                                <ul class="dropdown-menu p-2 w-100 dept-tooltip-menu" id="edit-dept-menu"></ul>
                             </div>
                             <input type="hidden" name="department_id" id="edit-dept-id"
                                    value="<?= htmlspecialchars($emp['department_id'] ?? '') ?>">
@@ -1131,7 +1140,7 @@ $leaveTypes = [
 
 
 <script>
-// ---- Department dropdown (Edit Employee modal) ----
+// ---- Department dropdown (Edit Employee) ----
 (function () {
     fetch('/DTR-Internship-Project/management_pages/department_api.php?action=list')
         .then(r => r.json())
@@ -1140,37 +1149,36 @@ $leaveTypes = [
                 { value: '', label: 'None' },
                 ...depts.map(d => ({ value: String(d.id), label: d.department_name }))
             ];
-            const input  = document.getElementById('edit-dept-search');
+            const btn    = document.getElementById('editDeptBtn');
+            const label  = document.getElementById('editDeptLabel');
+            const search = document.getElementById('edit-dept-search');
             const menu   = document.getElementById('edit-dept-menu');
             const hidden = document.getElementById('edit-dept-id');
 
             function render(list) {
                 menu.innerHTML = '';
                 list.forEach(item => {
-                    const li  = document.createElement('li');
-                    const btn = document.createElement('button');
-                    btn.type        = 'button';
-                    btn.className   = 'dropdown-item';
-                    btn.textContent = item.label;
-                    btn.onclick = () => {
-                        input.value  = item.label === 'None' ? '' : item.label;
-                        hidden.value = item.value;
-                        menu.classList.remove('show');
+                    const li = document.createElement('li');
+                    const b  = document.createElement('button');
+                    b.type        = 'button';
+                    b.className   = 'dropdown-item rounded';
+                    b.textContent = item.label;
+                    b.onclick = () => {
+                        label.textContent = item.value === '' ? 'Select Department' : item.label;
+                        hidden.value      = item.value;
+                        search.value      = '';
+                        bootstrap.Dropdown.getInstance(btn)?.hide();
                     };
-                    li.appendChild(btn);
+                    li.appendChild(b);
                     menu.appendChild(li);
                 });
             }
 
-            input.addEventListener('click', () => menu.classList.add('show'));
-            input.addEventListener('input', () => {
-                const q = input.value.toLowerCase();
+            search.addEventListener('input', () => {
+                const q = search.value.toLowerCase();
                 render(items.filter(i => i.label.toLowerCase().includes(q)));
             });
-            document.addEventListener('click', e => {
-                if (!e.target.closest('#edit-dept-menu') && !e.target.closest('#edit-dept-search'))
-                    menu.classList.remove('show');
-            });
+
             render(items);
         })
         .catch(() => {});
