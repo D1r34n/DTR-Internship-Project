@@ -246,7 +246,8 @@
 }
 
 #sw-calendar .fc-ev-night-cont       { background-color: var(--shift-night-bg)  !important; border: 2px dashed var(--shift-night) !important; color: var(--shift-night) !important; border-radius: 4px !important; }
-#sw-calendar .fc-ev-rest             { background-color: var(--warning-soft)     !important; border-color: var(--shift-rest) !important; color: var(--shift-rest) !important; }
+#sw-calendar .fc-ev-rest             { background-color: transparent !important; border-color: transparent !important; color: var(--text-muted) !important; }
+#sw-calendar .fc-ev-rest .fc-admin-label { background: var(--shift-rest); color: #fff; border-radius: 4px; padding: 1px 6px; }
 #sw-calendar .fc-ev-on-leave         { background-color: var(--shift-leave-approved) !important; border-color: var(--shift-leave-approved) !important; color: #fff !important; }
 #sw-calendar .fc-ev-leave-rejected {
     background-color: transparent !important;
@@ -299,7 +300,6 @@
 
 /* Transparent-bg events get a subtler time chip */
 #sw-calendar .fc-ev-night-cont       .fc-admin-time,
-#sw-calendar .fc-ev-rest             .fc-admin-time,
 #sw-calendar .fc-ev-pending-schedule .fc-admin-time { background: rgba(255,255,255,0.1); }
 
 /* ---- Add overlay (all cells, shared by all views) ---- */
