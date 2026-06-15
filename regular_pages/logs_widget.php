@@ -2,8 +2,10 @@
 // Expects $startDate and $endDate to be set by the including page.
 // Optionally set $logsApiPath to override the default fetch URL.
 // Optionally set $logsEmployeeId (int) to scope the widget to one employee (admin use).
-$logsApiPath    ??= '../get_logs.php';
-$logsEmployeeId ??= null;
+// Optionally set $logsPaginationMaxVisible (int) to limit how many page buttons appear.
+$logsApiPath              ??= '../get_logs.php';
+$logsEmployeeId           ??= null;
+$logsPaginationMaxVisible ??= null;
 ?>
 <div class="card card-neutral logs-card">
 
@@ -72,27 +74,28 @@ $logsEmployeeId ??= null;
         </div>
     </div>
 
-    <div class="card-footer d-flex align-items-center justify-content-between flex-wrap gap-2 logs-pagination-footer"
+    <div class="card-footer logs-pagination-footer"
          id="logsPagContainer" style="display:none !important;">
 
-        <div id="logsPaginationInfo"
-             class="small text-meta text-nowrap flex-sm-fill w-sm-100 text-sm-start text-center order-1">
-            Showing 0 to 0 of 0 entries
-        </div>
+        <div class="logs-pag-scroll">
+            <div id="logsPaginationInfo" class="small text-meta text-nowrap">
+                Showing 0 to 0 of 0 entries
+            </div>
 
-        <div class="d-flex align-items-center justify-content-center flex-wrap gap-3 flex-sm-fill w-sm-100 order-2">
-            <nav aria-label="Logs Navigation">
-                <ul class="pagination pagination-sm mb-0" id="logsPaginationList"></ul>
-            </nav>
-            <div class="d-flex align-items-center gap-1 pag-jump-wrapper" id="logsPageJumpWrapper" style="display:none !important;">
-                <small class="text-meta text-nowrap">Go to:</small>
-                <input type="number" id="logsPageJumpInput"
-                       class="text-center pag-jump-input"
-                       min="1" style="width:45px;height:28px;" placeholder="Go">
+            <div class="d-flex align-items-center justify-content-center gap-3">
+                <nav aria-label="Logs Navigation">
+                    <ul class="pagination pagination-sm mb-0" id="logsPaginationList"></ul>
+                </nav>
+                <div class="d-flex align-items-center gap-1 pag-jump-wrapper" id="logsPageJumpWrapper" style="display:none !important;">
+                    <small class="text-meta text-nowrap">Go to:</small>
+                    <input type="number" id="logsPageJumpInput"
+                           class="text-center pag-jump-input"
+                           min="1" style="width:45px;height:28px;" placeholder="Go">
+                </div>
             </div>
         </div>
 
-        <div class="d-flex align-items-center justify-content-sm-end justify-content-center gap-2 flex-sm-fill w-sm-100 order-3">
+        <div class="d-flex align-items-center gap-2 flex-shrink-0">
             <small class="text-meta text-nowrap">Rows Per Page:</small>
             <div class="dropdown">
                 <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button"
@@ -145,7 +148,8 @@ $logsEmployeeId ??= null;
 </div>
 
 <script>
-const LOGS_EMPLOYEE_ID = <?= $logsEmployeeId ? (int)$logsEmployeeId : 'null' ?>;
+const LOGS_EMPLOYEE_ID     = <?= $logsEmployeeId           ? (int)$logsEmployeeId           : 'null' ?>;
+const LOGS_PAG_MAX_VISIBLE = <?= $logsPaginationMaxVisible ? (int)$logsPaginationMaxVisible : 'null' ?>;
 
 const tbody = document.getElementById('logs_table_body');
 
@@ -935,7 +939,7 @@ function renderLogsPagination(totalPages) {
     }
     list.appendChild(prevLi);
 
-    const maxVisible = 5;
+    const maxVisible = LOGS_PAG_MAX_VISIBLE ?? 5;
     let startPage = Math.max(1, logsCurrentPage - 2);
     let endPage   = Math.min(totalPages, logsCurrentPage + 2);
     if (logsCurrentPage <= 3)              endPage   = Math.min(totalPages, maxVisible);

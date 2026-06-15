@@ -1179,6 +1179,157 @@ button.btn-sm {
 }
 
 /* ================================================
+   PRIMARY
+   ================================================ */
+
+.btn-primary,
+.btn.btn-primary {
+    color: var(--primary-color) !important;
+    background: var(--primary-glass) linear-gradient(
+        to right,
+        rgba(255, 255, 255, 0.10) 0%,
+        rgba(255, 255, 255, 0.05) 40%,
+        rgba(255, 255, 255, 0.02) 70%,
+        transparent 100%
+    ) !important;
+    border: 1px solid var(--primary-border) !important;
+    box-shadow: var(--glass-inset) !important;
+    transition:
+        transform 0.25s ease-out,
+        opacity 0.25s ease-out,
+        box-shadow 0.25s ease-out,
+        background 0.25s ease-out,
+        color 0.25s ease-out !important;
+}
+
+.btn-primary:hover,
+.btn-primary:focus,
+.btn-primary:focus-visible {
+    color: var(--text-lightest) !important;
+    background: var(--primary-glass-hover) linear-gradient(
+        to right,
+        rgba(255, 255, 255, 0.10) 0%,
+        rgba(255, 255, 255, 0.05) 40%,
+        rgba(255, 255, 255, 0.02) 70%,
+        transparent 100%
+    ) !important;
+    box-shadow: 0 4px 16px var(--primary-glow) !important;
+}
+
+[data-theme="light"] .btn-primary,
+[data-theme="light"] .btn.btn-primary {
+    color:        #2a5c0a !important;
+    background:   #d9f0b4 !important;
+    border-color: var(--primary-color) !important;
+    box-shadow:   0 1px 3px rgba(151, 190, 65, 0.18) !important;
+}
+[data-theme="light"] .btn-primary:hover,
+[data-theme="light"] .btn.btn-primary:hover {
+    background:   #c8e89a !important;
+    box-shadow:   0 2px 8px rgba(151, 190, 65, 0.28) !important;
+}
+
+/* ================================================
+   SECONDARY / NEUTRAL
+   ================================================ */
+
+.btn-secondary,
+.btn.btn-secondary,
+.btn-neutral,
+.btn.btn-neutral {
+    color: var(--text-muted) !important;
+    background: var(--neutral-glass) !important;
+    border: 1px solid var(--neutral-border) !important;
+    box-shadow: var(--glass-inset) !important;
+    transition:
+        transform 0.25s ease-out,
+        opacity 0.25s ease-out,
+        box-shadow 0.25s ease-out,
+        background 0.25s ease-out,
+        color 0.25s ease-out !important;
+}
+
+.btn-secondary:hover,
+.btn-secondary:focus,
+.btn-secondary:focus-visible,
+.btn-neutral:hover,
+.btn-neutral:focus,
+.btn-neutral:focus-visible {
+    color: var(--text-lightest) !important;
+    background: var(--neutral-glass-hover) !important;
+    border-color: var(--neutral-border) !important;
+    box-shadow: var(--glass-shadow) !important;
+}
+
+[data-theme="light"] .btn-secondary,
+[data-theme="light"] .btn.btn-secondary,
+[data-theme="light"] .btn-neutral,
+[data-theme="light"] .btn.btn-neutral {
+    color:        var(--text-light) !important;
+    background:   rgba(0, 0, 0, 0.05) !important;
+    border-color: rgba(0, 0, 0, 0.12) !important;
+    box-shadow:   0 1px 3px rgba(0, 0, 0, 0.08) !important;
+}
+[data-theme="light"] .btn-secondary:hover,
+[data-theme="light"] .btn.btn-secondary:hover,
+[data-theme="light"] .btn-neutral:hover,
+[data-theme="light"] .btn.btn-neutral:hover {
+    background:   rgba(0, 0, 0, 0.09) !important;
+    box-shadow:   0 2px 8px rgba(0, 0, 0, 0.12) !important;
+}
+
+/* ================================================
+   PURPLE
+   ================================================ */
+
+.btn-purple,
+.btn.btn-purple {
+    color: var(--superadmin) !important;
+    background: var(--superadmin-bg) linear-gradient(
+        to right,
+        rgba(255, 255, 255, 0.10) 0%,
+        rgba(255, 255, 255, 0.05) 40%,
+        rgba(255, 255, 255, 0.02) 70%,
+        transparent 100%
+    ) !important;
+    border: 1px solid var(--superadmin-border) !important;
+    box-shadow: var(--glass-inset) !important;
+    transition:
+        transform 0.25s ease-out,
+        opacity 0.25s ease-out,
+        box-shadow 0.25s ease-out,
+        background 0.25s ease-out,
+        color 0.25s ease-out !important;
+}
+
+.btn-purple:hover,
+.btn-purple:focus,
+.btn-purple:focus-visible {
+    color: var(--text-lightest) !important;
+    background: var(--superadmin-hover) linear-gradient(
+        to right,
+        rgba(255, 255, 255, 0.10) 0%,
+        rgba(255, 255, 255, 0.05) 40%,
+        rgba(255, 255, 255, 0.02) 70%,
+        transparent 100%
+    ) !important;
+    box-shadow: 0 4px 16px var(--superadmin-glow) !important;
+}
+
+[data-theme="light"] .btn-purple,
+[data-theme="light"] .btn.btn-purple {
+    color:        #7e22ce !important;
+    background:   #f3e8ff !important;
+    border-color: #a855f7 !important;
+    box-shadow:   0 1px 3px rgba(168, 85, 247, 0.18) !important;
+}
+[data-theme="light"] .btn-purple:hover,
+[data-theme="light"] .btn.btn-purple:hover {
+    background:   #e9d5ff !important;
+    box-shadow:   0 2px 8px rgba(168, 85, 247, 0.28) !important;
+}
+
+/* ================================================
    BOOTSTRAP EDGE CASES
    ================================================ */
 

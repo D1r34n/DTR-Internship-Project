@@ -725,6 +725,10 @@ $leaveTypes = [
                             <span class="ev-emp-meta">
                                 <i class="bi bi-envelope"></i>
                                 <?= htmlspecialchars($emp['email']) ?>
+                                <button class="copy-btn" data-copy="<?= htmlspecialchars($emp['email']) ?>"
+                                        data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Copy email">
+                                    <i class="bi bi-copy"></i>
+                                </button>
                             </span>
                         </div>
                     </div>
@@ -1243,6 +1247,26 @@ function padEmpId(input) {
     const v = input.value.trim();
     if (v !== '') input.value = v.padStart(6, '0');
 }
+
+// ---- Copy button ----
+(function () {
+    const btn = document.querySelector('.ev-emp-meta .copy-btn');
+    if (!btn) return;
+    bootstrap.Tooltip.getOrCreateInstance(btn, { trigger: 'hover focus' });
+    btn.addEventListener('click', e => {
+        e.stopPropagation();
+        const tip = bootstrap.Tooltip.getInstance(btn);
+        navigator.clipboard.writeText(btn.dataset.copy).then(() => {
+            const icon = btn.querySelector('i');
+            icon.className = 'bi bi-check-lg';
+            if (tip) { tip.setContent({ '.tooltip-inner': 'Copied!' }); tip.show(); }
+            setTimeout(() => {
+                icon.className = 'bi bi-copy';
+                if (tip) { tip.setContent({ '.tooltip-inner': btn.dataset.bsTitle }); tip.hide(); }
+            }, 1200);
+        });
+    });
+})();
 
 // ---- DOMContentLoaded ----
 document.addEventListener('DOMContentLoaded', () => {

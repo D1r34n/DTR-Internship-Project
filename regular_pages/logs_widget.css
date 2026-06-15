@@ -52,6 +52,21 @@
 .logs-pagination-footer {
     position: relative;
     z-index: 2;
+    overflow: visible;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.logs-pag-scroll {
+    flex: 1;
+    min-width: 0;
+    overflow-x: auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    flex-wrap: nowrap;
 }
 
 .logs-header .dropdown {
@@ -208,3 +223,4 @@
     gap: 3px;
     margin-top: 2px;
 }
+

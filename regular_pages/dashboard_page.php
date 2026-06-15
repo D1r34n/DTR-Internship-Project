@@ -292,10 +292,13 @@ if (!$showAdminCards) {
 $s = $pdo->prepare("
     SELECT s.schedule_date, s.is_rest_day, s.scheduled_start
     FROM schedules s
-    INNER JOIN schedule_edit_requests ser ON s.batch_id = ser.batch_id
-    WHERE s.employee_id = ? 
-      AND s.schedule_date BETWEEN ? AND ? 
-      AND ser.status = 'approved'
+    WHERE s.employee_id = ?
+      AND s.schedule_date BETWEEN ? AND ?
+      AND (
+          s.batch_id IS NULL
+          OR NOT EXISTS (SELECT 1 FROM schedule_edit_requests ser WHERE ser.batch_id = s.batch_id)
+          OR EXISTS (SELECT 1 FROM schedule_edit_requests ser WHERE ser.batch_id = s.batch_id AND ser.status = 'approved')
+      )
 ");
 
 $s->execute([$empId, $weekMon, $weekSun]);
@@ -1064,9 +1067,10 @@ for ($i = 0; $i < 7; $i++) {
 
                 <!-- Activity Logs Card -->
                 <?php
-                    $startDate   = $today;
-                    $endDate     = $today;
-                    $logsApiPath = '../get_logs.php';
+                    $startDate                = $today;
+                    $endDate                  = $today;
+                    $logsApiPath              = '../get_logs.php';
+                    $logsPaginationMaxVisible = 2;
                     include '../regular_pages/logs_widget.php';
                 ?>
 
@@ -1327,6 +1331,55 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 });
+</script>
+
+<script>
+/* ── My Week live refresh ── */
+function refreshMyWeek() {
+    fetch('../get_my_week.php')
+        .then(r => r.json())
+        .then(function (data) {
+            if (!Array.isArray(data.days)) return;
+            const labels     = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+            const today      = new Date().toLocaleDateString('sv'); // YYYY-MM-DD in local time
+            const glassMap   = { present: 'wa-icon-glass', late: 'wa-icon-glass-warning', absent: 'wa-icon-glass-danger', leave: 'wa-icon-glass-warning', ob: 'wa-icon-glass-purple', rest: 'wa-icon-glass-neutral' };
+            const tooltipMap = { present: 'Present', late: 'Late', absent: 'Absent', rest: 'Rest Day', leave: 'On Leave', ob: 'On OB', upcoming: 'Upcoming' };
+            const iconMap    = {
+                present:  '<i class="bi bi-check-lg" style="color:var(--status-success-color)"></i>',
+                late:     '<i class="bi bi-check-lg" style="color:var(--status-warning-color)"></i>',
+                absent:   '<i class="bi bi-x-lg" style="color:var(--danger-color)"></i>',
+                rest:     '<i class="bi bi-moon" style="color:var(--text-muted)"></i>',
+                ob:       '<i class="bi bi-dash-lg" style="color:var(--superadmin)"></i>',
+                leave:    '<i class="bi bi-dash-lg" style="color:var(--status-warning-color)"></i>',
+                upcoming: '<i class="bi bi-circle" style="color:rgba(255,255,255,0.15)"></i>',
+            };
+            const defaultIcon = '<i class="bi bi-calendar-x" style="color:rgba(255,255,255,0.35)"></i>';
+
+            const html = data.days.map(function (day, i) {
+                const isToday    = day.date === today;
+                const glassClass = glassMap[day.status] ? ' ' + glassMap[day.status] : '';
+                const tooltip    = tooltipMap[day.status] ?? 'No Schedule';
+                const icon       = iconMap[day.status] ?? defaultIcon;
+                return '<div class="wa-day' + (isToday ? ' wa-today' : '') + (day.status === 'late' ? ' wa-late' : '') + '">'
+                    + '<span class="wa-label">' + labels[i] + '</span>'
+                    + '<span class="wa-icon-wrap' + glassClass + '" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="' + tooltip + '">'
+                    + icon + '</span></div>';
+            }).join('');
+
+            document.querySelectorAll('.wa-grid').forEach(function (grid) {
+                grid.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function (el) {
+                    bootstrap.Tooltip.getInstance(el)?.dispose();
+                });
+                grid.innerHTML = html;
+                grid.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function (el) {
+                    new bootstrap.Tooltip(el, { container: 'body', trigger: 'hover' });
+                });
+            });
+        });
+}
+
+document.addEventListener('scheduleChanged', refreshMyWeek);
+document.addEventListener('scheduleDeleted', refreshMyWeek);
 </script>
 
 <script>

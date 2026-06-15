@@ -1,10 +1,10 @@
-# 📘 Coding Conventions — Attendance Management System
+# Coding Conventions — Attendance Management System
 
 This document defines the coding standards and conventions used across the Attendance Management System to ensure consistency, readability, and maintainability.
 
 ---
 
-## 🎯 Scope
+## Scope
 
 These coding conventions apply to:
 
@@ -20,7 +20,7 @@ They do **not** apply to:
 
 ---
 
-## 🧱 1. General Principles
+## 1. General Principles
 
 * Write **clean, readable, and maintainable code**
 * Keep **business logic separate from presentation**
@@ -30,30 +30,28 @@ They do **not** apply to:
 
 ---
 
-## 📁 2. File Structure Convention
-
-### Recommended Layering
+## 2. File Structure
 
 ```
 /attendance-system
 │
-├── controllers/     # Request handlers (entry points)
-├── services/        # Business logic layer
-├── libraries/       # Reusable helper functions
-├── config/          # DB, timezone, system config
-└── public/          # UI / frontend entry points
-    └── assets/
-        ├── css/
-        │   ├── root.css         # CSS variables / design tokens
-        │   ├── typography.css   # Font sizes, weights, body styles
-        │   ├── base.css         # Resets, global defaults
-        │   ├── layout.css       # Grid, sidebar, containers
-        │   ├── components.css   # Buttons, cards, modals, forms
-        │   ├── calendar.css     # Calendar-specific styles
-        │   ├── gantt.css        # Gantt chart styles
-        │   └── utilities.css    # Helper classes
-        ├── images/              # All image assets
-        └── js/                  # JavaScript files
+├── assets/                      # Contains CSS template and visual content
+    ├── attendance_captures/     # Image captures from webcam
+    ├── css/
+        │   ├── root.css               # CSS variables / design tokens
+        │   ├── typography.css         # Font sizes, weights, body styles
+        │   ├── base.css               # Resets, global defaults
+        │   ├── layout.css             # Grid, sidebar, containers
+        │   ├── components.css         # Buttons, cards, modals, forms
+        │   ├── calendar.css           # Calendar-specific styles
+        │   ├── gantt.css              # Gantt chart styles
+        │   └── utilities.css          # Helper classes
+        ├── images/                    # All image assets
+        ├── user_profiles/             # Contains user avatars
+├── authentication_pages/        # Contains login, logout, reset password logic
+├── docs/                        # README file and system documentation
+├── dropdown_requests/           # Overtime, Leave, OB, Log Edit, Schedule Edit request functions 
+
 ```
 
 ### Current System Mapping
@@ -164,8 +162,6 @@ CSS files must be loaded in this exact order to ensure variables are available b
 ```html
 <link rel="stylesheet" href="../assets/css/root.css">
 <link rel="stylesheet" href="../assets/css/typography.css">
-<link rel="stylesheet" href="../assets/css/base.css">
-<link rel="stylesheet" href="../assets/css/layout.css">
 <link rel="stylesheet" href="../assets/css/components.css">
 <!-- Page-specific CSS last -->
 <link rel="stylesheet" href="page.css">

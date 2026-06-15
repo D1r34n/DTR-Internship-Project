@@ -280,7 +280,7 @@
     white-space:   nowrap;
     overflow:      hidden;
     text-overflow: ellipsis;
-    color:         inherit;
+    color:         var(--text-light);
 }
 
 .fc-admin-time {
@@ -294,7 +294,7 @@
     text-overflow: ellipsis;
     align-self:    flex-start;
     background:    rgba(255,255,255,0.2);
-    color:         inherit;
+    color:         var(--text-light);
 }
 
 /* Transparent-bg events get a subtler time chip */

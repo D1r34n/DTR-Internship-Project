@@ -959,6 +959,7 @@ document.getElementById('swAddSchedForm').addEventListener('submit', async funct
             const msg = SW_IS_WORKFORCE ? 'Schedule submitted for approval.' : 'Schedule saved successfully.';
             if (typeof showToast === 'function') showToast(msg, 'success');
             if (swCalendar) swCalendar.refetchEvents();
+            document.dispatchEvent(new CustomEvent('scheduleChanged'));
         })
         .catch(function () {
             if (typeof showToast === 'function') showToast('Failed to save schedule. Please try again.', 'danger');
