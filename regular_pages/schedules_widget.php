@@ -737,7 +737,7 @@ swCalendar = new FullCalendar.Calendar(calEl, {
                 timeEl.style.setProperty('color',            'var(--text-color, #fff)', 'important');
             }
 
-            const titleEl = info.el.querySelector('.fc-event-title');
+            const titleEl = info.el.querySelector('.fc-event-title, .fc-admin-label');
             if (titleEl) {
                 titleEl.style.setProperty('padding',      '2px 6px',     'important');
                 titleEl.style.setProperty('border-radius','4px',         'important');

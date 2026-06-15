@@ -362,18 +362,31 @@ if ($action === 'import_schedule') {
 
         $upsertStmt = $pdo->prepare("
             INSERT INTO schedules
-                (employee_id, schedule_date, scheduled_start, scheduled_end, request_type)
+                (employee_id, schedule_date, scheduled_start, scheduled_end, request_type, batch_id)
             VALUES
-                (:employee_id, :schedule_date, :start, :end, 'added')
+                (:employee_id, :schedule_date, :start, :end, 'added', :batch_id)
             ON DUPLICATE KEY UPDATE
                 scheduled_start = VALUES(scheduled_start),
                 scheduled_end   = VALUES(scheduled_end),
-                request_type    = 'edit'
+                request_type    = 'edit',
+                batch_id        = VALUES(batch_id)
         ");
 
         $deleteStmt = $pdo->prepare(
             "DELETE FROM schedules WHERE employee_id = ? AND schedule_date = ?"
         );
+
+        $serStmt = $pdo->prepare("
+            INSERT INTO schedule_edit_requests (batch_id, employee_id, reason, requested_by, status)
+            VALUES (?, ?, 'Bulk import', ?, 'approved')
+        ");
+
+        $logStmt = $pdo->prepare("
+            INSERT INTO logs (employee_id, log_type, log_time, longitude, latitude, is_within_office, edit_requested_by, edit_reason)
+            VALUES (?, 'ADD_SCHEDULE', NOW(), 0, 0, 0, ?, ?)
+        ");
+
+        $requestedBy = (int)$_SESSION['user_id'];
 
         $pdo->beginTransaction();
 
@@ -430,6 +443,9 @@ if ($action === 'import_schedule') {
                 $isOvernight = $endTime < $startTime;
             }
 
+            $batchId     = bin2hex(random_bytes(8));
+            $rowInserted = 0;
+
             while ($current <= $end) {
                 $date = date('Y-m-d', $current);
 
@@ -447,12 +463,21 @@ if ($action === 'import_schedule') {
                         ':schedule_date' => $date,
                         ':start'         => $startDT,
                         ':end'           => $endDT,
+                        ':batch_id'      => $batchId,
                     ]);
 
-                    $inserted++;
+                    if ($upsertStmt->rowCount() > 0) {
+                        $inserted++;
+                        $rowInserted++;
+                    }
                 }
 
                 $current = strtotime('+1 day', $current);
+            }
+
+            if ($rowInserted > 0) {
+                $serStmt->execute([$batchId, $validIds[$employeeId], $requestedBy]);
+                $logStmt->execute([$validIds[$employeeId], $requestedBy, $batchId]);
             }
         }
 
