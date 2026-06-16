@@ -821,9 +821,9 @@ for ($i = 0; $i < 7; $i++) {
                 </div><!-- /.row -->
                 <?php else: ?>
                 <!-- My Week (employee) -->
-                <div class="card card-info flex-shrink-0">
-                    <div class="card-body py-2">
-                        <div class="summaryTop mb-4">
+                <div class="card card-info wa-card flex-fill d-flex flex-column">
+                    <div class="card-body py-2 d-flex flex-column">
+                        <div class="summaryTop mb-3 flex-shrink-0">
                             <div class="summaryIcon bg-blue">
                                 <i class="bi bi-calendar-week-fill"></i>
                             </div>
@@ -832,7 +832,7 @@ for ($i = 0; $i < 7; $i++) {
                                 <?= date('M d', strtotime($weekMon)) ?> – <?= date('M d', strtotime($weekSun)) ?>
                             </span>
                         </div>
-                        <div class="wa-grid mb-1">
+                        <div class="wa-grid my-auto">
                             <?php
                             $dayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
                             foreach ($empWeekDays as $i => $day):
@@ -890,7 +890,7 @@ for ($i = 0; $i < 7; $i++) {
             </div><!-- /.col left -->
 
             <!-- Right Column -->
-            <div class="col-6 dash-col">
+            <div class="col-6 dash-col<?= $role !== 'superadmin' ? ' emp-dash-col' : '' ?>">
 
                 <?php if ($showAdminCards): ?>
                 <!-- My Week (admin / manager) -->
