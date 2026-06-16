@@ -1004,7 +1004,7 @@ for ($i = 0; $i < 7; $i++) {
                                     <?php endif; ?>
                                 </div>
                                 <div class="d-flex">
-                                    <a class="btn btn-sm btn-success ms-auto" href="../regular_pages/schedules_page.php?filter=birthday">
+                                    <a class="btn btn-sm btn-purple ms-auto" href="../regular_pages/schedules_page.php?filter=birthday">
                                         View All Birthdays <i class="bi bi-chevron-right"></i>
                                     </a>
                                 </div>
