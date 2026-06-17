@@ -115,6 +115,7 @@ $isScoped = $schedEmployeeId !== null;
             <li><button class="dropdown-item active" type="button" data-sw-filter="all">All</button></li>
             <li><button class="dropdown-item" type="button" data-sw-filter="leave">On Leave</button></li>
             <li><button class="dropdown-item" type="button" data-sw-filter="ob">On OB</button></li>
+            <li><button class="dropdown-item" type="button" data-sw-filter="birthday">Birthday</button></li>
             <li><button class="dropdown-item" type="button" data-sw-filter="events">All Events</button></li>
             <li><hr class="dropdown-divider"></li>
             <li><button class="dropdown-item" type="button" data-sw-filter="holiday">Holiday</button></li>
@@ -561,7 +562,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const et = el.dataset.et;
         if (swCurrentFilter === 'leave')    return st && st.startsWith('leave_');
         if (swCurrentFilter === 'ob')       return st && st.startsWith('ob_');
-        <?php if ($isAdmin && !$isScoped): ?>
+        <?php if (!$isScoped): ?>
         if (swCurrentFilter === 'birthday') return st === 'birthday';
         <?php endif; ?>
         if (swCurrentFilter === 'events')   return st === 'cal_event';
