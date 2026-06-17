@@ -105,7 +105,7 @@ CREATE TABLE `employees` (
 --
 
 INSERT INTO `employees` (`id`, `employee_id`, `profile_image`, `first_name`, `last_name`, `email`, `password`, `role_id`, `department_id`, `hired_date`, `tenure`, `birthdate`, `employement_status`, `is_archived`) VALUES
-(1, '000001', 'default_profile.png', 'Thonie', 'Revil', 'thonie.revil@hsnservice.com', '123', 1, NULL, '2026-06-10', 0, '2000-01-01', 'active', 0);
+(1, '000001', 'default_profile.png', 'Thonie', 'Revil', 'thonie.revil@hsnservice.com', 'HSN.123', 1, NULL, '2026-06-10', 0, '2000-01-01', 'active', 0);
 
 -- --------------------------------------------------------
 
