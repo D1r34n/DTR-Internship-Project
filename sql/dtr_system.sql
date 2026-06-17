@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jun 17, 2026 at 05:24 AM
+-- Generation Time: Jun 17, 2026 at 07:38 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -126,8 +126,8 @@ CREATE TABLE `employees` (
 
 INSERT INTO `employees` (`id`, `employee_id`, `profile_image`, `first_name`, `last_name`, `email`, `password`, `role_id`, `department_id`, `hired_date`, `tenure`, `birthdate`, `employement_status`, `is_archived`) VALUES
 (2, '000001', 'default_profile.png', 'Thonie', 'Revil', 'thonie.revil@hsnservice.com', '123', 1, 1, '2026-06-10', 0, '2000-01-01', 'active', 0),
-(89, '000002', 'default_profile.png', 'Earl David', 'Jordan', 'earl3jordan@gmail.com', 'earl123', 3, 1, '2026-06-11', 0, '2003-12-20', 'active', 0),
-(105, '000003', 'default_profile.png', 'Edrian', 'Evangelista', 'edrian.evangelista@gmail.com', 'HSN.123', 2, 3, '2026-06-11', 0, '2004-08-14', 'active', 0),
+(89, '000002', 'default_profile.png', 'Earl David', 'Jordan', 'earl3jordan@gmail.com', 'Demecracked', 3, 1, '2026-06-11', 0, '2003-12-20', 'active', 0),
+(105, '000003', 'default_profile.png', 'Edrian', 'Evangelista', 'edrian.evangelista@gmail.com', 'edrian123', 2, 3, '2026-06-11', 0, '2004-08-14', 'active', 0),
 (106, '000004', 'default_profile.png', 'Jigs', 'Nate', 'jigs@gmail.com', 'HSN.123', 4, 3, '2026-06-11', 0, '2003-05-25', 'active', 0),
 (107, '000005', 'default_profile.png', 'Justine', 'Tandoc', 'jet@gmail.com', 'JET123', 5, NULL, '2026-06-11', 0, '2003-11-12', 'active', 0),
 (108, '000006', 'default_profile.png', 'Dirk Adolf', 'Del Mundo', 'dirk@gmail.com', 'dirk123', 5, 3, '2026-06-11', 0, '2003-04-19', 'active', 0),
@@ -338,7 +338,8 @@ CREATE TABLE `password_resets` (
 --
 
 INSERT INTO `password_resets` (`id`, `employee_id`, `token`, `expires_at`, `used`, `created_at`) VALUES
-(2, 89, '309206726f27c1bf0be7bd746d3c68d9d7c8898db83ccc1a60242baf6552f9c0', '2026-06-17 06:23:10', 0, '2026-06-17 11:23:10');
+(9, 89, '77b835807ac14be7658261e615a0badd38ccb75958936138a8f43139d1b2af86', '2026-06-17 12:54:32', 1, '2026-06-17 11:54:32'),
+(10, 105, '42c80692b2646a75b4bd43bbaa389fdabbaab65090eed35d0ff18231454615cf', '2026-06-17 12:58:28', 1, '2026-06-17 11:58:28');
 
 -- --------------------------------------------------------
 
@@ -1141,7 +1142,7 @@ ALTER TABLE `overtime_requests`
 -- AUTO_INCREMENT for table `password_resets`
 --
 ALTER TABLE `password_resets`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
 
 --
 -- AUTO_INCREMENT for table `roles`
