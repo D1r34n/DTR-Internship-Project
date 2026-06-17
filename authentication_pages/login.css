@@ -366,6 +366,32 @@ body.intro-active .login-footer {
 .fade-in-up { animation: fadeUp 0.35s ease both; }
 
 /* ------------------------------------------------
+   Theme Transition
+   Applied only while toggling — avoids interfering
+   with entrance animations on page load.
+   ------------------------------------------------ */
+
+.theme-transitioning body,
+.theme-transitioning .login-card,
+.theme-transitioning .login-right h2,
+.theme-transitioning .login-right p,
+.theme-transitioning .login-right .form-label,
+.theme-transitioning .login-right .input-group,
+.theme-transitioning .login-right .input-group .form-control,
+.theme-transitioning .login-right .toggle-password,
+.theme-transitioning .login-footer,
+.theme-transitioning .login-theme-toggle .theme-pill-track,
+.theme-transitioning .login-theme-toggle .theme-pill-knob,
+.theme-transitioning .login-theme-toggle .theme-icon-sun,
+.theme-transitioning .login-theme-toggle .theme-icon-moon {
+    transition: background     0.35s ease,
+                background-color 0.35s ease,
+                color          0.35s ease,
+                border-color   0.35s ease,
+                box-shadow     0.35s ease !important;
+}
+
+/* ------------------------------------------------
    Responsive
    ------------------------------------------------ */
 

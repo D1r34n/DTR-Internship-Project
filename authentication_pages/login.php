@@ -248,8 +248,10 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
          ------------------------------------------------ -->
     <script>
         function toggleLoginTheme(isDark) {
+            document.documentElement.classList.add('theme-transitioning');
             document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
             localStorage.setItem('theme', isDark ? 'dark' : 'light');
+            setTimeout(() => document.documentElement.classList.remove('theme-transitioning'), 400);
         }
         (function () {
             const isDark = localStorage.getItem('theme') === 'dark'; // default: light
