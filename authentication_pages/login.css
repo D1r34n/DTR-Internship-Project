@@ -489,8 +489,18 @@ body.intro-active .login-footer {
    needs explicit overrides here.
    ------------------------------------------------ */
 
-[data-theme="dark"] body            { background: #0e1014; }
-[data-theme="dark"] #login-intro    { background: #0e1014; }
+[data-theme="dark"] body            { background: #101213; }
+[data-theme="dark"] #login-intro    { background: #101213; }
+
+[data-theme="dark"] #intro-skip {
+    background: rgba(255, 255, 255, 0.08);
+    border:     1px solid rgba(255, 255, 255, 0.18);
+    color:      rgba(255, 255, 255, 0.85);
+}
+[data-theme="dark"] #intro-skip:hover {
+    background: rgba(255, 255, 255, 0.16);
+    color:      #ffffff;
+}
 
 [data-theme="dark"] .login-card {
     background:

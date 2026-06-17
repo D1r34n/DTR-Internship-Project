@@ -411,6 +411,19 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             const video = document.getElementById('intro-video');
             const skip  = document.getElementById('intro-skip');
 
+            /* Pick the intro clip that matches the active theme */
+            if (video) {
+                const isDark    = document.documentElement.getAttribute('data-theme') === 'dark';
+                const introSrc  = isDark
+                    ? '../assets/images/logo_intro_dark.mp4'
+                    : '../assets/images/logo_intro.mp4';
+                const source = video.querySelector('source');
+                if (source && source.getAttribute('src') !== introSrc) {
+                    source.setAttribute('src', introSrc);
+                    video.load();
+                }
+            }
+
             function endIntro() {
                 sessionStorage.setItem('intro_seen', '1');
                 if (skip) skip.style.display = 'none';
