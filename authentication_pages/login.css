@@ -539,8 +539,8 @@ body.intro-active .login-footer {
         ) !important;
 }
 
-[data-theme="dark"] .login-right > h2.text-dark      { color: #f3f4f6 !important; }
-[data-theme="dark"] .login-right > p.text-secondary  { color: #9aa3af !important; }
+[data-theme="dark"] .login-right h2.text-dark        { color: #f3f4f6 !important; }
+[data-theme="dark"] .login-right p.text-secondary    { color: #9aa3af !important; }
 [data-theme="dark"] .login-right .form-label         { color: #c2c8d0 !important; }
 
 [data-theme="dark"] .login-right .input-group {
@@ -560,3 +560,23 @@ body.intro-active .login-footer {
     color:            rgba(255, 255, 255, 0.45);
     border-top-color: rgba(255, 255, 255, 0.08);
 }
+
+/* Alerts — darkened to match the theme */
+[data-theme="dark"] .login-right .alert-success {
+    background: rgba(34, 197, 94, 0.12);
+    border:     1px solid rgba(34, 197, 94, 0.35);
+    color:      #86efac;
+}
+[data-theme="dark"] .login-right .alert-danger {
+    background: rgba(239, 68, 68, 0.12);
+    border:     1px solid rgba(239, 68, 68, 0.35);
+    color:      #fca5a5;
+}
+[data-theme="dark"] .login-right .alert-warning {
+    background: rgba(251, 191, 36, 0.12);
+    border:     1px solid rgba(251, 191, 36, 0.35);
+    color:      #fcd34d;
+}
+/* Make the muted text/icon inside alerts inherit the alert's tone */
+[data-theme="dark"] .login-right .alert .text-secondary { color: inherit !important; }
+[data-theme="dark"] .login-right .alert i               { color: inherit; }

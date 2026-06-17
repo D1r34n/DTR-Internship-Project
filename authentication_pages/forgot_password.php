@@ -102,6 +102,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <link rel="stylesheet" href="../assets/css/typography.css">
     <link rel="stylesheet" href="../assets/css/components.css">
     <link rel="stylesheet" href="login.css">
+
+    <!-- Theme bootstrap — applies saved theme before paint (defaults to light) -->
+    <script>
+        function toggleLoginTheme(isDark) {
+            document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+        }
+        (function () {
+            const isDark = localStorage.getItem('theme') === 'dark';
+            document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+            document.addEventListener('DOMContentLoaded', function () {
+                const cb = document.getElementById('themeCheckbox');
+                if (cb) cb.checked = isDark;
+            });
+        })();
+    </script>
 </head>
 <body>
 
@@ -118,6 +134,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         <!-- Right: forgot password card -->
         <div class="card login-card">
+
+            <!-- ── Theme toggle (top-right of card) ── -->
+            <div class="login-theme-toggle">
+                <input type="checkbox" id="themeCheckbox" hidden onchange="toggleLoginTheme(this.checked)">
+                <label class="theme-pill-track" for="themeCheckbox" title="Toggle dark mode">
+                    <span class="theme-pill-knob"></span>
+                    <i class="bi bi-sun-fill theme-icon-sun"></i>
+                    <i class="bi bi-moon-fill theme-icon-moon"></i>
+                </label>
+            </div>
 
             <div class="card-body login-right d-flex flex-column justify-content-center">
 
