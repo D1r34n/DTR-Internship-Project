@@ -539,8 +539,8 @@ body.intro-active .login-footer {
         ) !important;
 }
 
-[data-theme="dark"] .login-right > h2.text-dark      { color: #f3f4f6 !important; }
-[data-theme="dark"] .login-right > p.text-secondary  { color: #9aa3af !important; }
+[data-theme="dark"] .login-right h2.text-dark        { color: #f3f4f6 !important; }
+[data-theme="dark"] .login-right p.text-secondary    { color: #9aa3af !important; }
 [data-theme="dark"] .login-right .form-label         { color: #c2c8d0 !important; }
 
 [data-theme="dark"] .login-right .input-group {
