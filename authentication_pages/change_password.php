@@ -1,12 +1,37 @@
 <?php
 session_start();
 
-if (!isset($_SESSION['user_id']) || empty($_SESSION['must_change_password'])) {
+require_once '../db.php';
+
+// ── Mode detection ────────────────────────────────────────────────────────────
+$token      = trim($_GET['token'] ?? '');
+$tokenValid = false;
+$employeeId = null;
+$mode       = null; // 'token' | 'session'
+
+if ($token) {
+    $mode = 'token';
+    $stmt = $pdo->prepare("
+        SELECT employee_id FROM password_resets
+        WHERE token = ? AND used = 0 AND expires_at > NOW()
+        LIMIT 1
+    ");
+    $stmt->execute([$token]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    if ($row) {
+        $tokenValid = true;
+        $employeeId = (int) $row['employee_id'];
+    }
+} elseif (isset($_SESSION['user_id']) && !empty($_SESSION['must_change_password'])) {
+    $mode       = 'session';
+    $employeeId = (int) $_SESSION['user_id'];
+} else {
     header("Location: login.php");
     exit();
 }
 
-if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+// Session mode: prevent re-display on back-button refresh
+if ($mode === 'session' && $_SERVER['REQUEST_METHOD'] === 'GET') {
     if (isset($_SESSION['change_password_shown'])) {
         session_unset();
         session_destroy();
@@ -20,26 +45,28 @@ if (empty($_SESSION['csrf_token'])) {
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 }
 
-require_once '../db.php';
-
-$error   = '';
-$success = false;
+$error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $isAjax = !empty($_SERVER['HTTP_X_CHANGE_PWD_AJAX']);
 
-    $sendError = function (string $msg) use ($isAjax): void {
+    $sendJSON = function (string $status, string $msg, string $redirect = '') use ($isAjax): void {
         if ($isAjax) {
             header('Content-Type: application/json');
-            echo json_encode(['status' => 'error', 'message' => $msg]);
+            $payload = ['status' => $status, 'message' => $msg];
+            if ($redirect) $payload['redirect'] = $redirect;
+            echo json_encode($payload);
             exit();
         }
     };
 
     if (empty($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], (string)$_POST['csrf_token'])) {
         $error = "Invalid request token. Please refresh the page and try again.";
-        $sendError($error);
+        $sendJSON('error', $error);
+    } elseif ($mode === 'token' && !$tokenValid) {
+        $error = "This reset link is invalid or has already expired.";
+        $sendJSON('error', $error);
     } else {
         $newPassword     = $_POST['new_password']     ?? '';
         $confirmPassword = $_POST['confirm_password'] ?? '';
@@ -54,30 +81,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $error = "Passwords do not match.";
         } else {
             $pdo->prepare("UPDATE employees SET password = ? WHERE id = ?")
-                ->execute([$newPassword, $_SESSION['user_id']]);
+                ->execute([$newPassword, $employeeId]);
 
-            unset($_SESSION['must_change_password'], $_SESSION['change_password_shown']);
-
-            if ($isAjax) {
-                header('Content-Type: application/json');
-                echo json_encode(['status' => 'success', 'redirect' => '../regular_pages/dashboard_page.php']);
-                exit();
+            if ($mode === 'token') {
+                $pdo->prepare("UPDATE password_resets SET used = 1 WHERE token = ?")
+                    ->execute([$token]);
+                $redirect = 'login.php';
+            } else {
+                unset($_SESSION['must_change_password'], $_SESSION['change_password_shown']);
+                $redirect = '../regular_pages/dashboard_page.php';
             }
 
-            header("Location: ../regular_pages/dashboard_page.php");
+            $sendJSON('success', 'Password updated successfully.', $redirect);
+
+            header("Location: $redirect");
             exit();
         }
 
-        if ($error) $sendError($error);
+        if ($error) $sendJSON('error', $error);
     }
 }
+
+// ── View helpers ──────────────────────────────────────────────────────────────
+$isTokenMode  = ($mode === 'token');
+$pageTitle    = $isTokenMode ? 'Reset Password'  : 'Change Password';
+$pageSubtitle = $isTokenMode
+    ? 'Enter your new password below.'
+    : 'Your account is using the default password.<br>Please set a new one before continuing.';
+$btnLabel     = $isTokenMode ? 'Reset Password'  : 'Save Password';
+$btnSaving    = $isTokenMode ? 'Resetting…' : 'Saving…';
+$formAction   = $isTokenMode
+    ? 'change_password.php?token=' . htmlspecialchars($token)
+    : 'change_password.php';
 ?>
 <!DOCTYPE html>
 <html lang="en" data-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Change Password — HSN DTR System</title>
+    <title><?= $pageTitle ?> — HSN DTR System</title>
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
@@ -100,68 +142,113 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
         </div>
 
-        <!-- Right: change password card -->
+        <!-- Right: password card -->
         <div class="card login-card">
 
             <div class="card-body login-right d-flex flex-column justify-content-center">
 
-                <h2 class="text-dark mb-1">Change Password</h2>
-                <p class="text-secondary mb-4" style="font-size:0.875rem;">
-                    Your account is using the default password.<br>
-                    Please set a new one before continuing.
-                </p>
+                <?php if ($isTokenMode && !$tokenValid): ?>
 
-                <?php if ($error): ?>
-                    <div class="alert alert-danger d-flex align-items-center gap-2 py-2 mb-3" role="alert">
-                        <i class="bi bi-exclamation-circle-fill flex-shrink-0"></i>
-                        <span class="text-secondary"><?= htmlspecialchars($error) ?></span>
+                    <h2 class="text-dark mb-1">Link Expired</h2>
+                    <p class="text-secondary mb-4" style="font-size:0.875rem;">
+                        This password reset link is invalid or has already expired.
+                    </p>
+                    <a href="forgot_password.php" class="btn-signin w-100 d-block text-center text-decoration-none mb-3">
+                        Request a new link
+                    </a>
+                    <div class="text-center">
+                        <a href="login.php" class="forgot-password text-meta w-100 d-flex align-items-center justify-content-center gap-1 text-decoration-none mt-2">
+                            <i class="bi bi-arrow-left-short"></i>
+                            <span>Back to Login</span>
+                        </a>
                     </div>
+
+                <?php else: ?>
+
+                    <!-- Success state (token mode only) -->
+                    <?php if ($isTokenMode): ?>
+                    <div id="success-state" class="d-none">
+                        <div class="alert alert-success d-flex align-items-center gap-2 py-2 mb-3" role="alert">
+                            <i class="bi bi-check-circle-fill flex-shrink-0"></i>
+                            <span class="text-secondary">Your password has been reset successfully!</span>
+                        </div>
+                        <p class="text-secondary mb-3" style="font-size:0.875rem;">
+                            Redirecting to login in <strong><span id="redirect-countdown">10</span>s</strong>…
+                        </p>
+                        <a href="login.php" class="btn-signin w-100 d-flex align-items-center justify-content-center gap-1 text-decoration-none">
+                            <i class="bi bi-arrow-left-short"></i>
+                            <span>Back to Login</span>
+                        </a>
+                    </div>
+                    <?php endif; ?>
+
+                    <!-- Form -->
+                    <div id="form-wrapper">
+
+                        <h2 class="text-dark mb-1"><?= $pageTitle ?></h2>
+                        <p class="text-secondary mb-4" style="font-size:0.875rem;">
+                            <?= $pageSubtitle ?>
+                        </p>
+
+                        <?php if ($error): ?>
+                            <div class="alert alert-danger d-flex align-items-center gap-2 py-2 mb-3" role="alert">
+                                <i class="bi bi-exclamation-circle-fill flex-shrink-0"></i>
+                                <span class="text-secondary"><?= htmlspecialchars($error) ?></span>
+                            </div>
+                        <?php endif; ?>
+
+                        <form id="pwd-form" action="<?= $formAction ?>" method="POST" novalidate>
+                            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
+
+                            <div class="mb-3">
+                                <label for="new-password-input" class="form-label text-secondary">New Password</label>
+                                <div class="input-group">
+                                    <input
+                                        type="password"
+                                        name="new_password"
+                                        id="new-password-input"
+                                        placeholder="Enter new password"
+                                        class="form-control <?= $error ? 'is-invalid' : '' ?>"
+                                        autocomplete="new-password"
+                                    >
+                                    <button type="button" class="btn btn-outline-secondary toggle-password" id="toggle-new" aria-label="Toggle visibility">
+                                        <i class="bi bi-eye-fill"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="mb-4">
+                                <label for="confirm-password-input" class="form-label text-secondary">Confirm Password</label>
+                                <div class="input-group">
+                                    <input
+                                        type="password"
+                                        name="confirm_password"
+                                        id="confirm-password-input"
+                                        placeholder="Confirm new password"
+                                        class="form-control"
+                                        autocomplete="new-password"
+                                    >
+                                    <button type="button" class="btn btn-outline-secondary toggle-password" id="toggle-confirm" aria-label="Toggle visibility">
+                                        <i class="bi bi-eye-fill"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <button type="submit" id="submit-btn" class="btn-signin w-100 mb-3"><?= $btnLabel ?></button>
+
+                        </form>
+
+                        <p class="text-center text-meta mb-0">
+                            <?php if ($isTokenMode): ?>
+                                <a href="login.php" class="no-id">Back to Login</a>
+                            <?php else: ?>
+                                <a href="logout.php" class="no-id">Log out instead</a>
+                            <?php endif; ?>
+                        </p>
+
+                    </div><!-- #form-wrapper -->
+
                 <?php endif; ?>
-
-                <form action="change_password.php" method="POST" novalidate>
-                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
-
-                    <div class="mb-3">
-                        <label for="new-password-input" class="form-label text-secondary">New Password</label>
-                        <div class="input-group">
-                            <input
-                                type="password"
-                                name="new_password"
-                                id="new-password-input"
-                                placeholder="Enter new password"
-                                class="form-control <?= $error ? 'is-invalid' : '' ?>"
-                                autocomplete="new-password"
-                            >
-                            <button type="button" class="btn btn-outline-secondary toggle-password" id="toggle-new" aria-label="Toggle visibility">
-                                <i class="bi bi-eye-fill"></i>
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="mb-4">
-                        <label for="confirm-password-input" class="form-label text-secondary">Confirm Password</label>
-                        <div class="input-group">
-                            <input
-                                type="password"
-                                name="confirm_password"
-                                id="confirm-password-input"
-                                placeholder="Confirm new password"
-                                class="form-control"
-                                autocomplete="new-password"
-                            >
-                            <button type="button" class="btn btn-outline-secondary toggle-password" id="toggle-confirm" aria-label="Toggle visibility">
-                                <i class="bi bi-eye-fill"></i>
-                            </button>
-                        </div>
-                    </div>
-
-                    <button type="submit" class="btn-signin w-100 mb-3">Save Password</button>
-
-                </form>
-
-                <p class="text-center text-meta mb-0">
-                    <a href="logout.php" class="no-id">Log out instead</a>
-                </p>
 
             </div><!-- .card-body -->
 
@@ -175,10 +262,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
+    <?php if (!$isTokenMode || $tokenValid): ?>
     <script>
-        /* ------------------------------------------------
-           Password Visibility Toggles
-           ------------------------------------------------ */
         function initToggle(btnId, inputId) {
             document.getElementById(btnId).addEventListener('click', function () {
                 const input  = document.getElementById(inputId);
@@ -193,15 +278,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         initToggle('toggle-new',     'new-password-input');
         initToggle('toggle-confirm', 'confirm-password-input');
 
-        /* ------------------------------------------------
-           Form Submission + Exit Animation
-           ------------------------------------------------ */
         (function () {
-            const form      = document.querySelector('form');
-            const saveBtn   = form.querySelector('.btn-signin');
-            const loginLeft = document.querySelector('.login-left');
-            const loginCard = document.querySelector('.login-card');
-            const wrapper   = document.querySelector('.login-wrapper');
+            const form        = document.getElementById('pwd-form');
+            const submitBtn   = document.getElementById('submit-btn');
+            const formWrapper = document.getElementById('form-wrapper');
+            const successState = document.getElementById('success-state');
+            const loginLeft   = document.querySelector('.login-left');
+            const loginCard   = document.querySelector('.login-card');
+            const wrapper     = document.querySelector('.login-wrapper');
+            const btnLabel    = <?= json_encode($btnLabel) ?>;
+            const btnSaving   = <?= json_encode($btnSaving) ?>;
+            const isTokenMode = <?= $isTokenMode ? 'true' : 'false' ?>;
 
             function showBanner(msg) {
                 let banner = document.getElementById('js-error-banner');
@@ -216,8 +303,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             function clearBanner() {
-                const banner = document.getElementById('js-error-banner');
-                if (banner) banner.remove();
+                const b = document.getElementById('js-error-banner');
+                if (b) b.remove();
             }
 
             async function playExitAnimation(url) {
@@ -259,39 +346,62 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 e.preventDefault();
                 clearBanner();
 
-                saveBtn.disabled    = true;
-                saveBtn.textContent = 'Saving…';
+                submitBtn.disabled    = true;
+                submitBtn.textContent = btnSaving;
 
                 let data;
                 try {
-                    const res = await fetch('change_password.php', {
+                    const res = await fetch(form.action, {
                         method:  'POST',
                         body:    new FormData(this),
                         headers: { 'X-Change-Pwd-Ajax': '1' },
                     });
                     if (res.status >= 500) {
                         showBanner('Server error. Please try again later.');
-                        saveBtn.disabled    = false;
-                        saveBtn.textContent = 'Save Password';
+                        submitBtn.disabled    = false;
+                        submitBtn.textContent = btnLabel;
                         return;
                     }
                     data = await res.json();
                 } catch (_) {
                     showBanner('Network error. Please check your connection and try again.');
-                    saveBtn.disabled    = false;
-                    saveBtn.textContent = 'Save Password';
+                    submitBtn.disabled    = false;
+                    submitBtn.textContent = btnLabel;
                     return;
                 }
 
                 if (data.status === 'success') {
-                    await playExitAnimation(data.redirect);
+                    if (isTokenMode) {
+                        formWrapper.style.transition = 'opacity 0.25s ease';
+                        formWrapper.style.opacity    = '0';
+                        setTimeout(() => {
+                            formWrapper.classList.add('d-none');
+                            successState.classList.remove('d-none');
+                            successState.classList.add('fade-in-up');
+
+                            let secs = 10;
+                            const cd = document.getElementById('redirect-countdown');
+                            const timer = setInterval(() => {
+                                secs--;
+                                cd.textContent = secs;
+                                if (secs <= 0) {
+                                    clearInterval(timer);
+                                    window.location.href = data.redirect;
+                                }
+                            }, 1000);
+                        }, 270);
+                    } else {
+                        await playExitAnimation(data.redirect);
+                    }
                 } else {
-                    saveBtn.disabled    = false;
-                    saveBtn.textContent = 'Save Password';
+                    submitBtn.disabled    = false;
+                    submitBtn.textContent = btnLabel;
                     showBanner(data.message);
                 }
             });
         })();
     </script>
+    <?php endif; ?>
+
 </body>
 </html>
