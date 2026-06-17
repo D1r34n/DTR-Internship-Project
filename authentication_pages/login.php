@@ -368,7 +368,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                             <input class="form-check-input" type="checkbox" id="remember-me">
                             <label class="form-check-label text-meta" for="remember-me">Remember me</label>
                         </div>
-                        <a href="https://www.hsnservice.com/" target="_blank" class="forgot-password text-meta">
+                        <a href="forgot_password.php" class="forgot-password text-meta">
                             Forgot password?
                         </a>
                     </div>

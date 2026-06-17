@@ -363,6 +363,8 @@ body.intro-active .login-footer {
 .login-right > p:last-child        { animation: fadeUp 0.4s 0.58s ease both; }
 .login-footer                      { animation: fadeUp 0.4s 0.62s ease both; }
 
+.fade-in-up { animation: fadeUp 0.35s ease both; }
+
 /* ------------------------------------------------
    Responsive
    ------------------------------------------------ */

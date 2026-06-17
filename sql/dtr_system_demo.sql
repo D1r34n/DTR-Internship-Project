@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jun 10, 2026 at 03:43 AM
+-- Generation Time: Jun 17, 2026 at 05:23 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -246,15 +246,16 @@ CREATE TABLE `overtime_requests` (
 -- --------------------------------------------------------
 
 --
--- Table structure for table `password_setup_tokens`
+-- Table structure for table `password_resets`
 --
 
-CREATE TABLE `password_setup_tokens` (
+CREATE TABLE `password_resets` (
   `id` int(11) NOT NULL,
   `employee_id` int(11) NOT NULL,
   `token` varchar(64) NOT NULL,
   `expires_at` datetime NOT NULL,
-  `used` tinyint(1) NOT NULL DEFAULT 0
+  `used` tinyint(1) DEFAULT 0,
+  `created_at` datetime DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -425,12 +426,10 @@ ALTER TABLE `overtime_requests`
   ADD KEY `employee_id` (`employee_id`);
 
 --
--- Indexes for table `password_setup_tokens`
+-- Indexes for table `password_resets`
 --
-ALTER TABLE `password_setup_tokens`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `token` (`token`),
-  ADD KEY `employee_id` (`employee_id`);
+ALTER TABLE `password_resets`
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Indexes for table `quote_of_the_day`
@@ -530,9 +529,9 @@ ALTER TABLE `overtime_requests`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
--- AUTO_INCREMENT for table `password_setup_tokens`
+-- AUTO_INCREMENT for table `password_resets`
 --
-ALTER TABLE `password_setup_tokens`
+ALTER TABLE `password_resets`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
