@@ -533,7 +533,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('edit-color-hex-display').textContent = color.toUpperCase();
     }
 
-    editCode.addEventListener('input',  updateEditPreview);
+    editCode.addEventListener('input', function () { this.value = this.value.toUpperCase(); updateEditPreview(); });
     editName.addEventListener('input',  updateEditPreview);
     editColor.addEventListener('input', updateEditPreview);
 
@@ -693,7 +693,8 @@ function applyFilterSort() {
     cards.forEach(c => container.appendChild(c));
 }
 
-form.department_code.addEventListener('input', () => {
+form.department_code.addEventListener('input', function () {
+    this.value = this.value.toUpperCase();
     form.department_code.classList.remove('is-invalid');
 });
 

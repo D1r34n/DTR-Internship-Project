@@ -17,7 +17,7 @@ switch ($action) {
    CREATE DEPARTMENT
 ========================================= */
 case 'create':
-    $code      = trim($_POST['department_code'] ?? '');
+    $code      = strtoupper(trim($_POST['department_code'] ?? ''));
     $name      = trim($_POST['department_name'] ?? '');
     $parent_id = $_POST['parent_id'] ?: null;
     $color     = $_POST['color'] ?? '#4e73df';
@@ -108,7 +108,7 @@ case 'get_sub':
 ========================================= */
 case 'update':
     $deptId      = (int)$_POST['id'];
-    $newCode     = trim($_POST['department_code'] ?? '');
+    $newCode     = strtoupper(trim($_POST['department_code'] ?? ''));
     $newName     = trim($_POST['department_name'] ?? '');
     $newColor    = $_POST['color']     ?? null;
     $newParentId = $_POST['parent_id'] ? (int)$_POST['parent_id'] : null;

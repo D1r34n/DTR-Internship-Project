@@ -117,6 +117,24 @@ $method = $_SERVER['REQUEST_METHOD'];
  * Checks that the first row of the uploaded sheet matches expected column headers.
  * Returns an error message string on mismatch, or null if the headers are correct.
  */
+
+function formatEmployeeId(mixed $raw): string
+{
+    $digits = preg_replace('/\D/', '', trim((string)$raw));
+    $digits = substr(str_pad($digits, 5, '0', STR_PAD_LEFT), -5);
+    return substr($digits, 0, 2) . '-' . substr($digits, 2);
+}
+
+function friendlyReadError(Throwable $e): string
+{
+    $msg = $e->getMessage();
+    if (stripos($msg, 'ZipArchive') !== false || stripos($msg, 'zip') !== false
+        || stripos($msg, 'Unable to identify') !== false) {
+        return 'Invalid file. Make sure it is a valid .xlsx file and not a .csv or .xls file.';
+    }
+    return $msg;
+}
+
 function validateSheetHeaders(array $headerRow, array $expected): ?string
 {
     foreach ($expected as $i => $label) {
@@ -140,7 +158,7 @@ function fetchValidEmployeeIds(PDO $pdo, array $empIds, bool $deptScoped, int $m
     if (empty($empIds)) return [];
     
     $empIds = array_filter(array_unique(array_map(
-        fn($id) => str_pad(trim((string)$id), 6, '0', STR_PAD_LEFT),
+        fn($id) => formatEmployeeId($id),
         $empIds
     )));
 
@@ -182,7 +200,7 @@ if ($action === 'download_schedule_template') {
     ];
 
     $notes = [
-        'A' => 'Enter numeric employee IDs. Excel will automatically display leading zeros (e.g. 1 → 000001).',
+        'A' => 'Enter employee IDs in 00-000 format (e.g. 00-001).',
         'B' => 'Optional — for reference only.',
         'C' => 'Format: DD-Mon-YYYY (e.g. 01-May-2026).',
         'D' => 'Format: DD-Mon-YYYY. Same as Start Date for a single day.',
@@ -205,10 +223,9 @@ if ($action === 'download_schedule_template') {
     }
 
     // ===== EMPLOYEE ID FORMAT =====
-    // Auto-display leading zeros (e.g. 1 => 000001)
     $sheet->getStyle('A2:A1000')
         ->getNumberFormat()
-        ->setFormatCode('000000');
+        ->setFormatCode('@');
 
     // ===== DATE COLUMNS: force text so Excel won't convert to serial numbers =====
     $sheet->getStyle('C2:D1000')
@@ -216,13 +233,13 @@ if ($action === 'download_schedule_template') {
         ->setFormatCode('@');
 
     // ===== SAMPLE ROWS =====
-    $sheet->setCellValue('A2', 1);
+    $sheet->setCellValue('A2', '00-001');
     $sheet->setCellValue('B2', 'John Doe');
     $sheet->setCellValue('C2', '01-May-2026');
     $sheet->setCellValue('D2', '01-May-2026');
     $sheet->setCellValue('E2', '08:00-17:00');
 
-    $sheet->setCellValue('A3', 2);
+    $sheet->setCellValue('A3', '00-002');
     $sheet->setCellValue('B3', 'Jane Doe');
     $sheet->setCellValue('C3', '02-May-2026');
     $sheet->setCellValue('D3', '02-May-2026');
@@ -260,8 +277,13 @@ if ($action === 'check_schedule_conflicts') {
         respond(['status' => 'error', 'message' => 'No file uploaded.'], 400);
     }
 
-    $rows   = IOFactory::load($_FILES['schedule_file']['tmp_name'])
-        ->getActiveSheet()->toArray();
+    $rows = [];
+    try {
+        $rows = IOFactory::load($_FILES['schedule_file']['tmp_name'])
+            ->getActiveSheet()->toArray();
+    } catch (Throwable $e) {
+        respond(['status' => 'error', 'message' => friendlyReadError($e)], 422);
+    }
     $header = array_shift($rows);
 
     if ($err = validateSheetHeaders($header, ['Employee ID', 'Employee Name', 'Start Date', 'End Date', 'Time'])) {
@@ -288,7 +310,7 @@ if ($action === 'check_schedule_conflicts') {
     foreach ($rows as $row) {
         if (empty(array_filter(array_map('trim', array_map('strval', $row))))) continue;
 
-        $employeeId = str_pad(trim((string)($row[0] ?? '')), 6, '0', STR_PAD_LEFT);
+        $employeeId = formatEmployeeId($row[0] ?? '');
         $empName    = trim((string)($row[1] ?? ''));
         $startDate  = parseExcelDate($row[2] ?? null);
         $endDate    = parseExcelDate($row[3] ?? null);
@@ -399,12 +421,12 @@ if ($action === 'import_schedule') {
 
             if (empty(array_filter(array_map('trim', array_map('strval', $row))))) continue;
 
-            $employeeId = str_pad(trim((string)($row[0] ?? '')), 6, '0', STR_PAD_LEFT);
+            $employeeId = formatEmployeeId($row[0] ?? '');
             $startDate  = parseExcelDate($row[2] ?? null);
             $endDate    = parseExcelDate($row[3] ?? null);
             $time       = trim((string)($row[4] ?? ''));
 
-            if ($employeeId === '000000' || $startDate === null || $endDate === null) {
+            if ($employeeId === '00-000' || $startDate === null || $endDate === null) {
                 $errors[] = ['row' => $rowNum, 'message' => 'Missing or invalid date (use DD-Mon-YYYY, e.g. 07-Jan-2026)'];
                 continue;
             }
@@ -486,7 +508,7 @@ if ($action === 'import_schedule') {
 
     } catch (Throwable $e) {
         if ($pdo->inTransaction()) $pdo->rollBack();
-        respond(['status' => 'error', 'message' => $e->getMessage()], 500);
+        respond(['status' => 'error', 'message' => friendlyReadError($e)], 500);
     }
 }
 
@@ -509,7 +531,7 @@ if ($action === 'download_leave_template') {
     ];
 
     $notes = [
-        'A' => 'Enter numeric employee IDs. Excel will automatically display leading zeros (e.g. 1 → 000001).',
+        'A' => 'Enter employee IDs in 00-000 format (e.g. 00-001).',
         'B' => 'Optional — for reference only.',
         'C' => 'Buffer leave days (default 0).',
         'D' => 'Vacation leave days (default 0).',
@@ -536,12 +558,12 @@ if ($action === 'download_leave_template') {
     // ===== EMPLOYEE ID FORMAT =====
     $sheet->getStyle('A2:A1000')
         ->getNumberFormat()
-        ->setFormatCode('000000');
+        ->setFormatCode('@');
 
     // ===== SAMPLE ROWS =====
-    $sheet->setCellValue('A2', 1);
+    $sheet->setCellValue('A2', '00-001');
     $sheet->fromArray(['John Doe', 0,  5, 4,  7, 90, 1, 1], null, 'B2');
-    $sheet->setCellValue('A3', 2);
+    $sheet->setCellValue('A3', '00-002');
     $sheet->fromArray(['Jane Doe', 0, 10, 4,  0, 90, 1, 1], null, 'B3');
 
     applySampleRowStyle($sheet, 'A2:I2');
@@ -619,9 +641,9 @@ if ($action === 'import_leaves') {
 
             if (empty(array_filter(array_map('trim', array_map('strval', $row))))) continue;
 
-            $employeeId = str_pad(trim((string)($row[0] ?? '')), 6, '0', STR_PAD_LEFT);
+            $employeeId = formatEmployeeId($row[0] ?? '');
 
-            if ($employeeId === '000000') {
+            if ($employeeId === '00-000') {
                 $errors[] = ['row' => $rowNum, 'message' => 'Missing employee ID'];
                 continue;
             }
@@ -678,7 +700,7 @@ if ($action === 'download_employee_template') {
     ];
 
     $notes = [
-        'A' => 'Enter numeric employee IDs. Excel will automatically display leading zeros (e.g. 1 → 000001). Must be exactly 6 digits and unique.',
+        'A' => 'Enter employee IDs in 00-000 format (e.g. 00-001). Must be unique.',
         'B' => 'Employee first name (required).',
         'C' => 'Employee last name (required).',
         'D' => 'Unique email address (required).',
@@ -700,10 +722,10 @@ if ($action === 'download_employee_template') {
         $comment->setWidth('240pt')->setHeight('65pt');
     }
 
-    // Employee ID leading-zero format
+    // Employee ID format
     $sheet->getStyle('A2:A1000')
         ->getNumberFormat()
-        ->setFormatCode('000000');
+        ->setFormatCode('@');
 
     // Birthdate column: force text so Excel won't convert to serial numbers
     $sheet->getStyle('E2:E1000')
@@ -711,10 +733,10 @@ if ($action === 'download_employee_template') {
         ->setFormatCode('@');
 
     // Sample rows
-    $sheet->setCellValue('A2', 1);
+    $sheet->setCellValue('A2', '00-001');
     $sheet->fromArray(['Juan', 'Dela Cruz', 'juan.delacruz@company.com', '25-Apr-1995', 'employee', 'HR'], null, 'B2');
 
-    $sheet->setCellValue('A3', 2);
+    $sheet->setCellValue('A3', '00-002');
     $sheet->fromArray(['Maria', 'Santos', 'maria.santos@company.com', '12-Nov-1990', 'manager', 'IT'], null, 'B3');
 
     applySampleRowStyle($sheet, 'A2:G2');
@@ -800,22 +822,22 @@ if ($action === 'import_employees') {
 
             if (empty(array_filter(array_map('trim', array_map('strval', $row))))) continue;
 
-            $employeeId  = str_pad(trim((string)($row[0] ?? '')), 6, '0', STR_PAD_LEFT);
-            $firstName   = trim((string)($row[1] ?? ''));
-            $lastName    = trim((string)($row[2] ?? ''));
+            $employeeId  = formatEmployeeId($row[0] ?? '');
+            $firstName   = strtoupper(trim((string)($row[1] ?? '')));
+            $lastName    = strtoupper(trim((string)($row[2] ?? '')));
             $email       = trim((string)($row[3] ?? ''));
             $birthdate   = parseExcelDate($row[4] ?? null);
             $roleKey     = strtolower(trim((string)($row[5] ?? '')));
             $deptCode    = strtoupper(trim((string)($row[6] ?? '')));
 
             // Required field presence
-            if ($employeeId === '000000' || $firstName === '' || $lastName === '' || $email === '') {
+            if ($employeeId === '00-000' || $firstName === '' || $lastName === '' || $email === '') {
                 $errors[] = ['row' => $rowNum, 'message' => 'Missing required fields (ID, First Name, Last Name, Email)'];
                 continue;
             }
 
-            if (!preg_match('/^\d{6}$/', $employeeId)) {
-                $errors[] = ['row' => $rowNum, 'message' => "Employee ID \"$employeeId\" must be exactly 6 digits"];
+            if (!preg_match('/^\d{2}-\d{3}$/', $employeeId)) {
+                $errors[] = ['row' => $rowNum, 'message' => "Employee ID \"$employeeId\" must be in 00-000 format"];
                 continue;
             }
 

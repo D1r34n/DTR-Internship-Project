@@ -30,8 +30,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     unset($_SESSION['form_token']);
 
-    $first_name      = trim($_POST['first_name'] ?? '');
-    $last_name       = trim($_POST['last_name'] ?? '');
+    $first_name      = strtoupper(trim($_POST['first_name'] ?? ''));
+    $last_name       = strtoupper(trim($_POST['last_name'] ?? ''));
     $email           = trim($_POST['email'] ?? '');
     $birthdate       = !empty($_POST['birthdate']) ? $_POST['birthdate'] : null;
     $role            = $_POST['role'] ?? 'employee';
@@ -53,8 +53,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // ADD EMPLOYEE
     // =========================================================
     {
-        if (!preg_match('/^\d{6}$/', $employee_ref_id)) {
-            $_SESSION['error'] = "Employee ID must be exactly 6 digits.";
+        if (!preg_match('/^\d{2}-\d{3}$/', $employee_ref_id)) {
+            $_SESSION['error'] = "Employee ID must be in 00-000 format (e.g. 00-001).";
             header("Location: admin_manage_employees.php");
             exit();
         }
@@ -1157,8 +1157,11 @@ $initialDeptFilter = isset($_GET['dept']) ? (int)$_GET['dept'] : 0;
 
             document.getElementById('modalEmpRefId')
                 ?.addEventListener('blur', function () {
-                    const v = this.value.trim();
-                    if (v !== '') this.value = v.padStart(6, '0');
+                    const digits = this.value.replace(/\D/g, '');
+                    if (digits !== '') {
+                        const padded = digits.padStart(5, '0').slice(-5);
+                        this.value = padded.slice(0, 2) + '-' + padded.slice(2);
+                    }
                 });
 
             document.getElementById('empSearch')
@@ -1196,9 +1199,9 @@ document.getElementById('empModal')
                 });
 
             document.getElementById('modalFirstName')
-                ?.addEventListener('input', updateProfilePreview);
+                ?.addEventListener('input', function () { this.value = this.value.toUpperCase(); updateProfilePreview(); });
             document.getElementById('modalLastName')
-                ?.addEventListener('input', updateProfilePreview);
+                ?.addEventListener('input', function () { this.value = this.value.toUpperCase(); updateProfilePreview(); });
 
             loadDepartments();
 
@@ -1793,8 +1796,8 @@ document.getElementById('empModal')
             if (!empRefId) {
                 showToast('Employee ID is required.', 'danger'); return;
             }
-            if (!/^\d{6}$/.test(empRefId)) {
-                showToast('Employee ID must be exactly 6 digits.', 'danger'); return;
+            if (!/^\d{2}-\d{3}$/.test(empRefId)) {
+                showToast('Employee ID must be in 00-000 format (e.g. 00-001).', 'danger'); return;
             }
             if (!firstName) {
                 showToast('First name is required.', 'danger'); return;
@@ -1814,10 +1817,6 @@ document.getElementById('empModal')
             if (!role) {
                 showToast('Please select a role.', 'danger'); return;
             }
-            if (!dept) {
-                showToast('Please select a department.', 'warning'); return;
-            }
-
             const btn = document.getElementById('modalSubmitBtn');
             btn.disabled  = true;
             btn.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Adding...`;

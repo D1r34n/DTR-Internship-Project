@@ -108,8 +108,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'edit_
 
     $fullName      = trim($_POST['name'] ?? '');
     $nameParts     = preg_split('/\s+/', $fullName, 2);
-    $firstName     = $nameParts[0] ?? '';
-    $lastName      = $nameParts[1] ?? '';
+    $firstName     = strtoupper($nameParts[0] ?? '');
+    $lastName      = strtoupper($nameParts[1] ?? '');
     $resetPassword = isset($_POST['reset_password']);
     $email         = trim($_POST['email'] ?? '');
     $birthdate     = !empty($_POST['birthdate']) ? $_POST['birthdate'] : null;
@@ -117,7 +117,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'edit_
     $department    = !empty($_POST['department_id']) ? $_POST['department_id'] : null;
     $empRefId      = trim($_POST['employee_ref_id'] ?? '');
 
-    if ($empRefId !== '' && !preg_match('/^\d{6}$/', $empRefId)) {
+    if ($empRefId !== '' && !preg_match('/^\d{2}-\d{3}$/', $empRefId)) {
         header("Location: admin_employee_view.php?employee_id=$urlEmpId&edit_error=invalid_emp_id");
         exit();
     }
@@ -1244,8 +1244,11 @@ function loadLogs(start, end) {
 
 
 function padEmpId(input) {
-    const v = input.value.trim();
-    if (v !== '') input.value = v.padStart(6, '0');
+    const digits = input.value.replace(/\D/g, '');
+    if (digits !== '') {
+        const padded = digits.padStart(5, '0').slice(-5);
+        input.value = padded.slice(0, 2) + '-' + padded.slice(2);
+    }
 }
 
 // ---- Copy button ----
