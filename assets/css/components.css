@@ -756,6 +756,10 @@ hr {
     filter: invert(1) !important;
 }
 
+[data-theme="light"] .btn-close {
+    filter: none !important;
+}
+
 /* ================================================
    BOOTSTRAP BUTTON FULL OVERRIDE — SOLID CLEAN
    ================================================ */

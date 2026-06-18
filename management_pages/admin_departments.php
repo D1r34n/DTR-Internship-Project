@@ -76,6 +76,7 @@ $departmentList = $stmt2->fetchAll(PDO::FETCH_ASSOC);
 <html lang="en">
 
 <head>
+    <?php include __DIR__ . '/../theme_init.php'; ?>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Admin Departments</title>
@@ -178,13 +179,16 @@ $departmentList = $stmt2->fetchAll(PDO::FETCH_ASSOC);
             <div class="dept-grid">
 
                 <?php foreach ($departments as $dept): ?>
-                    <div class="dept-card">
+                    <div class="dept-card"
+                         data-dept-id="<?= $dept['id'] ?>"
+                         data-employee-count="<?= $dept['employee_count'] ?>"
+                         data-child-count="<?= $dept['child_count'] ?>">
 
                         <?php $color = $dept['color'] ?? '#4e73df'; ?>
 
                         <div class="dept-actions">
                             <i class="bi bi-pencil-square edit-dept-icon"
-                            onclick='openEditDept(<?= json_encode($dept) ?>)'></i>
+                            onclick='openEditDept(<?= json_encode($dept, JSON_HEX_APOS | JSON_HEX_TAG) ?>)'></i>
                         </div>
 
                         <div class="dept-identity">
@@ -242,6 +246,11 @@ $departmentList = $stmt2->fetchAll(PDO::FETCH_ASSOC);
 
                     </div>
                 <?php endforeach; ?>
+
+                <div class="dept-empty" id="deptEmptyState" style="display:<?= empty($departments) ? '' : 'none' ?>">
+                    <i class="bi bi-building-slash"></i>
+                    <div class="text-meta">No departments found.</div>
+                </div>
 
             </div>
 
@@ -463,7 +472,7 @@ $departmentList = $stmt2->fetchAll(PDO::FETCH_ASSOC);
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <p class="text-light mb-0">Delete <strong id="delete-dept-name" class="text-tertiary"></strong>? This cannot be undone.</p>
+                    <p class="mb-0">Delete <strong id="delete-dept-name" class="text-tertiary"></strong>? This cannot be undone.</p>
                 </div>
                 <div class="modal-footer border-0 pt-0">
                     <button type="button" class="btn btn-sm" data-bs-dismiss="modal">Cancel</button>
@@ -483,11 +492,148 @@ const form = document.getElementById('create-dept-form');
 const msg  = document.getElementById('dept-msg');
 const grid = document.querySelector('.dept-grid');
 
+/* ===================================================
+   HELPERS
+=================================================== */
+
+function updateCount(delta) {
+    const el = document.getElementById('emp-count');
+    el.textContent = parseInt(el.textContent, 10) + delta;
+}
+
+function findCard(id) {
+    return document.querySelector(`.dept-card[data-dept-id="${id}"]`);
+}
+
+function buildCard(dept) {
+    const color      = dept.color || '#4e73df';
+    const empCount   = parseInt(dept.employee_count, 10) || 0;
+    const childCount = parseInt(dept.child_count,    10) || 0;
+
+    let pillsInner = '';
+    if (dept.parent_id && dept.parent_name) {
+        const pName = String(dept.parent_name)
+            .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+        pillsInner += `<button class="dept-parent-link" onclick="viewParentDepartment(${dept.parent_id})" title="Under ${pName}"><i class="bi bi-diagram-3"></i><span>Under ${pName}</span></button>`;
+    }
+    if (childCount > 0) {
+        const safeName = String(dept.department_name).replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+        pillsInner += `<button class="dept-sub-btn" onclick="viewSubDepartments(${dept.id},'${safeName}')"><i class="bi bi-diagram-2"></i>${childCount} Sub ${childCount !== 1 ? 'Departments' : 'Department'}</button>`;
+    }
+    const pillsHtml = pillsInner ? `<div class="dept-pills">${pillsInner}</div>` : '';
+
+    const metaHtml = empCount > 0
+        ? `<a class="dept-meta" href="admin_manage_employees.php?dept=${dept.id}"><i class="bi bi-people"></i> ${empCount} ${empCount !== 1 ? 'Employees' : 'Employee'}</a>`
+        : `<span class="dept-meta dept-meta--empty"><i class="bi bi-people"></i> 0 Employees</span>`;
+
+    const deptJson = JSON.stringify(dept).replace(/'/g, '\\u0027');
+    const nameAttr = String(dept.department_name).replace(/"/g, '&quot;');
+
+    const el = document.createElement('div');
+    el.className             = 'dept-card';
+    el.dataset.deptId        = dept.id;
+    el.dataset.employeeCount = empCount;
+    el.dataset.childCount    = childCount;
+    el.innerHTML = `
+        <div class="dept-actions">
+            <i class="bi bi-pencil-square edit-dept-icon" onclick='openEditDept(${deptJson})'></i>
+        </div>
+        <div class="dept-identity">
+            <div class="dept-icon" style="background:${color}; color:${getContrastColor(color)};">${dept.department_code}</div>
+            <div class="dept-name" title="${nameAttr}">${dept.department_name}</div>
+        </div>
+        ${pillsHtml}
+        ${metaHtml}
+    `;
+    return el;
+}
+
+/* Keep dept lists in sync so parent dropdowns stay up-to-date */
+let _refreshCreateDropdown = null;
+
+function addToDeptList(id, name) {
+    deptListAll.push({ id, department_name: name });
+    deptListAll.sort((a, b) => a.department_name.localeCompare(b.department_name));
+    deptNameToId[name] = id;
+    const opt = document.createElement('option');
+    opt.value = name;
+    document.getElementById('edit-parent-list').appendChild(opt);
+    _refreshCreateDropdown?.();
+}
+
+function removeFromDeptList(id, name) {
+    const idx = deptListAll.findIndex(d => d.id == id);
+    if (idx !== -1) deptListAll.splice(idx, 1);
+    delete deptNameToId[name];
+    const dl  = document.getElementById('edit-parent-list');
+    const opt = [...dl.options].find(o => o.value === name);
+    if (opt) opt.remove();
+    _refreshCreateDropdown?.();
+}
+
+function updateDeptInList(id, oldName, newName) {
+    const entry = deptListAll.find(d => d.id == id);
+    if (entry && oldName !== newName) {
+        entry.department_name = newName;
+        delete deptNameToId[oldName];
+        deptNameToId[newName] = id;
+        const dl  = document.getElementById('edit-parent-list');
+        const opt = [...dl.options].find(o => o.value === oldName);
+        if (opt) opt.value = newName;
+        deptListAll.sort((a, b) => a.department_name.localeCompare(b.department_name));
+    }
+    _refreshCreateDropdown?.();
+}
+
+/* Convert a dept object into an OrgChart node (used for add / update) */
+function toChartNode(dept) {
+    const color    = dept.color || '#4e73df';
+    const empCount = parseInt(dept.employee_count, 10) || 0;
+    const node = {
+        id:              parseInt(dept.id, 10),
+        pid:             dept.parent_id ? parseInt(dept.parent_id, 10) : null,
+        name:            dept.department_name,
+        code:            dept.department_code,
+        color,
+        emp:             empCount + ' ' + (empCount !== 1 ? 'Employees' : 'Employee'),
+        department_name: dept.department_name,
+        department_code: dept.department_code,
+        parent_id:       dept.parent_id || null,
+        parent_name:     dept.parent_name || null,
+        employee_count:  empCount,
+    };
+    node.shortName = node.name.length > 20 ? node.name.slice(0, 18) + '…' : node.name;
+    node.shortCode = node.code.length > 5  ? node.code.slice(0, 4)  + '…' : node.code;
+    node.tags      = getContrastColor(color) === '#000000' ? ['alt'] : [];
+    return node;
+}
+
+function syncChartAdd(dept) {
+    const node = toChartNode(dept);
+    chartDepts.push(node);
+    orgChart?.addNode(node);
+}
+
+function syncChartUpdate(dept) {
+    const node = toChartNode(dept);
+    const idx  = chartDepts.findIndex(d => d.id === node.id);
+    if (idx !== -1) chartDepts[idx] = node;
+    orgChart?.updateNode(node);
+}
+
+function syncChartRemove(id) {
+    const numId = parseInt(id, 10);
+    const idx   = chartDepts.findIndex(d => d.id === numId);
+    if (idx !== -1) chartDepts.splice(idx, 1);
+    orgChart?.removeNode(numId);
+}
+
+/* ===================================================
+   DOM READY
+=================================================== */
 document.addEventListener('DOMContentLoaded', () => {
 
-    /* ------------------------------------------------
-       CREATE MODAL — LIVE PREVIEW
-       ------------------------------------------------ */
+    /* CREATE MODAL — LIVE PREVIEW */
     const inputCode   = document.getElementById('input-code');
     const inputName   = document.getElementById('input-name');
     const colorPicker = document.getElementById('color-picker');
@@ -509,12 +655,9 @@ document.addEventListener('DOMContentLoaded', () => {
     inputCode.addEventListener('input',   updatePreview);
     inputName.addEventListener('input',   updatePreview);
     colorPicker.addEventListener('input', updatePreview);
-
     updatePreview();
 
-    /* ------------------------------------------------
-       EDIT MODAL — LIVE PREVIEW
-       ------------------------------------------------ */
+    /* EDIT MODAL — LIVE PREVIEW */
     const editCode  = document.getElementById('edit-input-code');
     const editName  = document.getElementById('edit-input-name');
     const editColor = document.getElementById('edit-color-picker');
@@ -541,7 +684,6 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('.view-toggle [data-bs-toggle="popover"]').forEach(el => {
         new bootstrap.Popover(el, { trigger: 'hover focus' });
     });
-
 });
 
 const deptNameToId = <?= json_encode(array_column($departmentList, 'id', 'department_name')) ?>;
@@ -549,10 +691,10 @@ const deptListAll  = <?= json_encode(array_values($departmentList)) ?>;
 
 /* ---- Create-modal parent searchable dropdown ---- */
 (function () {
-    const search  = document.getElementById('create-parent-search');
-    const list    = document.getElementById('create-parent-list');
+    const search   = document.getElementById('create-parent-search');
+    const list     = document.getElementById('create-parent-list');
     const hiddenId = document.getElementById('create-parent-id');
-    const label   = document.getElementById('create-parent-label');
+    const label    = document.getElementById('create-parent-label');
 
     function renderList(q) {
         const filtered = q
@@ -567,22 +709,22 @@ const deptListAll  = <?= json_encode(array_values($departmentList)) ?>;
     }
 
     renderList('');
+    _refreshCreateDropdown = () => renderList(search.value);
 
     search.addEventListener('input', () => renderList(search.value));
 
     list.addEventListener('click', function (e) {
         const btn = e.target.closest('[data-id]');
         if (!btn) return;
-        hiddenId.value = btn.dataset.id;
+        hiddenId.value    = btn.dataset.id;
         label.textContent = btn.dataset.name;
         bootstrap.Dropdown.getInstance(document.getElementById('create-parent-btn'))?.hide();
     });
 
-    // Clear selection when modal resets
     document.getElementById('create-dept-modal').addEventListener('hidden.bs.modal', () => {
-        hiddenId.value  = '';
+        hiddenId.value    = '';
         label.textContent = 'None';
-        search.value    = '';
+        search.value      = '';
         renderList('');
     });
 })();
@@ -592,6 +734,9 @@ document.getElementById('edit-parent-input').addEventListener('input', function 
     document.getElementById('edit-parent-id').value = deptNameToId[this.value.trim()] ?? '';
 });
 
+/* ===================================================
+   CREATE
+=================================================== */
 form.addEventListener('submit', function(e) {
     e.preventDefault();
 
@@ -609,34 +754,21 @@ form.addEventListener('submit', function(e) {
         if (data.success) {
             form.reset();
 
-            const color = data.color || '#4e73df';
-            const div   = document.createElement('div');
-            div.className = 'dept-card';
-            div.innerHTML = `
-                <div class="dept-actions">
-                    <i class="bi bi-pencil-square edit-dept-icon"
-                        onclick='openEditDept(${JSON.stringify(data)})'></i>
-                </div>
-                <div class="dept-identity">
-                    <div class="dept-icon" style="background:${color}; color:${getContrastColor(color)};">
-                        ${data.department_code}
-                    </div>
-                    <div class="dept-name">${data.department_name}</div>
-                </div>
-                ${data.parent_id && data.parent_name ? `
-                    <div class="dept-pills">
-                        <button class="dept-parent-link" onclick="viewParentDepartment(${data.parent_id})">
-                            <i class="bi bi-diagram-3"></i>
-                            Under ${data.parent_name}
-                        </button>
-                    </div>
-                ` : ''}
-                <a class="dept-meta" href="admin_manage_employees.php?dept=${data.id}">
-                    <i class="bi bi-people"></i>
-                    0 Employees
-                </a>
-            `;
-            grid.appendChild(div);
+            const newDept = {
+                id:              data.id,
+                department_code: data.department_code,
+                department_name: data.department_name,
+                color:           data.color,
+                parent_id:       data.parent_id  || null,
+                parent_name:     data.parent_name || null,
+                employee_count:  0,
+                child_count:     0,
+            };
+            grid.appendChild(buildCard(newDept));
+            applyFilterSort();
+            updateCount(1);
+            addToDeptList(data.id, data.department_name);
+            syncChartAdd(newDept);
 
             bootstrap.Modal.getInstance(document.getElementById('create-dept-modal')).hide();
             showToast('Department created successfully.', 'success');
@@ -655,7 +787,9 @@ form.addEventListener('submit', function(e) {
     });
 });
 
-/* SORT */
+/* ===================================================
+   SORT / FILTER
+=================================================== */
 const deptSortHidden = document.getElementById('dept-sort-value');
 
 function selectSort(value, label) {
@@ -691,6 +825,9 @@ function applyFilterSort() {
     });
 
     cards.forEach(c => container.appendChild(c));
+
+    const visible = cards.filter(c => c.style.display !== 'none');
+    document.getElementById('deptEmptyState').style.display = visible.length ? 'none' : '';
 }
 
 form.department_code.addEventListener('input', function () {
@@ -702,21 +839,20 @@ form.department_name.addEventListener('input', () => {
     form.department_name.classList.remove('is-invalid');
 });
 
-// PARENT DEPARTMENT
+/* ===================================================
+   PARENT / SUB MODALS
+=================================================== */
 function viewParentDepartment(parentId) {
-
     const body = document.getElementById('parent-dept-body');
     body.innerHTML = 'Loading...';
 
     fetch(`department_api.php?action=get_parent&id=${parentId}`)
         .then(res => res.json())
         .then(data => {
-
             if (!data) {
                 body.innerHTML = '<div class="text-muted">No parent department found</div>';
                 return;
             }
-
             body.innerHTML = `
                 <div class="card-neutral dept-list-item">
                     <div class="dept-icon" style="background:${data.color || '#4e73df'}; color:${getContrastColor(data.color || '#4e73df')};">
@@ -730,11 +866,8 @@ function viewParentDepartment(parentId) {
     new bootstrap.Modal(document.getElementById('parent-dept-modal')).show();
 }
 
-/* SUB DEPARTMENTS */
 function viewSubDepartments(id, name) {
-
-    document.getElementById('sub-dept-title').innerText =
-        `Sub Departments of ${name}`;
+    document.getElementById('sub-dept-title').innerText = `Sub Departments of ${name}`;
 
     const list = document.getElementById('sub-dept-list');
     list.innerHTML = 'Loading...';
@@ -742,12 +875,10 @@ function viewSubDepartments(id, name) {
     fetch(`department_api.php?action=get_sub&id=${id}`)
         .then(res => res.json())
         .then(data => {
-
             if (!data.length) {
                 list.innerHTML = '<div class="text-muted">No sub departments</div>';
                 return;
             }
-
             list.innerHTML = data.map(d => `
                 <div class="dept-list-item">
                     <div class="dept-icon" style="background:${d.color || '#4e73df'}; color:${getContrastColor(d.color || '#4e73df')};">
@@ -761,6 +892,9 @@ function viewSubDepartments(id, name) {
     new bootstrap.Modal(document.getElementById('sub-dept-modal')).show();
 }
 
+/* ===================================================
+   EDIT
+=================================================== */
 let currentEditId   = null;
 let currentEditName = null;
 
@@ -768,14 +902,14 @@ function openEditDept(dept) {
     currentEditId   = dept.id;
     currentEditName = dept.department_name;
 
-    document.getElementById('edit-dept-id').value          = dept.id;
-    document.getElementById('edit-input-code').value       = dept.department_code;
-    document.getElementById('edit-input-name').value       = dept.department_name;
-    document.getElementById('edit-color-picker').value     = dept.color || '#4e73df';
+    document.getElementById('edit-dept-id').value              = dept.id;
+    document.getElementById('edit-input-code').value           = dept.department_code;
+    document.getElementById('edit-input-name').value           = dept.department_name;
+    document.getElementById('edit-color-picker').value         = dept.color || '#4e73df';
     document.getElementById('edit-preview-icon').textContent   = dept.department_code;
     document.getElementById('edit-preview-icon').style.background = dept.color || '#4e73df';
     document.getElementById('edit-preview-icon').style.color      = getContrastColor(dept.color || '#4e73df');
-    document.getElementById('edit-preview-name').textContent  = dept.department_name;
+    document.getElementById('edit-preview-name').textContent   = dept.department_name;
 
     document.getElementById('edit-parent-id').value    = dept.parent_id || '';
     document.getElementById('edit-parent-input').value = dept.parent_name || '';
@@ -798,9 +932,27 @@ document.getElementById('edit-dept-form').addEventListener('submit', function(e)
     .then(res => res.json())
     .then(data => {
         if (data.success) {
+            const oldCard = findCard(currentEditId);
+            const oldName = currentEditName;
+
+            const updatedDept = {
+                id:              currentEditId,
+                department_code: document.getElementById('edit-input-code').value,
+                department_name: document.getElementById('edit-input-name').value,
+                color:           document.getElementById('edit-color-picker').value,
+                parent_id:       document.getElementById('edit-parent-id').value || null,
+                parent_name:     document.getElementById('edit-parent-input').value || null,
+                employee_count:  oldCard ? parseInt(oldCard.dataset.employeeCount, 10) || 0 : 0,
+                child_count:     oldCard ? parseInt(oldCard.dataset.childCount,    10) || 0 : 0,
+            };
+
+            if (oldCard) oldCard.replaceWith(buildCard(updatedDept));
+            currentEditName = updatedDept.department_name;
+            updateDeptInList(currentEditId, oldName, updatedDept.department_name);
+            syncChartUpdate(updatedDept);
+
             bootstrap.Modal.getInstance(document.getElementById('edit-dept-modal'))?.hide();
             showToast('Department updated successfully.', 'success');
-            setTimeout(() => location.reload(), 800);
         } else {
             showToast(data.message, 'danger');
             btn.disabled  = false;
@@ -814,12 +966,22 @@ document.getElementById('edit-dept-form').addEventListener('submit', function(e)
     });
 });
 
+/* ===================================================
+   DELETE
+=================================================== */
 function deleteDept() {
+    const btn = document.getElementById('delete-confirm-btn');
+    btn.disabled  = false;
+    btn.innerHTML = '<i class="bi bi-trash"></i> Delete';
     document.getElementById('delete-dept-name').textContent = currentEditName || 'this department';
     new bootstrap.Modal(document.getElementById('delete-confirm-modal')).show();
 }
 
 document.getElementById('delete-confirm-btn').addEventListener('click', function () {
+    const btn = this;
+    btn.disabled  = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span>';
+
     bootstrap.Modal.getInstance(document.getElementById('delete-confirm-modal')).hide();
 
     fetch('department_api.php?action=delete', {
@@ -829,18 +991,46 @@ document.getElementById('delete-confirm-btn').addEventListener('click', function
     .then(res => res.json())
     .then(data => {
         if (data.success) {
-            location.reload();
+            bootstrap.Modal.getInstance(document.getElementById('edit-dept-modal'))?.hide();
+            const card = findCard(currentEditId);
+            if (card) card.remove();
+            updateCount(-1);
+            removeFromDeptList(currentEditId, currentEditName);
+            syncChartRemove(currentEditId);
+            showToast('Department deleted.', 'success');
         } else {
-            document.getElementById('edit-msg').innerHTML =
-                `<span class="text-danger">${data.message}</span>`;
+            showToast(data.message, 'danger');
+            btn.disabled  = false;
+            btn.innerHTML = '<i class="bi bi-trash"></i> Delete';
         }
+    })
+    .catch(() => {
+        showToast('Something went wrong. Please try again.', 'danger');
+        btn.disabled  = false;
+        btn.innerHTML = '<i class="bi bi-trash"></i> Delete';
     });
 });
 
-/* -----------------------------------------------
-   VIEW TOGGLE  (Grid ↔ Org Chart)
------------------------------------------------ */
+/* ===================================================
+   VIEW TOGGLE (Grid ↔ Org Chart)
+=================================================== */
 let chartInited = false;
+let orgChart    = null;
+let chartDepts  = <?= json_encode(array_map(function($d) {
+    return [
+        'id'              => (int)$d['id'],
+        'pid'             => $d['parent_id'] ? (int)$d['parent_id'] : null,
+        'name'            => $d['department_name'],
+        'code'            => $d['department_code'],
+        'color'           => $d['color'] ?? '#4e73df',
+        'emp'             => (int)$d['employee_count'] . ' ' . ((int)$d['employee_count'] === 1 ? 'Employee' : 'Employees'),
+        'department_name' => $d['department_name'],
+        'department_code' => $d['department_code'],
+        'parent_id'       => $d['parent_id'],
+        'parent_name'     => $d['parent_name'] ?? '',
+        'employee_count'  => (int)$d['employee_count'],
+    ];
+}, $departments), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
 
 function switchView(view) {
     const isChart = view === 'chart';
@@ -853,7 +1043,6 @@ function switchView(view) {
     if (isChart && !chartInited) loadOrgChart();
 }
 
-// Restore last view on page load
 (function () {
     const saved = localStorage.getItem('deptView');
     if (saved === 'chart') switchView('chart');
@@ -870,24 +1059,6 @@ function loadOrgChart() {
 function initOrgChart() {
     chartInited = true;
 
-    const depts = <?= json_encode(array_map(function($d) {
-        return [
-            'id'              => (int)$d['id'],
-            'pid'             => $d['parent_id'] ? (int)$d['parent_id'] : null,
-            'name'            => $d['department_name'],
-            'code'            => $d['department_code'],
-            'color'           => $d['color'] ?? '#4e73df',
-            'emp'             => (int)$d['employee_count'] . ' ' . ((int)$d['employee_count'] === 1 ? 'Employee' : 'Employees'),
-            // fields needed by openEditDept()
-            'department_name' => $d['department_name'],
-            'department_code' => $d['department_code'],
-            'parent_id'       => $d['parent_id'],
-            'parent_name'     => $d['parent_name'] ?? '',
-            'employee_count'  => (int)$d['employee_count'],
-        ];
-    }, $departments), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
-
-    // Base template
     OrgChart.templates.deptCard = Object.assign({}, OrgChart.templates.base);
     OrgChart.templates.deptCard.size       = [220, 90];
     OrgChart.templates.deptCard.node       =
@@ -901,19 +1072,21 @@ function initOrgChart() {
     OrgChart.templates.deptCard.editBtn    = '';
     OrgChart.templates.deptCard.menuButton = '';
 
-    // Variant for light-colored dept circles — code text becomes black
     OrgChart.templates.deptCardAlt = Object.assign({}, OrgChart.templates.deptCard);
     OrgChart.templates.deptCardAlt.field_1 = '<text x="41" y="45" text-anchor="middle" style="font-size:9px;font-weight:700;font-family:Poppins,sans-serif;" fill="#000000">{val}</text>';
 
-    // Truncate long text and tag nodes that need dark circle text
-    const nodes = depts.map(d => ({
+    const nodes = chartDepts.map(d => ({
         ...d,
         shortName: d.name.length > 20 ? d.name.slice(0, 18) + '…' : d.name,
         shortCode: d.code.length > 5  ? d.code.slice(0, 4)  + '…' : d.code,
         tags: getContrastColor(d.color) === '#000000' ? ['alt'] : [],
     }));
 
-    const chart = new OrgChart(document.getElementById('dept-chart'), {
+    OrgChart.IT_IS_LONELY_HERE_LINK = 'No departments yet. Add one above.';
+    if (OrgChart.RES) OrgChart.RES.IT_IS_LONELY_HERE_LINK = OrgChart.IT_IS_LONELY_HERE_LINK;
+    OrgChart.IT_IS_LONELY_HERE = OrgChart.IT_IS_LONELY_HERE.replace('fill="#039be5"', 'fill="var(--text-secondary, #6c757d)"');
+
+    orgChart = new OrgChart(document.getElementById('dept-chart'), {
         template: 'deptCard',
         tags: { alt: { template: 'deptCardAlt' } },
         nodeBinding: {
@@ -935,8 +1108,8 @@ function initOrgChart() {
         mouseScrool: OrgChart.action.zoom,
     });
 
-    chart.on('click', function(sender, args) {
-        const d = depts.find(n => n.id === args.node.id);
+    orgChart.on('click', function(sender, args) {
+        const d = chartDepts.find(n => n.id === args.node.id);
         if (d) openEditDept(d);
         return false;
     });
@@ -944,14 +1117,10 @@ function initOrgChart() {
 
 function getContrastColor(hex) {
     hex = hex.replace('#', '');
-
     const r = parseInt(hex.substr(0, 2), 16);
     const g = parseInt(hex.substr(2, 2), 16);
     const b = parseInt(hex.substr(4, 2), 16);
-
-    const luminance = (0.299 * r + 0.587 * g + 0.114 * b);
-
-    return luminance > 186 ? '#000000' : '#ffffff';
+    return (0.299 * r + 0.587 * g + 0.114 * b) > 186 ? '#000000' : '#ffffff';
 }
 </script>
 

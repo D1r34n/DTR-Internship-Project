@@ -587,6 +587,7 @@ $leaveTypes = [
 <!doctype html>
 <html lang="en">
 <head>
+    <?php include __DIR__ . '/../theme_init.php'; ?>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title><?= htmlspecialchars($emp['name']) ?> — Employee View</title>
@@ -1146,7 +1147,7 @@ $leaveTypes = [
 <script>
 // ---- Department dropdown (Edit Employee) ----
 (function () {
-    fetch('/DTR-Internship-Project/management_pages/department_api.php?action=list')
+    fetch(APP_ROOT + '/management_pages/department_api.php?action=list')
         .then(r => r.json())
         .then(depts => {
             const items = [
@@ -1383,7 +1384,7 @@ document.addEventListener('DOMContentLoaded', () => {
         body.append('new_datetime', newDatetime.replace('T', ' ') + ':00');
         body.append('reason',       reason);
 
-        fetch('/DTR-Internship-Project/dropdown_requests/request_log_edit.php', {
+        fetch(APP_ROOT + '/dropdown_requests/request_log_edit.php', {
             method: 'POST',
             body
         })

@@ -49,7 +49,7 @@ case 'create':
         $pdo->prepare("INSERT INTO departments (department_code, department_name, parent_id, color) VALUES (?, ?, ?, ?)")
             ->execute([$code, $name, $parent_id, $color]);
 
-        $pdo->prepare("INSERT INTO logs (employee_id, log_type, log_time, edit_reason, edit_requested_by) VALUES (?, 'ADD_DEPARTMENT', NOW(), ?, ?)")
+        $pdo->prepare("INSERT INTO logs (employee_id, log_type, log_time, longitude, latitude, edit_reason, edit_requested_by) VALUES (?, 'ADD_DEPARTMENT', NOW(), 0, 0, ?, ?)")
             ->execute([
                 $_SESSION['user_id'] ?? null,
                 json_encode(['department_name' => $name, 'department_code' => $code, 'parent_name' => $parent_name]),
@@ -59,6 +59,7 @@ case 'create':
         echo json_encode([
             'success'         => true,
             'message'         => 'Department created',
+            'id'              => (int)$pdo->lastInsertId(),
             'department_code' => $code,
             'department_name' => $name,
             'parent_id'       => $parent_id,
@@ -70,7 +71,7 @@ case 'create':
             'success' => false,
             'message' => $e->errorInfo[1] == 1062
                 ? 'Duplicate department (code or name already exists)'
-                : 'Server error creating department',
+                : $e->getMessage(),
         ]);
     }
     break;
@@ -141,7 +142,7 @@ case 'update':
         $diff['Parent']     = ['before' => $old['parent_name'] ?? '—', 'after' => $newParentName ?? '—'];
 
     if (!empty($diff)) {
-        $pdo->prepare("INSERT INTO logs (employee_id, log_type, log_time, edit_reason, edit_requested_by) VALUES (?, 'EDIT_DEPARTMENT', NOW(), ?, ?)")
+        $pdo->prepare("INSERT INTO logs (employee_id, log_type, log_time, longitude, latitude, edit_reason, edit_requested_by) VALUES (?, 'EDIT_DEPARTMENT', NOW(), 0, 0, ?, ?)")
             ->execute([$_SESSION['user_id'] ?? null, json_encode($diff), $_SESSION['user_id'] ?? null]);
     }
 
@@ -163,20 +164,41 @@ case 'delete':
     $snap->execute([$deptId]);
     $info = $snap->fetch(PDO::FETCH_ASSOC) ?: [];
 
-    $pdo->prepare("DELETE FROM departments WHERE id = ?")->execute([$deptId]);
+    // Check for child departments
+    $childStmt = $pdo->prepare("SELECT COUNT(*) FROM departments WHERE parent_id = ?");
+    $childStmt->execute([$deptId]);
+    if ((int)$childStmt->fetchColumn() > 0) {
+        echo json_encode(['success' => false, 'message' => 'Cannot delete: this department has sub-departments. Remove them first.']);
+        break;
+    }
 
-    $pdo->prepare("INSERT INTO logs (employee_id, log_type, log_time, edit_reason, edit_requested_by) VALUES (?, 'DELETE_DEPARTMENT', NOW(), ?, ?)")
-        ->execute([
-            $_SESSION['user_id'] ?? null,
-            json_encode([
-                'department_name' => $info['department_name'] ?? '—',
-                'department_code' => $info['department_code'] ?? '—',
-                'parent_name'     => $info['parent_name']     ?? null,
-            ]),
-            $_SESSION['user_id'] ?? null,
-        ]);
+    // Check for assigned employees
+    $empStmt = $pdo->prepare("SELECT COUNT(*) FROM employees WHERE department_id = ? AND is_archived = 0");
+    $empStmt->execute([$deptId]);
+    $empCount = (int)$empStmt->fetchColumn();
+    if ($empCount > 0) {
+        echo json_encode(['success' => false, 'message' => "Cannot delete: $empCount employee(s) are still assigned to this department."]);
+        break;
+    }
 
-    echo json_encode(['success' => true, 'message' => 'Deleted']);
+    try {
+        $pdo->prepare("DELETE FROM departments WHERE id = ?")->execute([$deptId]);
+
+        $pdo->prepare("INSERT INTO logs (employee_id, log_type, log_time, longitude, latitude, edit_reason, edit_requested_by) VALUES (?, 'DELETE_DEPARTMENT', NOW(), 0, 0, ?, ?)")
+            ->execute([
+                $_SESSION['user_id'] ?? null,
+                json_encode([
+                    'department_name' => $info['department_name'] ?? '—',
+                    'department_code' => $info['department_code'] ?? '—',
+                    'parent_name'     => $info['parent_name']     ?? null,
+                ]),
+                $_SESSION['user_id'] ?? null,
+            ]);
+
+        echo json_encode(['success' => true, 'message' => 'Deleted']);
+    } catch (PDOException $e) {
+        echo json_encode(['success' => false, 'message' => 'Could not delete department: ' . $e->getMessage()]);
+    }
     break;
 
 /* =========================================

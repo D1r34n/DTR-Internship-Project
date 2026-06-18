@@ -200,6 +200,7 @@ if ($deptScoped) {
 <!doctype html>
 <html lang="en">
 <head>
+    <?php include __DIR__ . '/../theme_init.php'; ?>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Schedule Requests</title>
@@ -215,7 +216,8 @@ if ($deptScoped) {
     <link rel="stylesheet" href="admin_requests.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 
-    <!-- Bootstrap JS — must be in <head> so the topbar session-timeout IIFE can call bootstrap.Modal on parse -->
+    <!-- Bootstrap JS — must be in <head>
+    <?php include __DIR__ . '/../theme_init.php'; ?> so the topbar session-timeout IIFE can call bootstrap.Modal on parse -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </head>
 <body>

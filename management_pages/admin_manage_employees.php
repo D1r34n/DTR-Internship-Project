@@ -189,6 +189,7 @@ $initialDeptFilter = isset($_GET['dept']) ? (int)$_GET['dept'] : 0;
 <!doctype html>
 <html lang="en">
 <head>
+    <?php include __DIR__ . '/../theme_init.php'; ?>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Employee Management</title>
@@ -254,7 +255,8 @@ $initialDeptFilter = isset($_GET['dept']) ? (int)$_GET['dept'] : 0;
         }
     </style>
 
-    <!-- Bootstrap JS — must be in <head> so the topbar session-timeout IIFE runs after it -->
+    <!-- Bootstrap JS — must be in <head>
+    <?php include __DIR__ . '/../theme_init.php'; ?> so the topbar session-timeout IIFE runs after it -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
 </head>
 <body>
@@ -1326,7 +1328,7 @@ document.getElementById('empModal')
         const initialDeptFilter = <?= $initialDeptFilter ?>;
 
         function loadDepartments() {
-            fetch('/DTR-Internship-Project/management_pages/department_api.php?action=list')
+            fetch(APP_ROOT + '/management_pages/department_api.php?action=list')
                 .then(r => r.json())
                 .then(depts => {
                     deptItems = [

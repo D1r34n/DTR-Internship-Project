@@ -337,6 +337,7 @@ if (isset($_SESSION['last_attendance_tap'])) {
     </div>
 </nav>
 
+<script>const APP_ROOT = '<?= APP_ROOT ?>';</script>
 <?php include '../dropdown_requests/modal_request.php'; ?>
 
 <!-- WEBCAM TIME IN/OUT MODAL -->

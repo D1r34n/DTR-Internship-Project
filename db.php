@@ -6,6 +6,8 @@ $password = '';
 
 date_default_timezone_set('Asia/Manila');
 
+define('APP_ROOT', '/' . explode('/', ltrim($_SERVER['SCRIPT_NAME'] ?? '', '/'))[0]);
+
 try {
     $pdo = new PDO("mysql:host=$host;dbname=$dbname", $username, $password);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
@@ -28,7 +30,7 @@ if (session_status() === PHP_SESSION_ACTIVE && isset($_SESSION['user_id'])) {
             header('Content-Type: application/json');
             echo json_encode(['expired' => true]);
         } else {
-            header('Location: /DTR-Internship-Project/authentication_pages/logout.php?timeout=1');
+            header('Location: ' . APP_ROOT . '/authentication_pages/logout.php?timeout=1');
         }
         exit();
     }

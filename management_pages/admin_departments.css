@@ -228,10 +228,24 @@ body {
     display: grid;
     grid-template-columns: repeat(auto-fill, 220px);
     gap: 20px;
-    padding: 0 1.5rem 0 0;
+    padding: 0.5rem 1.5rem 0 0;
 
     flex: 1;
     overflow-y: auto;
+    position: relative;
+}
+
+.dept-empty {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    color: var(--text-light);
+    font-size: 3rem;
+    pointer-events: none;
 }
 
 .dept-card {

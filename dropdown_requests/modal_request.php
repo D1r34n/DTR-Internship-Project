@@ -386,7 +386,7 @@
     const list = document.getElementById('otGanttList');
     list.innerHTML = '<p class="ot-gantt-loading">Loading...</p>';
 
-    fetch('/DTR-Internship-Project/dropdown_requests/get_ot_records.php')
+    fetch(APP_ROOT + '/dropdown_requests/get_ot_records.php')
       .then(res => res.json())
       .then(records => {
         if (!Array.isArray(records) || records.length === 0) {
@@ -546,7 +546,7 @@
     formData.append('time_out', otSelectedRecord.time_out);
     formData.append('reason',   reason);
 
-    fetch('/DTR-Internship-Project/dropdown_requests/request_ot.php', {
+    fetch(APP_ROOT + '/dropdown_requests/request_ot.php', {
       method: 'POST',
       body: formData
     })
@@ -649,7 +649,7 @@
     document.getElementById('leaveSelectedDates').style.display    = 'none';
     document.getElementById('leaveSelectedDatesText').textContent  = '';
 
-    fetch(`/DTR-Internship-Project/dropdown_requests/get_schedule_dates.php?leave_type=${encodeURIComponent(value)}`)
+    fetch(`${APP_ROOT}/dropdown_requests/get_schedule_dates.php?leave_type=${encodeURIComponent(value)}`)
       .then(res => res.json())
       .then(data => {
         leaveScheduledDates = data.scheduledDates ?? [];
@@ -682,7 +682,7 @@
     leaveExistingDates = [];
 
     if (_leaveTypesData.length === 0) {
-      fetch('/DTR-Internship-Project/dropdown_requests/get_leave_types.php')
+      fetch(APP_ROOT + '/dropdown_requests/get_leave_types.php')
         .then(r => r.json())
         .then(types => {
           _leaveTypesData = types;
@@ -828,7 +828,7 @@
     formData.append('selected_dates', JSON.stringify(leaveSelectedDates));
     formData.append('reason',         reason);
 
-    fetch('/DTR-Internship-Project/dropdown_requests/request_leave.php', {
+    fetch(APP_ROOT + '/dropdown_requests/request_leave.php', {
       method: 'POST',
       body: formData
     })
@@ -877,7 +877,7 @@
     obScheduledDates = [];
     obExistingDates  = [];
 
-    fetch('/DTR-Internship-Project/dropdown_requests/get_ob_dates.php')
+    fetch(APP_ROOT + '/dropdown_requests/get_ob_dates.php')
       .then(res => res.json())
       .then(data => {
         obScheduledDates = data.scheduledDates ?? [];
@@ -1013,7 +1013,7 @@
     formData.append('client_name', clientName);
     formData.append('reason',      reason);
 
-    fetch('/DTR-Internship-Project/dropdown_requests/request_ob.php', {
+    fetch(APP_ROOT + '/dropdown_requests/request_ob.php', {
       method: 'POST',
       body: formData
     })
@@ -1118,7 +1118,7 @@
     document.getElementById('log-edit-current-in').textContent  = '';
     document.getElementById('log-edit-current-out').textContent = '';
 
-    fetch('/DTR-Internship-Project/dropdown_requests/get_logedit_logs.php')
+    fetch(APP_ROOT + '/dropdown_requests/get_logedit_logs.php')
       .then(r => r.json())
       .then(logs => {
         le2LogIdIn  = null;
@@ -1201,7 +1201,7 @@
   let seCalendarInstance     = null;
 
   // Same endpoint the schedules tab uses — it already classifies day/night/rest/leave/OB.
-  const SE_SCHEDULE_API = '/DTR-Internship-Project/get_schedule.php';
+  const SE_SCHEDULE_API = APP_ROOT + '/get_schedule.php';
 
   function openScheduleEditModal() {
     seSelectedScheduleId   = null;
@@ -1405,7 +1405,7 @@
     fd.append('new_time_out', newTimeOut);
     fd.append('reason',       reason);
 
-    fetch('/DTR-Internship-Project/dropdown_requests/request_schedule_edit.php', {
+    fetch(APP_ROOT + '/dropdown_requests/request_schedule_edit.php', {
       method: 'POST',
       body: fd,
     })
@@ -1448,7 +1448,7 @@
       fd.append('log_id',       logId);
       fd.append('new_datetime', `${datePrefix} ${timeVal}:00`);
       fd.append('reason',       reason);
-      return fetch('/DTR-Internship-Project/dropdown_requests/request_log_edit.php', { method: 'POST', body: fd })
+      return fetch(APP_ROOT + '/dropdown_requests/request_log_edit.php', { method: 'POST', body: fd })
         .then(r => r.json());
     };
 

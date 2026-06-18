@@ -19,6 +19,7 @@ require_once 'cutoff_helpers.php';
 <!doctype html>
 <html lang="en">
 <head>
+    <?php include __DIR__ . '/../theme_init.php'; ?>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Attendance Report</title>
