@@ -234,13 +234,13 @@ if ($action === 'download_schedule_template') {
 
     // ===== SAMPLE ROWS =====
     $sheet->setCellValue('A2', '00-001');
-    $sheet->setCellValue('B2', 'John Doe');
+    $sheet->setCellValue('B2', 'JOHN DOE');
     $sheet->setCellValue('C2', '01-May-2026');
     $sheet->setCellValue('D2', '01-May-2026');
     $sheet->setCellValue('E2', '08:00-17:00');
 
     $sheet->setCellValue('A3', '00-002');
-    $sheet->setCellValue('B3', 'Jane Doe');
+    $sheet->setCellValue('B3', 'JANE DOE');
     $sheet->setCellValue('C3', '02-May-2026');
     $sheet->setCellValue('D3', '02-May-2026');
     $sheet->setCellValue('E3', 'EMPTY');
@@ -562,9 +562,9 @@ if ($action === 'download_leave_template') {
 
     // ===== SAMPLE ROWS =====
     $sheet->setCellValue('A2', '00-001');
-    $sheet->fromArray(['John Doe', 0,  5, 4,  7, 90, 1, 1], null, 'B2');
+    $sheet->fromArray(['JOHN DOE', 0,  5, 4,  7, 90, 1, 1], null, 'B2');
     $sheet->setCellValue('A3', '00-002');
-    $sheet->fromArray(['Jane Doe', 0, 10, 4,  0, 90, 1, 1], null, 'B3');
+    $sheet->fromArray(['JANE DOE', 0, 10, 4,  0, 90, 1, 1], null, 'B3');
 
     applySampleRowStyle($sheet, 'A2:I2');
     applySampleRowStyle($sheet, 'A3:I3', true);
@@ -734,10 +734,10 @@ if ($action === 'download_employee_template') {
 
     // Sample rows
     $sheet->setCellValue('A2', '00-001');
-    $sheet->fromArray(['Juan', 'Dela Cruz', 'juan.delacruz@company.com', '25-Apr-1995', 'employee', 'HR'], null, 'B2');
+    $sheet->fromArray(['JUAN', 'DELA CRUZ', 'juan.delacruz@company.com', '25-Apr-1995', 'employee', 'HR'], null, 'B2');
 
     $sheet->setCellValue('A3', '00-002');
-    $sheet->fromArray(['Maria', 'Santos', 'maria.santos@company.com', '12-Nov-1990', 'manager', 'IT'], null, 'B3');
+    $sheet->fromArray(['MARIA', 'SANTOS', 'maria.santos@company.com', '12-Nov-1990', 'manager', 'IT'], null, 'B3');
 
     applySampleRowStyle($sheet, 'A2:G2');
     applySampleRowStyle($sheet, 'A3:G3', true);
