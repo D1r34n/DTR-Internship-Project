@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jun 17, 2026 at 10:43 AM
+-- Generation Time: Jun 18, 2026 at 05:34 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -105,7 +105,8 @@ CREATE TABLE `employees` (
 --
 
 INSERT INTO `employees` (`id`, `employee_id`, `profile_image`, `first_name`, `last_name`, `email`, `password`, `role_id`, `department_id`, `hired_date`, `tenure`, `birthdate`, `employement_status`, `is_archived`) VALUES
-(1, '000001', 'default_profile.png', 'Thonie', 'Revil', 'thonie.revil@hsnservice.com', 'HSN.123', 1, NULL, '2026-06-10', 0, '2000-01-01', 'active', 0);
+(1, '00-001', 'default_profile.png', 'THONIE', 'REVIL', 'thonie.revil@hsnservice.com', 'HSN.123', 1, NULL, '2026-06-10', 0, '2000-01-01', 'active', 0),
+(2, '00-002', 'default_profile.png', 'SUPER', 'ADMIN HSN', 'superadmin@gmail.com', 'HSN.123', 1, NULL, '2026-06-18', 0, '2026-06-18', 'active', 0);
 
 -- --------------------------------------------------------
 
@@ -502,13 +503,13 @@ ALTER TABLE `cutoffs`
 -- AUTO_INCREMENT for table `departments`
 --
 ALTER TABLE `departments`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
 
 --
 -- AUTO_INCREMENT for table `employees`
 --
 ALTER TABLE `employees`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=113;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=114;
 
 --
 -- AUTO_INCREMENT for table `events`
@@ -532,7 +533,7 @@ ALTER TABLE `leave_types`
 -- AUTO_INCREMENT for table `logs`
 --
 ALTER TABLE `logs`
-  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=164;
+  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=171;
 
 --
 -- AUTO_INCREMENT for table `log_edit_requests`
