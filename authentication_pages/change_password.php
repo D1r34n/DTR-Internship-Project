@@ -80,8 +80,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } elseif ($newPassword !== $confirmPassword) {
             $error = "Passwords do not match.";
         } else {
-            $pdo->prepare("UPDATE employees SET password = ? WHERE id = ?")
-                ->execute([$newPassword, $employeeId]);
+        // Generate a secure Bcrypt hash of the password
+        $hashedPassword = password_hash($newPassword, PASSWORD_DEFAULT);
+
+        $pdo->prepare("UPDATE employees SET password = ? WHERE id = ?")
+            ->execute([$hashedPassword, $employeeId]);
 
             if ($mode === 'token') {
                 $pdo->prepare("UPDATE password_resets SET used = 1 WHERE token = ?")

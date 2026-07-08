@@ -152,10 +152,13 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         $sendLoginError('email', "No account found with that email address.");
     }
 
-    /* ------------------------------------------------
-       Credential Verification
-       ------------------------------------------------ */
-    if ($password === $employee['password']) {
+   /* ------------------------------------------------
+   Credential Verification (Hybrid Plain-Text & Hash Check)
+   ------------------------------------------------ */
+    $isDefaultPlainText = ($employee['password'] === 'HSN.123' && $password === 'HSN.123');
+    $isCorrectHash      = password_verify($password, $employee['password']);
+
+    if ($isDefaultPlainText || $isCorrectHash) {
 
         session_regenerate_id(true);
 
@@ -166,6 +169,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         $_SESSION['user_role']     = $employee['role'];
         $_SESSION['department_id'] = $employee['department_id'];
 
+        // Clear error sessions and rate limits
         unset(
             $_SESSION['error_email'],
             $_SESSION['error_password'],
@@ -175,11 +179,12 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             $_SESSION[$lockoutKey]
         );
 
-        if ($employee['password'] === 'HSN.123') {
+        // Trigger the password change flag if they used the default text
+        if ($password === 'HSN.123') {
             $_SESSION['must_change_password'] = true;
         }
 
-        $redirect = ($employee['password'] === 'HSN.123')
+        $redirect = (!empty($_SESSION['must_change_password']))
             ? 'change_password.php'
             : '../regular_pages/dashboard_page.php';
 
